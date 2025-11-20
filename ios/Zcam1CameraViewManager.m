@@ -1,0 +1,48 @@
+#import <React/RCTViewManager.h>
+#import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
+
+#if __has_include("Zcam1Sdk-Swift.h")
+#import "Zcam1Sdk-Swift.h"
+#endif
+
+@interface Zcam1CameraViewManager : RCTViewManager
+@end
+
+@implementation Zcam1CameraViewManager
+
+// Expose this view to JS as "Zcam1CameraView", matching the
+// name used in `requireNativeComponent("Zcam1CameraView")`.
+RCT_EXPORT_MODULE(Zcam1CameraView);
+
+- (UIView *)view
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    // Zcam1CameraView is the Swift UIView subclass defined in Zcam1Camera.swift
+    return [Zcam1CameraView new];
+  }
+#endif
+
+  // Fallback dummy view if the Swift implementation is not available
+  UIView *fallback = [UIView new];
+  fallback.backgroundColor = [UIColor blackColor];
+  return fallback;
+}
+
++ (BOOL)requiresMainQueueSetup
+{
+  // Camera / UIKit objects must be created on the main thread
+  return YES;
+}
+
+// Props bridged to Swift Zcam1CameraView:
+//
+// @property (nonatomic) BOOL isActive;
+// @property (nonatomic, copy) NSString *position;      // "front" | "back"
+// @property (nonatomic, copy) NSString *captureFormat; // "jpeg" | "dng"
+RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(position, NSString);
+RCT_EXPORT_VIEW_PROPERTY(captureFormat, NSString);
+
+@end

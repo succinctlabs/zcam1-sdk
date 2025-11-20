@@ -1,0 +1,37 @@
+{
+  "name": "react-native-zcam1-sdk",
+  "version": "0.0.0",
+  "description": "ZCAM1 SDK",
+  "main": "src/index",
+  "codegenConfig": {
+    "name": "Zcam1SdkSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "author": " <> ()",
+  "license": "UNLICENSED",
+  "homepage": "#readme",
+  "devDependencies": {
+    "@react-native/babel-preset": "0.81.1",
+    "@types/react": "^19.1.0"
+  },
+  "create-react-native-library": {
+    "languages": "kotlin-objc",
+    "type": "turbo-module",
+    "version": "0.54.8"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "react": ">=19",
+    "react-native": ">=0.81",
+    "@noble/hashes": "^2.0.1",
+    "@pagopa/io-react-native-crypto": ">=1.2.3",
+    "@pagopa/io-react-native-integrity": ">=0.3.2",
+    "@scure/base": ">=2.0.0",
+    "react-native-file-access": ">=3.2.0"
+  },
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  }
+}
