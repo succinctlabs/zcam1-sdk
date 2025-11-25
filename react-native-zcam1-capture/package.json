@@ -1,7 +1,7 @@
 {
-  "name": "react-native-zcam1-sdk",
+  "name": "react-native-zcam1-capture",
   "version": "0.0.2",
-  "description": "ZCAM1 SDK",
+  "description": "ZCAM1 Capture SDK",
   "main": "src/index",
   "codegenConfig": {
     "name": "Zcam1SdkSpec",
