@@ -1,15 +1,18 @@
-import { getPublicKeyFixed } from "@pagopa/io-react-native-crypto";
+import { generate, getPublicKeyFixed } from "@pagopa/io-react-native-crypto";
+
 import {
   generateHardwareKey,
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
-import { jwkThumbprintB64Url } from "./crypto";
+import EncryptedStorage from "react-native-encrypted-storage";
+import { CERT_KEY_TAG } from "./camera";
 
 export { ZCamera } from "./camera";
 
 export type Settings = {
-  bundleId: string;
   backendUrl: string;
+  appId: string;
+  production: boolean;
 };
 
 export class ZPhoto {
@@ -20,54 +23,53 @@ export class ZPhoto {
     this.originalPath = originalPath;
     this.path = path;
   }
-
-  async bindToDevice(): Promise<void> {
-    // todo
-  }
 }
 
-export async function init(settings: Settings): Promise<string | undefined> {
-  const contentPubKey = await getPublicKeyFixed(settings.bundleId);
-  const contentPubKeyHash = jwkThumbprintB64Url(contentPubKey);
-
-  console.warn(settings.backendUrl);
-  let response = await fetch(settings.backendUrl + "/init", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ contentPubKeyHash }),
+export async function init(settings: Settings): Promise<void> {
+  await getPublicKeyFixed(CERT_KEY_TAG).catch(() => {
+    generate(CERT_KEY_TAG);
   });
 
-  console.warn("Response");
+  let keyIdHex = await EncryptedStorage.getItem("deviceKeyId");
 
-  if (!response.ok) {
-    throw "failed to init:" + (await response.text());
+  if (keyIdHex === undefined) {
+    keyIdHex = await generateHardwareKey();
+    EncryptedStorage.setItem("deviceKeyId", keyIdHex);
   }
 
-  let challenge = await response.text();
+  if (keyIdHex) {
+    let response = await fetch(settings.backendUrl + "/ios/register/init", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ keyIdHex }),
+    });
 
-  console.warn("Challenge: " + challenge);
+    if (!response.ok) {
+      throw "failed to init:" + (await response.text());
+    }
 
-  const deviceKeyId = await generateHardwareKey();
-  const attestation = await getAttestation(challenge, deviceKeyId);
+    let challenge = await response.text();
+    const attestationHex = await getAttestation(challenge, keyIdHex);
 
-  response = await fetch(settings.backendUrl + "/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contentPubKeyHash,
-      deviceKeyId,
-      attestation,
-      bindingSignature: "",
-    }),
-  });
+    response = await fetch(settings.backendUrl + "/ios/register/validate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        attestationHex,
+        keyIdHex,
+        appId: settings.appId,
+        production: settings.production,
+      }),
+    });
 
-  if (!response.ok) {
-    throw "failed to register:" + (await response.text());
+    if (!response.ok) {
+      throw "failed to validate:" + (await response.text());
+    }
+  } else {
+    throw "failed to generate a device key";
   }
-
-  return "";
 }

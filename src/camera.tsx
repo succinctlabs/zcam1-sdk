@@ -11,6 +11,8 @@ import { ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
+export const CERT_KEY_TAG = "CERT_KEY_TAG";
+
 /**
  * Capture format produced by the native Swift camera.
  * - "jpeg": standard compressed JPEG file
@@ -58,8 +60,6 @@ type NativeCameraViewProps = {
  */
 const Zcam1CameraView =
   requireNativeComponent<NativeCameraViewProps>("Zcam1CameraView");
-
-const KEY_TAG = "com.anonymous.zcam1poc";
 
 /**
  * React wrapper around the native Swift camera.
@@ -112,7 +112,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     // 2. Prepare C2PA certificate chain.
     const certificateChainPEM = await createCertificateChainPEM({
-      keyTag: KEY_TAG,
+      keyTag: CERT_KEY_TAG,
       commonName: "TEST",
       organization: "Succinct",
     });
@@ -170,7 +170,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       sourcePath: originalPath,
       destinationPath,
       manifestJSON,
-      keyTag: KEY_TAG,
+      keyTag: CERT_KEY_TAG,
       dataHash,
       certificateChainPEM,
     });
