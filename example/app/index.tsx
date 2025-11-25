@@ -58,9 +58,9 @@ const styles = StyleSheet.create({
 
 function initZcam1() {
   let settings = {
-    bundleId: "com.anonymous.zcam1poc",
-    //backendUrl: "http://172.20.10.4:3001",
-    backendUrl: "http://192.168.1.117:3001",
+    appId: process.env.EXPO_PUBLIC_APP_ID!,
+    backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
+    production: false,
   };
 
   init(settings);
