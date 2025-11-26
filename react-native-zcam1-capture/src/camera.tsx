@@ -8,7 +8,8 @@ import {
 import { Util } from "react-native-file-access";
 import { base64 } from "@scure/base";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
-import { createCertificateChainPEM, signImage } from "./c2pa";
+import { signImage } from "react-native-zcam1-c2pa";
+import { createCertificateChainPEM } from "./c2pa";
 import { Attestation, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
@@ -154,7 +155,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       this.props.keyId,
       dataHash,
       {
-        backendUrl: "http://172.20.10.4:3001",
+        //backendUrl: "http://172.20.10.4:3001",
+        backendUrl: "http://192.168.1.24:3001",
         appId: this.props.appId,
         production: false,
       },

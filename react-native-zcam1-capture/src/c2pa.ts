@@ -58,21 +58,6 @@ export function createCertificateChainPEM(
   );
 }
 
-export function signImage(options: SignImageOptions): Promise<string> {
-  return new Promise(() => "TODO");
-}
-
-export type SignImageOptions = {
-  sourcePath: string;
-  destinationPath: string;
-  manifestJSON: string;
-  keyTag: string;
-  dataHash?: string;
-  certificateChainPEM: string;
-  tsaURL?: string;
-  embed?: boolean;
-};
-
 export type CreateSelfSignedCertificateOptions = {
   keyTag: string;
   commonName: string;

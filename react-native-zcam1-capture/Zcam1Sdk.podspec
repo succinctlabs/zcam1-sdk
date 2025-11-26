@@ -16,32 +16,7 @@ Pod::Spec.new do |s|
 
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
   s.private_header_files = "ios/**/*.h"
-  s.vendored_frameworks = "ios/C2PA/C2PAC.xcframework"
 
   install_modules_dependencies(s)
 
-  # Download and extract C2PAC.xcframework before installation
-  s.prepare_command = <<-CMD
-    FRAMEWORK_URL="https://github.com/contentauth/c2pa-ios/releases/download/v0.0.7/C2PAC.xcframework.zip"
-    DEST_DIR="ios/C2PA"
-    FRAMEWORK_PATH="$DEST_DIR/C2PAC.xcframework"
-
-    if [ -d "$FRAMEWORK_PATH" ]; then
-      echo "✅ C2PAC.xcframework already exists, skipping download"
-      exit 0
-    fi
-
-    echo "📦 Downloading C2PAC.xcframework..."
-    mkdir -p "$DEST_DIR"
-
-    if curl -L -o "$DEST_DIR/C2PAC.xcframework.zip" "$FRAMEWORK_URL"; then
-      echo "📦 Download complete, extracting..."
-      unzip -q "$DEST_DIR/C2PAC.xcframework.zip" -d "$DEST_DIR"
-      rm "$DEST_DIR/C2PAC.xcframework.zip"
-      echo "✅ C2PAC.xcframework extracted successfully"
-    else
-      echo "❌ Error downloading C2PAC.xcframework"
-      exit 1
-    fi
-  CMD
 end
