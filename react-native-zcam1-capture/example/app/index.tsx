@@ -1,11 +1,41 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { init, ZCamera } from "react-native-zcam1-capture";
+import { initDevice, register, ZCamera } from "react-native-zcam1-capture";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);
+  const appId = process.env.EXPO_PUBLIC_APP_ID!;
+  const [keyId, setKeyId] = useState("");
+  const [attestation, setAttestation] = useState(null);
+
+  useEffect(() => {
+    async function fetchKeyId() {
+      const keyId = await initDevice();
+      console.log("Key ID", keyId);
+      setKeyId(keyId);
+    }
+
+    fetchKeyId();
+  }, []);
+
+  useEffect(() => {
+    async function fetchAttestation() {
+      if (keyId) {
+        let settings = {
+          appId,
+          backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
+          production: false,
+        };
+        const attestation = await register(keyId, settings);
+        console.log("Attestation ", attestation);
+        setAttestation(attestation);
+      }
+    }
+
+    fetchAttestation();
+  }, [keyId]);
 
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
@@ -22,10 +52,12 @@ export default function Index() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          <ZCamera ref={camera} />
-        </View>
-        <View>
-          <Button title="Init" onPress={initZcam1} />
+          <ZCamera
+            ref={camera}
+            keyId={keyId}
+            appId={appId}
+            attestation={attestation}
+          />
         </View>
         <View>
           <Button title="Capture" onPress={capture} />
@@ -55,13 +87,3 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
 });
-
-function initZcam1() {
-  let settings = {
-    appId: process.env.EXPO_PUBLIC_APP_ID!,
-    backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
-    production: false,
-  };
-
-  init(settings);
-}

@@ -6,10 +6,13 @@ import {
   ViewStyle,
 } from "react-native";
 import { Util } from "react-native-file-access";
+import { base64 } from "@scure/base";
+import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { createCertificateChainPEM, signImage } from "./c2pa";
-import { ZPhoto } from ".";
+import { Attestation, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
+import { generateProof } from "./proving";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -27,6 +30,12 @@ export interface ZCameraProps {
   isActive?: boolean;
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
+
+  keyId: string;
+
+  appId: string;
+
+  attestation: Attestation;
   /** Optional style for the underlying native view. */
   style?: StyleProp<ViewStyle>;
 }
@@ -108,7 +117,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
 
-    console.log("Source: " + originalPath);
+    console.log("Source", originalPath);
 
     // 2. Prepare C2PA certificate chain.
     const certificateChainPEM = await createCertificateChainPEM({
@@ -130,7 +139,26 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       Util.dirname(originalPath) +
       `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
 
-    console.log("Destination: " + destinationPath);
+    console.log("Destination", destinationPath);
+
+    const assertion = await generateHardwareSignatureWithAssertion(
+      "ASSERTION",
+      this.props.keyId,
+    );
+
+    console.log("Assertion", assertion);
+
+    let proof = await generateProof(
+      this.props.attestation,
+      assertion,
+      this.props.keyId,
+      dataHash,
+      {
+        backendUrl: "http://172.20.10.4:3001",
+        appId: this.props.appId,
+        production: false,
+      },
+    );
 
     // 5. Build C2PA manifest.
     const manifestJSON = JSON.stringify({
@@ -161,6 +189,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
               },
             ],
           },
+        },
+        {
+          label: "succinct.proof",
+          data: base64.encode(proof),
         },
       ],
     });

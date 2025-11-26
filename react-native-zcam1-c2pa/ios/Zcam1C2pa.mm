@@ -1,4 +1,4 @@
-#import "Zcam1Sdk.h"
+#import "Zcam1C2pa.h"
 #import <Security/Security.h>
 #import <AVFoundation/AVFoundation.h>
 #if __has_include("Zcam1Sdk-Swift.h")
@@ -10,23 +10,23 @@
 #import "Zcam1Sdk-Swift.h"
 #endif
 
-@interface Zcam1Sdk ()
+@interface Zcam1C2pa ()
 - (BOOL)c2pa_ensureSecureEnclaveKey:(NSString *)keyTag
                               error:(NSError * _Nullable * _Nullable)error;
 - (nullable NSString *)c2pa_exportPublicKeyPEM:(NSString *)keyTag
                                          error:(NSError * _Nullable * _Nullable)error;
 @end
 
-@implementation Zcam1Sdk
+@implementation Zcam1C2pa
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
 {
-    return std::make_shared<facebook::react::NativeZcam1SdkSpecJSI>(params);
+    return std::make_shared<facebook::react::NativeZcam1C2paSpecJSI>(params);
 }
 
 + (NSString *)moduleName
 {
-  return @"Zcam1Sdk";
+  return @"Zcam1C2pa";
 }
 
 // MARK: - Minimal C2PA bridge helpers
@@ -192,7 +192,7 @@
                               resolve:(RCTPromiseResolveBlock)resolve
                                reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("Zcam1C2pa-Swift.h")
   NSError *error = nil;
   NSInteger days = validDays != nil ? [validDays integerValue] : 365;
   NSString *pem = [CerificateService createSelfSignedCertificatePEMForKeyTag:keyTag
@@ -227,7 +227,7 @@
                           resolve:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("Zcam1C2pa-Swift.h")
   NSError *error = nil;
   NSInteger days = validDays != nil ? [validDays integerValue] : 365;
   NSString *pem = [CerificateService createCertificateChainPEMForKeyTag:keyTag
@@ -251,12 +251,91 @@
 #endif
 }
 
+- (void)signImage:(NSString *)sourcePath
+  destinationPath:(NSString *)destinationPath
+     manifestJSON:(NSString *)manifestJSON
+           keyTag:(NSString *)keyTag
+certificateChainPEM:(NSString *)certificateChainPEM
+           tsaURL:(NSString *)tsaURL
+            embed:(NSNumber *)embed
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1C2pa-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSURL *src = ([sourcePath hasPrefix:@"file://"] ? [NSURL URLWithString:sourcePath] : [NSURL fileURLWithPath:sourcePath]);
+    NSURL *dst = ([destinationPath hasPrefix:@"file://"] ? [NSURL URLWithString:destinationPath] : [NSURL fileURLWithPath:destinationPath]);
+    NSError *error = nil;
+    NSString *tsa = (tsaURL.length > 0 ? tsaURL : nil);
+    BOOL embedBool = (embed != nil) ? [embed boolValue] : YES;
+    NSData *manifest = [C2PAService signImageAt:src
+                                             to:dst
+                                  manifestJSON:manifestJSON
+                                        keyTag:keyTag
+                          certificateChainPEM:certificateChainPEM
+                                        tsaURL:tsa
+                                         embed:embedBool
+                                         error:&error];
+    if (manifest != nil) {
+      resolve([manifest base64EncodedStringWithOptions:0]);
+      return;
+    }
+    NSString *code = @"C2PA_SIGN_IMAGE";
+    NSString *message = error.localizedDescription ?: @"Failed to sign image";
+    reject(code, message, error);
+    return;
+  }
+#endif
+  reject(@"C2PA_UNAVAILABLE", @"C2PA signing requires iOS 16+ and Swift component", nil);
+}
+
+- (void)signImageWithDataHashed:(NSString *)sourcePath
+  destinationPath:(NSString *)destinationPath
+     manifestJSON:(NSString *)manifestJSON
+           keyTag:(NSString *)keyTag
+         dataHash:(NSString *)dataHash
+certificateChainPEM:(NSString *)certificateChainPEM
+           tsaURL:(NSString *)tsaURL
+            embed:(NSNumber *)embed
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1C2pa-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSURL *src = ([sourcePath hasPrefix:@"file://"] ? [NSURL URLWithString:sourcePath] : [NSURL fileURLWithPath:sourcePath]);
+    NSURL *dst = ([destinationPath hasPrefix:@"file://"] ? [NSURL URLWithString:destinationPath] : [NSURL fileURLWithPath:destinationPath]);
+    NSError *error = nil;
+    NSString *tsa = (tsaURL.length > 0 ? tsaURL : nil);
+    BOOL embedBool = (embed != nil) ? [embed boolValue] : YES;
+
+    NSData *manifest = [C2PAService signImageWithDataHashedAt:src
+                                             to:dst
+                                  manifestJSON:manifestJSON
+                                        keyTag:keyTag
+                                      dataHash:dataHash
+                          certificateChainPEM:certificateChainPEM
+                                        tsaURL:tsa
+                                         embed:embedBool
+                                         error:&error];
+    if (manifest != nil) {
+      resolve([manifest base64EncodedStringWithOptions:0]);
+      return;
+    }
+    NSString *code = @"C2PA_SIGN_IMAGE";
+    NSString *message = error.localizedDescription ?: @"Failed to sign image";
+    reject(code, message, error);
+    return;
+  }
+#endif
+  reject(@"C2PA_UNAVAILABLE", @"C2PA signing requires iOS 16+ and Swift component", nil);
+}
+
 - (void)takeNativePhoto:(NSString *)format
                          position:(NSString *)position
                           resolve:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("Zcam1C2pa-Swift.h")
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 

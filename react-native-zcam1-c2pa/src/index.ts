@@ -1,11 +1,11 @@
-import Zcam1Sdk from "./NativeZcam1Sdk";
+import Zcam1C2pa from "./NativeZcam1C2pa";
 
 export function ensureSecureEnclaveKey(keyTag: string): Promise<boolean> {
-  return Zcam1Sdk.ensureSecureEnclaveKey(keyTag);
+  return Zcam1C2pa.ensureSecureEnclaveKey(keyTag);
 }
 
 export function exportPublicKeyPEM(keyTag: string): Promise<string> {
-  return Zcam1Sdk.exportPublicKeyPEM(keyTag);
+  return Zcam1C2pa.exportPublicKeyPEM(keyTag);
 }
 
 export function createSelfSignedCertificatePEM(
@@ -21,7 +21,7 @@ export function createSelfSignedCertificatePEM(
     stateOrProvince,
     validDays,
   } = options;
-  return Zcam1Sdk.createSelfSignedCertificatePEM(
+  return Zcam1C2pa.createSelfSignedCertificatePEM(
     keyTag,
     commonName,
     organization,
@@ -46,7 +46,7 @@ export function createCertificateChainPEM(
     stateOrProvince,
     validDays,
   } = options;
-  return Zcam1Sdk.createCertificateChainPEM(
+  return Zcam1C2pa.createCertificateChainPEM(
     keyTag,
     commonName,
     organization,
@@ -59,7 +59,38 @@ export function createCertificateChainPEM(
 }
 
 export function signImage(options: SignImageOptions): Promise<string> {
-  return new Promise(() => "TODO");
+  const {
+    sourcePath,
+    destinationPath,
+    manifestJSON,
+    keyTag,
+    dataHash,
+    certificateChainPEM,
+    tsaURL,
+    embed,
+  } = options;
+  if (dataHash) {
+    return Zcam1C2pa.signImageWithDataHashed(
+      sourcePath,
+      destinationPath,
+      manifestJSON,
+      keyTag,
+      dataHash,
+      certificateChainPEM,
+      tsaURL,
+      embed,
+    );
+  } else {
+    return Zcam1C2pa.signImage(
+      sourcePath,
+      destinationPath,
+      manifestJSON,
+      keyTag,
+      certificateChainPEM,
+      tsaURL,
+      embed,
+    );
+  }
 }
 
 export type SignImageOptions = {
