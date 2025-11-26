@@ -1,0 +1,20 @@
+[package]
+name = "zcam1-common"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Members
+zcam1-ios.workspace = true
+
+sp1-sdk.workspace = true
+
+eyre.workspace = true
+getrandom.workspace = true
+hex.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+c2pa = "0.69.0"
+x509-parser = "0.16.0"

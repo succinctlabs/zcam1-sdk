@@ -1,0 +1,25 @@
+[workspace]
+members = ["backend", "crates/*", "programs/*"]
+resolver = "3"
+
+
+[workspace.dependencies]
+
+# members
+zcam1-common = { path = "./crates/common" }
+zcam1-ios = { path = "./crates/ios" }
+
+# sp1
+sp1-build = "5.2.3"
+sp1-sdk = "5.2.3"
+sp1-zkvm = "5.2.3"
+
+# misc
+base64ct = "1.6.0"
+bytes = "1.5.0"
+eyre = "0.6.12"
+getrandom = "0.3.4"
+hex = "0.4.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+thiserror = "2.0.17"

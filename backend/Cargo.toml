@@ -1,0 +1,27 @@
+[package]
+name = "zcam1-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Members
+zcam1-common.workspace = true
+zcam1-ios = { workspace = true, features = ["proving"] }
+
+sp1-sdk.workspace = true
+
+eyre.workspace = true
+getrandom.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+axum = "0.8.6"
+tokio = { version = "1.48.0", features = ["full"] }
+
+[dev-dependencies]
+axum-test = "18.3.0"
+base64ct.workspace = true
+
+[build-dependencies]
+sp1-build.workspace = true

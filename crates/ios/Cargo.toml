@@ -1,0 +1,25 @@
+[package]
+name = "zcam1-ios"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sp1-sdk = { workspace = true, optional = true }
+
+base64ct.workspace = true
+bytes.workspace = true
+eyre.workspace = true
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+der-parser = "9.0.0"
+serde_cbor = "0.10"
+sha2 = { version = "0.10", default-features = false }
+p256 = "0.13.2"
+x509-verify = { version = "0.4.5", features = ["p256", "p384", "x509", "pem"] }
+x509-cert = "0.2.5"
+
+[features]
+proving = ["dep:sp1-sdk"]

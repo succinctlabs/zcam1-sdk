@@ -1,0 +1,9 @@
+[package]
+name = "authenticity-ios"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zcam1-ios.workspace = true
+
+sp1-zkvm.workspace = true
