@@ -9,7 +9,7 @@
   },
   "author": "",
   "homepage": "https://github.com/succinctlabs/zcam1#readme",
-  "dependencies": {
+  "peerDependencies": {
     "sp1-wasm-verifier": "^1.0.2"
   }
 }
