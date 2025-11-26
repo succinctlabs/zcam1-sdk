@@ -2,7 +2,7 @@ import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useRef } from "react";
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { init, ZCamera } from "react-native-zcam1-sdk";
+import { init, ZCamera } from "react-native-zcam1-capture";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);
