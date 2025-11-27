@@ -40,12 +40,6 @@ public enum C2PAServiceError: Error, LocalizedError {
         return try Signer.createSecureEnclaveKey(config: config)
     }
 
-    /// Exports the public key PEM associated with the keychain item identified by keyTag.
-    /// Note: This exports the SubjectPublicKeyInfo DER as PEM.
-    public static func exportPublicKeyPEM(keyTag: String) throws -> String {
-        try Signer.exportPublicKeyPEM(fromKeychainTag: keyTag)
-    }
-
     // MARK: - Signing
 
     /// Signs an image file with a provided C2PA manifest JSON using the Secure Enclave-backed signer.
@@ -250,35 +244,6 @@ public enum C2PAServiceError: Error, LocalizedError {
                 tsaURL: tsaURL,
                 embed: embed
             )
-        } catch let caughtError {
-            if let e = error {
-                e.pointee = caughtError as NSError
-            }
-            return nil
-        }
-    }
-
-    @objc public static func ensureSecureEnclaveKeyWithTag(
-        _ keyTag: String,
-        error: NSErrorPointer
-    ) -> Bool {
-        do {
-            _ = try ensureSecureEnclaveKey(keyTag: keyTag)
-            return true
-        } catch let caughtError {
-            if let e = error {
-                e.pointee = caughtError as NSError
-            }
-            return false
-        }
-    }
-
-    @objc public static func exportPublicKeyPEMForKeyTag(
-        _ keyTag: String,
-        error: NSErrorPointer
-    ) -> String? {
-        do {
-            return try exportPublicKeyPEM(keyTag: keyTag)
         } catch let caughtError {
             if let e = error {
                 e.pointee = caughtError as NSError
