@@ -12,6 +12,7 @@ zcam1-ios = { path = "./crates/ios" }
 # sp1
 sp1-build = "5.2.3"
 sp1-sdk = "5.2.3"
+sp1-prover = "5.2.3"
 sp1-zkvm = "5.2.3"
 
 # misc

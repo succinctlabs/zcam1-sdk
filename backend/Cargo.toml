@@ -25,3 +25,6 @@ base64ct.workspace = true
 
 [build-dependencies]
 sp1-build.workspace = true
+
+[features]
+mock = ["zcam1-common/mock"]

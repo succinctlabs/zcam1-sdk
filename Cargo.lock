@@ -8849,6 +8849,7 @@ dependencies = [
  "getrandom 0.3.4",
  "hex",
  "serde",
+ "sp1-prover",
  "sp1-sdk",
  "thiserror 2.0.17",
  "x509-parser",

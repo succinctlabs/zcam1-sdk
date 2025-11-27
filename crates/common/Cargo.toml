@@ -8,6 +8,7 @@ edition = "2024"
 zcam1-ios.workspace = true
 
 sp1-sdk.workspace = true
+sp1-prover.workspace = true
 
 eyre.workspace = true
 getrandom.workspace = true
@@ -18,3 +19,6 @@ thiserror.workspace = true
 [dev-dependencies]
 c2pa = "0.69.0"
 x509-parser = "0.16.0"
+
+[features]
+mock = []
