@@ -25,6 +25,6 @@ pub fn main() {
     )
     .unwrap();
 
-    sp1_zkvm::io::commit(&auth_inputs.data_hash);
-    sp1_zkvm::io::commit(&APPLE_ROOT_CERT);
+    sp1_zkvm::io::commit_slice(&auth_inputs.data_hash);
+    sp1_zkvm::io::commit_slice(APPLE_ROOT_CERT.as_bytes());
 }

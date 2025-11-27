@@ -12,14 +12,14 @@ use crate::{
 
 pub fn validate_assertion(
     assertion: AssertionObject,
-    client_data: Vec<u8>,
+    client_data: &[u8],
     public_key_uncompressed_hex: String,
     client_app_id: String,
     prev_counter: u32,
 ) -> Result<bool, Error> {
     // 1. sha256 hash the clientData
     let mut hasher = Sha256::new();
-    hasher.update(client_data.clone());
+    hasher.update(client_data);
     let client_data_hash = hasher.finalize();
 
     // 2. Create nonce.

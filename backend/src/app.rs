@@ -6,6 +6,7 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
+use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::include_elf;
 use zcam1_common::{Database, InMemoryDatabase, ProofRequest, Prover, Verifier};
@@ -42,7 +43,7 @@ async fn bootstrap_init(
 
 async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
-    Json(params): Json<IosRegisterValidateRequest>,
+    Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
     println!("REGISTER");
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
@@ -52,9 +53,10 @@ async fn bootstrap_register(
         )
     })?;
 
+    let inputs = IosRegisterInputs::from(&params);
     let is_valid = state
         .verifier
-        .bootstrap_verify(&(&params).into(), challenge.to_string())
+        .bootstrap_verify(&inputs, challenge.to_string())
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     if is_valid {
@@ -68,12 +70,13 @@ async fn bootstrap_register(
 
 async fn request_proof(
     State(state): State<Arc<RequestState>>,
-    Json(inputs): Json<AuthInputs>,
+    Json(params): Json<IosRequestProofParams>,
 ) -> Result<String, (StatusCode, String)> {
     let request_id = state.db.create_proof_request();
     let cloned_request_id = request_id.clone();
 
     tokio::spawn(async move {
+        let inputs = AuthInputs::from(&params);
         let proof = state.prover.prove(inputs).unwrap();
 
         state.db.fulfill_proof_request(cloned_request_id, proof);
@@ -130,20 +133,46 @@ struct IosRegisterInitRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct IosRegisterValidateRequest {
+pub struct IosRegisterValidateParams {
     pub attestation: String,
     pub key_id: String,
     pub app_id: String,
     pub production: bool,
 }
 
-impl From<&IosRegisterValidateRequest> for IosRegisterInputs {
-    fn from(value: &IosRegisterValidateRequest) -> Self {
+impl From<&IosRegisterValidateParams> for IosRegisterInputs {
+    fn from(value: &IosRegisterValidateParams) -> Self {
         Self {
             attestation: value.attestation.clone(),
             key_id: value.key_id.clone(),
             app_id: value.app_id.clone(),
             production: value.production,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IosRequestProofParams {
+    pub attestation: String, // b64
+    pub assertion: String,   // b64
+    pub key_id: String,      // b64
+    pub data_hash: String,   // b64
+    pub challenge: String,
+    pub app_id: String,
+    pub app_attest_production: bool,
+}
+
+impl From<&IosRequestProofParams> for AuthInputs {
+    fn from(value: &IosRequestProofParams) -> Self {
+        Self {
+            attestation: value.attestation.clone(),
+            assertion: value.assertion.clone(),
+            key_id: value.key_id.clone(),
+            data_hash: Base64::decode_vec(&value.data_hash).unwrap(),
+            challenge: value.challenge.clone(),
+            app_id: value.app_id.clone(),
+            app_attest_production: value.app_attest_production,
         }
     }
 }

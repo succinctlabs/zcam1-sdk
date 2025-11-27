@@ -39,13 +39,12 @@ pub fn validate_attestation(
 /// Decode a raw assertion and client data object. Then validate.
 pub fn validate_assertion(
     assertion_hex: &str,
-    client_data_hex: &str,
+    client_data: &[u8],
     public_key_uncompressed_hex: &str,
     client_app_id: &str,
     prev_counter: u32,
 ) -> Result<bool, Error> {
     let assertion = utils::decode_assertion(assertion_hex.to_string()).unwrap();
-    let client_data = utils::decode_base64_to_bytes(client_data_hex)?;
 
     assertion::validate_assertion(
         assertion,
@@ -58,8 +57,6 @@ pub fn validate_assertion(
 
 #[cfg(test)]
 mod tests {
-    use base64ct::{Base64, Encoding};
-
     use crate::{
         certificate::public_key_uncompressed_hex, utils::decode_attestation, validate_assertion,
         validate_attestation,
@@ -95,7 +92,7 @@ mod tests {
 
         let is_valid = validate_assertion(
             ASSERTION,
-            &Base64::encode_string("HASH".as_bytes()),
+            "HASH".as_bytes(),
             &public_key_uncompressed_hex,
             APP_ID,
             0,

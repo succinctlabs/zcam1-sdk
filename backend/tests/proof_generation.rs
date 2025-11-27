@@ -24,10 +24,10 @@ async fn proof_generation_test() {
     let response = server
         .post("/ios/request-proof")
         .json(&json!({
-            "attestationHex": ATTESTATION,
-            "assertionHex": ASSERTION,
-            "keyIdHex": DEVICE_KEY_ID,
-            "dataHashHex": &Base64::encode_string("HASH".as_bytes()),
+            "attestation": ATTESTATION,
+            "assertion": ASSERTION,
+            "keyId": DEVICE_KEY_ID,
+            "dataHash": &Base64::encode_string("HASH".as_bytes()),
             "challenge": "CHALLENGE",
             "appId": APP_ID,
             "appAttestProduction": false
@@ -54,5 +54,5 @@ async fn proof_generation_test() {
     let bytes = response.into_bytes();
     let proof = hex::encode(bytes);
 
-    println!("Proof: {proof}")
+    println!("Proof: {proof}");
 }

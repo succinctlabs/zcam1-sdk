@@ -6,7 +6,7 @@ pub struct AuthInputs {
     pub attestation: String, // b64
     pub assertion: String,   // b64
     pub key_id: String,      // b64
-    pub data_hash: String,   // b64
+    pub data_hash: Vec<u8>,
     pub challenge: String,
     pub app_id: String,
     pub app_attest_production: bool,

@@ -10,6 +10,7 @@ zcam1-ios = { workspace = true, features = ["proving"] }
 
 sp1-sdk.workspace = true
 
+base64ct.workspace = true
 eyre.workspace = true
 getrandom.workspace = true
 hex.workspace = true
