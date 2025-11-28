@@ -1,5 +1,5 @@
 {
-  "name": "@succinctlabs/zcam1-verifier",
+  "name": "react-native-zcam1-verify",
   "version": "0.0.1",
   "description": "ZCAM1 Verifier",
   "main": "index.js",
