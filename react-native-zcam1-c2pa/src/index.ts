@@ -1,5 +1,9 @@
 import Zcam1C2pa from "./NativeZcam1C2pa";
 
+export function readFile(path: string): Promise<string> {
+  return Zcam1C2pa.readFile(path);
+}
+
 export function signImage(options: SignImageOptions): Promise<string> {
   const {
     sourcePath,

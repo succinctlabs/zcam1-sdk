@@ -194,6 +194,19 @@ public enum C2PAServiceError: Error, LocalizedError {
 
     // MARK: - Objective-C bridging
     // These @objc helpers provide NSError** bridging for Objective-C callers.
+    @objc public static func readFile(_ sourceURL: URL, error: NSErrorPointer) -> String? {
+        do {
+            return try C2PA.readFile(
+                at: sourceURL,
+            )
+        } catch let caughtError {
+            if let e = error {
+                e.pointee = caughtError as NSError
+            }
+            return nil
+        }
+    }
+
     @objc public static func signImageAt(
         _ sourceURL: URL,
         to destinationURL: URL,

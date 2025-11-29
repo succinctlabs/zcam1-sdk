@@ -27,6 +27,30 @@
 
 // MARK: - Minimal C2PA bridge helpers
 
+- (void)readFile:(NSString *)path
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1C2pa-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSURL *src = ([path hasPrefix:@"file://"] ? [NSURL URLWithString:path] : [NSURL fileURLWithPath:path]);
+    NSError *error = nil;
+
+    NSString *json = [C2PAService readFile:src
+                                     error:&error];
+    if (json != nil) {
+      resolve(json);
+      return;
+    }
+    NSString *code = @"C2PA_SIGN_IMAGE";
+    NSString *message = error.localizedDescription ?: @"Failed to sign image";
+    reject(code, message, error);
+    return;
+  }
+#endif
+  reject(@"C2PA_UNAVAILABLE", @"C2PA signing requires iOS 16+ and Swift component", nil);
+}
+
 - (void)signImage:(NSString *)sourcePath
   destinationPath:(NSString *)destinationPath
      manifestJSON:(NSString *)manifestJSON

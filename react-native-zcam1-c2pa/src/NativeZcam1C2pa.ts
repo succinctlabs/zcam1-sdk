@@ -1,6 +1,8 @@
 import { TurboModuleRegistry, type TurboModule } from "react-native";
 
 export interface Spec extends TurboModule {
+  readFile(path: string): Promise<string>;
+
   // C2PA: Sign an image file with the provided manifest JSON.
   // Returns the produced manifest bytes as a base64-encoded string.
   // destinationPath will be created/overwritten.
