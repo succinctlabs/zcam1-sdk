@@ -28,7 +28,7 @@ pub struct Manifest {
 
 #[uniffi::export]
 impl Manifest {
-    pub fn proof(&self) -> String {
+    pub fn proof(&self) -> Proof {
         self.assertion_store.proof.clone()
     }
 
@@ -45,7 +45,7 @@ pub struct Claim {
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
 pub struct AssertionStore {
     #[serde(rename = "succinct.proof")]
-    pub proof: String,
+    pub proof: Proof,
     #[serde(rename = "c2pa.hash.data")]
     pub data_hash: DataHash,
 }
@@ -72,6 +72,7 @@ pub struct DataHash {
     pub name: String,
     pub alg: String,
     pub hash: String,
+    #[serde(default)]
     pub exclusions: Vec<Exclusion>,
 }
 

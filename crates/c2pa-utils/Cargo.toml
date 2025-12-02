@@ -1,11 +1,22 @@
 [package]
 name = "zcam1-c2pa-utils"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-thiserror = "2.0.17"
-c2pa = { version = "0.72.0", features = ["file_io"] }
+async-trait = "0.1.89"
+c2pa = { version = "0.72.0", default-features = false, features = ["file_io", "rust_native_crypto"] }
+futures = "0.3.31"
+pem = "3.0.6"
+security-framework = "3.5.1"
 serde = "1.0.228"
 serde_json = "1.0.145"
-uniffi = { version = "=0.29.3" }
+thiserror = "2.0.17"
+uniffi = { version = "=0.29.3", features = [ "cli" ] }
+
+[dev-dependencies]
+x509-parser = "0.18.0"
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_c2pa_utils"
