@@ -1,0 +1,3 @@
+rust:
+  directory: /Users/aurel/Dev/succinct/zcam1
+  manifestPath: crates/c2pa-utils/Cargo.toml

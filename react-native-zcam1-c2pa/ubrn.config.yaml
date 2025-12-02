@@ -1,0 +1,3 @@
+rust:
+  directory: ./..
+  manifestPath: crates/c2pa-utils/Cargo.toml

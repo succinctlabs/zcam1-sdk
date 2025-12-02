@@ -1,6 +1,6 @@
 {
   "name": "react-native-zcam1-c2pa",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "description": "ZCAM1 C2PA SDK",
   "main": "src/index",
   "codegenConfig": {
@@ -8,25 +8,40 @@
     "type": "modules",
     "jsSrcsDir": "src"
   },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/succinctlabs/zcam1.git"
+  },
   "author": " <> ()",
   "license": "UNLICENSED",
   "homepage": "#readme",
   "devDependencies": {
     "@react-native/babel-preset": "0.81.1",
-    "@types/react": "^19.1.0"
+    "@types/react": "^19.1.0",
+    "install": "^0.13.0",
+    "npm": "^11.6.4"
   },
   "create-react-native-library": {
     "languages": "kotlin-objc",
     "type": "turbo-module",
     "version": "0.54.8"
   },
-  "dependencies": {},
+  "dependencies": {
+    "uniffi-bindgen-react-native": "^0.29.3-1",
+    "prettier": "^3.7.3"
+  },
   "peerDependencies": {
     "react": ">=19",
     "react-native": ">=0.81"
   },
   "scripts": {
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
+    "ubrn:android": "ubrn build android --and-generate",
+    "ubrn:web": "ubrn build web",
+    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
+    "postinstall": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --config ./urbn.config.dev.yaml --and-generate --release"
   }
 }
