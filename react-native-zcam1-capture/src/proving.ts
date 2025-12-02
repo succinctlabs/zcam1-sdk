@@ -23,6 +23,14 @@ export async function generateProof(
   return proof;
 }
 
+export async function getVkHash(settings: Settings): Promise<String> {
+  let response = await fetch(settings.backendUrl + `/ios/vk`);
+
+  const vkHash = await response.text();
+
+  return vkHash;
+}
+
 async function requestProof(
   attestation: string, // b64
   assertion: string, // b64

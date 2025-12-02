@@ -7,13 +7,14 @@ import {
 } from "react-native";
 import { Util } from "react-native-file-access";
 import { base64 } from "@scure/base";
+import { getPublicKeyFixed, sign } from "@pagopa/io-react-native-crypto";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
-import { signImage } from "react-native-zcam1-c2pa";
+import { embedManifest } from "react-native-zcam1-c2pa";
 import { createCertificateChainPEM } from "./c2pa";
-import { Attestation, ZPhoto } from ".";
+import { Attestation, DeviceInfo, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
-import { generateProof } from "./proving";
+import { generateProof, getVkHash } from "./proving";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -32,7 +33,7 @@ export interface ZCameraProps {
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
 
-  keyId: string;
+  deviceInfo: DeviceInfo;
 
   appId: string;
 
@@ -98,10 +99,18 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    *   }): Promise<{ path: string; metadata?: any }>
    */
   async takePhoto(options: TakePhotoOptions = {}): Promise<ZPhoto> {
+    const settings = {
+      backendUrl: "http://172.20.10.4:3001",
+      //backendUrl: "http://192.168.1.24:3001",
+      appId: this.props.appId,
+      production: false,
+    };
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
 
     console.log("Format: " + format);
+
+    let publicKey = await getPublicKeyFixed(CERT_KEY_TAG);
 
     // 1. Capture using native Swift camera (preview handled by native view).
     const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
@@ -127,6 +136,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       organization: "Succinct",
     });
 
+    console.log("Certificate Chain", certificateChainPEM);
+
     // 3. Compute hash of the captured file (for signImageWithDataHashed).
     const dataHash = await hashFile(originalPath);
 
@@ -142,9 +153,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     console.log("Destination", destinationPath);
 
+    console.log("Key ID", this.props.deviceInfo.deviceKeyId);
+
     const assertion = await generateHardwareSignatureWithAssertion(
       "ASSERTION",
-      this.props.keyId,
+      this.props.deviceInfo.deviceKeyId,
     );
 
     console.log("Assertion", assertion);
@@ -152,15 +165,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     let proof = await generateProof(
       this.props.attestation,
       assertion,
-      this.props.keyId,
+      this.props.deviceInfo.deviceKeyId,
       dataHash,
-      {
-        //backendUrl: "http://172.20.10.4:3001",
-        backendUrl: "http://192.168.1.24:3001",
-        appId: this.props.appId,
-        production: false,
-      },
+      settings,
     );
+
+    console.log("Proof retrieved");
+
+    let vkHash = await getVkHash(settings);
+
+    console.log("VK Hash", vkHash);
 
     // 5. Build C2PA manifest.
     const manifestJSON = JSON.stringify({
@@ -194,20 +208,23 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         },
         {
           label: "succinct.proof",
-          data: base64.encode(proof),
+          data: { data: base64.encode(proof), vkHash },
         },
       ],
     });
 
     // 6. Sign the captured image with C2PA, producing a new signed JPEG file.
-    await signImage({
-      sourcePath: originalPath,
+    embedManifest(
+      originalPath,
       destinationPath,
       manifestJSON,
-      keyTag: CERT_KEY_TAG,
-      dataHash,
+      base64.decode(dataHash),
+      "image/jpeg",
+      this.props.deviceInfo.contentKeyId,
       certificateChainPEM,
-    });
+    );
+
+    console.log("Manifest Embedded");
 
     return new ZPhoto(originalPath, destinationPath);
   }

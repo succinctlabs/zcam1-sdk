@@ -5,12 +5,18 @@ import {
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
 import { CERT_KEY_TAG } from "./camera";
+import { bytesToHexString, secureEnclaveKeyId } from "./crypto";
 
 export { ZCamera } from "./camera";
 
 export type Attestation = {
   data: string;
   challenge: string;
+};
+
+export type DeviceInfo = {
+  deviceKeyId: string;
+  contentKeyId: Uint8Array;
 };
 
 export type Settings = {
@@ -29,15 +35,22 @@ export class ZPhoto {
   }
 }
 
-export async function initDevice(): Promise<string> {
-  let keyId = undefined; //await EncryptedStorage.getItem("deviceKeyId");
+export async function initDevice(): Promise<DeviceInfo> {
+  let deviceKeyId: string | undefined;
+  let contentKeyId: Uint8Array | undefined;
 
-  if (keyId === undefined) {
-    keyId = await generateHardwareKey();
-    EncryptedStorage.setItem("deviceKeyId", keyId);
+  const publicKey = await getPublicKeyFixed(CERT_KEY_TAG).catch(() => {
+    return generate(CERT_KEY_TAG);
+  });
+
+  contentKeyId = secureEnclaveKeyId(publicKey);
+
+  if (deviceKeyId === undefined) {
+    deviceKeyId = await generateHardwareKey();
+    EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
   }
-  if (keyId) {
-    return keyId;
+  if (deviceKeyId) {
+    return { deviceKeyId, contentKeyId };
   } else {
     throw "failed to generate a device key";
   }
@@ -47,10 +60,6 @@ export async function register(
   keyId: string,
   settings: Settings,
 ): Promise<Attestation> {
-  await getPublicKeyFixed(CERT_KEY_TAG).catch(() => {
-    generate(CERT_KEY_TAG);
-  });
-
   let response = await fetch(settings.backendUrl + "/ios/register/init", {
     method: "POST",
     headers: {
