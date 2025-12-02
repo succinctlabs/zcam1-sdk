@@ -4,7 +4,9 @@ use std::{
     path::PathBuf,
 };
 
-use c2pa::{assertions::DataHash, AsyncSigner, Builder, CallbackSigner, Reader, SigningAlg};
+use c2pa::{
+    assertions::DataHash, AsyncSigner, Builder, CallbackSigner, HashRange, Reader, SigningAlg,
+};
 
 use crate::{error::Error, signing::sign_with_enclave, types::ManifestStore};
 
@@ -59,7 +61,9 @@ pub async fn embed_manifest(
 
     let mut output_stream = Cursor::new(output);
     let mut data_hash = DataHash::new("manifest", "sha265");
+    let hr = HashRange::new(manifest_pos as u64, placeholder_manifest.len() as u64);
 
+    data_hash.add_exclusion(hr.clone());
     data_hash.set_hash(hash);
 
     // tell SDK to fill in the hash and sign to complete the manifest
