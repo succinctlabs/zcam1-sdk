@@ -2,19 +2,28 @@ import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useRef, useState, useEffect } from "react";
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { initDevice, register, ZCamera } from "react-native-zcam1-capture";
+import {
+  Attestation,
+  DeviceInfo,
+  initDevice,
+  register,
+  ZCamera,
+} from "react-native-zcam1-capture";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);
   const appId = process.env.EXPO_PUBLIC_APP_ID!;
-  const [keyId, setKeyId] = useState("");
-  const [attestation, setAttestation] = useState(null);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(
+    undefined,
+  );
+  const [attestation, setAttestation] = useState<Attestation | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     async function fetchKeyId() {
-      const keyId = await initDevice();
-      console.log("Key ID", keyId);
-      setKeyId(keyId);
+      const deviceInfo = await initDevice();
+      setDeviceInfo(deviceInfo);
     }
 
     fetchKeyId();
@@ -22,20 +31,20 @@ export default function Index() {
 
   useEffect(() => {
     async function fetchAttestation() {
-      if (keyId) {
+      if (deviceInfo) {
         let settings = {
           appId,
           backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
           production: false,
         };
-        const attestation = await register(keyId, settings);
+        const attestation = await register(deviceInfo.deviceKeyId, settings);
         console.log("Attestation ", attestation);
         setAttestation(attestation);
       }
     }
 
     fetchAttestation();
-  }, [keyId]);
+  }, [deviceInfo, appId]);
 
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
@@ -54,9 +63,9 @@ export default function Index() {
         <View style={{ flex: 1 }}>
           <ZCamera
             ref={camera}
-            keyId={keyId}
+            deviceInfo={deviceInfo}
             appId={appId}
-            attestation={attestation}
+            attestation={attestation!}
           />
         </View>
         <View>
