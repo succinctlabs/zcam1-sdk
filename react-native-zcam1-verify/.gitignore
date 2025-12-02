@@ -2,5 +2,9 @@ node_modules/
 
 .expo/
 
+# uniffi
+rust_modules/
+Zcam1VerifyFramework.xcframework/
+
 # macOS
 .DS_Store

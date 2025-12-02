@@ -1,8 +1,13 @@
 {
   "name": "react-native-zcam1-verify",
-  "version": "0.0.1",
-  "description": "ZCAM1 Verifier",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "ZCAM1 Verify SDK",
+  "main": "src/index",
+  "codegenConfig": {
+    "name": "Zcam1VerifySpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
   "type": "module",
   "repository": {
     "type": "git",
@@ -11,9 +16,24 @@
   "author": "",
   "homepage": "https://github.com/succinctlabs/zcam1#readme",
   "dependencies": {
+    "@contentauth/c2pa-types": "^0.4.0",
     "@noble/hashes": "^2.0.1",
     "@scure/base": "^2.0.0",
-    "@contentauth/c2pa-types": "^0.4.0",
-    "sp1-wasm-verifier": "^1.0.2"
+    "react-native-zcam1-c2pa": "^0.1.0",
+    "uniffi-bindgen-react-native": "^0.29.3-1"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-native": ">=0.81"
+  },
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
+    "ubrn:android": "ubrn build android --and-generate",
+    "ubrn:web": "ubrn build web",
+    "ubrn:checkout": "ubrn checkout",
+    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
+    "postinstall": "ubrn checkout && CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release"
   }
 }
