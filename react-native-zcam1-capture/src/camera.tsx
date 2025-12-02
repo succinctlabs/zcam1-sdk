@@ -11,7 +11,7 @@ import { getPublicKeyFixed, sign } from "@pagopa/io-react-native-crypto";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { embedManifest } from "react-native-zcam1-c2pa";
 import { createCertificateChainPEM } from "./c2pa";
-import { Attestation, DeviceInfo, ZPhoto } from ".";
+import { Attestation, DeviceInfo, Settings, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 import { generateProof, getVkHash } from "./proving";
@@ -35,7 +35,7 @@ export interface ZCameraProps {
 
   deviceInfo: DeviceInfo;
 
-  appId: string;
+  settings: Settings;
 
   attestation: Attestation;
   /** Optional style for the underlying native view. */
@@ -99,12 +99,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    *   }): Promise<{ path: string; metadata?: any }>
    */
   async takePhoto(options: TakePhotoOptions = {}): Promise<ZPhoto> {
-    const settings = {
-      backendUrl: "http://172.20.10.4:3001",
-      //backendUrl: "http://192.168.1.24:3001",
-      appId: this.props.appId,
-      production: false,
-    };
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
 
@@ -167,12 +161,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       assertion,
       this.props.deviceInfo.deviceKeyId,
       dataHash,
-      settings,
+      this.props.settings,
     );
 
     console.log("Proof retrieved");
 
-    let vkHash = await getVkHash(settings);
+    let vkHash = await getVkHash(this.props.settings);
 
     console.log("VK Hash", vkHash);
 
@@ -208,7 +202,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         },
         {
           label: "succinct.proof",
-          data: { data: base64.encode(proof), vkHash },
+          data: { data: base64.encode(proof), vk_hash: vkHash },
         },
       ],
     });

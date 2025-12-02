@@ -1,5 +1,5 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -20,6 +20,14 @@ export default function Index() {
     undefined,
   );
 
+  const settings = useMemo(() => {
+    return {
+      appId,
+      backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
+      production: false,
+    };
+  }, [appId]);
+
   useEffect(() => {
     async function fetchKeyId() {
       const deviceInfo = await initDevice();
@@ -32,11 +40,6 @@ export default function Index() {
   useEffect(() => {
     async function fetchAttestation() {
       if (deviceInfo) {
-        let settings = {
-          appId,
-          backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
-          production: false,
-        };
         const attestation = await register(deviceInfo.deviceKeyId, settings);
         console.log("Attestation ", attestation);
         setAttestation(attestation);
@@ -44,7 +47,7 @@ export default function Index() {
     }
 
     fetchAttestation();
-  }, [deviceInfo, appId]);
+  }, [deviceInfo, appId, settings]);
 
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
@@ -63,8 +66,8 @@ export default function Index() {
         <View style={{ flex: 1 }}>
           <ZCamera
             ref={camera}
-            deviceInfo={deviceInfo}
-            appId={appId}
+            deviceInfo={deviceInfo!}
+            settings={settings}
             attestation={attestation!}
           />
         </View>
