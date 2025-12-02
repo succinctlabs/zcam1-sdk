@@ -1,26 +1,34 @@
 use eyre::{Result, eyre};
 use sp1_prover::components::CpuProverComponents;
-use sp1_sdk::{ProverClient, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin};
+use sp1_sdk::{
+    HashableKey, ProverClient, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
+    SP1VerifyingKey,
+};
 
-pub struct Prover {
+#[cfg(feature = "mock")]
+use sp1_sdk::Prover;
+
+pub struct ProvingClient {
     client: Box<dyn sp1_sdk::Prover<CpuProverComponents>>,
     elf: Vec<u8>,
     pk: SP1ProvingKey,
+    vk: SP1VerifyingKey,
 }
 
-impl Prover {
+impl ProvingClient {
     pub fn new(elf: &[u8]) -> Self {
         #[cfg(feature = "mock")]
         let client = ProverClient::builder().mock().build();
         #[cfg(not(feature = "mock"))]
         let client = ProverClient::from_env();
 
-        let (pk, _) = client.setup(elf);
+        let (pk, vk) = client.setup(elf);
 
         Self {
             client: Box::new(client),
             elf: elf.to_vec(),
             pk,
+            vk,
         }
     }
 
@@ -38,5 +46,9 @@ impl Prover {
             .map_err(|err| eyre!("{err}"))?;
 
         Ok(proof)
+    }
+
+    pub fn vk_hash(&self) -> String {
+        self.vk.bytes32()
     }
 }

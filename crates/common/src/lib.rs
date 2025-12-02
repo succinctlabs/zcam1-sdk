@@ -5,4 +5,4 @@ mod verifier;
 pub use verifier::{Verifier, VerifierError};
 
 mod prover;
-pub use prover::Prover;
+pub use prover::ProvingClient;

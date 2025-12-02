@@ -9,7 +9,7 @@ use axum::{
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::include_elf;
-use zcam1_common::{Database, InMemoryDatabase, ProofRequest, Prover, Verifier};
+use zcam1_common::{Database, InMemoryDatabase, ProofRequest, ProvingClient, Verifier};
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
 const ELF: &[u8] = include_elf!("authenticity-ios");
@@ -22,6 +22,7 @@ pub fn build_app() -> Router {
         .route("/ios/register/validate", post(bootstrap_register))
         .route("/ios/request-proof", post(request_proof))
         .route("/ios/proof/{id}", get(proof))
+        .route("/ios/vk", get(vk_hash))
         .with_state(Arc::new(state))
 }
 
@@ -105,17 +106,21 @@ async fn proof(
     }
 }
 
+async fn vk_hash(State(state): State<Arc<RequestState>>) -> String {
+    state.prover.vk_hash()
+}
+
 struct RequestState {
     pub db: InMemoryDatabase,
     pub verifier: IosVerifier,
-    pub prover: Prover,
+    pub prover: ProvingClient,
 }
 
 impl RequestState {
     pub fn new(elf: &[u8]) -> Self {
         let db = InMemoryDatabase::default();
         let verifier = IosVerifier;
-        let prover = Prover::new(elf);
+        let prover = ProvingClient::new(elf);
 
         Self {
             db,
