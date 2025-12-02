@@ -3,14 +3,26 @@ use thiserror::Error;
 #[derive(Debug, Error, uniffi::Error)]
 #[uniffi(flat_error)]
 pub enum Error {
-    #[error("{0}")]
-    C2PA(#[from] c2pa::Error),
+    #[error(transparent)]
+    C2pa(#[from] c2pa::Error),
+
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error("No active manifest")]
+    NoActiveManifest,
 }
 
 impl From<Error> for c2pa::Error {
     fn from(value: Error) -> Self {
         match value {
-            Error::C2PA(error) => error,
+            Error::C2pa(error) => error,
+            Error::Json(error) => c2pa::Error::JsonError(error),
+            Error::Io(error) => c2pa::Error::IoError(error),
+            other => c2pa::Error::OtherError(Box::new(other)),
         }
     }
 }
