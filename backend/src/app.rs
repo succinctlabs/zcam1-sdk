@@ -8,8 +8,11 @@ use axum::{
 };
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sp1_sdk::include_elf;
-use zcam1_common::{Database, InMemoryDatabase, ProofRequest, ProvingClient, Verifier};
+use zcam1_common::{
+    Database, InMemoryDatabase, ProofRequest, ProvingClient, Verifier, generate_cert_chain,
+};
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
 const ELF: &[u8] = include_elf!("authenticity-ios");
@@ -23,6 +26,7 @@ pub fn build_app() -> Router {
         .route("/ios/request-proof", post(request_proof))
         .route("/ios/proof/{id}", get(proof))
         .route("/ios/vk", get(vk_hash))
+        .route("/cert-chain", post(cert_chain))
         .with_state(Arc::new(state))
 }
 
@@ -108,6 +112,13 @@ async fn proof(
 
 async fn vk_hash(State(state): State<Arc<RequestState>>) -> String {
     state.prover.vk_hash()
+}
+
+async fn cert_chain(Json(jwt): Json<Value>) -> Result<String, (StatusCode, String)> {
+    let cert_chain = generate_cert_chain(jwt, "ZCAM1", "Succinct")
+        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+
+    Ok(cert_chain)
 }
 
 struct RequestState {
