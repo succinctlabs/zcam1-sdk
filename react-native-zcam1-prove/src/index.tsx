@@ -49,6 +49,8 @@ export async function embedProof(
   const dataHash = activeManifest.dataHash();
   const bindings = activeManifest.bindings();
 
+  originalPath = originalPath.replace("file://", "");
+
   if (bindings === undefined) {
     throw new Error("No device bindings found in the C2PA manifest");
   }
@@ -72,7 +74,7 @@ export async function embedProof(
     Util.dirname(originalPath) +
     `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
-  embedManifest(
+  await embedManifest(
     originalPath,
     destinationPath,
     manifestJSON,

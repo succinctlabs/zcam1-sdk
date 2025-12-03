@@ -75,7 +75,7 @@ pub async fn embed_manifest(
     output_stream.write_all(&final_manifest)?;
     output_stream.rewind()?;
 
-    let mut output_file = File::create(destination)?;
+    let mut output_file = File::create(destination.replace("file://", ""))?;
 
     let _ = copy(&mut output_stream, &mut output_file)?;
 

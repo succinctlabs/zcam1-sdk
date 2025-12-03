@@ -29,12 +29,12 @@ export default function Index() {
   }, [appId]);
 
   useEffect(() => {
-    async function fetchKeyId() {
+    async function fetchDevice() {
       const deviceInfo = await initDevice(settings);
       setDeviceInfo(deviceInfo);
     }
 
-    fetchKeyId();
+    fetchDevice();
   }, [settings]);
 
   useEffect(() => {
