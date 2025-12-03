@@ -20,22 +20,6 @@ export async function hashFile(filePath: string): Promise<string> {
   return base64.encode(hash);
 }
 
-export function secureEnclaveKeyId(publicKey: PublicKey): Uint8Array {
-  if (publicKey.kty === "EC") {
-    const x = base64urlnopad.decode(publicKey.x);
-    const y = base64urlnopad.decode(publicKey.y);
-
-    const out = new Uint8Array(1 + x.length + y.length);
-    out[0] = 0x04; // uncompressed point format
-    out.set(x, 1);
-    out.set(y, 1 + x.length);
-
-    return sha1(out);
-  } else {
-    throw "Invalid key type";
-  }
-}
-
 export function bytesToHexString(array: Uint8Array): string {
   return Array.from(array)
     .map((byte) => byte.toString(16).padStart(2, "0"))
