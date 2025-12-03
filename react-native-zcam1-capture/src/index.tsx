@@ -4,8 +4,9 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
+import { getCertChain } from "zcam1-common";
 import { CERT_KEY_TAG } from "./camera";
-import { bytesToHexString, secureEnclaveKeyId } from "./crypto";
+import { secureEnclaveKeyId } from "./crypto";
 
 export { ZCamera } from "./camera";
 
@@ -17,6 +18,7 @@ export type Attestation = {
 export type DeviceInfo = {
   deviceKeyId: string;
   contentKeyId: Uint8Array;
+  certChainPem: string;
 };
 
 export type Settings = {
@@ -35,7 +37,7 @@ export class ZPhoto {
   }
 }
 
-export async function initDevice(): Promise<DeviceInfo> {
+export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   let deviceKeyId: string | undefined;
   let contentKeyId: Uint8Array | undefined;
 
@@ -43,14 +45,22 @@ export async function initDevice(): Promise<DeviceInfo> {
     return generate(CERT_KEY_TAG);
   });
 
+  if (publicKey.kty !== "EC") {
+    throw "Only EC public keys are supported";
+  }
+
   contentKeyId = secureEnclaveKeyId(publicKey);
+
+  const certChainPem = await getCertChain(publicKey, settings.backendUrl);
+
+  console.log("Certificate Chain", certChainPem);
 
   if (deviceKeyId === undefined) {
     deviceKeyId = await generateHardwareKey();
     EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
   }
   if (deviceKeyId) {
-    return { deviceKeyId, contentKeyId };
+    return { deviceKeyId, contentKeyId, certChainPem };
   } else {
     throw "failed to generate a device key";
   }

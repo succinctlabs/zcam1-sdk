@@ -122,16 +122,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     console.log("Source", originalPath);
 
-    // 2. Prepare C2PA certificate chain.
-    const certificateChainPEM = await createCertificateChainPEM({
-      keyTag: CERT_KEY_TAG,
-      commonName: "TEST",
-      organization: "Succinct",
-    });
-
-    console.log("Certificate Chain", certificateChainPEM);
-
-    // 3. Compute hash of the captured file (for signImageWithDataHashed).
+    // 2. Compute hash of the captured file (for signImageWithDataHashed).
     const dataHash = await hashFile(originalPath);
 
     const tiff = (metadata as any)["{TIFF}"] ?? {};
@@ -139,7 +130,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
     const deviceModel: string = tiff.Model || "Unknown";
 
-    // 4. Build destination path for the signed asset (JPEG).
+    // 3. Build destination path for the signed asset (JPEG).
     const destinationPath =
       Util.dirname(originalPath) +
       `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
@@ -153,7 +144,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       this.props.deviceInfo.deviceKeyId,
     );
 
-    // 5. Build C2PA manifest.
+    // 4. Build C2PA manifest.
     const manifestJSON = JSON.stringify({
       claim_generator: "zcam1-poc/0.0.1",
       title: "First C2PA photo!",
@@ -196,7 +187,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       ],
     });
 
-    // 6. Sign the captured image with C2PA, producing a new signed JPEG file.
+    // 5. Sign the captured image with C2PA, producing a new signed JPEG file.
     embedManifest(
       originalPath,
       destinationPath,
@@ -204,7 +195,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       base64.decode(dataHash),
       "image/jpeg",
       this.props.deviceInfo.contentKeyId,
-      certificateChainPEM,
+      this.props.deviceInfo.certChainPem,
     );
 
     console.log("Manifest Embedded");
