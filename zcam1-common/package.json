@@ -1,0 +1,17 @@
+{
+  "name": "zcam1-common",
+  "version": "0.1.0",
+  "description": "ZCAM1 SDK low level primitives",
+  "main": "lib/index",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "cross-fetch": "^4.1.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+
+    // Include modern JS built‑ins (Promise, async/await, etc)
+    "lib": ["ES2017"],
+
+    // Emit types for consumers
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+
+    // Source maps are helpful when debugging inside RN
+    "sourceMap": true,
+    "outDir": "./dist",
+    "strict": true
+  }
+}
