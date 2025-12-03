@@ -37,9 +37,13 @@ import {
   type UniffiRustArcPtr,
   type UnsafeMutableRawPointer,
   AbstractFfiConverterByteArray,
+  FfiConverterArray,
   FfiConverterArrayBuffer,
+  FfiConverterBool,
   FfiConverterInt32,
   FfiConverterObject,
+  FfiConverterOptional,
+  FfiConverterUInt32,
   FfiConverterUInt64,
   RustBuffer,
   UniffiAbstractObject,
@@ -49,6 +53,7 @@ import {
   destructorGuardSymbol,
   pointerLiteralSymbol,
   uniffiCreateFfiConverterString,
+  uniffiCreateRecord,
   uniffiRustCallAsync,
   uniffiTypeNameSymbol,
   variantOrdinalSymbol,
@@ -126,20 +131,366 @@ export function extractManifest(
     ),
   );
 }
-export function keyId(x: ArrayBuffer, y: ArrayBuffer): ArrayBuffer {
-  return FfiConverterArrayBuffer.lift(
-    uniffiCaller.rustCall(
-      /*caller:*/ (callStatus) => {
-        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_key_id(
-          FfiConverterArrayBuffer.lower(x),
-          FfiConverterArrayBuffer.lower(y),
-          callStatus,
-        );
-      },
-      /*liftString:*/ FfiConverterString.lift,
-    ),
-  );
-}
+
+export type AssertionStore = {
+  deviceBindings: DeviceBindings | undefined;
+  proof: Proof | undefined;
+  dataHash: DataHash;
+};
+
+/**
+ * Generated factory for {@link AssertionStore} record objects.
+ */
+export const AssertionStore = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<AssertionStore, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link AssertionStore}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link AssertionStore}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<AssertionStore>,
+  });
+})();
+
+const FfiConverterTypeAssertionStore = (() => {
+  type TypeName = AssertionStore;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        deviceBindings: FfiConverterOptionalTypeDeviceBindings.read(from),
+        proof: FfiConverterOptionalTypeProof.read(from),
+        dataHash: FfiConverterTypeDataHash.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterOptionalTypeDeviceBindings.write(value.deviceBindings, into);
+      FfiConverterOptionalTypeProof.write(value.proof, into);
+      FfiConverterTypeDataHash.write(value.dataHash, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterOptionalTypeDeviceBindings.allocationSize(
+          value.deviceBindings,
+        ) +
+        FfiConverterOptionalTypeProof.allocationSize(value.proof) +
+        FfiConverterTypeDataHash.allocationSize(value.dataHash)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type Claim = {
+  signature: string;
+};
+
+/**
+ * Generated factory for {@link Claim} record objects.
+ */
+export const Claim = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<Claim, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link Claim}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link Claim}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<Claim>,
+  });
+})();
+
+const FfiConverterTypeClaim = (() => {
+  type TypeName = Claim;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        signature: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.signature, into);
+    }
+    allocationSize(value: TypeName): number {
+      return FfiConverterString.allocationSize(value.signature);
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type DataHash = {
+  name: string;
+  alg: string;
+  hash: string;
+  exclusions: Array<Exclusion>;
+};
+
+/**
+ * Generated factory for {@link DataHash} record objects.
+ */
+export const DataHash = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<DataHash, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link DataHash}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link DataHash}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<DataHash>,
+  });
+})();
+
+const FfiConverterTypeDataHash = (() => {
+  type TypeName = DataHash;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        name: FfiConverterString.read(from),
+        alg: FfiConverterString.read(from),
+        hash: FfiConverterString.read(from),
+        exclusions: FfiConverterArrayTypeExclusion.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.name, into);
+      FfiConverterString.write(value.alg, into);
+      FfiConverterString.write(value.hash, into);
+      FfiConverterArrayTypeExclusion.write(value.exclusions, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.name) +
+        FfiConverterString.allocationSize(value.alg) +
+        FfiConverterString.allocationSize(value.hash) +
+        FfiConverterArrayTypeExclusion.allocationSize(value.exclusions)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type DeviceBindings = {
+  appId: string;
+  deviceKeyId: string;
+  challenge: string;
+  attestation: string;
+  assertion: string;
+};
+
+/**
+ * Generated factory for {@link DeviceBindings} record objects.
+ */
+export const DeviceBindings = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<DeviceBindings, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link DeviceBindings}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link DeviceBindings}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<DeviceBindings>,
+  });
+})();
+
+const FfiConverterTypeDeviceBindings = (() => {
+  type TypeName = DeviceBindings;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        appId: FfiConverterString.read(from),
+        deviceKeyId: FfiConverterString.read(from),
+        challenge: FfiConverterString.read(from),
+        attestation: FfiConverterString.read(from),
+        assertion: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.appId, into);
+      FfiConverterString.write(value.deviceKeyId, into);
+      FfiConverterString.write(value.challenge, into);
+      FfiConverterString.write(value.attestation, into);
+      FfiConverterString.write(value.assertion, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.appId) +
+        FfiConverterString.allocationSize(value.deviceKeyId) +
+        FfiConverterString.allocationSize(value.challenge) +
+        FfiConverterString.allocationSize(value.attestation) +
+        FfiConverterString.allocationSize(value.assertion)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type Exclusion = {
+  start: /*u32*/ number;
+  length: /*u32*/ number;
+};
+
+/**
+ * Generated factory for {@link Exclusion} record objects.
+ */
+export const Exclusion = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<Exclusion, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link Exclusion}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link Exclusion}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<Exclusion>,
+  });
+})();
+
+const FfiConverterTypeExclusion = (() => {
+  type TypeName = Exclusion;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        start: FfiConverterUInt32.read(from),
+        length: FfiConverterUInt32.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterUInt32.write(value.start, into);
+      FfiConverterUInt32.write(value.length, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterUInt32.allocationSize(value.start) +
+        FfiConverterUInt32.allocationSize(value.length)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type Proof = {
+  data: string;
+  vkHash: string;
+};
+
+/**
+ * Generated factory for {@link Proof} record objects.
+ */
+export const Proof = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<Proof, ReturnType<typeof defaults>>(defaults);
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link Proof}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link Proof}, with defaults specified
+     * in Rust, in the {@link zcam1_c2pa_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<Proof>,
+  });
+})();
+
+const FfiConverterTypeProof = (() => {
+  type TypeName = Proof;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        data: FfiConverterString.read(from),
+        vkHash: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.data, into);
+      FfiConverterString.write(value.vkHash, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.data) +
+        FfiConverterString.allocationSize(value.vkHash)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
 
 const stringConverter = {
   stringToBytes: (s: string) =>
@@ -316,435 +667,10 @@ const FfiConverterTypeError = (() => {
   return new FfiConverter();
 })();
 
-export interface AssertionStoreInterface {}
-
-export class AssertionStore
-  extends UniffiAbstractObject
-  implements AssertionStoreInterface
-{
-  readonly [uniffiTypeNameSymbol] = "AssertionStore";
-  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  // No primary constructor declared for this class.
-  private constructor(pointer: UnsafeMutableRawPointer) {
-    super();
-    this[pointerLiteralSymbol] = pointer;
-    this[destructorGuardSymbol] =
-      uniffiTypeAssertionStoreObjectFactory.bless(pointer);
-  }
-
-  /**
-   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-   */
-  uniffiDestroy(): void {
-    const ptr = (this as any)[destructorGuardSymbol];
-    if (ptr !== undefined) {
-      const pointer = uniffiTypeAssertionStoreObjectFactory.pointer(this);
-      uniffiTypeAssertionStoreObjectFactory.freePointer(pointer);
-      uniffiTypeAssertionStoreObjectFactory.unbless(ptr);
-      delete (this as any)[destructorGuardSymbol];
-    }
-  }
-
-  static instanceOf(obj: any): obj is AssertionStore {
-    return uniffiTypeAssertionStoreObjectFactory.isConcreteType(obj);
-  }
-}
-
-const uniffiTypeAssertionStoreObjectFactory: UniffiObjectFactory<AssertionStoreInterface> =
-  (() => {
-    return {
-      create(pointer: UnsafeMutableRawPointer): AssertionStoreInterface {
-        const instance = Object.create(AssertionStore.prototype);
-        instance[pointerLiteralSymbol] = pointer;
-        instance[destructorGuardSymbol] = this.bless(pointer);
-        instance[uniffiTypeNameSymbol] = "AssertionStore";
-        return instance;
-      },
-
-      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
-        return uniffiCaller.rustCall(
-          /*caller:*/ (status) =>
-            nativeModule().ubrn_uniffi_internal_fn_method_assertionstore_ffi__bless_pointer(
-              p,
-              status,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      unbless(ptr: UniffiRustArcPtr) {
-        ptr.markDestroyed();
-      },
-
-      pointer(obj: AssertionStoreInterface): UnsafeMutableRawPointer {
-        if ((obj as any)[destructorGuardSymbol] === undefined) {
-          throw new UniffiInternalError.UnexpectedNullPointer();
-        }
-        return (obj as any)[pointerLiteralSymbol];
-      },
-
-      clonePointer(obj: AssertionStoreInterface): UnsafeMutableRawPointer {
-        const pointer = this.pointer(obj);
-        return uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_assertionstore(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      freePointer(pointer: UnsafeMutableRawPointer): void {
-        uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_assertionstore(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      isConcreteType(obj: any): obj is AssertionStoreInterface {
-        return (
-          obj[destructorGuardSymbol] &&
-          obj[uniffiTypeNameSymbol] === "AssertionStore"
-        );
-      },
-    };
-  })();
-// FfiConverter for AssertionStoreInterface
-const FfiConverterTypeAssertionStore = new FfiConverterObject(
-  uniffiTypeAssertionStoreObjectFactory,
-);
-
-export interface ClaimInterface {}
-
-export class Claim extends UniffiAbstractObject implements ClaimInterface {
-  readonly [uniffiTypeNameSymbol] = "Claim";
-  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  // No primary constructor declared for this class.
-  private constructor(pointer: UnsafeMutableRawPointer) {
-    super();
-    this[pointerLiteralSymbol] = pointer;
-    this[destructorGuardSymbol] = uniffiTypeClaimObjectFactory.bless(pointer);
-  }
-
-  /**
-   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-   */
-  uniffiDestroy(): void {
-    const ptr = (this as any)[destructorGuardSymbol];
-    if (ptr !== undefined) {
-      const pointer = uniffiTypeClaimObjectFactory.pointer(this);
-      uniffiTypeClaimObjectFactory.freePointer(pointer);
-      uniffiTypeClaimObjectFactory.unbless(ptr);
-      delete (this as any)[destructorGuardSymbol];
-    }
-  }
-
-  static instanceOf(obj: any): obj is Claim {
-    return uniffiTypeClaimObjectFactory.isConcreteType(obj);
-  }
-}
-
-const uniffiTypeClaimObjectFactory: UniffiObjectFactory<ClaimInterface> =
-  (() => {
-    return {
-      create(pointer: UnsafeMutableRawPointer): ClaimInterface {
-        const instance = Object.create(Claim.prototype);
-        instance[pointerLiteralSymbol] = pointer;
-        instance[destructorGuardSymbol] = this.bless(pointer);
-        instance[uniffiTypeNameSymbol] = "Claim";
-        return instance;
-      },
-
-      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
-        return uniffiCaller.rustCall(
-          /*caller:*/ (status) =>
-            nativeModule().ubrn_uniffi_internal_fn_method_claim_ffi__bless_pointer(
-              p,
-              status,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      unbless(ptr: UniffiRustArcPtr) {
-        ptr.markDestroyed();
-      },
-
-      pointer(obj: ClaimInterface): UnsafeMutableRawPointer {
-        if ((obj as any)[destructorGuardSymbol] === undefined) {
-          throw new UniffiInternalError.UnexpectedNullPointer();
-        }
-        return (obj as any)[pointerLiteralSymbol];
-      },
-
-      clonePointer(obj: ClaimInterface): UnsafeMutableRawPointer {
-        const pointer = this.pointer(obj);
-        return uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_claim(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      freePointer(pointer: UnsafeMutableRawPointer): void {
-        uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_claim(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      isConcreteType(obj: any): obj is ClaimInterface {
-        return (
-          obj[destructorGuardSymbol] && obj[uniffiTypeNameSymbol] === "Claim"
-        );
-      },
-    };
-  })();
-// FfiConverter for ClaimInterface
-const FfiConverterTypeClaim = new FfiConverterObject(
-  uniffiTypeClaimObjectFactory,
-);
-
-export interface DataHashInterface {
-  hash(): string;
-}
-
-export class DataHash
-  extends UniffiAbstractObject
-  implements DataHashInterface
-{
-  readonly [uniffiTypeNameSymbol] = "DataHash";
-  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  // No primary constructor declared for this class.
-  private constructor(pointer: UnsafeMutableRawPointer) {
-    super();
-    this[pointerLiteralSymbol] = pointer;
-    this[destructorGuardSymbol] =
-      uniffiTypeDataHashObjectFactory.bless(pointer);
-  }
-
-  public hash(): string {
-    return FfiConverterString.lift(
-      uniffiCaller.rustCall(
-        /*caller:*/ (callStatus) => {
-          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_datahash_hash(
-            uniffiTypeDataHashObjectFactory.clonePointer(this),
-            callStatus,
-          );
-        },
-        /*liftString:*/ FfiConverterString.lift,
-      ),
-    );
-  }
-
-  /**
-   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-   */
-  uniffiDestroy(): void {
-    const ptr = (this as any)[destructorGuardSymbol];
-    if (ptr !== undefined) {
-      const pointer = uniffiTypeDataHashObjectFactory.pointer(this);
-      uniffiTypeDataHashObjectFactory.freePointer(pointer);
-      uniffiTypeDataHashObjectFactory.unbless(ptr);
-      delete (this as any)[destructorGuardSymbol];
-    }
-  }
-
-  static instanceOf(obj: any): obj is DataHash {
-    return uniffiTypeDataHashObjectFactory.isConcreteType(obj);
-  }
-}
-
-const uniffiTypeDataHashObjectFactory: UniffiObjectFactory<DataHashInterface> =
-  (() => {
-    return {
-      create(pointer: UnsafeMutableRawPointer): DataHashInterface {
-        const instance = Object.create(DataHash.prototype);
-        instance[pointerLiteralSymbol] = pointer;
-        instance[destructorGuardSymbol] = this.bless(pointer);
-        instance[uniffiTypeNameSymbol] = "DataHash";
-        return instance;
-      },
-
-      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
-        return uniffiCaller.rustCall(
-          /*caller:*/ (status) =>
-            nativeModule().ubrn_uniffi_internal_fn_method_datahash_ffi__bless_pointer(
-              p,
-              status,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      unbless(ptr: UniffiRustArcPtr) {
-        ptr.markDestroyed();
-      },
-
-      pointer(obj: DataHashInterface): UnsafeMutableRawPointer {
-        if ((obj as any)[destructorGuardSymbol] === undefined) {
-          throw new UniffiInternalError.UnexpectedNullPointer();
-        }
-        return (obj as any)[pointerLiteralSymbol];
-      },
-
-      clonePointer(obj: DataHashInterface): UnsafeMutableRawPointer {
-        const pointer = this.pointer(obj);
-        return uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_datahash(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      freePointer(pointer: UnsafeMutableRawPointer): void {
-        uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_datahash(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      isConcreteType(obj: any): obj is DataHashInterface {
-        return (
-          obj[destructorGuardSymbol] && obj[uniffiTypeNameSymbol] === "DataHash"
-        );
-      },
-    };
-  })();
-// FfiConverter for DataHashInterface
-const FfiConverterTypeDataHash = new FfiConverterObject(
-  uniffiTypeDataHashObjectFactory,
-);
-
-export interface ExclusionInterface {}
-
-export class Exclusion
-  extends UniffiAbstractObject
-  implements ExclusionInterface
-{
-  readonly [uniffiTypeNameSymbol] = "Exclusion";
-  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  // No primary constructor declared for this class.
-  private constructor(pointer: UnsafeMutableRawPointer) {
-    super();
-    this[pointerLiteralSymbol] = pointer;
-    this[destructorGuardSymbol] =
-      uniffiTypeExclusionObjectFactory.bless(pointer);
-  }
-
-  /**
-   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-   */
-  uniffiDestroy(): void {
-    const ptr = (this as any)[destructorGuardSymbol];
-    if (ptr !== undefined) {
-      const pointer = uniffiTypeExclusionObjectFactory.pointer(this);
-      uniffiTypeExclusionObjectFactory.freePointer(pointer);
-      uniffiTypeExclusionObjectFactory.unbless(ptr);
-      delete (this as any)[destructorGuardSymbol];
-    }
-  }
-
-  static instanceOf(obj: any): obj is Exclusion {
-    return uniffiTypeExclusionObjectFactory.isConcreteType(obj);
-  }
-}
-
-const uniffiTypeExclusionObjectFactory: UniffiObjectFactory<ExclusionInterface> =
-  (() => {
-    return {
-      create(pointer: UnsafeMutableRawPointer): ExclusionInterface {
-        const instance = Object.create(Exclusion.prototype);
-        instance[pointerLiteralSymbol] = pointer;
-        instance[destructorGuardSymbol] = this.bless(pointer);
-        instance[uniffiTypeNameSymbol] = "Exclusion";
-        return instance;
-      },
-
-      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
-        return uniffiCaller.rustCall(
-          /*caller:*/ (status) =>
-            nativeModule().ubrn_uniffi_internal_fn_method_exclusion_ffi__bless_pointer(
-              p,
-              status,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      unbless(ptr: UniffiRustArcPtr) {
-        ptr.markDestroyed();
-      },
-
-      pointer(obj: ExclusionInterface): UnsafeMutableRawPointer {
-        if ((obj as any)[destructorGuardSymbol] === undefined) {
-          throw new UniffiInternalError.UnexpectedNullPointer();
-        }
-        return (obj as any)[pointerLiteralSymbol];
-      },
-
-      clonePointer(obj: ExclusionInterface): UnsafeMutableRawPointer {
-        const pointer = this.pointer(obj);
-        return uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_exclusion(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      freePointer(pointer: UnsafeMutableRawPointer): void {
-        uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_exclusion(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      isConcreteType(obj: any): obj is ExclusionInterface {
-        return (
-          obj[destructorGuardSymbol] &&
-          obj[uniffiTypeNameSymbol] === "Exclusion"
-        );
-      },
-    };
-  })();
-// FfiConverter for ExclusionInterface
-const FfiConverterTypeExclusion = new FfiConverterObject(
-  uniffiTypeExclusionObjectFactory,
-);
-
 export interface ManifestInterface {
-  dataHash(): DataHashInterface;
-  proof(): string;
+  bindings(): DeviceBindings | undefined;
+  dataHash(): DataHash;
+  proof(): Proof | undefined;
 }
 
 export class Manifest
@@ -762,7 +688,21 @@ export class Manifest
       uniffiTypeManifestObjectFactory.bless(pointer);
   }
 
-  public dataHash(): DataHashInterface {
+  public bindings(): DeviceBindings | undefined {
+    return FfiConverterOptionalTypeDeviceBindings.lift(
+      uniffiCaller.rustCall(
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifest_bindings(
+            uniffiTypeManifestObjectFactory.clonePointer(this),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  public dataHash(): DataHash {
     return FfiConverterTypeDataHash.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
@@ -776,8 +716,8 @@ export class Manifest
     );
   }
 
-  public proof(): string {
-    return FfiConverterString.lift(
+  public proof(): Proof | undefined {
+    return FfiConverterOptionalTypeProof.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifest_proof(
@@ -997,134 +937,19 @@ const FfiConverterTypeManifestStore = new FfiConverterObject(
   uniffiTypeManifestStoreObjectFactory,
 );
 
-export interface ProofInterface {
-  data(): string;
-  vkHash(): string;
-}
+// FfiConverter for DeviceBindings | undefined
+const FfiConverterOptionalTypeDeviceBindings = new FfiConverterOptional(
+  FfiConverterTypeDeviceBindings,
+);
 
-export class Proof extends UniffiAbstractObject implements ProofInterface {
-  readonly [uniffiTypeNameSymbol] = "Proof";
-  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
-  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  // No primary constructor declared for this class.
-  private constructor(pointer: UnsafeMutableRawPointer) {
-    super();
-    this[pointerLiteralSymbol] = pointer;
-    this[destructorGuardSymbol] = uniffiTypeProofObjectFactory.bless(pointer);
-  }
+// FfiConverter for Proof | undefined
+const FfiConverterOptionalTypeProof = new FfiConverterOptional(
+  FfiConverterTypeProof,
+);
 
-  public data(): string {
-    return FfiConverterString.lift(
-      uniffiCaller.rustCall(
-        /*caller:*/ (callStatus) => {
-          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_proof_data(
-            uniffiTypeProofObjectFactory.clonePointer(this),
-            callStatus,
-          );
-        },
-        /*liftString:*/ FfiConverterString.lift,
-      ),
-    );
-  }
-
-  public vkHash(): string {
-    return FfiConverterString.lift(
-      uniffiCaller.rustCall(
-        /*caller:*/ (callStatus) => {
-          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_proof_vk_hash(
-            uniffiTypeProofObjectFactory.clonePointer(this),
-            callStatus,
-          );
-        },
-        /*liftString:*/ FfiConverterString.lift,
-      ),
-    );
-  }
-
-  /**
-   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
-   */
-  uniffiDestroy(): void {
-    const ptr = (this as any)[destructorGuardSymbol];
-    if (ptr !== undefined) {
-      const pointer = uniffiTypeProofObjectFactory.pointer(this);
-      uniffiTypeProofObjectFactory.freePointer(pointer);
-      uniffiTypeProofObjectFactory.unbless(ptr);
-      delete (this as any)[destructorGuardSymbol];
-    }
-  }
-
-  static instanceOf(obj: any): obj is Proof {
-    return uniffiTypeProofObjectFactory.isConcreteType(obj);
-  }
-}
-
-const uniffiTypeProofObjectFactory: UniffiObjectFactory<ProofInterface> =
-  (() => {
-    return {
-      create(pointer: UnsafeMutableRawPointer): ProofInterface {
-        const instance = Object.create(Proof.prototype);
-        instance[pointerLiteralSymbol] = pointer;
-        instance[destructorGuardSymbol] = this.bless(pointer);
-        instance[uniffiTypeNameSymbol] = "Proof";
-        return instance;
-      },
-
-      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
-        return uniffiCaller.rustCall(
-          /*caller:*/ (status) =>
-            nativeModule().ubrn_uniffi_internal_fn_method_proof_ffi__bless_pointer(
-              p,
-              status,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      unbless(ptr: UniffiRustArcPtr) {
-        ptr.markDestroyed();
-      },
-
-      pointer(obj: ProofInterface): UnsafeMutableRawPointer {
-        if ((obj as any)[destructorGuardSymbol] === undefined) {
-          throw new UniffiInternalError.UnexpectedNullPointer();
-        }
-        return (obj as any)[pointerLiteralSymbol];
-      },
-
-      clonePointer(obj: ProofInterface): UnsafeMutableRawPointer {
-        const pointer = this.pointer(obj);
-        return uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_proof(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      freePointer(pointer: UnsafeMutableRawPointer): void {
-        uniffiCaller.rustCall(
-          /*caller:*/ (callStatus) =>
-            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_proof(
-              pointer,
-              callStatus,
-            ),
-          /*liftString:*/ FfiConverterString.lift,
-        );
-      },
-
-      isConcreteType(obj: any): obj is ProofInterface {
-        return (
-          obj[destructorGuardSymbol] && obj[uniffiTypeNameSymbol] === "Proof"
-        );
-      },
-    };
-  })();
-// FfiConverter for ProofInterface
-const FfiConverterTypeProof = new FfiConverterObject(
-  uniffiTypeProofObjectFactory,
+// FfiConverter for Array<Exclusion>
+const FfiConverterArrayTypeExclusion = new FfiConverterArray(
+  FfiConverterTypeExclusion,
 );
 
 /**
@@ -1166,23 +991,16 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
-    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_key_id() !== 58207
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings() !==
+    48636
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
-      "uniffi_zcam1_c2pa_utils_checksum_func_key_id",
-    );
-  }
-  if (
-    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_datahash_hash() !==
-    26287
-  ) {
-    throw new UniffiInternalError.ApiChecksumMismatch(
-      "uniffi_zcam1_c2pa_utils_checksum_method_datahash_hash",
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings",
     );
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash() !==
-    42483
+    23867
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash",
@@ -1190,7 +1008,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof() !==
-    57729
+    61561
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof",
@@ -1204,22 +1022,6 @@ function uniffiEnsureInitialized() {
       "uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest",
     );
   }
-  if (
-    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_proof_data() !==
-    4447
-  ) {
-    throw new UniffiInternalError.ApiChecksumMismatch(
-      "uniffi_zcam1_c2pa_utils_checksum_method_proof_data",
-    );
-  }
-  if (
-    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_proof_vk_hash() !==
-    53488
-  ) {
-    throw new UniffiInternalError.ApiChecksumMismatch(
-      "uniffi_zcam1_c2pa_utils_checksum_method_proof_vk_hash",
-    );
-  }
 }
 
 export default Object.freeze({
@@ -1228,6 +1030,7 @@ export default Object.freeze({
     FfiConverterTypeAssertionStore,
     FfiConverterTypeClaim,
     FfiConverterTypeDataHash,
+    FfiConverterTypeDeviceBindings,
     FfiConverterTypeError,
     FfiConverterTypeExclusion,
     FfiConverterTypeManifest,

@@ -14,7 +14,6 @@ import { createCertificateChainPEM } from "./c2pa";
 import { Attestation, DeviceInfo, Settings, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
-import { generateProof, getVkHash } from "./proving";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -150,25 +149,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     console.log("Key ID", this.props.deviceInfo.deviceKeyId);
 
     const assertion = await generateHardwareSignatureWithAssertion(
-      "ASSERTION",
-      this.props.deviceInfo.deviceKeyId,
-    );
-
-    console.log("Assertion", assertion);
-
-    let proof = await generateProof(
-      this.props.attestation,
-      assertion,
-      this.props.deviceInfo.deviceKeyId,
       dataHash,
-      this.props.settings,
+      this.props.deviceInfo.deviceKeyId,
     );
-
-    console.log("Proof retrieved");
-
-    let vkHash = await getVkHash(this.props.settings);
-
-    console.log("VK Hash", vkHash);
 
     // 5. Build C2PA manifest.
     const manifestJSON = JSON.stringify({
@@ -201,8 +184,14 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           },
         },
         {
-          label: "succinct.proof",
-          data: { data: base64.encode(proof), vk_hash: vkHash },
+          label: "succinct.bindings",
+          data: {
+            app_id: this.props.settings.appId,
+            device_key_id: this.props.deviceInfo.deviceKeyId,
+            challenge: this.props.attestation.challenge,
+            attestation: this.props.attestation.data,
+            assertion,
+          },
         },
       ],
     });

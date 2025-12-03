@@ -28,7 +28,11 @@ pub struct Manifest {
 
 #[uniffi::export]
 impl Manifest {
-    pub fn proof(&self) -> Proof {
+    pub fn bindings(&self) -> Option<DeviceBindings> {
+        self.assertion_store.device_bindings.clone()
+    }
+
+    pub fn proof(&self) -> Option<Proof> {
         self.assertion_store.proof.clone()
     }
 
@@ -37,37 +41,37 @@ impl Manifest {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Claim {
     pub signature: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct AssertionStore {
+    #[serde(rename = "succinct.bindings")]
+    pub device_bindings: Option<DeviceBindings>,
     #[serde(rename = "succinct.proof")]
-    pub proof: Proof,
+    pub proof: Option<Proof>,
     #[serde(rename = "c2pa.hash.data")]
     pub data_hash: DataHash,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct DeviceBindings {
+    pub app_id: String,
+    pub device_key_id: String,
+    pub challenge: String,
+    pub attestation: String,
+    pub assertion: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Proof {
     pub data: String,
     pub vk_hash: String,
 }
 
-#[uniffi::export]
-impl Proof {
-    pub fn data(&self) -> String {
-        self.data.clone()
-    }
-
-    pub fn vk_hash(&self) -> String {
-        self.vk_hash.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct DataHash {
     pub name: String,
     pub alg: String,
@@ -76,15 +80,8 @@ pub struct DataHash {
     pub exclusions: Vec<Exclusion>,
 }
 
-#[uniffi::export]
-impl DataHash {
-    pub fn hash(&self) -> String {
-        self.hash.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Exclusion {
-    start: usize,
-    length: usize,
+    start: u32,
+    length: u32,
 }

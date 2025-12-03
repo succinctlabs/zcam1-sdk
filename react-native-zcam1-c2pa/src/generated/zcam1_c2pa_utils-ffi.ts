@@ -23,42 +23,6 @@ interface NativeModuleInterface {
     buffer: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): string;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_assertionstore(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_free_assertionstore(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): void;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_claim(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_free_claim(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): void;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_datahash(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_free_datahash(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): void;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_method_datahash_hash(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): Uint8Array;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_exclusion(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_free_exclusion(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): void;
   ubrn_uniffi_zcam1_c2pa_utils_fn_clone_manifest(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
@@ -67,10 +31,14 @@ interface NativeModuleInterface {
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifest_bindings(
+    ptr: bigint,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): Uint8Array;
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifest_data_hash(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
+  ): Uint8Array;
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifest_proof(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
@@ -87,22 +55,6 @@ interface NativeModuleInterface {
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_proof(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_free_proof(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): void;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_method_proof_data(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): Uint8Array;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_method_proof_vk_hash(
-    ptr: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): Uint8Array;
   ubrn_uniffi_zcam1_c2pa_utils_fn_func_embed_manifest(
     source: Uint8Array,
     destination: Uint8Array,
@@ -116,11 +68,6 @@ interface NativeModuleInterface {
     path: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_func_key_id(
-    x: Uint8Array,
-    y: Uint8Array,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): Uint8Array;
   ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_u8(
     handle: bigint,
     callback: UniffiRustFutureContinuationCallback,
@@ -268,39 +215,16 @@ interface NativeModuleInterface {
   ): void;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_embed_manifest(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(): number;
-  ubrn_uniffi_zcam1_c2pa_utils_checksum_func_key_id(): number;
-  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_datahash_hash(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest(): number;
-  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_proof_data(): number;
-  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_proof_vk_hash(): number;
   ubrn_ffi_zcam1_c2pa_utils_uniffi_contract_version(): number;
-  ubrn_uniffi_internal_fn_method_assertionstore_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): UniffiRustArcPtr;
-  ubrn_uniffi_internal_fn_method_claim_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): UniffiRustArcPtr;
-  ubrn_uniffi_internal_fn_method_datahash_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): UniffiRustArcPtr;
-  ubrn_uniffi_internal_fn_method_exclusion_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): UniffiRustArcPtr;
   ubrn_uniffi_internal_fn_method_manifest_ffi__bless_pointer(
     pointer: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): UniffiRustArcPtr;
   ubrn_uniffi_internal_fn_method_manifeststore_ffi__bless_pointer(
-    pointer: bigint,
-    uniffi_out_err: UniffiRustCallStatus,
-  ): UniffiRustArcPtr;
-  ubrn_uniffi_internal_fn_method_proof_ffi__bless_pointer(
     pointer: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): UniffiRustArcPtr;
