@@ -32,9 +32,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-zcam1-prove-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
     "typecheck": "tsc"
   },
   "keywords": [
@@ -106,6 +104,10 @@
     "version": "0.55.1"
   },
   "dependencies": {
-    "react-native-zcam1-c2pa": "^0.1.0"
+    "@pagopa/io-react-native-crypto": "^1.2.4",
+    "@scure/base": "^2.0.0",
+    "react-native-file-access": "^3.2.0",
+    "react-native-zcam1-c2pa": "^0.1.0",
+    "zcam1-common": "^0.1.0"
   }
 }
