@@ -24,8 +24,6 @@ rcgen = "0.14.5"
 spki = { version = "0.7", features = ["pem"] }
 x509-cert = { version = "0.2", features = ["builder", "pem"] }
 
-
-
 [dev-dependencies]
 c2pa = "0.69.0"
 x509-parser = "0.16.0"

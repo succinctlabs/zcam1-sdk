@@ -9,13 +9,12 @@ use axum::{
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sp1_sdk::include_elf;
 use zcam1_common::{
     Database, InMemoryDatabase, ProofRequest, ProvingClient, Verifier, generate_cert_chain,
 };
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
-const ELF: &[u8] = include_elf!("authenticity-ios");
+use crate::ELF;
 
 pub fn build_app() -> Router {
     let state = RequestState::new(ELF);

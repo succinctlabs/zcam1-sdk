@@ -8,6 +8,7 @@ resolver = "3"
 # members
 zcam1-common = { path = "./crates/common" }
 zcam1-ios = { path = "./crates/ios" }
+zcam1-c2pa-utils = { path = "./crates/c2pa-utils" }
 
 # sp1
 sp1-build = "5.2.3"
