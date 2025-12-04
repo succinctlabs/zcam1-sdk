@@ -1,10 +1,12 @@
 #![no_main]
 sp1_zkvm::entrypoint!(main);
 
+use base64ct::{Base64, Encoding};
 use zcam1_ios::{APPLE_ROOT_CERT, AuthInputs, validate_assertion, validate_attestation};
 
 pub fn main() {
     let auth_inputs = sp1_zkvm::io::read::<AuthInputs>();
+    let client_data = Base64::encode_string(&auth_inputs.data_hash);
 
     let public_key_uncompressed = validate_attestation(
         &auth_inputs.attestation,
@@ -18,7 +20,7 @@ pub fn main() {
 
     validate_assertion(
         &auth_inputs.assertion,
-        &auth_inputs.data_hash,
+        client_data.as_bytes(),
         &public_key_uncompressed,
         &auth_inputs.app_id,
         0,

@@ -4,11 +4,7 @@ use p256::{
 };
 use sha2::{Digest, Sha256};
 
-use crate::{
-    Error,
-    types::AssertionObject,
-    utils::{decode_auth_data, decode_client_data},
-};
+use crate::{Error, types::AssertionObject, utils::decode_auth_data};
 
 pub fn validate_assertion(
     assertion: AssertionObject,
@@ -36,20 +32,7 @@ pub fn validate_assertion(
 
     let signature = Signature::from_der(&assertion.signature).expect("deserializing error");
 
-    let verification = verifying_key.verify(&nonce_hash, &signature);
-    let verified = match verification {
-        Ok(_) => {
-            println!("Signature verified!");
-            true
-        }
-        Err(_) => {
-            println!("Signature verification failed!");
-            false
-        }
-    };
-    if !verified {
-        return Ok(false);
-    }
+    verifying_key.verify(&nonce_hash, &signature)?;
 
     let auth_data = decode_auth_data(assertion.authenticator_data.clone()).expect("decoding error");
 
@@ -68,5 +51,5 @@ pub fn validate_assertion(
         return Ok(false);
     }
 
-    Ok(verified)
+    Ok(true)
 }

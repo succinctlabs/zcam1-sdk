@@ -46,7 +46,12 @@ export function verifyProofFromStore(
 ): boolean {
   const activeManifest = store.activeManifest();
   let proof = activeManifest.proof();
-  let dataHashB64 = activeManifest.dataHash().hash();
+
+  if (proof === undefined) {
+    throw new Error("THe proof was not found in the manifest");
+  }
+
+  let dataHashB64 = activeManifest.dataHash().hash;
   const dataHash = base64.decode(dataHashB64);
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 
@@ -55,8 +60,8 @@ export function verifyProofFromStore(
   publicInputs.set(appleRootCert, dataHash.length);
 
   return sp1_uniffi_verifier.verifyGroth16(
-    base64.decode(proof.data()),
+    base64.decode(proof.data),
     publicInputs,
-    proof.vkHash(),
+    proof.vkHash,
   );
 }

@@ -955,6 +955,7 @@ checksum = "132573478eb9ff973c6f75d0ed425ac12da77d266506483345f46743ecc83a98"
 name = "authenticity-ios"
 version = "0.1.0"
 dependencies = [
+ "base64ct",
  "sp1-zkvm",
  "zcam1-ios",
 ]
