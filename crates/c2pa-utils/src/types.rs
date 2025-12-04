@@ -1,18 +1,39 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::error::Error;
 
+// `Reader::json()` and `Reader::detailed_json()` returns 2 differents things:
+//
+// The manifests from the `manifests` map returned by `Reader::json()` can be
+// deserialized to `ManifestDefinition` and thus can be used in
+// `Builder::from_json`.
+// The drawback of `Reader::json()` is the the data hash is not included.
+//
+// The data hash is included when using `Reader::detailed_json()`, but
+// the manifests can't be deserialized to `ManifestDefinition`.
+pub type RawManifestStore = ManifestStore<Value>;
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
-pub struct ManifestStore {
+pub struct ManifestStore<T = Manifest> {
     pub active_manifest: String,
-    pub manifests: HashMap<String, Manifest>,
+    pub manifests: HashMap<String, T>,
 }
 
 #[uniffi::export]
 impl ManifestStore {
     pub fn active_manifest(&self) -> Result<Manifest, Error> {
+        self.manifests
+            .get(&self.active_manifest)
+            .cloned()
+            .ok_or_else(|| Error::NoActiveManifest)
+    }
+}
+
+impl RawManifestStore {
+    pub fn raw_active_manifest(&self) -> Result<Value, Error> {
         self.manifests
             .get(&self.active_manifest)
             .cloned()
@@ -82,6 +103,6 @@ pub struct DataHash {
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Exclusion {
-    start: u32,
-    length: u32,
+    pub start: u32,
+    pub length: u32,
 }

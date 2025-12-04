@@ -14,6 +14,9 @@ pub enum Error {
 
     #[error("No active manifest")]
     NoActiveManifest,
+
+    #[error("The lock has been poisoned")]
+    Poisoned,
 }
 
 impl From<Error> for c2pa::Error {
