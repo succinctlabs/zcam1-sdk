@@ -43,6 +43,33 @@ protected:
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_method_manifest_proof(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_clone_manifesteditor(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_free_manifesteditor(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_title(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_clone_manifeststore(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -51,9 +78,6 @@ protected:
       size_t count);
   jsi::Value
   cpp_uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
-  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_func_embed_manifest(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
@@ -215,9 +239,6 @@ protected:
   jsi::Value cpp_ffi_zcam1_c2pa_utils_rust_future_complete_void(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
-  jsi::Value cpp_uniffi_zcam1_c2pa_utils_checksum_func_embed_manifest(
-      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
-      size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -231,13 +252,40 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
   cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_ffi_zcam1_c2pa_utils_uniffi_contract_version(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_internal_fn_method_manifest_ffi__bless_pointer(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_internal_fn_method_manifesteditor_ffi__bless_pointer(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_internal_fn_method_manifeststore_ffi__bless_pointer(

@@ -2,21 +2,12 @@ import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import {
-  Attestation,
-  DeviceInfo,
-  initDevice,
-  register,
-  ZCamera,
-} from "react-native-zcam1-capture";
+import { DeviceInfo, initDevice, ZCamera } from "react-native-zcam1-capture";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);
   const appId = process.env.EXPO_PUBLIC_APP_ID!;
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(
-    undefined,
-  );
-  const [attestation, setAttestation] = useState<Attestation | undefined>(
     undefined,
   );
 
@@ -37,18 +28,6 @@ export default function Index() {
     fetchDevice();
   }, [settings]);
 
-  useEffect(() => {
-    async function fetchAttestation() {
-      if (deviceInfo) {
-        const attestation = await register(deviceInfo.deviceKeyId, settings);
-        console.log("Attestation ", attestation);
-        setAttestation(attestation);
-      }
-    }
-
-    fetchAttestation();
-  }, [deviceInfo, appId, settings]);
-
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
 
@@ -64,12 +43,7 @@ export default function Index() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          <ZCamera
-            ref={camera}
-            deviceInfo={deviceInfo!}
-            settings={settings}
-            attestation={attestation!}
-          />
+          <ZCamera ref={camera} deviceInfo={deviceInfo!} settings={settings} />
         </View>
         <View>
           <Button title="Capture" onPress={capture} />

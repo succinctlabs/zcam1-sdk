@@ -36,7 +36,6 @@ export interface ZCameraProps {
 
   settings: Settings;
 
-  attestation: Attestation;
   /** Optional style for the underlying native view. */
   style?: StyleProp<ViewStyle>;
 }
@@ -170,8 +169,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       JSON.stringify({
         app_id: this.props.settings.appId,
         device_key_id: this.props.deviceInfo.deviceKeyId,
-        challenge: this.props.attestation.challenge,
-        attestation: this.props.attestation.data,
+        challenge: this.props.deviceInfo.attestation.challenge,
+        attestation: this.props.deviceInfo.attestation.data,
         assertion,
       }),
     );

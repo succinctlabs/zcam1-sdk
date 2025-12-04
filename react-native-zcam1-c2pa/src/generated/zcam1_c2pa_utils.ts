@@ -70,51 +70,6 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
-export async function embedManifest(
-  source: string,
-  destination: string,
-  manifestJson: string,
-  hash: ArrayBuffer,
-  format: string,
-  keyTag: ArrayBuffer,
-  certs: string,
-  asyncOpts_?: { signal: AbortSignal },
-): Promise<void> /*throws*/ {
-  const __stack = uniffiIsDebug ? new Error().stack : undefined;
-  try {
-    return await uniffiRustCallAsync(
-      /*rustCaller:*/ uniffiCaller,
-      /*rustFutureFunc:*/ () => {
-        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_embed_manifest(
-          FfiConverterString.lower(source),
-          FfiConverterString.lower(destination),
-          FfiConverterString.lower(manifestJson),
-          FfiConverterArrayBuffer.lower(hash),
-          FfiConverterString.lower(format),
-          FfiConverterArrayBuffer.lower(keyTag),
-          FfiConverterString.lower(certs),
-        );
-      },
-      /*pollFunc:*/ nativeModule()
-        .ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_void,
-      /*cancelFunc:*/ nativeModule()
-        .ubrn_ffi_zcam1_c2pa_utils_rust_future_cancel_void,
-      /*completeFunc:*/ nativeModule()
-        .ubrn_ffi_zcam1_c2pa_utils_rust_future_complete_void,
-      /*freeFunc:*/ nativeModule()
-        .ubrn_ffi_zcam1_c2pa_utils_rust_future_free_void,
-      /*liftFunc:*/ (_v) => {},
-      /*liftString:*/ FfiConverterString.lift,
-      /*asyncOpts:*/ asyncOpts_,
-      /*errorHandler:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
-    );
-  } catch (__error: any) {
-    if (uniffiIsDebug && __error instanceof Error) {
-      __error.stack = __stack;
-    }
-    throw __error;
-  }
-}
 export function extractManifest(
   path: string,
 ): ManifestStoreInterface /*throws*/ {
@@ -523,6 +478,7 @@ export enum Exception_Tags {
   Json = "Json",
   Io = "Io",
   NoActiveManifest = "NoActiveManifest",
+  Poisoned = "Poisoned",
 }
 export const Exception = (() => {
   class C2pa extends UniffiError {
@@ -613,6 +569,28 @@ export const Exception = (() => {
       return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 4;
     }
   }
+  class Poisoned extends UniffiError {
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [variantOrdinalSymbol] = 5;
+
+    public readonly tag = Exception_Tags.Poisoned;
+
+    constructor(message: string) {
+      super("Exception", "Poisoned", message);
+    }
+
+    static instanceOf(e: any): e is Poisoned {
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 5;
+    }
+  }
 
   // Utility function which does not rely on instanceof.
   function instanceOf(e: any): e is Exception {
@@ -623,6 +601,7 @@ export const Exception = (() => {
     Json,
     Io,
     NoActiveManifest,
+    Poisoned,
     instanceOf,
   };
 })();
@@ -650,6 +629,9 @@ const FfiConverterTypeError = (() => {
 
         case 4:
           return new Exception.NoActiveManifest(FfiConverterString.read(from));
+
+        case 5:
+          return new Exception.Poisoned(FfiConverterString.read(from));
 
         default:
           throw new UniffiInternalError.UnexpectedEnumCase();
@@ -816,6 +798,239 @@ const FfiConverterTypeManifest = new FfiConverterObject(
   uniffiTypeManifestObjectFactory,
 );
 
+export interface ManifestEditorInterface {
+  addAssertion(label: string, data: string) /*throws*/ : void;
+  addTitle(title: string) /*throws*/ : void;
+  embedManifestToFile(
+    destination: string,
+    hash: ArrayBuffer,
+    format: string,
+    keyTag: ArrayBuffer,
+    certs: string,
+    asyncOpts_?: { signal: AbortSignal },
+  ) /*throws*/ : Promise<void>;
+  removeAssertion(label: string) /*throws*/ : boolean;
+}
+
+export class ManifestEditor
+  extends UniffiAbstractObject
+  implements ManifestEditorInterface
+{
+  readonly [uniffiTypeNameSymbol] = "ManifestEditor";
+  readonly [destructorGuardSymbol]: UniffiRustArcPtr;
+  readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
+  constructor(path: string) {
+    super();
+    const pointer = uniffiCaller.rustCall(
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
+          FfiConverterString.lower(path),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    );
+    this[pointerLiteralSymbol] = pointer;
+    this[destructorGuardSymbol] =
+      uniffiTypeManifestEditorObjectFactory.bless(pointer);
+  }
+
+  public static fromFileAndManifest(
+    path: string,
+    manifest: ManifestStoreInterface,
+  ): ManifestEditorInterface /*throws*/ {
+    return FfiConverterTypeManifestEditor.lift(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
+            FfiConverterString.lower(path),
+            FfiConverterTypeManifestStore.lower(manifest),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  public addAssertion(label: string, data: string): void /*throws*/ {
+    uniffiCaller.rustCallWithError(
+      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
+          uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+          FfiConverterString.lower(label),
+          FfiConverterString.lower(data),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    );
+  }
+
+  public addTitle(title: string): void /*throws*/ {
+    uniffiCaller.rustCallWithError(
+      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_title(
+          uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+          FfiConverterString.lower(title),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    );
+  }
+
+  public async embedManifestToFile(
+    destination: string,
+    hash: ArrayBuffer,
+    format: string,
+    keyTag: ArrayBuffer,
+    certs: string,
+    asyncOpts_?: { signal: AbortSignal },
+  ): Promise<void> /*throws*/ {
+    const __stack = uniffiIsDebug ? new Error().stack : undefined;
+    try {
+      return await uniffiRustCallAsync(
+        /*rustCaller:*/ uniffiCaller,
+        /*rustFutureFunc:*/ () => {
+          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
+            uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+            FfiConverterString.lower(destination),
+            FfiConverterArrayBuffer.lower(hash),
+            FfiConverterString.lower(format),
+            FfiConverterArrayBuffer.lower(keyTag),
+            FfiConverterString.lower(certs),
+          );
+        },
+        /*pollFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_void,
+        /*cancelFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_cancel_void,
+        /*completeFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_complete_void,
+        /*freeFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_free_void,
+        /*liftFunc:*/ (_v) => {},
+        /*liftString:*/ FfiConverterString.lift,
+        /*asyncOpts:*/ asyncOpts_,
+        /*errorHandler:*/ FfiConverterTypeError.lift.bind(
+          FfiConverterTypeError,
+        ),
+      );
+    } catch (__error: any) {
+      if (uniffiIsDebug && __error instanceof Error) {
+        __error.stack = __stack;
+      }
+      throw __error;
+    }
+  }
+
+  public removeAssertion(label: string): boolean /*throws*/ {
+    return FfiConverterBool.lift(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+        /*caller:*/ (callStatus) => {
+          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
+            uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+            FfiConverterString.lower(label),
+            callStatus,
+          );
+        },
+        /*liftString:*/ FfiConverterString.lift,
+      ),
+    );
+  }
+
+  /**
+   * {@inheritDoc uniffi-bindgen-react-native#UniffiAbstractObject.uniffiDestroy}
+   */
+  uniffiDestroy(): void {
+    const ptr = (this as any)[destructorGuardSymbol];
+    if (ptr !== undefined) {
+      const pointer = uniffiTypeManifestEditorObjectFactory.pointer(this);
+      uniffiTypeManifestEditorObjectFactory.freePointer(pointer);
+      uniffiTypeManifestEditorObjectFactory.unbless(ptr);
+      delete (this as any)[destructorGuardSymbol];
+    }
+  }
+
+  static instanceOf(obj: any): obj is ManifestEditor {
+    return uniffiTypeManifestEditorObjectFactory.isConcreteType(obj);
+  }
+}
+
+const uniffiTypeManifestEditorObjectFactory: UniffiObjectFactory<ManifestEditorInterface> =
+  (() => {
+    return {
+      create(pointer: UnsafeMutableRawPointer): ManifestEditorInterface {
+        const instance = Object.create(ManifestEditor.prototype);
+        instance[pointerLiteralSymbol] = pointer;
+        instance[destructorGuardSymbol] = this.bless(pointer);
+        instance[uniffiTypeNameSymbol] = "ManifestEditor";
+        return instance;
+      },
+
+      bless(p: UnsafeMutableRawPointer): UniffiRustArcPtr {
+        return uniffiCaller.rustCall(
+          /*caller:*/ (status) =>
+            nativeModule().ubrn_uniffi_internal_fn_method_manifesteditor_ffi__bless_pointer(
+              p,
+              status,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      unbless(ptr: UniffiRustArcPtr) {
+        ptr.markDestroyed();
+      },
+
+      pointer(obj: ManifestEditorInterface): UnsafeMutableRawPointer {
+        if ((obj as any)[destructorGuardSymbol] === undefined) {
+          throw new UniffiInternalError.UnexpectedNullPointer();
+        }
+        return (obj as any)[pointerLiteralSymbol];
+      },
+
+      clonePointer(obj: ManifestEditorInterface): UnsafeMutableRawPointer {
+        const pointer = this.pointer(obj);
+        return uniffiCaller.rustCall(
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_clone_manifesteditor(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      freePointer(pointer: UnsafeMutableRawPointer): void {
+        uniffiCaller.rustCall(
+          /*caller:*/ (callStatus) =>
+            nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_free_manifesteditor(
+              pointer,
+              callStatus,
+            ),
+          /*liftString:*/ FfiConverterString.lift,
+        );
+      },
+
+      isConcreteType(obj: any): obj is ManifestEditorInterface {
+        return (
+          obj[destructorGuardSymbol] &&
+          obj[uniffiTypeNameSymbol] === "ManifestEditor"
+        );
+      },
+    };
+  })();
+// FfiConverter for ManifestEditorInterface
+const FfiConverterTypeManifestEditor = new FfiConverterObject(
+  uniffiTypeManifestEditorObjectFactory,
+);
+
 export interface ManifestStoreInterface {
   activeManifest() /*throws*/ : ManifestInterface;
 }
@@ -975,14 +1190,6 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
-    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_embed_manifest() !==
-    2814
-  ) {
-    throw new UniffiInternalError.ApiChecksumMismatch(
-      "uniffi_zcam1_c2pa_utils_checksum_func_embed_manifest",
-    );
-  }
-  if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest() !==
     11474
   ) {
@@ -1015,11 +1222,59 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion() !==
+    51373
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title() !==
+    13559
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file() !==
+    52341
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion() !==
+    58419
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion",
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest() !==
     55585
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest() !==
+    60785
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new() !==
+    62044
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new",
     );
   }
 }
@@ -1034,6 +1289,7 @@ export default Object.freeze({
     FfiConverterTypeError,
     FfiConverterTypeExclusion,
     FfiConverterTypeManifest,
+    FfiConverterTypeManifestEditor,
     FfiConverterTypeManifestStore,
     FfiConverterTypeProof,
   },

@@ -43,6 +43,47 @@ interface NativeModuleInterface {
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): Uint8Array;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_clone_manifesteditor(
+    ptr: bigint,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_free_manifesteditor(
+    ptr: bigint,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): void;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
+    path: Uint8Array,
+    manifest: bigint,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
+    path: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
+    ptr: bigint,
+    label: Uint8Array,
+    data: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): void;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_title(
+    ptr: bigint,
+    title: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): void;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
+    ptr: bigint,
+    destination: Uint8Array,
+    hash: Uint8Array,
+    format: Uint8Array,
+    keyTag: Uint8Array,
+    certs: Uint8Array,
+  ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
+    ptr: bigint,
+    label: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): number;
   ubrn_uniffi_zcam1_c2pa_utils_fn_clone_manifeststore(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
@@ -54,15 +95,6 @@ interface NativeModuleInterface {
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
-  ): bigint;
-  ubrn_uniffi_zcam1_c2pa_utils_fn_func_embed_manifest(
-    source: Uint8Array,
-    destination: Uint8Array,
-    manifestJson: Uint8Array,
-    hash: Uint8Array,
-    format: Uint8Array,
-    keyTag: Uint8Array,
-    certs: Uint8Array,
   ): bigint;
   ubrn_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
     path: Uint8Array,
@@ -213,14 +245,23 @@ interface NativeModuleInterface {
     handle: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
-  ubrn_uniffi_zcam1_c2pa_utils_checksum_func_embed_manifest(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new(): number;
   ubrn_ffi_zcam1_c2pa_utils_uniffi_contract_version(): number;
   ubrn_uniffi_internal_fn_method_manifest_ffi__bless_pointer(
+    pointer: bigint,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): UniffiRustArcPtr;
+  ubrn_uniffi_internal_fn_method_manifesteditor_ffi__bless_pointer(
     pointer: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): UniffiRustArcPtr;

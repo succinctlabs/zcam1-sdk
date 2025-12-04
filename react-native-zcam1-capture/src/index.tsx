@@ -18,6 +18,7 @@ export type DeviceInfo = {
   deviceKeyId: string;
   contentKeyId: Uint8Array;
   certChainPem: string;
+  attestation: Attestation;
 };
 
 export type Settings = {
@@ -58,14 +59,17 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
     deviceKeyId = await generateHardwareKey();
     EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
   }
-  if (deviceKeyId) {
-    return { deviceKeyId, contentKeyId, certChainPem };
-  } else {
+
+  if (deviceKeyId === undefined) {
     throw "failed to generate a device key";
   }
+
+  const attestation = await updateRegistration(deviceKeyId, settings);
+
+  return { deviceKeyId, contentKeyId, certChainPem, attestation };
 }
 
-export async function register(
+export async function updateRegistration(
   keyId: string,
   settings: Settings,
 ): Promise<Attestation> {
