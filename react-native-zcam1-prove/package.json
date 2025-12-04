@@ -10,16 +10,6 @@
   "author": "leruaa",
   "license": "MIT",
   "homepage": "https://github.com/leruaa/react-native-zcam1-prove#readme",
-  "devDependencies": {
-    "@react-native-community/cli": "20.0.1",
-    "@react-native/babel-preset": "0.81.1",
-    "@types/react": "^19.1.0",
-    "del-cli": "^6.0.0",
-    "react": "19.1.0",
-    "react-native": "0.81.1",
-    "react-native-builder-bob": "^0.40.16",
-    "typescript": "^5.9.2"
-  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
