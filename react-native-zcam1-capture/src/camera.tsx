@@ -126,9 +126,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const dataHash = await hashFile(originalPath);
 
     const tiff = (metadata as any)["{TIFF}"] ?? {};
-    const when: string =
+    const when =
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
-    const deviceModel: string = tiff.Model || "Unknown";
+    const deviceModel = tiff.Model || "Unknown";
+    const softwareVersion = tiff.Software || "Unknown";
 
     // 3. Build destination path for the signed asset (JPEG).
     const destinationPath =
@@ -157,15 +158,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
             parameters: {
               device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
               device_model: deviceModel,
-              software_version: Platform.OS === "ios" ? "iOS 18.1" : "unknown",
-              exposure_time: "1/120",
-              iso: 100,
-              aperture: 1.8,
-              capture_mode: "HDR",
-              location: {
-                lat: 33.5427,
-                lon: -117.7854,
-              },
+              software_version: softwareVersion,
             },
           },
         ],
