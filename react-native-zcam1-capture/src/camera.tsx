@@ -7,11 +7,9 @@ import {
 } from "react-native";
 import { Util } from "react-native-file-access";
 import { base64 } from "@scure/base";
-import { getPublicKeyFixed, sign } from "@pagopa/io-react-native-crypto";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { ManifestEditor } from "react-native-zcam1-c2pa";
-import { createCertificateChainPEM } from "./c2pa";
-import { Attestation, DeviceInfo, Settings, ZPhoto } from ".";
+import { DeviceInfo, Settings, ZPhoto } from ".";
 import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
@@ -100,10 +98,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
 
-    console.log("Format: " + format);
-
-    let publicKey = await getPublicKeyFixed(CERT_KEY_TAG);
-
     // 1. Capture using native Swift camera (preview handled by native view).
     const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
       format,
@@ -119,8 +113,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
 
-    console.log("Source", originalPath);
-
     // 2. Compute hash of the captured file (for signImageWithDataHashed).
     const dataHash = await hashFile(originalPath);
 
@@ -134,10 +126,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const destinationPath =
       Util.dirname(originalPath) +
       `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
-
-    console.log("Destination", destinationPath);
-
-    console.log("Key ID", this.props.deviceInfo.deviceKeyId);
 
     const assertion = await generateHardwareSignatureWithAssertion(
       dataHash,
@@ -183,8 +171,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       this.props.deviceInfo.contentKeyId,
       this.props.deviceInfo.certChainPem,
     );
-
-    console.log("Manifest Embedded");
 
     return new ZPhoto(originalPath, destinationPath);
   }

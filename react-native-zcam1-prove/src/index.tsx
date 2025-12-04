@@ -1,10 +1,9 @@
 import { extractManifest, ManifestEditor } from "react-native-zcam1-c2pa";
 import { generateProof, getVkHash } from "./proving";
 import { base64 } from "@scure/base";
-import { generate, getPublicKeyFixed } from "@pagopa/io-react-native-crypto";
 import {
-  CONTENT_KEY_TAG,
   getCertChain,
+  getContentPublicKey,
   getSecureEnclaveKeyId,
 } from "zcam1-common";
 import { Util } from "react-native-file-access";
@@ -22,17 +21,18 @@ export type DeviceInfo = {
 export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   let contentKeyId: Uint8Array | undefined;
 
-  const publicKey = await getPublicKeyFixed(CONTENT_KEY_TAG).catch(() => {
-    return generate(CONTENT_KEY_TAG);
-  });
+  const contentPublicKey = await getContentPublicKey();
 
-  if (publicKey.kty !== "EC") {
+  if (contentPublicKey.kty !== "EC") {
     throw "Only EC public keys are supported";
   }
 
-  contentKeyId = getSecureEnclaveKeyId(publicKey);
+  contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  const certChainPem = await getCertChain(publicKey, settings.backendUrl);
+  const certChainPem = await getCertChain(
+    contentPublicKey,
+    settings.backendUrl,
+  );
 
   console.log("Certificate Chain", certChainPem);
 

@@ -29,7 +29,6 @@
     "version": "0.55.1"
   },
   "dependencies": {
-    "@pagopa/io-react-native-crypto": "^1.2.4",
     "@scure/base": "^2.0.0",
     "react-native-file-access": "^3.2.0",
     "react-native-zcam1-c2pa": "^0.1.0",

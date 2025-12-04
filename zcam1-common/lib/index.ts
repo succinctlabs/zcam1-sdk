@@ -1,14 +1,25 @@
+import {
+  generate,
+  getPublicKeyFixed,
+  PublicKey,
+} from "@pagopa/io-react-native-crypto";
 import { base64urlnopad } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
 import fetch from "cross-fetch";
 
-export const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
+const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
 
 export interface ECKey {
   kty: "EC";
   crv: string;
   x: string;
   y: string;
+}
+
+export async function getContentPublicKey(): Promise<PublicKey> {
+  return await getPublicKeyFixed(CONTENT_KEY_TAG).catch(() => {
+    return generate(CONTENT_KEY_TAG);
+  });
 }
 
 export async function getCertChain(

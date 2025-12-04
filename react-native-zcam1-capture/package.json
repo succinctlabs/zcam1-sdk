@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
-    "@pagopa/io-react-native-crypto": "^1.2.3",
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@scure/base": "^2.0.0",
     "react-native-encrypted-storage": "^4.0.0",
