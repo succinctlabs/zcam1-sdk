@@ -1,4 +1,4 @@
-import { embedManifest, extractManifest } from "react-native-zcam1-c2pa";
+import { extractManifest, ManifestEditor } from "react-native-zcam1-c2pa";
 import { generateProof, getVkHash } from "./proving";
 import { base64 } from "@scure/base";
 import { generate, getPublicKeyFixed } from "@pagopa/io-react-native-crypto";
@@ -55,29 +55,29 @@ export async function embedProof(
     throw new Error("No device bindings found in the C2PA manifest");
   }
 
-  const proof = await generateProof(bindings, dataHash.hash, settings);
+  const manifestEditor = ManifestEditor.fromFileAndManifest(
+    originalPath,
+    store,
+  );
 
+  const proof = await generateProof(bindings, dataHash.hash, settings);
   let vkHash = await getVkHash(settings);
 
-  const manifestJSON = JSON.stringify({
-    claim_generator: "zcam1-poc/0.0.1",
-    title: "First C2PA photo!",
-    assertions: [
-      {
-        label: "succinct.bindings",
-        data: { data: base64.encode(proof), vk_hash: vkHash },
-      },
-    ],
-  });
+  manifestEditor.addAssertion(
+    "succinct.proof",
+    JSON.stringify({
+      data: base64.encode(proof),
+      vk_hash: vkHash,
+    }),
+  );
+  manifestEditor.removeAssertion("succinct.bindings");
 
   const destinationPath =
     Util.dirname(originalPath) +
     `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
-  await embedManifest(
-    originalPath,
+  await manifestEditor.embedManifestToFile(
     destinationPath,
-    manifestJSON,
     base64.decode(dataHash.hash),
     "image/jpeg",
     deviceInfo.contentKeyId,

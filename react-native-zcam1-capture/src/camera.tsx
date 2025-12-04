@@ -9,7 +9,7 @@ import { Util } from "react-native-file-access";
 import { base64 } from "@scure/base";
 import { getPublicKeyFixed, sign } from "@pagopa/io-react-native-crypto";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
-import { embedManifest } from "react-native-zcam1-c2pa";
+import { ManifestEditor } from "react-native-zcam1-c2pa";
 import { createCertificateChainPEM } from "./c2pa";
 import { Attestation, DeviceInfo, Settings, ZPhoto } from ".";
 import { hashFile } from "./crypto";
@@ -144,54 +144,48 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       this.props.deviceInfo.deviceKeyId,
     );
 
-    // 4. Build C2PA manifest.
-    const manifestJSON = JSON.stringify({
-      claim_generator: "zcam1-poc/0.0.1",
-      title: "First C2PA photo!",
-      assertions: [
-        {
-          label: "c2pa.created",
-          data: {
-            actions: [
-              {
-                action: "c2pa.capture",
-                when,
-                parameters: {
-                  device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
-                  device_model: deviceModel,
-                  software_version:
-                    Platform.OS === "ios" ? "iOS 18.1" : "unknown",
-                  exposure_time: "1/120",
-                  iso: 100,
-                  aperture: 1.8,
-                  capture_mode: "HDR",
-                  location: {
-                    lat: 33.5427,
-                    lon: -117.7854,
-                  },
-                },
+    const manifestEditor = new ManifestEditor(originalPath);
+
+    // 4. Add assertions to the manifest..
+    manifestEditor.addAssertion(
+      "c2pa.created",
+      JSON.stringify({
+        actions: [
+          {
+            action: "c2pa.capture",
+            when,
+            parameters: {
+              device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
+              device_model: deviceModel,
+              software_version: Platform.OS === "ios" ? "iOS 18.1" : "unknown",
+              exposure_time: "1/120",
+              iso: 100,
+              aperture: 1.8,
+              capture_mode: "HDR",
+              location: {
+                lat: 33.5427,
+                lon: -117.7854,
               },
-            ],
+            },
           },
-        },
-        {
-          label: "succinct.bindings",
-          data: {
-            app_id: this.props.settings.appId,
-            device_key_id: this.props.deviceInfo.deviceKeyId,
-            challenge: this.props.attestation.challenge,
-            attestation: this.props.attestation.data,
-            assertion,
-          },
-        },
-      ],
-    });
+        ],
+      }),
+    );
+
+    manifestEditor.addAssertion(
+      "succinct.bindings",
+      JSON.stringify({
+        app_id: this.props.settings.appId,
+        device_key_id: this.props.deviceInfo.deviceKeyId,
+        challenge: this.props.attestation.challenge,
+        attestation: this.props.attestation.data,
+        assertion,
+      }),
+    );
 
     // 5. Sign the captured image with C2PA, producing a new signed JPEG file.
-    embedManifest(
-      originalPath,
+    await manifestEditor.embedManifestToFile(
       destinationPath,
-      manifestJSON,
       base64.decode(dataHash),
       "image/jpeg",
       this.props.deviceInfo.contentKeyId,

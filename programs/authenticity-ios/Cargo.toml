@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 zcam1-ios.workspace = true
 base64ct.workspace = true
-sp1-zkvm.workspace = trues
+sp1-zkvm.workspace = true
