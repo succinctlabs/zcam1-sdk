@@ -1,0 +1,7 @@
+[builder.actions.auto_created_action]
+# Whether to auto create the c2pa.created action.
+enabled = true
+# The source type field is required for the c2pa.created action.
+#
+# For more information, see `c2pa::assertions::actions::source_type`.
+source_type = "http://c2pa.org/digitalsourcetype/empty"
