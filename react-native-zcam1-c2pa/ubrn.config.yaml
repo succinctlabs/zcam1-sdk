@@ -1,3 +1,4 @@
 rust:
-  directory: ./..
+  repo: https://github.com/succinctlabs/zcam
+  branch: main
   manifestPath: crates/c2pa-utils/Cargo.toml
