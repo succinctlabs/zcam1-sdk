@@ -87,70 +87,6 @@ export function extractManifest(
   );
 }
 
-export type AssertionStore = {
-  deviceBindings: DeviceBindings | undefined;
-  proof: Proof | undefined;
-  dataHash: DataHash;
-};
-
-/**
- * Generated factory for {@link AssertionStore} record objects.
- */
-export const AssertionStore = (() => {
-  const defaults = () => ({});
-  const create = (() => {
-    return uniffiCreateRecord<AssertionStore, ReturnType<typeof defaults>>(
-      defaults,
-    );
-  })();
-  return Object.freeze({
-    /**
-     * Create a frozen instance of {@link AssertionStore}, with defaults specified
-     * in Rust, in the {@link zcam1_c2pa_utils} crate.
-     */
-    create,
-
-    /**
-     * Create a frozen instance of {@link AssertionStore}, with defaults specified
-     * in Rust, in the {@link zcam1_c2pa_utils} crate.
-     */
-    new: create,
-
-    /**
-     * Defaults specified in the {@link zcam1_c2pa_utils} crate.
-     */
-    defaults: () => Object.freeze(defaults()) as Partial<AssertionStore>,
-  });
-})();
-
-const FfiConverterTypeAssertionStore = (() => {
-  type TypeName = AssertionStore;
-  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-    read(from: RustBuffer): TypeName {
-      return {
-        deviceBindings: FfiConverterOptionalTypeDeviceBindings.read(from),
-        proof: FfiConverterOptionalTypeProof.read(from),
-        dataHash: FfiConverterTypeDataHash.read(from),
-      };
-    }
-    write(value: TypeName, into: RustBuffer): void {
-      FfiConverterOptionalTypeDeviceBindings.write(value.deviceBindings, into);
-      FfiConverterOptionalTypeProof.write(value.proof, into);
-      FfiConverterTypeDataHash.write(value.dataHash, into);
-    }
-    allocationSize(value: TypeName): number {
-      return (
-        FfiConverterOptionalTypeDeviceBindings.allocationSize(
-          value.deviceBindings,
-        ) +
-        FfiConverterOptionalTypeProof.allocationSize(value.proof) +
-        FfiConverterTypeDataHash.allocationSize(value.dataHash)
-      );
-    }
-  }
-  return new FFIConverter();
-})();
-
 export type Claim = {
   signature: string;
 };
@@ -799,6 +735,7 @@ const FfiConverterTypeManifest = new FfiConverterObject(
 );
 
 export interface ManifestEditorInterface {
+  addAction(data: string) /*throws*/ : void;
   addAssertion(label: string, data: string) /*throws*/ : void;
   addTitle(title: string) /*throws*/ : void;
   embedManifestToFile(
@@ -851,6 +788,20 @@ export class ManifestEditor
         },
         /*liftString:*/ FfiConverterString.lift,
       ),
+    );
+  }
+
+  public addAction(data: string): void /*throws*/ {
+    uniffiCaller.rustCallWithError(
+      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*caller:*/ (callStatus) => {
+        nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+          uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+          FfiConverterString.lower(data),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
     );
   }
 
@@ -1222,6 +1173,14 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action() !==
+    29468
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action",
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion() !==
     51373
   ) {
@@ -1282,7 +1241,6 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
-    FfiConverterTypeAssertionStore,
     FfiConverterTypeClaim,
     FfiConverterTypeDataHash,
     FfiConverterTypeDeviceBindings,

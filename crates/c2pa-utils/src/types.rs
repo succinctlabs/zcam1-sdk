@@ -62,19 +62,44 @@ impl Manifest {
     }
 }
 
+impl Manifest {
+    pub fn action(&self, label: &str) -> Option<&Value> {
+        self.assertion_store.actions.get(label)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Claim {
     pub signature: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssertionStore {
     #[serde(rename = "succinct.bindings")]
     pub device_bindings: Option<DeviceBindings>,
     #[serde(rename = "succinct.proof")]
     pub proof: Option<Proof>,
+    #[serde(rename = "c2pa.actions.v2")]
+    pub actions: Actions,
     #[serde(rename = "c2pa.hash.data")]
     pub data_hash: DataHash,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Actions {
+    actions: Vec<Value>,
+}
+
+impl Actions {
+    pub fn get(&self, label: &str) -> Option<&Value> {
+        self.actions.iter().find(|a| {
+            a.as_object()
+                .and_then(|obj| obj.get("action"))
+                .and_then(|l| l.as_str())
+                .map(|l| l == label)
+                .unwrap_or_default()
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]

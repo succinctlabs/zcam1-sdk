@@ -6,8 +6,8 @@ use std::{
 };
 
 use c2pa::{
-    assertions::DataHash, AsyncSigner, Builder, CallbackSigner, ClaimGeneratorInfo, HashRange,
-    Reader, SigningAlg,
+    assertions::DataHash, settings::Settings, AsyncSigner, Builder, CallbackSigner,
+    ClaimGeneratorInfo, HashRange, Reader, SigningAlg,
 };
 use serde_json::Value;
 
@@ -28,6 +28,8 @@ pub struct ManifestEditor {
 impl ManifestEditor {
     #[uniffi::constructor(name = "new")]
     pub fn new(path: &str) -> Self {
+        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
+
         let mut builder = Builder::new();
 
         builder
@@ -45,16 +47,21 @@ impl ManifestEditor {
 
     #[uniffi::constructor()]
     pub fn from_file_and_manifest(path: &str, manifest: &ManifestStore) -> Result<Self, Error> {
-        let reader = Reader::from_file(path.replace("file://", ""))?;
-        let raw_store = serde_json::from_str::<ManifestStore<Value>>(&reader.json())?;
-        let raw_active_manifest = raw_store.raw_active_manifest()?;
-        let json = raw_active_manifest.to_string();
-        let mut exclusions = manifest.active_manifest()?.data_hash().exclusions.clone();
+        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 
-        let mut builder = Builder::from_json(&json)?;
+        let active_manifest = manifest.active_manifest()?;
+        let mut exclusions = active_manifest.data_hash().exclusions.clone();
 
-        for a in builder.definition.assertions.iter_mut() {
-            a.created = true;
+        let mut builder = Builder::new();
+
+        builder
+            .definition
+            .claim_generator_info
+            .push(ClaimGeneratorInfo::new("ZCAM1"));
+        builder.definition.vendor = Some("Succinct".to_string());
+
+        if let Some(capture) = active_manifest.action("c2pa.capture") {
+            builder.add_action(capture)?;
         }
 
         exclusions.sort_by_key(|e| e.start);
@@ -72,6 +79,15 @@ impl ManifestEditor {
         let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
 
         builder.definition.title = Some(title.to_string());
+
+        Ok(())
+    }
+
+    pub fn add_action(&self, data: &str) -> Result<(), Error> {
+        let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
+        let data = serde_json::from_str::<Value>(data)?;
+
+        builder.add_action(&data)?;
 
         Ok(())
     }

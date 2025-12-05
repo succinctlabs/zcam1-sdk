@@ -135,20 +135,15 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const manifestEditor = new ManifestEditor(originalPath);
 
     // 4. Add assertions to the manifest..
-    manifestEditor.addAssertion(
-      "c2pa.created",
+    manifestEditor.addAction(
       JSON.stringify({
-        actions: [
-          {
-            action: "c2pa.capture",
-            when,
-            parameters: {
-              device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
-              device_model: deviceModel,
-              software_version: softwareVersion,
-            },
-          },
-        ],
+        action: "c2pa.capture",
+        when,
+        parameters: {
+          device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
+          device_model: deviceModel,
+          software_version: softwareVersion,
+        },
       }),
     );
 

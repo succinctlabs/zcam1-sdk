@@ -56,6 +56,9 @@ protected:
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -249,6 +252,10 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value

@@ -120,6 +120,8 @@ uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
     RustBuffer path, void *manifest, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
     RustBuffer path, RustCallStatus *uniffi_out_err);
+void uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+    void *ptr, RustBuffer data, RustCallStatus *uniffi_out_err);
 void uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
     void *ptr, RustBuffer label, RustBuffer data,
     RustCallStatus *uniffi_out_err);
@@ -272,6 +274,7 @@ uint16_t uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof();
+uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title();
 uint16_t
@@ -1817,6 +1820,18 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
                 ->cpp_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
                     rt, thisVal, args, count);
           });
+  props["ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action"] =
+      jsi::Function::createFromHostFunction(
+          rt,
+          jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_c2pa_utils_fn_"
+                                        "method_manifesteditor_add_action"),
+          2,
+          [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+                 const jsi::Value *args, size_t count) -> jsi::Value {
+            return this
+                ->cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+                    rt, thisVal, args, count);
+          });
   props["ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2536,6 +2551,18 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
                     rt, thisVal, args, count);
           });
   props["ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_"
+        "action"] = jsi::Function::createFromHostFunction(
+      rt,
+      jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_c2pa_utils_checksum_"
+                                    "method_manifesteditor_add_action"),
+      0,
+      [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+             const jsi::Value *args, size_t count) -> jsi::Value {
+        return this
+            ->cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action(
+                rt, thisVal, args, count);
+      });
+  props["ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_"
         "assertion"] = jsi::Function::createFromHostFunction(
       rt,
       jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_c2pa_utils_checksum_"
@@ -2907,6 +2934,22 @@ jsi::Value NativeZcam1C2paUtils::
       rt, callInvoker, status, args[count - 1]);
 
   return uniffi_jsi::Bridging<void *>::toJs(rt, callInvoker, value);
+}
+jsi::Value NativeZcam1C2paUtils::
+    cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  RustCallStatus status =
+      uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::rustSuccess(rt);
+  uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
+      uniffi_jsi::Bridging<void *>::fromJs(rt, callInvoker, args[0]),
+      uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                             args[1]),
+      &status);
+  uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::copyIntoJs(
+      rt, callInvoker, status, args[count - 1]);
+
+  return jsi::Value::undefined();
 }
 jsi::Value NativeZcam1C2paUtils::
     cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
@@ -3690,6 +3733,15 @@ jsi::Value NativeZcam1C2paUtils::
         jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
         size_t count) {
   auto value = uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof();
+
+  return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
+}
+jsi::Value NativeZcam1C2paUtils::
+    cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  auto value =
+      uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action();
 
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }
