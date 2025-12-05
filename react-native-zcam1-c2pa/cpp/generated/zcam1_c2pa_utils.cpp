@@ -142,6 +142,8 @@ void *uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
     void *ptr, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
     RustBuffer path, RustCallStatus *uniffi_out_err);
+int8_t uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+    RustBuffer path, RustBuffer data_hash, RustCallStatus *uniffi_out_err);
 RustBuffer
 ffi_zcam1_c2pa_utils_rustbuffer_alloc(uint64_t size,
                                       RustCallStatus *uniffi_out_err);
@@ -271,6 +273,7 @@ void ffi_zcam1_c2pa_utils_rust_future_free_void(
 void ffi_zcam1_c2pa_utils_rust_future_complete_void(
     /*handle*/ uint64_t handle, RustCallStatus *uniffi_out_err);
 uint16_t uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest();
+uint16_t uniffi_zcam1_c2pa_utils_checksum_func_verify_hash();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof();
@@ -1925,6 +1928,17 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             return this->cpp_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
                 rt, thisVal, args, count);
           });
+  props["ubrn_uniffi_zcam1_c2pa_utils_fn_func_verify_hash"] =
+      jsi::Function::createFromHostFunction(
+          rt,
+          jsi::PropNameID::forAscii(
+              rt, "ubrn_uniffi_zcam1_c2pa_utils_fn_func_verify_hash"),
+          2,
+          [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+                 const jsi::Value *args, size_t count) -> jsi::Value {
+            return this->cpp_uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+                rt, thisVal, args, count);
+          });
   props["ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_u8"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2512,6 +2526,17 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
                 ->cpp_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(
                     rt, thisVal, args, count);
           });
+  props["ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash"] =
+      jsi::Function::createFromHostFunction(
+          rt,
+          jsi::PropNameID::forAscii(
+              rt, "ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash"),
+          0,
+          [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+                 const jsi::Value *args, size_t count) -> jsi::Value {
+            return this->cpp_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash(
+                rt, thisVal, args, count);
+          });
   props["ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -3076,6 +3101,23 @@ NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
       rt, callInvoker, status, args[count - 1]);
 
   return uniffi_jsi::Bridging<void *>::toJs(rt, callInvoker, value);
+}
+jsi::Value
+NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+    jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+    size_t count) {
+  RustCallStatus status =
+      uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::rustSuccess(rt);
+  auto value = uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+      uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                             args[0]),
+      uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                             args[1]),
+      &status);
+  uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::copyIntoJs(
+      rt, callInvoker, status, args[count - 1]);
+
+  return uniffi_jsi::Bridging<int8_t>::toJs(rt, callInvoker, value);
 }
 jsi::Value NativeZcam1C2paUtils::cpp_ffi_zcam1_c2pa_utils_rust_future_poll_u8(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
@@ -3709,6 +3751,14 @@ jsi::Value NativeZcam1C2paUtils::
         jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
         size_t count) {
   auto value = uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest();
+
+  return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
+}
+jsi::Value
+NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash(
+    jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+    size_t count) {
+  auto value = uniffi_zcam1_c2pa_utils_checksum_func_verify_hash();
 
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }

@@ -43,7 +43,6 @@ import {
   FfiConverterInt32,
   FfiConverterObject,
   FfiConverterOptional,
-  FfiConverterUInt32,
   FfiConverterUInt64,
   RustBuffer,
   UniffiAbstractObject,
@@ -79,6 +78,24 @@ export function extractManifest(
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
           FfiConverterString.lower(path),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    ),
+  );
+}
+export function verifyHash(
+  path: string,
+  dataHash: DataHash,
+): boolean /*throws*/ {
+  return FfiConverterBool.lift(
+    uniffiCaller.rustCallWithError(
+      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+          FfiConverterString.lower(path),
+          FfiConverterTypeDataHash.lower(dataHash),
           callStatus,
         );
       },
@@ -272,8 +289,8 @@ const FfiConverterTypeDeviceBindings = (() => {
 })();
 
 export type Exclusion = {
-  start: /*u32*/ number;
-  length: /*u32*/ number;
+  start: /*u64*/ bigint;
+  length: /*u64*/ bigint;
 };
 
 /**
@@ -309,18 +326,18 @@ const FfiConverterTypeExclusion = (() => {
   class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
     read(from: RustBuffer): TypeName {
       return {
-        start: FfiConverterUInt32.read(from),
-        length: FfiConverterUInt32.read(from),
+        start: FfiConverterUInt64.read(from),
+        length: FfiConverterUInt64.read(from),
       };
     }
     write(value: TypeName, into: RustBuffer): void {
-      FfiConverterUInt32.write(value.start, into);
-      FfiConverterUInt32.write(value.length, into);
+      FfiConverterUInt64.write(value.start, into);
+      FfiConverterUInt64.write(value.length, into);
     }
     allocationSize(value: TypeName): number {
       return (
-        FfiConverterUInt32.allocationSize(value.start) +
-        FfiConverterUInt32.allocationSize(value.length)
+        FfiConverterUInt64.allocationSize(value.start) +
+        FfiConverterUInt64.allocationSize(value.length)
       );
     }
   }
@@ -413,6 +430,7 @@ export enum Exception_Tags {
   C2pa = "C2pa",
   Json = "Json",
   Io = "Io",
+  Base64 = "Base64",
   NoActiveManifest = "NoActiveManifest",
   Poisoned = "Poisoned",
 }
@@ -483,7 +501,7 @@ export const Exception = (() => {
       return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 3;
     }
   }
-  class NoActiveManifest extends UniffiError {
+  class Base64 extends UniffiError {
     /**
      * @private
      * This field is private and should not be used.
@@ -495,6 +513,28 @@ export const Exception = (() => {
      */
     readonly [variantOrdinalSymbol] = 4;
 
+    public readonly tag = Exception_Tags.Base64;
+
+    constructor(message: string) {
+      super("Exception", "Base64", message);
+    }
+
+    static instanceOf(e: any): e is Base64 {
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 4;
+    }
+  }
+  class NoActiveManifest extends UniffiError {
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [variantOrdinalSymbol] = 5;
+
     public readonly tag = Exception_Tags.NoActiveManifest;
 
     constructor(message: string) {
@@ -502,7 +542,7 @@ export const Exception = (() => {
     }
 
     static instanceOf(e: any): e is NoActiveManifest {
-      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 4;
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 5;
     }
   }
   class Poisoned extends UniffiError {
@@ -515,7 +555,7 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [variantOrdinalSymbol] = 5;
+    readonly [variantOrdinalSymbol] = 6;
 
     public readonly tag = Exception_Tags.Poisoned;
 
@@ -524,7 +564,7 @@ export const Exception = (() => {
     }
 
     static instanceOf(e: any): e is Poisoned {
-      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 5;
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 6;
     }
   }
 
@@ -536,6 +576,7 @@ export const Exception = (() => {
     C2pa,
     Json,
     Io,
+    Base64,
     NoActiveManifest,
     Poisoned,
     instanceOf,
@@ -564,9 +605,12 @@ const FfiConverterTypeError = (() => {
           return new Exception.Io(FfiConverterString.read(from));
 
         case 4:
-          return new Exception.NoActiveManifest(FfiConverterString.read(from));
+          return new Exception.Base64(FfiConverterString.read(from));
 
         case 5:
+          return new Exception.NoActiveManifest(FfiConverterString.read(from));
+
+        case 6:
           return new Exception.Poisoned(FfiConverterString.read(from));
 
         default:
@@ -1146,6 +1190,14 @@ function uniffiEnsureInitialized() {
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash() !==
+    4643
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_func_verify_hash",
     );
   }
   if (

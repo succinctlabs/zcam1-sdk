@@ -105,6 +105,11 @@ interface NativeModuleInterface {
     path: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
+    path: Uint8Array,
+    dataHash: Uint8Array,
+    uniffi_out_err: UniffiRustCallStatus,
+  ): number;
   ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_u8(
     handle: bigint,
     callback: UniffiRustFutureContinuationCallback,
@@ -251,6 +256,7 @@ interface NativeModuleInterface {
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_data_hash(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifest_proof(): number;

@@ -2,7 +2,8 @@ import { base64 } from "@scure/base";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import {
   extractManifest,
-  ManifestStoreInterface,
+  ManifestInterface,
+  verifyHash,
 } from "react-native-zcam1-c2pa";
 import installer from "./NativeZcam1Verify";
 
@@ -35,20 +36,31 @@ if (!initialized) {
   initialized = true;
 }
 
-export function verifyProofFromFile(path: string, vkHash: string): boolean {
-  const store = extractManifest(path);
-  return verifyProofFromStore(store, vkHash);
+export class VerifiableFile {
+  path: string;
+  activeManifest: ManifestInterface;
+
+  constructor(path: string) {
+    const store = extractManifest(path);
+
+    this.path = path;
+    this.activeManifest = store.activeManifest();
+  }
+
+  verifyHash(): boolean {
+    return verifyHash(this.path, this.activeManifest.dataHash());
+  }
+
+  verifyProof(): boolean {
+    return verifyProofFromManifest(this.activeManifest);
+  }
 }
 
-export function verifyProofFromStore(
-  store: ManifestStoreInterface,
-  vkHash: string,
-): boolean {
-  const activeManifest = store.activeManifest();
+function verifyProofFromManifest(activeManifest: ManifestInterface): boolean {
   let proof = activeManifest.proof();
 
   if (proof === undefined) {
-    throw new Error("THe proof was not found in the manifest");
+    throw new Error("The proof was not found in the manifest");
   }
 
   let dataHashB64 = activeManifest.dataHash().hash;

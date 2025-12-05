@@ -9,13 +9,22 @@ import {
   getSecureEnclaveKeyId,
 } from "zcam1-common";
 
+/**
+ * Camera component for capturing photos with secure enclave integration.
+ */
 export { ZCamera } from "./camera";
 
+/**
+ * Attestation data containing the device attestation and challenge used for verification.
+ */
 export type Attestation = {
   data: string;
   challenge: string;
 };
 
+/**
+ * Device registration information including keys, certificate chain, and attestation.
+ */
 export type DeviceInfo = {
   deviceKeyId: string;
   contentKeyId: Uint8Array;
@@ -23,12 +32,18 @@ export type DeviceInfo = {
   attestation: Attestation;
 };
 
+/**
+ * Configuration settings for device initialization and backend communication.
+ */
 export type Settings = {
   backendUrl: string;
   appId: string;
   production: boolean;
 };
 
+/**
+ * Represents a captured photo with its original and processed file paths.
+ */
 export class ZPhoto {
   originalPath: string;
   path: string;
@@ -39,6 +54,11 @@ export class ZPhoto {
   }
 }
 
+/**
+ * Initializes the device by generating keys, obtaining certificate chain, and registering with the backend.
+ * @param settings - Configuration settings for initialization
+ * @returns Device information including keys, certificate chain, and attestation
+ */
 export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   let deviceKeyId: string | undefined;
   let contentKeyId: Uint8Array | undefined;
@@ -70,6 +90,12 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   return { deviceKeyId, contentKeyId, certChainPem, attestation };
 }
 
+/**
+ * Updates device registration by performing attestation with the backend.
+ * @param keyId - The hardware key identifier
+ * @param settings - Configuration settings for registration
+ * @returns Attestation data and challenge
+ */
 export async function updateRegistration(
   keyId: string,
   settings: Settings,
