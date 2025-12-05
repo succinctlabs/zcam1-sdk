@@ -1,8 +1,7 @@
 import { PublicKey } from "@pagopa/io-react-native-crypto";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { sha1 } from "@noble/hashes/legacy.js";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
-import { base64url, base64, base64urlnopad } from "@scure/base";
+import { base64url, base64 } from "@scure/base";
 import { FileSystem } from "react-native-file-access";
 
 export function jwkThumbprintB64Url(jwk: PublicKey): string {

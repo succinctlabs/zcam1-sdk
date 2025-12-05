@@ -13,12 +13,6 @@ export interface TakeNativePhotoOptions {
    * Ignored for DNG.
    */
   quality?: number;
-
-  /**
-   * If true, the native side may also save the photo into
-   * the system photo library in addition to returning a file path.
-   */
-  saveToCameraRoll?: boolean;
 }
 
 export interface TakeNativePhotoResult {
@@ -40,37 +34,6 @@ export interface TakeNativePhotoResult {
 }
 
 export interface Spec extends TurboModule {
-  // C2PA: Ensure a Secure Enclave key exists for the given key tag.
-  // Returns true if the key exists or was created.
-  ensureSecureEnclaveKey(keyTag: string): Promise<boolean>;
-
-  // C2PA: Export the public key in PEM format for the given key tag.
-  exportPublicKeyPEM(keyTag: string): Promise<string>;
-
-  // C2PA: Create a self-signed certificate (PEM) using the Secure Enclave key identified by keyTag.
-  createSelfSignedCertificatePEM(
-    keyTag: string,
-    commonName: string,
-    organization?: string,
-    organizationalUnit?: string,
-    country?: string,
-    locality?: string,
-    stateOrProvince?: string,
-    validDays?: number,
-  ): Promise<string>;
-
-  // C2PA: Create a certificate chain (end-entity, intermediate, root) using the Secure Enclave key identified by keyTag.
-  createCertificateChainPEM(
-    keyTag: string,
-    commonName: string,
-    organization: string,
-    organizationalUnit?: string,
-    country?: string,
-    locality?: string,
-    stateOrProvince?: string,
-    validDays?: number,
-  ): Promise<string>;
-
   /**
    * Capture a photo using the native camera stack (Swift/AVFoundation)
    * without going through react-native-vision-camera.
