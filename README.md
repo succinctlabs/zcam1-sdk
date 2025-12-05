@@ -24,6 +24,18 @@ zcam1-sdk/
 │  └─ verify/                   # Example using `react-native-zcam1-verify`
 ```
 
+## Prerequisites
+
+To build the iOS UniFFI-based C2PA bindings used by `react-native-zcam1-c2pa`, you only need the Rust toolchain with the iOS targets installed via `rustup`:
+
+```/dev/null/ios-rust-targets.sh#L1-3
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+```
+
+> [!CAUTION]
+> The UniFFI binidings are built when the React Native libraries are installed with `npm install`. It's expected to takes a lot of time.
+
+
 ## `react-native-zcam1-capture`
 
 `react-native-zcam1-capture` is the React Native Capture SDK used to acquire photos on-device and produce C2PA-signed assets bound to hardware-backed integrity signals.
