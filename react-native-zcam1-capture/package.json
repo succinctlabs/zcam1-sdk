@@ -32,9 +32,5 @@
   "peerDependencies": {
     "react": ">=19",
     "react-native": ">=0.81"
-  },
-  "scripts": {
-    "android": "expo run:android",
-    "ios": "expo run:ios"
   }
 }

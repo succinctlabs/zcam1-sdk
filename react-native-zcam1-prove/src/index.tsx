@@ -45,8 +45,6 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
     settings.backendUrl,
   );
 
-  console.log("Certificate Chain", certChainPem);
-
   return { contentKeyId, certChainPem };
 }
 
