@@ -2,3 +2,5 @@ rust:
   repo: https://github.com/succinctlabs/example-sp1-wasm-verifier
   branch: aurelien/add-uniffi-bindings
   manifestPath: uniffi-verifier/Cargo.toml
+turboModule:
+  entrypoint: src/verifier.tsx
