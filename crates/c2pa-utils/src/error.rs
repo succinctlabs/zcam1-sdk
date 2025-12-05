@@ -12,6 +12,9 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    #[error(transparent)]
+    Base64(#[from] base64ct::Error),
+
     #[error("No active manifest")]
     NoActiveManifest,
 

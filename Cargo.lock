@@ -9301,6 +9301,7 @@ name = "zcam1-c2pa-utils"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64ct",
  "c2pa 0.72.0",
  "futures",
  "pem",

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use c2pa::HashRange;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -126,8 +127,20 @@ pub struct DataHash {
     pub exclusions: Vec<Exclusion>,
 }
 
+impl DataHash {
+    pub fn as_hash_ranges(&self) -> Vec<HashRange> {
+        self.exclusions.iter().map(Into::into).collect()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Exclusion {
-    pub start: u32,
-    pub length: u32,
+    pub start: u64,
+    pub length: u64,
+}
+
+impl From<&Exclusion> for HashRange {
+    fn from(value: &Exclusion) -> Self {
+        Self::new(value.start, value.length)
+    }
 }
