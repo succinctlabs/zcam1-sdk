@@ -1,4 +1,4 @@
 rust:
-  repo: https://github.com/succinctlabs/zcam
+  repo: git@github.com:succinctlabs/zcam1.git
   branch: main
   manifestPath: crates/c2pa-utils/Cargo.toml
