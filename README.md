@@ -6,7 +6,7 @@ This repository hosts the ZCAM1 authenticity stack, combining a Rust backend, iO
 
 ```
 zcam1-sdk/
-├─ backend/                       # Rust HTTP server and orchestration layer
+├─ [backend]/                     # Rust HTTP server and orchestration layer
 ├─ crates/                        # Shared Rust crates used across the workspace
 │  ├─ common/                     # Core ZCAM1 primitives (proving, certificate logic, etc.)
 │  ├─ ios/                        # iOS-specific Rust logic (certificate & C2PA helpers, proving)
@@ -25,6 +25,7 @@ zcam1-sdk/
 │  └─ verify/                     # Example using `react-native-zcam1-verify`
 ```
 
+[backend]: backend/README.md
 [react-native-zcam1-capture]: react-native-zcam1-capturey/README.md
 [react-native-zcam1-prove]: react-native-zcam1-provey/README.md
 [react-native-zcam1-verify]: react-native-zcam1-verify/README.md
