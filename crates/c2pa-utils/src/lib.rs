@@ -8,10 +8,10 @@ use crate::{
     types::{DataHash, ManifestStore},
 };
 
-mod error;
+pub mod error;
 mod manifest_editor;
 mod signing;
-mod types;
+pub mod types;
 
 uniffi::setup_scaffolding!();
 

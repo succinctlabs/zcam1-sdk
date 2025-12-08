@@ -9377,6 +9377,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-verifier"
+version = "0.1.0"
+dependencies = [
+ "base64ct",
+ "sp1-verifier",
+ "thiserror 2.0.17",
+ "zcam1-c2pa-utils",
+]
+
+[[package]]
 name = "zerocopy"
 version = "0.8.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"

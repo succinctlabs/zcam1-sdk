@@ -15,6 +15,7 @@ sp1-build = "5.2.3"
 sp1-sdk = "5.2.3"
 sp1-prover = "5.2.3"
 sp1-zkvm = "5.2.3"
+sp1-verifier = "5.2.3"
 
 # misc
 base64ct = "1.6.0"

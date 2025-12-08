@@ -11,6 +11,7 @@ zcam1-sdk/
 │  ├─ common/                     # Core ZCAM1 primitives (proving, certificate logic, etc.)
 │  ├─ ios/                        # iOS-specific Rust logic (certificate & C2PA helpers, proving)
 │  └─ c2pa-utils/                 # Rust utilities & FFI surface for C2PA integration
+│  ├─ verifier/                   # Rust verifier for ZCAM1 proofs and picture hashes
 ├─ programs/
 │  └─ authenticity-ios/           # Rust program for iOS authenticity / proving flows
 ├─ [react-native-zcam1-capture]/  # React Native Capture SDK (recording + secure storage)
