@@ -15,6 +15,8 @@ update-react-native-zcam1-capture $NPM_CONFIG_REGISTRY: (update-react-native-zca
     cd react-native-zcam1-capture
     npm rm react-native-zcam1-c2pa
     npm i react-native-zcam1-c2pa@latest --force
+    npm rm zcam1-common
+    npm i zcam1-common@latest --force
     npm unpublish --force
     npm publish
 
@@ -23,6 +25,8 @@ update-react-native-zcam1-prove $NPM_CONFIG_REGISTRY: (update-react-native-zcam1
     cd react-native-zcam1-prove
     npm rm react-native-zcam1-c2pa
     npm i react-native-zcam1-c2pa@latest --force
+    npm rm zcam1-common
+    npm i zcam1-common@latest --force
     npm unpublish --force
     npm publish
 
