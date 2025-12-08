@@ -10,17 +10,12 @@ At a high level it provides:
 
 The Expo example app in `examples/capture` shows a complete usage flow.
 
-## Installation (React Native / Expo)
+## Installation
 
-Add the capture SDK and its dependencies to your app:
-
-- Add the package: `react-native-zcam1-capture`
-
-Then run CocoaPods installation for iOS:
-
-- From your app root: `cd ios && pod install`
-
-Make sure your iOS project is configured for the camera (e.g. `NSCameraUsageDescription` in `Info.plist`).
+```bash
+npm i react-native-zcam1-capture
+cd ios && pod install
+```
 
 ## Backend requirements
 

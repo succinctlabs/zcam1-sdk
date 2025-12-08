@@ -12,6 +12,13 @@ At a high level it provides:
   - Exposes `verifyHash()` to confirm the file’s contents match the manifest’s data hash.
   - Exposes `verifyProof()` to validate the embedded proof against the file’s hash and a fixed Apple root certificate.
 
+## Installation
+
+```bash
+npm i react-native-zcam1-verify
+cd ios && pod install
+```
+
 ## Basic usage
 
 A typical usage pattern is:

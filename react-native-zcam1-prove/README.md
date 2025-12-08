@@ -13,6 +13,13 @@ At a high level it provides:
     - Remove the original `succinct.bindings` assertion.
   - Re-signs the image and writes a new JPEG with the updated manifest.
 
+## Installation
+
+```bash
+npm i react-native-zcam1-prove
+cd ios && pod install
+```
+
 ## Backend requirements
 
 The proving SDK expects a backend that can:
