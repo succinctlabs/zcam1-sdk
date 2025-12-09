@@ -221,7 +221,6 @@ const FfiConverterTypeDataHash = (() => {
 export type DeviceBindings = {
   appId: string;
   deviceKeyId: string;
-  challenge: string;
   attestation: string;
   assertion: string;
 };
@@ -263,7 +262,6 @@ const FfiConverterTypeDeviceBindings = (() => {
       return {
         appId: FfiConverterString.read(from),
         deviceKeyId: FfiConverterString.read(from),
-        challenge: FfiConverterString.read(from),
         attestation: FfiConverterString.read(from),
         assertion: FfiConverterString.read(from),
       };
@@ -271,7 +269,6 @@ const FfiConverterTypeDeviceBindings = (() => {
     write(value: TypeName, into: RustBuffer): void {
       FfiConverterString.write(value.appId, into);
       FfiConverterString.write(value.deviceKeyId, into);
-      FfiConverterString.write(value.challenge, into);
       FfiConverterString.write(value.attestation, into);
       FfiConverterString.write(value.assertion, into);
     }
@@ -279,7 +276,6 @@ const FfiConverterTypeDeviceBindings = (() => {
       return (
         FfiConverterString.allocationSize(value.appId) +
         FfiConverterString.allocationSize(value.deviceKeyId) +
-        FfiConverterString.allocationSize(value.challenge) +
         FfiConverterString.allocationSize(value.attestation) +
         FfiConverterString.allocationSize(value.assertion)
       );
