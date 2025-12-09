@@ -28,6 +28,10 @@ export type DeviceInfo = {
  * Initializes the device by obtaining the content public key and certificate chain.
  * @param settings - Configuration settings for initialization
  * @returns Device information including content key ID and certificate chain
+ *
+ * Note: If the proofs are generated on the same app where the photos are captured,
+ * call the initDevice() function from `react-native-zcam1-capture` instead of
+ * this one.
  */
 export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   let contentKeyId: Uint8Array | undefined;
@@ -76,9 +80,11 @@ export async function embedProof(
     store,
   );
 
+  // Generate the proof
   const proof = await generateProof(bindings, dataHash.hash, settings);
   let vkHash = await getVkHash(settings);
 
+  // Include the proof to the C2PA manifest
   manifestEditor.addAssertion(
     "succinct.proof",
     JSON.stringify({
@@ -92,6 +98,7 @@ export async function embedProof(
     Util.dirname(originalPath) +
     `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
+  // Embed the manifest to the photo
   await manifestEditor.embedManifestToFile(
     destinationPath,
     base64.decode(dataHash.hash),

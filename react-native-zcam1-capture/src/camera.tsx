@@ -98,7 +98,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
 
-    // 1. Capture using native Swift camera (preview handled by native view).
+    // Capture using native Swift camera (preview handled by native view).
     const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
       format,
       "back",
@@ -113,7 +113,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
 
-    // 2. Compute hash of the captured file (for signImageWithDataHashed).
+    // Compute hash of the captured file (for signImageWithDataHashed).
     const dataHash = await hashFile(originalPath);
 
     const tiff = (metadata as any)["{TIFF}"] ?? {};
@@ -122,7 +122,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
 
-    // 3. Build destination path for the signed asset (JPEG).
+    // Build destination path for the signed asset (JPEG).
     const destinationPath =
       Util.dirname(originalPath) +
       `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
@@ -134,7 +134,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const manifestEditor = new ManifestEditor(originalPath);
 
-    // 4. Add assertions to the manifest..
+    // Add the "capture" action to the manifest.
     manifestEditor.addAction(
       JSON.stringify({
         action: "c2pa.capture",
@@ -147,6 +147,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }),
     );
 
+    // Add an assertion containing all data needed to later generate a  proof
     manifestEditor.addAssertion(
       "succinct.bindings",
       JSON.stringify({
@@ -158,7 +159,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }),
     );
 
-    // 5. Sign the captured image with C2PA, producing a new signed JPEG file.
+    // Sign the captured image with C2PA, producing a new signed JPEG file.
     await manifestEditor.embedManifestToFile(
       destinationPath,
       base64.decode(dataHash),
@@ -170,7 +171,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     return new ZPhoto(originalPath, destinationPath);
   }
 
-  /** Render the native Swift camera preview view. */
+  /* Render the native Swift camera preview view. */
   public render(): React.ReactNode {
     const {
       isActive = true,

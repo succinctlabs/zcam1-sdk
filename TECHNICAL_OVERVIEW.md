@@ -32,9 +32,7 @@
 5. A new C2PA manifest is constructed, including the proof
 6. The C2PA manifest claim is signed with the content key generated ay bootstrap and embedded into the file
 
-### SP1 program breakdown
-
-#### Proof inputs
+### Proof inputs
 
 * App Attest attestation
 * App Attest assertion
