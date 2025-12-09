@@ -26,10 +26,10 @@ pub enum Challenge {
     Trusted(String),
 }
 
-#[derive(Debug, Clone)]
-pub enum ProofRequest {
-    Requested,
-    Fulfilled(Arc<SP1ProofWithPublicValues>),
+impl Challenge {
+    pub fn is_trusted(&self) -> bool {
+        matches!(self, Challenge::Trusted(_))
+    }
 }
 
 impl Display for Challenge {
@@ -39,6 +39,12 @@ impl Display for Challenge {
             Challenge::Trusted(c) => write!(f, "{c}"),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum ProofRequest {
+    Requested,
+    Fulfilled(Arc<SP1ProofWithPublicValues>),
 }
 
 #[derive(Debug, Default)]

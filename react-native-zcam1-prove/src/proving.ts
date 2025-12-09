@@ -61,7 +61,6 @@ async function requestProof(
       keyId: deviceBindings.deviceKeyId,
       dataHash,
       appId: deviceBindings.appId,
-      challenge: deviceBindings.challenge,
       appAttestProduction: settings.production,
     }),
   });

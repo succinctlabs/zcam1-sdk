@@ -42,7 +42,7 @@ Validate device attestation and mark as trusted.
   "attestation": "base64-encoded-attestation",
   "keyId": "base64-encoded-key-id",
   "appId": "team-id.bundle-identifier",
-  "production": false
+  "production": boolean
 }
 ```
 
@@ -67,9 +67,8 @@ Request zero-knowledge proof generation for an authenticated action.
   "assertion": "base64-encoded-assertion",
   "keyId": "base64-encoded-key-id",
   "dataHash": "base64-encoded-hash",
-  "challenge": "challenge-string",
   "appId": "team-id.bundle-identifier",
-  "appAttestProduction": false
+  "appAttestProduction": boolean
 }
 ```
 

@@ -15,21 +15,13 @@ import {
 export { ZCamera } from "./camera";
 
 /**
- * Attestation data containing the device attestation and challenge used for verification.
- */
-export type Attestation = {
-  data: string;
-  challenge: string;
-};
-
-/**
  * Device registration information including keys, certificate chain, and attestation.
  */
 export type DeviceInfo = {
   deviceKeyId: string;
   contentKeyId: Uint8Array;
   certChainPem: string;
-  attestation: Attestation;
+  attestation: string;
 };
 
 /**
@@ -99,7 +91,7 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
 export async function updateRegistration(
   keyId: string,
   settings: Settings,
-): Promise<Attestation> {
+): Promise<string> {
   let response = await fetch(settings.backendUrl + "/ios/register/init", {
     method: "POST",
     headers: {
@@ -132,5 +124,5 @@ export async function updateRegistration(
     throw "failed to validate:" + (await response.text());
   }
 
-  return { data: attestation, challenge };
+  return attestation;
 }

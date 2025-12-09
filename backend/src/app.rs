@@ -79,8 +79,22 @@ async fn request_proof(
     let request_id = state.db.create_proof_request();
     let cloned_request_id = request_id.clone();
 
+    let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            "The device is not known".to_string(),
+        )
+    })?;
+
+    if !challenge.is_trusted() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "This device is not trusted".to_string(),
+        ));
+    }
+
     tokio::spawn(async move {
-        let inputs = AuthInputs::from(&params);
+        let inputs = params.into_auth_inputs(challenge.to_string());
         let proof = state.prover.prove(inputs).unwrap();
 
         state.db.fulfill_proof_request(cloned_request_id, proof);
@@ -173,21 +187,20 @@ pub struct IosRequestProofParams {
     pub assertion: String,   // b64
     pub key_id: String,      // b64
     pub data_hash: String,   // b64
-    pub challenge: String,
     pub app_id: String,
     pub app_attest_production: bool,
 }
 
-impl From<&IosRequestProofParams> for AuthInputs {
-    fn from(value: &IosRequestProofParams) -> Self {
-        Self {
-            attestation: value.attestation.clone(),
-            assertion: value.assertion.clone(),
-            key_id: value.key_id.clone(),
-            data_hash: Base64::decode_vec(&value.data_hash).unwrap(),
-            challenge: value.challenge.clone(),
-            app_id: value.app_id.clone(),
-            app_attest_production: value.app_attest_production,
+impl IosRequestProofParams {
+    pub fn into_auth_inputs(self, challenge: String) -> AuthInputs {
+        AuthInputs {
+            attestation: self.attestation,
+            assertion: self.assertion,
+            key_id: self.key_id,
+            data_hash: Base64::decode_vec(&self.data_hash).unwrap(),
+            challenge,
+            app_id: self.app_id,
+            app_attest_production: self.app_attest_production,
         }
     }
 }

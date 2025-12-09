@@ -153,8 +153,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       JSON.stringify({
         app_id: this.props.settings.appId,
         device_key_id: this.props.deviceInfo.deviceKeyId,
-        challenge: this.props.deviceInfo.attestation.challenge,
-        attestation: this.props.deviceInfo.attestation.data,
+        attestation: this.props.deviceInfo.attestation,
         assertion,
       }),
     );

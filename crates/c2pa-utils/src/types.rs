@@ -107,7 +107,6 @@ impl Actions {
 pub struct DeviceBindings {
     pub app_id: String,
     pub device_key_id: String,
-    pub challenge: String,
     pub attestation: String,
     pub assertion: String,
 }
