@@ -68,7 +68,7 @@ Request zero-knowledge proof generation for an authenticated action.
   "keyId": "base64-encoded-key-id",
   "dataHash": "base64-encoded-hash",
   "appId": "team-id.bundle-identifier",
-  "appAttestProduction": boolean
+  "appAttestProduction": true | false
 }
 ```
 

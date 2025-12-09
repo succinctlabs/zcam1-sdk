@@ -37,7 +37,6 @@ async fn bootstrap_init(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterInitRequest>,
 ) -> Result<String, (StatusCode, String)> {
-    println!("INIT");
     let mut buf = [0u8; 16];
 
     getrandom::fill(&mut buf)
@@ -57,7 +56,6 @@ async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
-    println!("REGISTER");
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
@@ -74,8 +72,6 @@ async fn bootstrap_register(
     if is_valid {
         state.db.mark_device_as_trusted(params.key_id);
     }
-
-    println!("is_valid: {is_valid}");
 
     Ok(())
 }
