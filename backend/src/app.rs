@@ -29,6 +29,10 @@ pub fn build_app() -> Router {
         .with_state(Arc::new(state))
 }
 
+/// Initializes a new device registration by generating a random challenge.
+///
+/// This endpoint creates a new challenge for the device identified by `key_id`
+/// and stores it in the database for later validation.
 async fn bootstrap_init(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterInitRequest>,
@@ -45,6 +49,10 @@ async fn bootstrap_init(
     Ok(challenge)
 }
 
+/// Validates a device registration by verifying the attestation against the stored challenge.
+///
+/// This endpoint verifies the attestation provided by the device and marks it as trusted
+/// if the verification succeeds.
 async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
@@ -72,6 +80,11 @@ async fn bootstrap_register(
     Ok(())
 }
 
+/// Requests a proof generation for an authenticated device.
+///
+/// This endpoint initiates an asynchronous proof generation process for a trusted device.
+/// It validates that the device is known and trusted, then spawns a background task to
+/// generate the proof. Returns a request ID that can be used to poll for the proof result.
 async fn request_proof(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRequestProofParams>,
@@ -103,6 +116,11 @@ async fn request_proof(
     Ok(request_id)
 }
 
+/// Retrieves the status of a proof request by its ID.
+///
+/// This endpoint returns the proof bytes if the request has been fulfilled,
+/// returns a 202 Accepted status if the proof is still being generated,
+/// or returns a 404 if the request ID is not found.
 async fn proof(
     State(state): State<Arc<RequestState>>,
     Path(id): Path<String>,
