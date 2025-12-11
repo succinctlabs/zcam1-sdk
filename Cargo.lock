@@ -9380,6 +9380,9 @@ dependencies = [
  "sp1-build",
  "sp1-sdk",
  "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
  "zcam1-common",
  "zcam1-ios",
 ]
