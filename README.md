@@ -25,10 +25,10 @@ This repository hosts the ZCAM1 authenticity stack, combining a Rust backend, iO
   * e2e: E2E example`
 
 [backend]: ./backend/README.md
-[react-native-zcam1-capture]: react-native-zcam1-capturey/README.md
-[react-native-zcam1-prove]: react-native-zcam1-provey/README.md
-[react-native-zcam1-verify]: react-native-zcam1-verify/README.md
-[react-native-zcam1-verify]: react-native-zcam1-picker/README.md
+[react-native-zcam1-capture]: ./react-native-zcam1-capture/README.md
+[react-native-zcam1-prove]: ./react-native-zcam1-prove/README.md
+[react-native-zcam1-verify]: ./react-native-zcam1-verify/README.md
+[react-native-zcam1-verify]: ./react-native-zcam1-picker/README.md
 
 ## Prerequisites
 
