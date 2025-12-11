@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use serde::Serialize;
 use sp1_sdk::SP1ProofWithPublicValues;
 
 pub trait Database {
@@ -18,6 +19,8 @@ pub trait Database {
     fn get_proof_request(&self, id: &str) -> Option<ProofRequest>;
 
     fn fulfill_proof_request(&self, id: String, proof: SP1ProofWithPublicValues);
+
+    fn stats(&self) -> Stats;
 }
 
 #[derive(Debug, Clone)]
@@ -88,9 +91,9 @@ impl Database for InMemoryDatabase {
     }
 
     fn get_proof_request(&self, id: &str) -> Option<ProofRequest> {
-        let proof_requests_by_ids = self.proof_requests_by_ids.read().unwrap();
+        let mut proof_requests_by_ids = self.proof_requests_by_ids.write().unwrap();
 
-        proof_requests_by_ids.get(id).cloned()
+        proof_requests_by_ids.remove(id)
     }
 
     fn fulfill_proof_request(&self, id: String, proof: SP1ProofWithPublicValues) {
@@ -98,4 +101,33 @@ impl Database for InMemoryDatabase {
 
         proof_requests_by_ids.insert(id, ProofRequest::Fulfilled(Arc::new(proof)));
     }
+
+    fn stats(&self) -> Stats {
+        let challenges_by_key_ids = self.challenges_by_key_ids.read().unwrap();
+        let proof_requests_by_ids = self.proof_requests_by_ids.read().unwrap();
+        let trusted_challenge_count = challenges_by_key_ids
+            .iter()
+            .filter(|(_, challenge)| challenge.is_trusted())
+            .count();
+        let requested_proof_count = proof_requests_by_ids
+            .iter()
+            .filter(|(_, request)| matches!(request, ProofRequest::Requested))
+            .count();
+
+        Stats {
+            untrusted_challenge_count: trusted_challenge_count - challenges_by_key_ids.len(),
+            trusted_challenge_count,
+            requested_proof_count,
+            fulfilled_proof_count: requested_proof_count - proof_requests_by_ids.len(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Stats {
+    pub untrusted_challenge_count: usize,
+    pub trusted_challenge_count: usize,
+    pub requested_proof_count: usize,
+    pub fulfilled_proof_count: usize,
 }

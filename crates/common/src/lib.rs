@@ -1,5 +1,5 @@
 mod db;
-pub use db::{Database, InMemoryDatabase, ProofRequest};
+pub use db::{Database, InMemoryDatabase, ProofRequest, Stats};
 
 mod certs;
 pub use certs::{CertsError, generate_cert_chain};

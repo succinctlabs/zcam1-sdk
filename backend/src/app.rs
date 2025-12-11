@@ -10,7 +10,7 @@ use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use zcam1_common::{
-    Database, InMemoryDatabase, ProofRequest, ProvingClient, Verifier, generate_cert_chain,
+    Database, InMemoryDatabase, ProofRequest, ProvingClient, Stats, Verifier, generate_cert_chain,
 };
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
@@ -26,6 +26,7 @@ pub fn build_app() -> Router {
         .route("/ios/proof/{id}", get(proof))
         .route("/ios/vk", get(vk_hash))
         .route("/cert-chain", post(cert_chain))
+        .route("/health", get(health))
         .with_state(Arc::new(state))
 }
 
@@ -146,6 +147,10 @@ async fn cert_chain(Json(jwt): Json<Value>) -> Result<String, (StatusCode, Strin
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
     Ok(cert_chain)
+}
+
+async fn health(State(state): State<Arc<RequestState>>) -> Json<Stats> {
+    Json(state.db.stats())
 }
 
 struct RequestState {
