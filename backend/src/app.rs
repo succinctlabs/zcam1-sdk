@@ -9,6 +9,7 @@ use axum::{
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::info;
 use zcam1_common::{
     Database, InMemoryDatabase, ProofRequest, ProvingClient, Stats, Verifier, generate_cert_chain,
 };
@@ -44,7 +45,11 @@ async fn bootstrap_init(
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
     let challenge = hex::encode(buf);
 
-    state.db.init_device(params.key_id, challenge.clone());
+    state
+        .db
+        .init_device(params.key_id.clone(), challenge.clone());
+
+    info!("Initialized device {}", params.key_id);
 
     Ok(challenge)
 }
@@ -60,7 +65,7 @@ async fn bootstrap_register(
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
-            "This content pub key is not known".to_string(),
+            format!("The device {} is not initialized", params.app_id),
         )
     })?;
 
@@ -92,14 +97,14 @@ async fn request_proof(
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
-            "The device is not known".to_string(),
+            format!("The device {} is not registered", params.key_id),
         )
     })?;
 
     if !challenge.is_trusted() {
         return Err((
             StatusCode::UNAUTHORIZED,
-            "This device is not trusted".to_string(),
+            format!("The device {} is not trusted", params.key_id),
         ));
     }
 

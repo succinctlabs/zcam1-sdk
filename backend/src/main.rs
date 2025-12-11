@@ -1,5 +1,9 @@
 use clap::Parser;
-use tracing::{info, level_filters::LevelFilter};
+use tower_http::{
+    classify::{SharedClassifier, StatusInRangeAsFailures},
+    trace::{DefaultOnFailure, TraceLayer},
+};
+use tracing::{Level, info, level_filters::LevelFilter, warn};
 use tracing_appender::rolling;
 use tracing_subscriber::{
     EnvFilter, Layer, fmt::layer, layer::SubscriberExt, util::SubscriberInitExt,
@@ -12,17 +16,20 @@ mod cli;
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().unwrap();
+    if let Err(err) = dotenvy::dotenv() {
+        warn!("Failed to load .env file: {}", err);
+    }
 
     let args = Args::parse();
 
-    let app = build_app();
+    // Classify BOTH 4xx and 5xx as failures
+    let classifier = SharedClassifier::new(StatusInRangeAsFailures::new(400..=599));
+
+    let app = build_app()
+        .layer(TraceLayer::new(classifier).on_failure(DefaultOnFailure::new().level(Level::ERROR)));
 
     let (file_layer, _guard) = if let Some(logs_path) = args.logs_path {
-        // Create a rolling file appender
         let file_appender = rolling::never(logs_path, "logs.txt");
-
-        // Create a layer that writes to the file
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
         let layer = layer()
