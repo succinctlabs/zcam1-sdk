@@ -15,17 +15,20 @@ This repository hosts the ZCAM1 authenticity stack, combining a Rust backend, iO
 * [react-native-zcam1-capture]: React Native Capture SDK (recording + secure storage)
 * [react-native-zcam1-prove]: React Native Proving SDK (proof generation client)
 * [react-native-zcam1-verify]: React Native Verify SDK (proof & C2PA verification)
+* [react-native-zcam1-picker]: React Native image picker component
 * react-native-zcam1-c2pa: React Native bridge over the C2PA Rust layer
 * zcam1-common: TypeScript/JS low‑level utilities shared across RN SDKs
 * examples: Expo example apps demonstrating SDK usage
   * capture: Example using `react-native-zcam1-capture`
   * prove: Example using `react-native-zcam1-prove`
   * verify: Example using `react-native-zcam1-verify`
+  * e2e: E2E example`
 
 [backend]: ./backend/README.md
-[react-native-zcam1-capture]: ./react-native-zcam1-capturey/README.md
-[react-native-zcam1-prove]: ./react-native-zcam1-provey/README.md
-[react-native-zcam1-verify]: ./react-native-zcam1-verify/README.md
+[react-native-zcam1-capture]: react-native-zcam1-capturey/README.md
+[react-native-zcam1-prove]: react-native-zcam1-provey/README.md
+[react-native-zcam1-verify]: react-native-zcam1-verify/README.md
+[react-native-zcam1-verify]: react-native-zcam1-picker/README.md
 
 ## Prerequisites
 
