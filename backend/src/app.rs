@@ -80,7 +80,10 @@ async fn bootstrap_register(
     let is_valid = if is_simulator_mock {
         // For simulator testing, accept mock attestations without validation
         // This should only be used in development environments
-        info!("Accepting simulator mock attestation for device {}", params.key_id);
+        info!(
+            "Accepting simulator mock attestation for device {}",
+            params.key_id
+        );
         true
     } else {
         // Verify real attestation
@@ -186,10 +189,7 @@ async fn catch_all_404(req: Request) -> (StatusCode, String) {
     let path = req.uri().path();
     let method = req.method();
     info!("404 NOT FOUND - {} {}", method, path);
-    (
-        StatusCode::NOT_FOUND,
-        format!("Route '{}' not found", path),
-    )
+    (StatusCode::NOT_FOUND, format!("Route '{}' not found", path))
 }
 
 struct RequestState {
