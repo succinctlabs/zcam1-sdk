@@ -166,12 +166,22 @@ public final class Zcam1CameraService: NSObject {
 
     // MARK: - Session Setup
 
-    private func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+    /// Check if we're running in the simulator at runtime.
+    private var isSimulator: Bool {
         #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    private func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         // Simulator doesn't have camera hardware.
         // We'll handle this case specially in takePhoto() to return a test image.
-        return nil
-        #else
+        if isSimulator {
+            return nil
+        }
+
         if let device = AVCaptureDevice.default(
             .builtInWideAngleCamera, for: .video, position: position)
         {
@@ -179,7 +189,6 @@ public final class Zcam1CameraService: NSObject {
         }
         // Fallback to any video device.
         return AVCaptureDevice.default(for: .video)
-        #endif
     }
 
     /// Configure the capture session if needed (or reconfigure if the position changed).
@@ -187,6 +196,15 @@ public final class Zcam1CameraService: NSObject {
         position: AVCaptureDevice.Position,
         completion: @escaping (Error?) -> Void
     ) {
+        // In simulator, we don't have camera hardware so we skip session configuration.
+        // The preview will show a black screen, but takePhoto() will return a test image.
+        if isSimulator {
+            DispatchQueue.main.async {
+                completion(nil)
+            }
+            return
+        }
+
         sessionQueue.async {
             do {
                 let session = self.captureSession ?? AVCaptureSession()
@@ -325,10 +343,10 @@ public final class Zcam1CameraService: NSObject {
         formatString: String?,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
-        #if targetEnvironment(simulator)
         // Simulator mode: create and return a test image.
-        let format = Zcam1CaptureFormat(from: formatString)
-        let testImage = createTestImage()
+        if isSimulator {
+            let format = Zcam1CaptureFormat(from: formatString)
+            let testImage = createTestImage()
 
         guard let jpegData = testImage.jpegData(compressionQuality: 0.9) else {
             let err = NSError(
@@ -375,7 +393,9 @@ public final class Zcam1CameraService: NSObject {
             }
         }
         return
-        #endif
+        }
+
+        // Real device camera capture.
         ensureCameraAuthorization { authorized in
             guard authorized else {
                 let err = NSError(
