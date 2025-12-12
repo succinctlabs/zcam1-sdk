@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, hash_map::Entry},
     fmt::Display,
     sync::{Arc, RwLock},
 };
@@ -93,7 +93,13 @@ impl Database for InMemoryDatabase {
     fn get_proof_request(&self, id: &str) -> Option<ProofRequest> {
         let mut proof_requests_by_ids = self.proof_requests_by_ids.write().unwrap();
 
-        proof_requests_by_ids.remove(id)
+        match proof_requests_by_ids.entry(id.to_string()) {
+            Entry::Occupied(entry) => match entry.get() {
+                ProofRequest::Requested => Some(entry.get().clone()),
+                ProofRequest::Fulfilled(_) => Some(entry.remove()),
+            },
+            Entry::Vacant(_) => None,
+        }
     }
 
     fn fulfill_proof_request(&self, id: String, proof: SP1ProofWithPublicValues) {

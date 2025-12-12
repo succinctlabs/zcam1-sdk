@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
     extract::{Path, Request, State},
     http::StatusCode,
-    routing::{any, get, post},
+    routing::{get, post},
 };
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
