@@ -429,6 +429,7 @@ export enum Exception_Tags {
   Base64 = "Base64",
   NoActiveManifest = "NoActiveManifest",
   Poisoned = "Poisoned",
+  Other = "Other",
 }
 export const Exception = (() => {
   class C2pa extends UniffiError {
@@ -563,6 +564,28 @@ export const Exception = (() => {
       return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 6;
     }
   }
+  class Other extends UniffiError {
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [variantOrdinalSymbol] = 7;
+
+    public readonly tag = Exception_Tags.Other;
+
+    constructor(message: string) {
+      super("Exception", "Other", message);
+    }
+
+    static instanceOf(e: any): e is Other {
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 7;
+    }
+  }
 
   // Utility function which does not rely on instanceof.
   function instanceOf(e: any): e is Exception {
@@ -575,6 +598,7 @@ export const Exception = (() => {
     Base64,
     NoActiveManifest,
     Poisoned,
+    Other,
     instanceOf,
   };
 })();
@@ -608,6 +632,9 @@ const FfiConverterTypeError = (() => {
 
         case 6:
           return new Exception.Poisoned(FfiConverterString.read(from));
+
+        case 7:
+          return new Exception.Other(FfiConverterString.read(from));
 
         default:
           throw new UniffiInternalError.UnexpectedEnumCase();
