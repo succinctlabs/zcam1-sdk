@@ -20,6 +20,7 @@ export interface PhotoGallery {
 
 export interface ZCameraProps {
   source: PrivateFolder | PhotoGallery;
+  onSelect?: (uri: string) => void;
 }
 
 /**
@@ -69,9 +70,16 @@ export const ZImagePicker = (props: ZCameraProps) => {
     setPhotos(photoUris);
   };
 
+  const handleSelect = (uri: string) => {
+    props.onSelect?.(uri);
+  };
+
   const renderItem = ({ item }) => {
     return (
-      <TouchableOpacity style={styles.imageContainer}>
+      <TouchableOpacity
+        style={styles.imageContainer}
+        onPress={() => handleSelect(item)}
+      >
         <Image
           style={[styles.image]}
           source={{ uri: item }}
