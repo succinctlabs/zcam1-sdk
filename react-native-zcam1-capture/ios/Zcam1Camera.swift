@@ -167,13 +167,19 @@ public final class Zcam1CameraService: NSObject {
     // MARK: - Session Setup
 
     private func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        #if targetEnvironment(simulator)
+        // Simulator doesn't have camera hardware.
+        // We'll handle this case specially in takePhoto() to return a test image.
+        return nil
+        #else
         if let device = AVCaptureDevice.default(
             .builtInWideAngleCamera, for: .video, position: position)
         {
             return device
         }
-        // Fallback to any video device
+        // Fallback to any video device.
         return AVCaptureDevice.default(for: .video)
+        #endif
     }
 
     /// Configure the capture session if needed (or reconfigure if the position changed).
@@ -272,6 +278,40 @@ public final class Zcam1CameraService: NSObject {
         }
     }
 
+    // MARK: - Simulator Test Image
+
+    /// Creates a simple test image for simulator testing.
+    /// Returns a UIImage with a colored background and test text.
+    private func createTestImage() -> UIImage {
+        let size = CGSize(width: 1920, height: 1080)
+        let renderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { context in
+            // Blue gradient background.
+            let colors = [UIColor.systemBlue.cgColor, UIColor.systemTeal.cgColor]
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                     colors: colors as CFArray,
+                                     locations: [0.0, 1.0])!
+            context.cgContext.drawLinearGradient(gradient,
+                                                 start: .zero,
+                                                 end: CGPoint(x: size.width, y: size.height),
+                                                 options: [])
+
+            // Add test text.
+            let text = "SIMULATOR TEST IMAGE"
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 72),
+                .foregroundColor: UIColor.white
+            ]
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(x: (size.width - textSize.width) / 2,
+                                 y: (size.height - textSize.height) / 2,
+                                 width: textSize.width,
+                                 height: textSize.height)
+            text.draw(in: textRect, withAttributes: attributes)
+        }
+    }
+
     // MARK: - Public Capture API (Objective-C-friendly)
 
     /// High-level capture API used from ObjC / React Native bridge.
@@ -285,6 +325,57 @@ public final class Zcam1CameraService: NSObject {
         formatString: String?,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
+        #if targetEnvironment(simulator)
+        // Simulator mode: create and return a test image.
+        let format = Zcam1CaptureFormat(from: formatString)
+        let testImage = createTestImage()
+
+        guard let jpegData = testImage.jpegData(compressionQuality: 0.9) else {
+            let err = NSError(
+                domain: "Zcam1CameraService",
+                code: -30,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to create test image data"]
+            )
+            completion(nil, err)
+            return
+        }
+
+        let filename = "zcam1-simulator-\(UUID().uuidString).\(format.fileExtension)"
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+
+        do {
+            try jpegData.write(to: tmpURL, options: [.atomic])
+
+            // Create mock metadata similar to what a real camera would provide.
+            let now = Date()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+            let dateString = dateFormatter.string(from: now)
+
+            let metadata: [String: Any] = [
+                "{TIFF}": [
+                    "DateTime": dateString,
+                    "Model": "iPhone Simulator",
+                    "Software": "iOS Simulator"
+                ]
+            ]
+
+            let result: [String: Any] = [
+                "filePath": tmpURL.path,
+                "format": format.formatString,
+                "metadata": metadata,
+            ]
+
+            DispatchQueue.main.async {
+                completion(result as NSDictionary, nil)
+            }
+        } catch {
+            DispatchQueue.main.async {
+                completion(nil, error as NSError)
+            }
+        }
+        return
+        #endif
         ensureCameraAuthorization { authorized in
             guard authorized else {
                 let err = NSError(

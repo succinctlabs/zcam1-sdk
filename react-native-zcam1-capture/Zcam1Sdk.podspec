@@ -19,4 +19,12 @@ Pod::Spec.new do |s|
 
   install_modules_dependencies(s)
 
+  # Add dependency on ReactCodegen for codegen headers
+  s.dependency "ReactCodegen"
+
+  # Add user header search paths for codegen
+  s.user_target_xcconfig = {
+    'HEADER_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/../../../apps/zcam/ios/build/generated/ios"'
+  }
+
 end

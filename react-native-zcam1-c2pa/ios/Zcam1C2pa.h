@@ -4,7 +4,7 @@
 #endif
 
 #ifdef RCT_NEW_ARCH_ENABLED
-#import "Zcam1C2paSpec.h"
+#import <Zcam1C2paSpec/Zcam1C2paSpec.h>
 
 @interface Zcam1C2pa : NSObject <NativeZcam1C2paSpec>
 #else
