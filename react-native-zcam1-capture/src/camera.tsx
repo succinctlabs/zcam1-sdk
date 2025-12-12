@@ -101,7 +101,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     // Capture using native Swift camera (preview handled by native view).
     const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
       format,
-      "back",
+      this.props.position || "back",
     );
 
     if (!result || !result.filePath) {
