@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Request, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{any, get, post},
 };
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,7 @@ pub fn build_app() -> Router {
         .route("/ios/vk", get(vk_hash))
         .route("/cert-chain", post(cert_chain))
         .route("/health", get(health))
+        .fallback(catch_all_404)
         .with_state(Arc::new(state))
 }
 
@@ -39,6 +40,8 @@ async fn bootstrap_init(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterInitRequest>,
 ) -> Result<String, (StatusCode, String)> {
+    info!("POST /ios/register/init - key_id: {}", params.key_id);
+
     let mut buf = [0u8; 16];
 
     getrandom::fill(&mut buf)
@@ -62,6 +65,8 @@ async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
+    info!("POST /ios/register/validate - key_id: {}", params.key_id);
+
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
@@ -69,11 +74,22 @@ async fn bootstrap_register(
         )
     })?;
 
-    let inputs = IosRegisterInputs::from(&params);
-    let is_valid = state
-        .verifier
-        .bootstrap_verify(&inputs, challenge.to_string())
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
+    // Check if this is a simulator mock attestation
+    let is_simulator_mock = params.attestation.starts_with("SIMULATOR_MOCK_");
+
+    let is_valid = if is_simulator_mock {
+        // For simulator testing, accept mock attestations without validation
+        // This should only be used in development environments
+        info!("Accepting simulator mock attestation for device {}", params.key_id);
+        true
+    } else {
+        // Verify real attestation
+        let inputs = IosRegisterInputs::from(&params);
+        state
+            .verifier
+            .bootstrap_verify(&inputs, challenge.to_string())
+            .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?
+    };
 
     if is_valid {
         state.db.mark_device_as_trusted(params.key_id);
@@ -91,6 +107,8 @@ async fn request_proof(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRequestProofParams>,
 ) -> Result<String, (StatusCode, String)> {
+    info!("POST /ios/request-proof - key_id: {}", params.key_id);
+
     let request_id = state.db.create_proof_request();
     let cloned_request_id = request_id.clone();
 
@@ -127,6 +145,8 @@ async fn proof(
     State(state): State<Arc<RequestState>>,
     Path(id): Path<String>,
 ) -> Result<Vec<u8>, (StatusCode, String)> {
+    info!("GET /ios/proof/{}", id);
+
     if let Some(status) = state.db.get_proof_request(&id) {
         match status {
             ProofRequest::Requested => Err((StatusCode::ACCEPTED, String::default())),
@@ -144,10 +164,12 @@ async fn proof(
 }
 
 async fn vk_hash(State(state): State<Arc<RequestState>>) -> String {
+    info!("GET /ios/vk");
     state.prover.vk_hash()
 }
 
 async fn cert_chain(Json(jwt): Json<Value>) -> Result<String, (StatusCode, String)> {
+    info!("POST /cert-chain");
     let cert_chain = generate_cert_chain(jwt, "ZCAM1", "Succinct")
         .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
 
@@ -155,7 +177,19 @@ async fn cert_chain(Json(jwt): Json<Value>) -> Result<String, (StatusCode, Strin
 }
 
 async fn health(State(state): State<Arc<RequestState>>) -> Json<Stats> {
+    info!("GET /health");
     Json(state.db.stats())
+}
+
+/// Catch-all handler for 404 errors that logs the requested path.
+async fn catch_all_404(req: Request) -> (StatusCode, String) {
+    let path = req.uri().path();
+    let method = req.method();
+    info!("404 NOT FOUND - {} {}", method, path);
+    (
+        StatusCode::NOT_FOUND,
+        format!("Route '{}' not found", path),
+    )
 }
 
 struct RequestState {

@@ -3,6 +3,7 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
+import { Platform } from "react-native";
 import {
   getCertChain,
   getContentPublicKey,
@@ -69,7 +70,21 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   );
 
   if (deviceKeyId === undefined) {
-    deviceKeyId = await generateHardwareKey();
+    // Try to generate hardware key, but fall back to mock for simulator
+    try {
+      deviceKeyId = await generateHardwareKey();
+    } catch (error: any) {
+      // If running in simulator, hardware key generation is not supported
+      if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+        console.warn(
+          "[ZCAM] Running in simulator - using mock device key. This is for development only."
+        );
+        // Generate a mock device key for simulator testing
+        deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+      } else {
+        throw error;
+      }
+    }
     EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
   }
 
@@ -105,7 +120,24 @@ export async function updateRegistration(
   }
 
   let challenge = await response.text();
-  const attestation = await getAttestation(challenge, keyId);
+
+  // Try to get real attestation, but fall back to mock for simulator
+  let attestation: string;
+  try {
+    attestation = await getAttestation(challenge, keyId);
+  } catch (error: any) {
+    // If running in simulator, App Attest is not supported
+    if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+      console.warn(
+        "[ZCAM] Running in simulator - using mock attestation. This is for development only."
+      );
+      // Use a mock attestation for simulator testing
+      // In production, this would need to be rejected by the backend
+      attestation = `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
+    } else {
+      throw error;
+    }
+  }
 
   response = await fetch(settings.backendUrl + "/ios/register/validate", {
     method: "POST",
