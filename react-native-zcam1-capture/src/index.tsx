@@ -55,44 +55,65 @@ export class ZPhoto {
 export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   let deviceKeyId: string | undefined;
   let contentKeyId: Uint8Array | undefined;
-
-  const contentPublicKey = await getContentPublicKey();
-
-  if (contentPublicKey.kty !== "EC") {
-    throw "Only EC public keys are supported";
-  }
-
-  contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
-
-  // Get certificate chain from backend, or use mock for simulator
   let certChainPem: string;
-  try {
-    certChainPem = await getCertChain(
-      contentPublicKey,
-      settings.backendUrl,
-    );
-  } catch (error: any) {
-    // If backend isn't available or returns invalid data, use mock certificate for simulator
+
+  // Check if we're in simulator mode by checking stored device key.
+  const storedDeviceKeyId = await EncryptedStorage.getItem("deviceKeyId");
+  const isSimulatorMode = storedDeviceKeyId?.startsWith("SIMULATOR_DEVICE_KEY_");
+
+  if (isSimulatorMode) {
     console.warn(
-      "[ZCAM] Failed to get certificate chain from backend - using mock certificate for simulator testing. This is for development only.",
-      error?.message || error
+      "[ZCAM] Simulator mode detected - using static test key and certificate for C2PA signing. This is for development only."
     );
-    // Mock self-signed certificate chain for development/simulator use
-    // This is a minimal PEM certificate that will allow C2PA signing to work
+
+    // Use the simulator test key ID (SHA1 of the test public key).
+    contentKeyId = new Uint8Array([
+      0x3e, 0xa8, 0x98, 0xc9, 0x39, 0x9f, 0x09, 0x10, 0xfe, 0xf2, 0xa6, 0x06, 0x6c, 0x20, 0x14, 0x6d,
+      0xa6, 0x6d, 0x7f, 0x1b
+    ]);
+
+    // Use the matching test certificate chain (leaf + root CA).
     certChainPem = `-----BEGIN CERTIFICATE-----
-MIICLDCCAdKgAwIBAgIBADAKBggqhkjOPQQDAjB9MQswCQYDVQQGEwJVUzELMAkG
-A1UECAwCQ0ExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xEzARBgNVBAoMClpDQU0x
-IFRlc3QxEzARBgNVBAsMClpDQU0xIFRlc3QxHzAdBgNVBAMMFlpDQU0xIFNpbXVs
-YXRvciBSb290MB4XDTI0MDEwMTAwMDAwMFoXDTI1MDEwMTAwMDAwMFowfTELMAkG
-A1UEBhMCVVMxCzAJBgNVBAgMAkNBMRYwFAYDVQQHDA1TYW4gRnJhbmNpc2NvMRMw
-EQYDVQQKDApaQ0FNMSBUZXN0MRMwEQYDVQQLDApaQ0FNMSBUZXN0MR8wHQYDVQQD
-DBZaQ0FNMSBTaW11bGF0b3IgUm9vdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA
-BHNBVvJkMUcNvBdHm3/SvS8UQnSRjPCjU1bXeNqPQQhWlKOJvEPf6nBTllqDhpqr
-4I0kCjJJq3vVRfL3ihqGsCyjUDBOMB0GA1UdDgQWBBQrDZ0/kNqwZSQS0DjIlqQs
-2JcP1DAfBgNVHSMEGDAWgBQrDZ0/kNqwZSQS0DjIlqQs2JcP1DAMBgNVHRMEBTAD
-AQH/MAoGCCqGSM49BAMCA0gAMEUCIGLr7rCQj0nfnV3vGlvBqBpYHqWCh7wdGOxK
-aFOdL3VVAiEA2A3FwZPvDv1TqCvHGBHn8M5+9RL6yK0kqNp7pHN4LUo=
+MIIBqjCCAVCgAwIBAgIUPkCafHrb7oQtOzHKROCtLJ7Ik48wCgYIKoZIzj0EAwIw
+IjEgMB4GA1UEAwwXWkNBTTEgU2ltdWxhdG9yIFJvb3QgQ0EwHhcNMjUxMjEyMjA1
+MTU2WhcNMjYxMjEyMjA1MTU2WjAfMR0wGwYDVQQDDBRaQ0FNMSBTaW11bGF0b3Ig
+TGVhZjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBmmOwk4xDsuQp52DVq9Qmae
+EdfIBOU2oqohdxF2ojcqS14w4rvT3CMJEKkdnORiGEJ8wauL9hGB3k3BhZGLPgej
+ZzBlMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDCDAdBgNVHQ4E
+FgQUPqiYyTmfCRD+8qYGbCAUbaZtfxswHwYDVR0jBBgwFoAU30/EycXtmh8VBbys
+U1raHhESoJEwCgYIKoZIzj0EAwIDSAAwRQIhAPUlsEabVDS/mK4Rebonotz0s+Qz
+69b1kaVXFSC1LRlkAiBEmoX+jTznSpvwusxwZhDDysRTkckZ2WQMIqOncO96Pg==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIBmTCCAT+gAwIBAgIUPKK7uM20VeV7ZpO6wuOYHKf5tUAwCgYIKoZIzj0EAwIw
+IjEgMB4GA1UEAwwXWkNBTTEgU2ltdWxhdG9yIFJvb3QgQ0EwHhcNMjUxMjEyMjA1
+MTU2WhcNMzUxMjEwMjA1MTU2WjAiMSAwHgYDVQQDDBdaQ0FNMSBTaW11bGF0b3Ig
+Um9vdCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBjmrwPOV3a2VHkRLYHK
+0xDFeyk+vH7WmGLleHLmiJP3WxVBf6P6a3sFEVFIgK8knYUFdhJ2eSd0VG5dj8w6
+EjejUzBRMB0GA1UdDgQWBBTfT8TJxe2aHxUFvKxTWtoeERKgkTAfBgNVHSMEGDAW
+gBTfT8TJxe2aHxUFvKxTWtoeERKgkTAPBgNVHRMBAf8EBTADAQH/MAoGCCqGSM49
+BAMCA0gAMEUCIQCPwjZKBQ07WgMsmf+GO5dOHv/87JeHIkVi5XsAlRO/zAIgSiGx
+Q4CT45+VKCq/wxQ2WBeI//3t5KzKi3FoTrcRCKo=
 -----END CERTIFICATE-----`;
+  } else {
+    // Real device: use Secure Enclave key.
+    const contentPublicKey = await getContentPublicKey();
+
+    if (contentPublicKey.kty !== "EC") {
+      throw "Only EC public keys are supported";
+    }
+
+    contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
+
+    // Get certificate chain from backend.
+    try {
+      certChainPem = await getCertChain(
+        contentPublicKey,
+        settings.backendUrl,
+      );
+    } catch (error: any) {
+      throw new Error(`Failed to get certificate chain from backend: ${error?.message || error}`);
+    }
   }
 
   if (deviceKeyId === undefined) {

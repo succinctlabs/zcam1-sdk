@@ -147,6 +147,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }
     }
 
+    // Perform C2PA signing for both real device and simulator.
+    // Simulator now uses test credentials that allow proper signing.
     const manifestEditor = new ManifestEditor(originalPath);
 
     // Add the "capture" action to the manifest.
@@ -162,7 +164,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }),
     );
 
-    // Add an assertion containing all data needed to later generate a  proof
+    // Add an assertion containing all data needed to later generate a proof.
     manifestEditor.addAssertion(
       "succinct.bindings",
       JSON.stringify({

@@ -20,6 +20,9 @@ pub enum Error {
 
     #[error("The lock has been poisoned")]
     Poisoned,
+
+    #[error("{0}")]
+    Other(String),
 }
 
 impl From<Error> for c2pa::Error {
@@ -28,6 +31,7 @@ impl From<Error> for c2pa::Error {
             Error::C2pa(error) => error,
             Error::Json(error) => c2pa::Error::JsonError(error),
             Error::Io(error) => c2pa::Error::IoError(error),
+            Error::Other(msg) => c2pa::Error::InternalError(msg),
             other => c2pa::Error::OtherError(Box::new(other)),
         }
     }

@@ -41,12 +41,4 @@ Pod::Spec.new do |s|
       s.dependency "ReactCommon/turbomodule/core"
     end
   end
-
-  # Add dependency on ReactCodegen for codegen headers
-  s.dependency "ReactCodegen"
-
-  # Add header search paths for codegen after install_modules_dependencies
-  s.pod_target_xcconfig = {
-    'HEADER_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/../../../apps/zcam/ios/build/generated/ios"'
-  }
 end

@@ -38,7 +38,14 @@ export async function getCertChain(
     throw "failed to retrieve the certificate chain:" + (await response.text());
   }
 
-  return await response.text();
+  const certChain = await response.text();
+
+  // Validate that we received a PEM certificate, not HTML or other invalid data
+  if (!certChain.includes("-----BEGIN CERTIFICATE-----")) {
+    throw new Error("Invalid certificate chain: response does not contain PEM certificate");
+  }
+
+  return certChain;
 }
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
