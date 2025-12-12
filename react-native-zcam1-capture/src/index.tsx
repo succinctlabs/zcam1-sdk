@@ -75,9 +75,12 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
       deviceKeyId = await generateHardwareKey();
     } catch (error: any) {
       // If running in simulator, hardware key generation is not supported
-      if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+      if (
+        error?.code === "-1" ||
+        error?.message?.includes("UNSUPPORTED_SERVICE")
+      ) {
         console.warn(
-          "[ZCAM] Running in simulator - using mock device key. This is for development only."
+          "[ZCAM] Running in simulator - using mock device key. This is for development only.",
         );
         // Generate a mock device key for simulator testing
         deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
@@ -127,9 +130,12 @@ export async function updateRegistration(
     attestation = await getAttestation(challenge, keyId);
   } catch (error: any) {
     // If running in simulator, App Attest is not supported
-    if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+    if (
+      error?.code === "-1" ||
+      error?.message?.includes("UNSUPPORTED_SERVICE")
+    ) {
       console.warn(
-        "[ZCAM] Running in simulator - using mock attestation. This is for development only."
+        "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
       );
       // Use a mock attestation for simulator testing
       // In production, this would need to be rejected by the backend
