@@ -218,7 +218,7 @@ impl ManifestEditor {
         output.extend_from_slice(&bytes[manifest_pos..]);
 
         let mut output_stream = Cursor::new(output);
-        let mut data_hash = DataHash::new("manifest", "sha265");
+        let mut data_hash = DataHash::new("manifest", "sha256");
         let hr = HashRange::new(manifest_pos as u64, placeholder_manifest.len() as u64);
 
         data_hash.add_exclusion(hr.clone());
