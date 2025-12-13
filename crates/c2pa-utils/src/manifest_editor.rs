@@ -137,11 +137,13 @@ impl ManifestEditor {
 
             // Use CallbackSigner with test key for simulator mode (no keychain access needed).
             use p256::ecdsa::{Signature, SigningKey, signature::Signer};
-            use p256::pkcs8::DecodePrivateKey;
+            use p256::SecretKey;
+            use std::sync::Arc;
 
-            // Parse the test private key once.
-            let signing_key = SigningKey::from_pkcs8_pem(SIMULATOR_TEST_PRIVATE_KEY_PEM)
+            // Parse the test private key once (SEC1 format).
+            let secret_key = SecretKey::from_sec1_pem(SIMULATOR_TEST_PRIVATE_KEY_PEM)
                 .map_err(|e| Error::Other(format!("Failed to parse test private key: {}", e)))?;
+            let signing_key = Arc::new(SigningKey::from(&secret_key));
 
             let signer = CallbackSigner::new(
                 move |_context, data: &[u8]| {
