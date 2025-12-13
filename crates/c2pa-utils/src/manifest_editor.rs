@@ -1,7 +1,7 @@
 use std::{
     cmp,
     fs::{self, File},
-    io::{copy, Cursor, Seek, Write},
+    io::{Cursor, Seek, Write},
     sync::{Arc, RwLock},
 };
 
@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use crate::{
     error::Error,
-    signing::sign_with_enclave,
+    signing::{sign_with_enclave, SIMULATOR_TEST_KEY_ID, SIMULATOR_TEST_PRIVATE_KEY_PEM},
     types::{Exclusion, ManifestStore},
 };
 
@@ -128,17 +128,83 @@ impl ManifestEditor {
             let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
             std::mem::take(&mut *guard)
         };
-        let signer = CallbackSigner::new(
-            move |_context, data: &[u8]| {
-                sign_with_enclave(&key_tag, data)
-                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
-            },
-            SigningAlg::Es256,
-            certs,
-        );
 
-        let placeholder_manifest =
-            builder.data_hashed_placeholder(signer.reserve_size(), format)?;
+        // Check if this is simulator mode by comparing key_tag with SIMULATOR_TEST_KEY_ID.
+        let is_simulator = key_tag.as_slice() == SIMULATOR_TEST_KEY_ID;
+
+        let final_manifest = if is_simulator {
+            eprintln!("[ZCAM DEBUG] Using CallbackSigner with test key for simulator mode");
+
+            // Use CallbackSigner with test key for simulator mode (no keychain access needed).
+            use p256::ecdsa::{Signature, SigningKey, signature::Signer};
+            use p256::SecretKey;
+            use std::sync::Arc;
+
+            // Parse the test private key once (SEC1 format).
+            let secret_key = SecretKey::from_sec1_pem(SIMULATOR_TEST_PRIVATE_KEY_PEM)
+                .map_err(|e| Error::Other(format!("Failed to parse test private key: {}", e)))?;
+            let signing_key = Arc::new(SigningKey::from(&secret_key));
+
+            let signer = CallbackSigner::new(
+                move |_context, data: &[u8]| {
+                    eprintln!("[ZCAM DEBUG] Signing with test key in simulator mode");
+                    // Sign the data.
+                    let signature: Signature = signing_key.sign(data);
+                    // Return the signature in DER format.
+                    Ok(signature.to_der().as_bytes().to_vec())
+                },
+                SigningAlg::Es256,
+                certs,
+            );
+
+            let placeholder_manifest =
+                builder.data_hashed_placeholder(signer.reserve_size(), format)?;
+
+            self.create_signed_manifest(&mut builder, signer, placeholder_manifest, hash, format).await?
+        } else {
+            eprintln!("[ZCAM DEBUG] Using CallbackSigner for real device mode");
+
+            // Use CallbackSigner for real device (Secure Enclave).
+            let signer = CallbackSigner::new(
+                move |_context, data: &[u8]| {
+                    sign_with_enclave(&key_tag, data)
+                        .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+                },
+                SigningAlg::Es256,
+                certs,
+            );
+
+            let placeholder_manifest =
+                builder.data_hashed_placeholder(signer.reserve_size(), format)?;
+
+            self.create_signed_manifest(&mut builder, signer, placeholder_manifest, hash, format).await?
+        };
+
+        // Put the updated builder back into the RwLock.
+        {
+            let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
+            *guard = builder;
+        }
+
+        // Write the complete output (image with embedded signed manifest) to the destination file.
+        let mut output_file = File::create(destination.replace("file://", ""))?;
+        output_file.write_all(&final_manifest)?;
+
+        Ok(())
+    }
+}
+
+// Private helper methods (not exported via uniffi).
+impl ManifestEditor {
+    // Helper method to create the signed manifest (same logic for both signers).
+    async fn create_signed_manifest<S: AsyncSigner>(
+        &self,
+        builder: &mut Builder,
+        signer: S,
+        placeholder_manifest: Vec<u8>,
+        hash: Vec<u8>,
+        format: &str,
+    ) -> Result<Vec<u8>, Error> {
 
         let bytes = self.strip_exclusions_from_source()?;
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len() + placeholder_manifest.len());
@@ -152,35 +218,27 @@ impl ManifestEditor {
         output.extend_from_slice(&bytes[manifest_pos..]);
 
         let mut output_stream = Cursor::new(output);
-        let mut data_hash = DataHash::new("manifest", "sha265");
+        let mut data_hash = DataHash::new("manifest", "sha256");
         let hr = HashRange::new(manifest_pos as u64, placeholder_manifest.len() as u64);
 
         data_hash.add_exclusion(hr.clone());
         data_hash.set_hash(hash);
 
-        // tell SDK to fill in the hash and sign to complete the manifest
+        // Tell SDK to fill in the hash and sign to complete the manifest.
         let final_manifest = builder
             .sign_data_hashed_embeddable_async(&signer, &data_hash, "image/jpeg")
             .await?;
 
-        // Put the updated builder back into the RwLock
-        {
-            let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
-            *guard = builder;
-        }
-
-        output_stream.seek(std::io::SeekFrom::Start(2))?;
+        // Replace the placeholder manifest with the final signed manifest.
+        output_stream.seek(std::io::SeekFrom::Start(manifest_pos as u64))?;
         output_stream.write_all(&final_manifest)?;
         output_stream.rewind()?;
 
-        let mut output_file = File::create(destination.replace("file://", ""))?;
-
-        let _ = copy(&mut output_stream, &mut output_file)?;
-
-        // make sure the output stream is correct
+        // Make sure the output stream is correct.
         let _ = Reader::from_stream(format, &mut output_stream)?;
 
-        Ok(())
+        // Return the complete output with embedded signed manifest.
+        Ok(output_stream.into_inner())
     }
 }
 

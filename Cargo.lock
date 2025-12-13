@@ -9311,6 +9311,7 @@ dependencies = [
  "base64ct",
  "c2pa 0.72.0",
  "futures",
+ "p256",
  "pem",
  "security-framework 3.5.1",
  "serde",

@@ -5,3 +5,7 @@ enabled = true
 #
 # For more information, see `c2pa::assertions::actions::source_type`.
 source_type = "http://c2pa.org/digitalsourcetype/empty"
+
+[builder.trust]
+# Allow self-signed certificates for development/testing.
+allow_self_signed = true
