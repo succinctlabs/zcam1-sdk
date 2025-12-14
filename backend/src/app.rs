@@ -130,8 +130,12 @@ async fn request_proof(
     }
 
     tokio::spawn(async move {
+        // Check if this is a simulator mock attestation
+        let is_simulator_mock = params.attestation.starts_with("SIMULATOR_MOCK_");
+
         let inputs = params.into_auth_inputs(challenge.to_string());
-        let proof = state.prover.prove(inputs);
+
+        let proof = state.prover.prove(inputs, is_simulator_mock);
 
         match proof {
             Ok(proof) => {
@@ -194,7 +198,6 @@ async fn cert_chain(Json(jwt): Json<Value>) -> Result<String, (StatusCode, Strin
 }
 
 async fn health(State(state): State<Arc<RequestState>>) -> Json<Stats> {
-    info!("GET /health");
     Json(state.db.stats())
 }
 
