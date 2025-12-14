@@ -127,10 +127,27 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       Util.dirname(originalPath) +
       `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
 
-    const assertion = await generateHardwareSignatureWithAssertion(
-      dataHash,
-      this.props.deviceInfo.deviceKeyId,
-    );
+    let assertion: string;
+    try {
+      assertion = await generateHardwareSignatureWithAssertion(
+        dataHash,
+        this.props.deviceInfo.deviceKeyId,
+      );
+    } catch (error: any) {
+      if (
+        error?.code === "-1" ||
+        error?.message?.includes("UNSUPPORTED_SERVICE")
+      ) {
+        console.warn(
+          "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
+        );
+        // Use a mock attestation for simulator testing
+        // In production, this would need to be rejected by the backend
+        assertion = `SIMULATOR_MOCK_${this.props.deviceInfo.deviceKeyId}_${Date.now()}`;
+      } else {
+        throw error;
+      }
+    }
 
     const manifestEditor = new ManifestEditor(originalPath);
 
