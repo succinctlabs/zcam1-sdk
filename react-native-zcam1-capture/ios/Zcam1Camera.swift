@@ -168,17 +168,17 @@ public final class Zcam1CameraService: NSObject {
 
     private func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         #if targetEnvironment(simulator)
-        // Simulator doesn't have camera hardware.
-        // We'll handle this case specially in takePhoto() to return a test image.
-        return nil
+            // Simulator doesn't have camera hardware.
+            // We'll handle this case specially in takePhoto() to return a test image.
+            return nil
         #else
-        if let device = AVCaptureDevice.default(
-            .builtInWideAngleCamera, for: .video, position: position)
-        {
-            return device
-        }
-        // Fallback to any video device.
-        return AVCaptureDevice.default(for: .video)
+            if let device = AVCaptureDevice.default(
+                .builtInWideAngleCamera, for: .video, position: position)
+            {
+                return device
+            }
+            // Fallback to any video device.
+            return AVCaptureDevice.default(for: .video)
         #endif
     }
 
@@ -287,27 +287,56 @@ public final class Zcam1CameraService: NSObject {
         let renderer = UIGraphicsImageRenderer(size: size)
 
         return renderer.image { context in
-            // Blue gradient background.
-            let colors = [UIColor.systemBlue.cgColor, UIColor.systemTeal.cgColor]
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                     colors: colors as CFArray,
-                                     locations: [0.0, 1.0])!
-            context.cgContext.drawLinearGradient(gradient,
-                                                 start: .zero,
-                                                 end: CGPoint(x: size.width, y: size.height),
-                                                 options: [])
+            // Random gradient background with consistent tint (same hue).
+            let hue = CGFloat.random(in: 0.0...1.0)
+            let saturation = CGFloat.random(in: 0.55...0.9)
+            let brightness1 = CGFloat.random(in: 0.5...0.75)
+            let brightness2 = min(brightness1 + CGFloat.random(in: 0.15...0.35), 1.0)
+
+            let color1 = UIColor(
+                hue: hue, saturation: saturation, brightness: brightness1, alpha: 1.0)
+            let color2 = UIColor(
+                hue: hue, saturation: saturation, brightness: brightness2, alpha: 1.0)
+            let colors = [color1.cgColor, color2.cgColor]
+            let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors as CFArray,
+                locations: [0.0, 1.0])!
+            context.cgContext.drawLinearGradient(
+                gradient,
+                start: .zero,
+                end: CGPoint(x: size.width, y: size.height),
+                options: [])
 
             // Add test text.
+            let now = Date()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd\nHH:mm:ss"
+            let dateTimeString = dateFormatter.string(from: now)
+
+            let dateAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 88, weight: .semibold),
+                .foregroundColor: UIColor.white.withAlphaComponent(0.9),
+            ]
+            let dateTextSize = dateTimeString.size(withAttributes: dateAttributes)
+            let dateTextRect = CGRect(
+                x: (size.width - dateTextSize.width) / 2,
+                y: (size.height - dateTextSize.height) / 2 + 90,
+                width: dateTextSize.width,
+                height: dateTextSize.height
+            )
+            dateTimeString.draw(in: dateTextRect, withAttributes: dateAttributes)
             let text = "SIMULATOR TEST IMAGE"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.boldSystemFont(ofSize: 72),
-                .foregroundColor: UIColor.white
+                .foregroundColor: UIColor.white,
             ]
             let textSize = text.size(withAttributes: attributes)
-            let textRect = CGRect(x: (size.width - textSize.width) / 2,
-                                 y: (size.height - textSize.height) / 2,
-                                 width: textSize.width,
-                                 height: textSize.height)
+            let textRect = CGRect(
+                x: (size.width - textSize.width) / 2,
+                y: (size.height - textSize.height) / 2 - 90,
+                width: textSize.width,
+                height: textSize.height)
             text.draw(in: textRect, withAttributes: attributes)
         }
     }
@@ -326,55 +355,55 @@ public final class Zcam1CameraService: NSObject {
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
         #if targetEnvironment(simulator)
-        // Simulator mode: create and return a test image.
-        let format = Zcam1CaptureFormat(from: formatString)
-        let testImage = createTestImage()
+            // Simulator mode: create and return a test image.
+            let format = Zcam1CaptureFormat(from: formatString)
+            let testImage = createTestImage()
 
-        guard let jpegData = testImage.jpegData(compressionQuality: 0.9) else {
-            let err = NSError(
-                domain: "Zcam1CameraService",
-                code: -30,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to create test image data"]
-            )
-            completion(nil, err)
-            return
-        }
+            guard let jpegData = testImage.jpegData(compressionQuality: 0.9) else {
+                let err = NSError(
+                    domain: "Zcam1CameraService",
+                    code: -30,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to create test image data"]
+                )
+                completion(nil, err)
+                return
+            }
 
-        let filename = "zcam1-simulator-\(UUID().uuidString).\(format.fileExtension)"
-        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            let filename = "zcam1-simulator-\(UUID().uuidString).\(format.fileExtension)"
+            let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
 
-        do {
-            try jpegData.write(to: tmpURL, options: [.atomic])
+            do {
+                try jpegData.write(to: tmpURL, options: [.atomic])
 
-            // Create mock metadata similar to what a real camera would provide.
-            let now = Date()
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-            let dateString = dateFormatter.string(from: now)
+                // Create mock metadata similar to what a real camera would provide.
+                let now = Date()
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+                let dateString = dateFormatter.string(from: now)
 
-            let metadata: [String: Any] = [
-                "{TIFF}": [
-                    "DateTime": dateString,
-                    "Model": "iPhone Simulator",
-                    "Software": "iOS Simulator"
+                let metadata: [String: Any] = [
+                    "{TIFF}": [
+                        "DateTime": dateString,
+                        "Model": "iPhone Simulator",
+                        "Software": "iOS Simulator",
+                    ]
                 ]
-            ]
 
-            let result: [String: Any] = [
-                "filePath": tmpURL.path,
-                "format": format.formatString,
-                "metadata": metadata,
-            ]
+                let result: [String: Any] = [
+                    "filePath": tmpURL.path,
+                    "format": format.formatString,
+                    "metadata": metadata,
+                ]
 
-            DispatchQueue.main.async {
-                completion(result as NSDictionary, nil)
+                DispatchQueue.main.async {
+                    completion(result as NSDictionary, nil)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(nil, error as NSError)
+                }
             }
-        } catch {
-            DispatchQueue.main.async {
-                completion(nil, error as NSError)
-            }
-        }
-        return
+            return
         #endif
         ensureCameraAuthorization { authorized in
             guard authorized else {
