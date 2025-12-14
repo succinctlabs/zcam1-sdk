@@ -9,7 +9,7 @@ use axum::{
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::info;
+use tracing::{error, info};
 use zcam1_common::{
     Database, InMemoryDatabase, ProofRequest, ProvingClient, Stats, Verifier, generate_cert_chain,
 };
@@ -131,9 +131,20 @@ async fn request_proof(
 
     tokio::spawn(async move {
         let inputs = params.into_auth_inputs(challenge.to_string());
-        let proof = state.prover.prove(inputs).unwrap();
+        let proof = state.prover.prove(inputs);
 
-        state.db.fulfill_proof_request(cloned_request_id, proof);
+        match proof {
+            Ok(proof) => {
+                info!("Proof for request {cloned_request_id} generated");
+                state.db.fulfill_proof_request(cloned_request_id, proof);
+            }
+            Err(err) => {
+                error!("{err}");
+                state
+                    .db
+                    .mark_proof_request_as_failed(cloned_request_id, err.to_string());
+            }
+        };
     });
 
     Ok(request_id)
@@ -156,6 +167,9 @@ async fn proof(
             ProofRequest::Fulfilled(proof) => {
                 //let bytes = proof.bytes();
                 Ok(proof.bytes())
+            }
+            ProofRequest::Failed(error_message) => {
+                Err((StatusCode::INTERNAL_SERVER_ERROR, error_message))
             }
         }
     } else {

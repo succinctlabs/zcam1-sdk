@@ -20,6 +20,8 @@ pub trait Database {
 
     fn fulfill_proof_request(&self, id: String, proof: SP1ProofWithPublicValues);
 
+    fn mark_proof_request_as_failed(&self, id: String, error_message: String);
+
     fn stats(&self) -> Stats;
 }
 
@@ -48,6 +50,7 @@ impl Display for Challenge {
 pub enum ProofRequest {
     Requested,
     Fulfilled(Arc<SP1ProofWithPublicValues>),
+    Failed(String),
 }
 
 #[derive(Debug, Default)]
@@ -96,7 +99,7 @@ impl Database for InMemoryDatabase {
         match proof_requests_by_ids.entry(id.to_string()) {
             Entry::Occupied(entry) => match entry.get() {
                 ProofRequest::Requested => Some(entry.get().clone()),
-                ProofRequest::Fulfilled(_) => Some(entry.remove()),
+                ProofRequest::Fulfilled(_) | ProofRequest::Failed(_) => Some(entry.remove()),
             },
             Entry::Vacant(_) => None,
         }
@@ -106,6 +109,12 @@ impl Database for InMemoryDatabase {
         let mut proof_requests_by_ids = self.proof_requests_by_ids.write().unwrap();
 
         proof_requests_by_ids.insert(id, ProofRequest::Fulfilled(Arc::new(proof)));
+    }
+
+    fn mark_proof_request_as_failed(&self, id: String, error_message: String) {
+        let mut proof_requests_by_ids = self.proof_requests_by_ids.write().unwrap();
+
+        proof_requests_by_ids.insert(id, ProofRequest::Failed(error_message));
     }
 
     fn stats(&self) -> Stats {

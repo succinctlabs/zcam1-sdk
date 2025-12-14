@@ -1,4 +1,4 @@
-use eyre::{Result, eyre};
+use eyre::Result;
 use sp1_prover::components::CpuProverComponents;
 use sp1_sdk::{
     HashableKey, ProverClient, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -7,6 +7,7 @@ use sp1_sdk::{
 
 #[cfg(feature = "mock")]
 use sp1_sdk::Prover;
+use thiserror::Error;
 
 pub struct ProvingClient {
     client: Box<dyn sp1_sdk::Prover<CpuProverComponents>>,
@@ -32,10 +33,16 @@ impl ProvingClient {
         }
     }
 
-    pub fn prove<I: Into<SP1Stdin>>(&self, inputs: I) -> Result<SP1ProofWithPublicValues> {
+    pub fn prove<I: Into<SP1Stdin>>(
+        &self,
+        inputs: I,
+    ) -> Result<SP1ProofWithPublicValues, ProvingError> {
         let stdin = inputs.into();
 
-        let (public_values, report) = self.client.execute(&self.elf, &stdin).unwrap();
+        let (public_values, report) = self
+            .client
+            .execute(&self.elf, &stdin)
+            .map_err(|err| ProvingError::Execution(err.to_string()))?;
 
         println!("Cycles: {}", report.total_instruction_count());
         println!("Public values: {}", hex::encode(public_values.to_vec()));
@@ -43,7 +50,7 @@ impl ProvingClient {
         let proof = self
             .client
             .prove(&self.pk, &stdin, SP1ProofMode::Groth16)
-            .map_err(|err| eyre!("{err}"))?;
+            .map_err(|err| ProvingError::ProofGeneration(err.to_string()))?;
 
         Ok(proof)
     }
@@ -51,4 +58,13 @@ impl ProvingClient {
     pub fn vk_hash(&self) -> String {
         self.vk.bytes32()
     }
+}
+
+#[derive(Debug, Error)]
+pub enum ProvingError {
+    #[error("Failed to execute: {0}")]
+    Execution(String),
+
+    #[error("Failed to generate proof: {0}")]
+    ProofGeneration(String),
 }
