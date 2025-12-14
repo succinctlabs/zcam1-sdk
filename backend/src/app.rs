@@ -15,10 +15,10 @@ use zcam1_common::{
 };
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
-use crate::ELF;
+use crate::{ELF, MOCK_ELF};
 
 pub fn build_app() -> Router {
-    let state = RequestState::new(ELF);
+    let state = RequestState::new(ELF, MOCK_ELF);
 
     Router::new()
         .route("/ios/register/init", post(bootstrap_init))
@@ -135,7 +135,11 @@ async fn request_proof(
 
         let inputs = params.into_auth_inputs(challenge.to_string());
 
-        let proof = state.prover.prove(inputs, is_simulator_mock);
+        let proof = if is_simulator_mock {
+            state.mock_prover.prove(inputs)
+        } else {
+            state.prover.prove(inputs)
+        };
 
         match proof {
             Ok(proof) => {
@@ -213,18 +217,21 @@ struct RequestState {
     pub db: InMemoryDatabase,
     pub verifier: IosVerifier,
     pub prover: ProvingClient,
+    pub mock_prover: ProvingClient,
 }
 
 impl RequestState {
-    pub fn new(elf: &[u8]) -> Self {
+    pub fn new(elf: &[u8], mock_elf: &[u8]) -> Self {
         let db = InMemoryDatabase::default();
         let verifier = IosVerifier;
-        let prover = ProvingClient::new(elf);
+        let prover = ProvingClient::new(elf, false);
+        let mock_prover = ProvingClient::new(mock_elf, true);
 
         Self {
             db,
             verifier,
             prover,
+            mock_prover,
         }
     }
 }

@@ -1,44 +1,57 @@
 use eyre::Result;
 use sp1_prover::components::CpuProverComponents;
 use sp1_sdk::{
-    CpuProver, EnvProver, HashableKey, ProverClient, SP1ProofMode, SP1ProofWithPublicValues,
-    SP1ProvingKey, SP1Stdin, SP1VerifyingKey,
+    HashableKey, ProverClient, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
+    SP1VerifyingKey,
 };
 
 use thiserror::Error;
 
 pub struct ProvingClient {
-    env_prover: EnvProver,
-    mock_prover: CpuProver,
+    prover: Box<dyn sp1_sdk::Prover<CpuProverComponents>>,
+    elf: Vec<u8>,
     pk: SP1ProvingKey,
     vk: SP1VerifyingKey,
+    is_mock: bool,
 }
 
 impl ProvingClient {
-    pub fn new(elf: &[u8]) -> Self {
-        let env_prover = ProverClient::from_env();
-        let mock_prover = ProverClient::builder().mock().build();
+    pub fn new(elf: &[u8], is_mock: bool) -> Self {
+        let prover = if is_mock {
+            Box::new(ProverClient::builder().mock().build())
+                as Box<dyn sp1_sdk::Prover<CpuProverComponents>>
+        } else {
+            Box::new(ProverClient::from_env())
+        };
 
-        let (pk, vk) = env_prover.setup(elf);
+        let (pk, vk) = prover.setup(elf);
 
         Self {
-            env_prover,
-            mock_prover,
+            prover,
+            elf: elf.to_vec(),
             pk,
             vk,
+            is_mock,
         }
     }
 
     pub fn prove<I: Into<SP1Stdin>>(
         &self,
         inputs: I,
-        is_mock: bool,
     ) -> Result<SP1ProofWithPublicValues, ProvingError> {
         let stdin = inputs.into();
 
-        let prover = self.prover_for_request(is_mock);
+        if !self.is_mock {
+            let (_, report) = self
+                .prover
+                .execute(&self.elf, &stdin)
+                .map_err(|err| ProvingError::Execution(err.to_string()))?;
 
-        let proof = prover
+            println!("Cycles: {}", report.total_instruction_count());
+        }
+
+        let proof = self
+            .prover
             .prove(&self.pk, &stdin, SP1ProofMode::Groth16)
             .map_err(|err| ProvingError::ProofGeneration(err.to_string()))?;
 
@@ -47,14 +60,6 @@ impl ProvingClient {
 
     pub fn vk_hash(&self) -> String {
         self.vk.bytes32()
-    }
-
-    fn prover_for_request(&self, is_mock: bool) -> &dyn sp1_sdk::Prover<CpuProverComponents> {
-        if is_mock {
-            &self.mock_prover
-        } else {
-            &self.env_prover
-        }
     }
 }
 
