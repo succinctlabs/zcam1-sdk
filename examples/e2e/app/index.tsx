@@ -30,11 +30,14 @@ export default function Home() {
 
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
-    const targetPath = Dirs.DocumentDir + "/" + Util.basename(photo?.path!);
+    const targetPath = Dirs.DocumentDir + "/captured/";
+    const targetFile = targetPath + Util.basename(photo?.path!);
 
-    console.log("Target", targetPath);
+    await FileSystem.exists(targetPath).then((exists) => {
+      if (!exists) return FileSystem.mkdir(targetPath);
+    });
 
-    FileSystem.cp(photo?.path!, targetPath);
+    FileSystem.cp(photo?.path!, targetFile);
   };
 
   return (
