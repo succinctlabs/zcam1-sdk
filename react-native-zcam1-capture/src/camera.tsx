@@ -110,6 +110,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       );
     }
 
+    if (format == "dng") {
+      console.warn("[ZCAM] The DNG format is not supported yet.");
+
+      return new ZPhoto(result.filePath, result.filePath);
+    }
+
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
 
