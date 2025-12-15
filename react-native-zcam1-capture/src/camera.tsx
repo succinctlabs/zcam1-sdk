@@ -149,9 +149,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     // Perform C2PA signing for both real device and simulator.
     // Simulator now uses test credentials that allow proper signing.
+    console.log("[JS DEBUG] Creating ManifestEditor for:", originalPath);
     const manifestEditor = new ManifestEditor(originalPath);
 
     // Add the "capture" action to the manifest.
+    console.log("[JS DEBUG] Adding capture action");
     manifestEditor.addAction(
       JSON.stringify({
         action: "c2pa.capture",
@@ -165,6 +167,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     );
 
     // Add an assertion containing all data needed to later generate a proof.
+    console.log("[JS DEBUG] Adding succinct.bindings assertion");
     manifestEditor.addAssertion(
       "succinct.bindings",
       JSON.stringify({
@@ -176,13 +179,26 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     );
 
     // Sign the captured image with C2PA, producing a new signed JPEG file.
-    await manifestEditor.embedManifestToFile(
-      destinationPath,
-      base64.decode(dataHash),
-      "image/jpeg",
-      this.props.deviceInfo.contentKeyId,
-      this.props.deviceInfo.certChainPem,
-    );
+    console.log("[JS DEBUG] Calling embedManifestToFile with:");
+    console.log("[JS DEBUG]   destinationPath:", destinationPath);
+    console.log("[JS DEBUG]   dataHash length:", base64.decode(dataHash).length);
+    console.log("[JS DEBUG]   format: image/jpeg");
+    console.log("[JS DEBUG]   contentKeyId:", this.props.deviceInfo.contentKeyId);
+    console.log("[JS DEBUG]   certChainPem length:", this.props.deviceInfo.certChainPem.length);
+
+    try {
+      await manifestEditor.embedManifestToFile(
+        destinationPath,
+        base64.decode(dataHash),
+        "image/jpeg",
+        this.props.deviceInfo.contentKeyId,
+        this.props.deviceInfo.certChainPem,
+      );
+      console.log("[JS DEBUG] embedManifestToFile completed successfully");
+    } catch (error) {
+      console.error("[JS DEBUG] embedManifestToFile FAILED with error:", error);
+      throw error;
+    }
 
     return new ZPhoto(originalPath, destinationPath);
   }

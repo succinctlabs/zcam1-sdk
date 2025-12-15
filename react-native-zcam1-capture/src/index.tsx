@@ -72,7 +72,8 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
       0xa6, 0x6d, 0x7f, 0x1b
     ]);
 
-    // Use the matching test certificate chain (leaf + root CA).
+    // Use the matching test certificate (leaf only, not root CA).
+    // Per C2PA spec, cert chain should end BEFORE the root CA.
     certChainPem = `-----BEGIN CERTIFICATE-----
 MIIBqjCCAVCgAwIBAgIUPkCafHrb7oQtOzHKROCtLJ7Ik48wCgYIKoZIzj0EAwIw
 IjEgMB4GA1UEAwwXWkNBTTEgU2ltdWxhdG9yIFJvb3QgQ0EwHhcNMjUxMjEyMjA1
@@ -83,17 +84,6 @@ ZzBlMA4GA1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDCDAdBgNVHQ4E
 FgQUPqiYyTmfCRD+8qYGbCAUbaZtfxswHwYDVR0jBBgwFoAU30/EycXtmh8VBbys
 U1raHhESoJEwCgYIKoZIzj0EAwIDSAAwRQIhAPUlsEabVDS/mK4Rebonotz0s+Qz
 69b1kaVXFSC1LRlkAiBEmoX+jTznSpvwusxwZhDDysRTkckZ2WQMIqOncO96Pg==
------END CERTIFICATE-----
------BEGIN CERTIFICATE-----
-MIIBmTCCAT+gAwIBAgIUPKK7uM20VeV7ZpO6wuOYHKf5tUAwCgYIKoZIzj0EAwIw
-IjEgMB4GA1UEAwwXWkNBTTEgU2ltdWxhdG9yIFJvb3QgQ0EwHhcNMjUxMjEyMjA1
-MTU2WhcNMzUxMjEwMjA1MTU2WjAiMSAwHgYDVQQDDBdaQ0FNMSBTaW11bGF0b3Ig
-Um9vdCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBjmrwPOV3a2VHkRLYHK
-0xDFeyk+vH7WmGLleHLmiJP3WxVBf6P6a3sFEVFIgK8knYUFdhJ2eSd0VG5dj8w6
-EjejUzBRMB0GA1UdDgQWBBTfT8TJxe2aHxUFvKxTWtoeERKgkTAfBgNVHSMEGDAW
-gBTfT8TJxe2aHxUFvKxTWtoeERKgkTAPBgNVHRMBAf8EBTADAQH/MAoGCCqGSM49
-BAMCA0gAMEUCIQCPwjZKBQ07WgMsmf+GO5dOHv/87JeHIkVi5XsAlRO/zAIgSiGx
-Q4CT45+VKCq/wxQ2WBeI//3t5KzKi3FoTrcRCKo=
 -----END CERTIFICATE-----`;
   } else {
     // Real device: use Secure Enclave key.

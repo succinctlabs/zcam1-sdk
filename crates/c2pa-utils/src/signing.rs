@@ -55,12 +55,30 @@ fn sign_with_test_key(data: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     use p256::ecdsa::{Signature, SigningKey, signature::Signer};
     use p256::pkcs8::DecodePrivateKey;
 
+    eprintln!("[ZCAM DEBUG] sign_with_test_key: Starting signature generation");
+    eprintln!("[ZCAM DEBUG] sign_with_test_key: Data to sign length: {} bytes", data.len());
+
     // Parse the PEM private key.
     let signing_key = SigningKey::from_pkcs8_pem(SIMULATOR_TEST_PRIVATE_KEY_PEM)?;
 
     // Sign the data.
     let signature: Signature = signing_key.sign(data);
 
-    // Return the signature in DER format.
-    Ok(signature.to_der().as_bytes().to_vec())
+    // Get the P1363 format (raw r||s bytes).
+    let p1363_bytes = signature.to_bytes().to_vec();
+
+    eprintln!("[ZCAM DEBUG] sign_with_test_key: Generated P1363 signature length: {} bytes", p1363_bytes.len());
+    eprintln!("[ZCAM DEBUG] sign_with_test_key: First 16 bytes of signature: {:02x?}", &p1363_bytes[..16.min(p1363_bytes.len())]);
+
+    // Verify this is NOT DER format by checking if it starts with 0x30 (DER SEQUENCE tag).
+    if !p1363_bytes.is_empty() && p1363_bytes[0] == 0x30 {
+        eprintln!("[ZCAM ERROR] sign_with_test_key: WARNING - Signature appears to be DER format!");
+    } else {
+        eprintln!("[ZCAM DEBUG] sign_with_test_key: Signature is in P1363 format (not DER)");
+    }
+
+    // Return the signature in P1363 format (raw r||s bytes).
+    // This matches the format returned by Secure Enclave (X962/P1363) and avoids
+    // triggering DER-to-P1363 conversion in c2pa-rs.
+    Ok(p1363_bytes)
 }

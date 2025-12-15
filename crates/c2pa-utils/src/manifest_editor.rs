@@ -147,11 +147,29 @@ impl ManifestEditor {
 
             let signer = CallbackSigner::new(
                 move |_context, data: &[u8]| {
-                    eprintln!("[ZCAM DEBUG] Signing with test key in simulator mode");
+                    eprintln!("[ZCAM DEBUG] CallbackSigner: Signing with test key in simulator mode");
+                    eprintln!("[ZCAM DEBUG] CallbackSigner: Data to sign length: {} bytes", data.len());
+
                     // Sign the data.
                     let signature: Signature = signing_key.sign(data);
-                    // Return the signature in DER format.
-                    Ok(signature.to_der().as_bytes().to_vec())
+
+                    // Get the P1363 format (raw r||s bytes).
+                    let p1363_bytes = signature.to_bytes().to_vec();
+
+                    eprintln!("[ZCAM DEBUG] CallbackSigner: Generated P1363 signature length: {} bytes", p1363_bytes.len());
+                    eprintln!("[ZCAM DEBUG] CallbackSigner: First 16 bytes: {:02x?}", &p1363_bytes[..16.min(p1363_bytes.len())]);
+
+                    // Verify this is NOT DER format by checking if it starts with 0x30 (DER SEQUENCE tag).
+                    if !p1363_bytes.is_empty() && p1363_bytes[0] == 0x30 {
+                        eprintln!("[ZCAM ERROR] CallbackSigner: WARNING - Signature appears to be DER format!");
+                    } else {
+                        eprintln!("[ZCAM DEBUG] CallbackSigner: Signature is in P1363 format (not DER)");
+                    }
+
+                    // Return the signature in P1363 format (raw r||s bytes).
+                    // This avoids triggering DER-to-P1363 conversion in c2pa-rs which would
+                    // require certificate chain lookup.
+                    Ok(p1363_bytes)
                 },
                 SigningAlg::Es256,
                 certs,
