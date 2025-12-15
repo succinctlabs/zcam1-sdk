@@ -5,7 +5,7 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { Util } from "react-native-file-access";
+import { Dirs, Util } from "react-native-file-access";
 import { base64 } from "@scure/base";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { ManifestEditor } from "react-native-zcam1-c2pa";
@@ -124,8 +124,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     // Build destination path for the signed asset (JPEG).
     const destinationPath =
-      Util.dirname(originalPath) +
-      `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
+      Dirs.CacheDir +
+      `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
 
     let assertion: string;
     try {

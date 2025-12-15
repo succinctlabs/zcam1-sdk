@@ -6,7 +6,7 @@ import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
 } from "zcam1-common";
-import { Util } from "react-native-file-access";
+import { Dirs } from "react-native-file-access";
 
 /**
  * Configuration settings for backend communication.
@@ -95,8 +95,8 @@ export async function embedProof(
   manifestEditor.removeAssertion("succinct.bindings");
 
   const destinationPath =
-    Util.dirname(originalPath) +
-    `/tmp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+    Dirs.CacheDir +
+    `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
   // Embed the manifest to the photo
   await manifestEditor.embedManifestToFile(
