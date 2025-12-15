@@ -21,8 +21,14 @@ export default function Index() {
 
   useEffect(() => {
     async function fetchDevice() {
-      const deviceInfo = await initDevice(settings);
-      setDeviceInfo(deviceInfo);
+      try {
+        console.log("Initializing device with settings:", settings);
+        const deviceInfo = await initDevice(settings);
+        console.log("Device initialized successfully:", deviceInfo);
+        setDeviceInfo(deviceInfo);
+      } catch (error) {
+        console.error("Failed to initialize device:", error);
+      }
     }
 
     fetchDevice();
@@ -43,10 +49,16 @@ export default function Index() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          <ZCamera ref={camera} deviceInfo={deviceInfo!} settings={settings} />
+          {deviceInfo ? (
+            <ZCamera ref={camera} deviceInfo={deviceInfo} settings={settings} />
+          ) : (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <Button title="Initializing device..." disabled />
+            </View>
+          )}
         </View>
         <View>
-          <Button title="Capture" onPress={capture} />
+          <Button title="Capture" onPress={capture} disabled={!deviceInfo} />
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
