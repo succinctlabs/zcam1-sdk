@@ -36,7 +36,7 @@ export default function Index() {
     const photo = await camera.current?.takePhoto();
 
     try {
-      let res = await CameraRoll.saveAsset(photo!.originalPath, {
+      let res = await CameraRoll.saveAsset(photo!.path, {
         album: "ZCAM1",
       });
       console.log("Saved: " + res.node.image.filename);
