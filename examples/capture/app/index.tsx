@@ -1,6 +1,6 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useRef, useState, useEffect, useMemo } from "react";
-import { StyleSheet, Button, View } from "react-native";
+import { StyleSheet, Button, View, Text } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { DeviceInfo, initDevice, ZCamera } from "react-native-zcam1-capture";
 
@@ -22,9 +22,7 @@ export default function Index() {
   useEffect(() => {
     async function fetchDevice() {
       try {
-        console.log("Initializing device with settings:", settings);
         const deviceInfo = await initDevice(settings);
-        console.log("Device initialized successfully:", deviceInfo);
         setDeviceInfo(deviceInfo);
       } catch (error) {
         console.error("Failed to initialize device:", error);
@@ -38,7 +36,9 @@ export default function Index() {
     const photo = await camera.current?.takePhoto();
 
     try {
-      let res = await CameraRoll.saveAsset(photo!.path, { album: "ZCAM1" });
+      let res = await CameraRoll.saveAsset(photo!.originalPath, {
+        album: "ZCAM1",
+      });
       console.log("Saved: " + res.node.image.filename);
     } catch (error) {
       console.error("Error saving photo:", error);
@@ -52,8 +52,14 @@ export default function Index() {
           {deviceInfo ? (
             <ZCamera ref={camera} deviceInfo={deviceInfo} settings={settings} />
           ) : (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-              <Button title="Initializing device..." disabled />
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text>Initializing device...</Text>
             </View>
           )}
         </View>
