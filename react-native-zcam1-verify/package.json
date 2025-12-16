@@ -30,7 +30,7 @@
     "@contentauth/c2pa-types": "^0.4.0",
     "@noble/hashes": "^2.0.1",
     "@scure/base": "^2.0.0",
-    "react-native-zcam1-c2pa": "^0.1.0",
+    "react-native-zcam1-c2pa": "0.1.2",
     "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "peerDependencies": {
