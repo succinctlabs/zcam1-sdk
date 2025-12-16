@@ -6,10 +6,17 @@
   "scripts": {
     "build": "tsc"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
+  },
+  "author": "leruaa",
+  "license": "MIT",
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "registry": "http://ip-10-0-72-133:4873/"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",

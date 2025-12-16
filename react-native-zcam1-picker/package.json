@@ -5,7 +5,7 @@
   "main": "src/index",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/succinctlabs/zcam1-sdk"
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
   },
   "author": "leruaa",
   "license": "MIT",

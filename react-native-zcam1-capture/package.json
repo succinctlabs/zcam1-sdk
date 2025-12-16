@@ -8,9 +8,13 @@
     "type": "modules",
     "jsSrcsDir": "src"
   },
-  "author": " <> ()",
-  "license": "UNLICENSED",
-  "homepage": "#readme",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
+  },
+  "author": "leruaa",
+  "license": "MIT",
   "devDependencies": {
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0"
@@ -19,6 +23,9 @@
     "languages": "kotlin-objc",
     "type": "turbo-module",
     "version": "0.54.8"
+  },
+  "publishConfig": {
+    "registry": "http://ip-10-0-72-133:4873/"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",

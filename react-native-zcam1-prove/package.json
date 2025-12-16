@@ -5,11 +5,11 @@
   "main": "src/index",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leruaa/react-native-zcam1-prove.git"
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
   },
   "author": "leruaa",
   "license": "MIT",
-  "homepage": "https://github.com/leruaa/react-native-zcam1-prove#readme",
+  "homepage": "https://github.com/succinctlabs/zcam1-sdk.git#readme",
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
@@ -27,6 +27,9 @@
     "type": "turbo-module",
     "tools": [],
     "version": "0.55.1"
+  },
+  "publishConfig": {
+    "registry": "http://ip-10-0-72-133:4873/"
   },
   "dependencies": {
     "@scure/base": "^2.0.0",

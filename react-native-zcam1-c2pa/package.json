@@ -1,6 +1,6 @@
 {
   "name": "react-native-zcam1-c2pa",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.2",
   "description": "ZCAM1 C2PA SDK",
   "main": "src/index",
   "codegenConfig": {
@@ -11,11 +11,11 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/succinctlabs/zcam1.git"
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
   },
-  "author": " <> ()",
-  "license": "UNLICENSED",
-  "homepage": "#readme",
+  "author": "leruaa",
+  "license": "MIT",
+  "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
   "devDependencies": {
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0",
