@@ -52,7 +52,14 @@ export const ZImagePicker = (props: ZCameraProps) => {
       assetType: "Photos",
     });
 
-    console.log("image", photos.edges[0].node.image);
+    // Sort photos with most recent first (descending timestamp)
+    photos.edges.sort(
+      (a, b) => b.node.modificationTimestamp - a.node.modificationTimestamp,
+    );
+
+    for (const p of photos.edges) {
+      console.log(p.node);
+    }
 
     const photoUris = photos.edges
       .map((photo) => photo.node.image.uri)
@@ -64,8 +71,14 @@ export const ZImagePicker = (props: ZCameraProps) => {
   const loadImagesfromPrivateFolder = async (
     source: PrivateFolder,
   ): Promise<void> => {
-    const photoFiles = await FileSystem.ls(source.path);
-    const photoUris = photoFiles.map((f) => `file://${source.path}/${f}`);
+    const photoFiles = await FileSystem.statDir(source.path);
+
+    // Sort photos with most recent first (descending timestamp)
+    photoFiles.sort((a, b) => b.lastModified - a.lastModified);
+
+    const photoUris = photoFiles
+      .filter((f) => f.type === "file")
+      .map((f) => `file://${f.path}`);
 
     setPhotos(photoUris);
   };
