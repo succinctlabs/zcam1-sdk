@@ -61,7 +61,7 @@ The examples lives under the `examples` folder in this repo. to run the examples
 
 > [!NOTE]
 > To retrieve your Team ID, complete the following steps:
-> 1. Open Keychain access
+> 1. Open Keychain access on your Mac
 > 2. Locate a certificate named "Apple Development" and open it
 > 3. The Team ID is the field "Organizational unit" under "Subject name" section
 
