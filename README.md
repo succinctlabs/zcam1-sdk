@@ -32,15 +32,31 @@ This repository hosts the ZCAM1 authenticity stack, combining a Rust backend, iO
 
 ## Prerequisites
 
-To build the iOS UniFFI-based C2PA bindings used by `react-native-zcam1-c2pa`, you only need the Rust toolchain with the iOS targets installed via `rustup`:
+When installing the React Native packages with `npm i`, Rust bindings are built. You need to have Rust installed, with the iOS targets installed via `rustup`:
 
-```/dev/null/ios-rust-targets.sh#L1-3
+```bash
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
 > [!CAUTION]
 > The UniFFI binidings are built when the React Native libraries are installed with `npm install`. It's expected to takes a lot of time.
 
+
+## Running the examples
+
+The examples lives under the `examples` folder in this repo. to run the examples on a device, complete the following steps:
+
+1. install Xcode
+2. If you don't have a developper account, you can [create a personal team].
+3. Go to an example folder (for instance `cd examples/e2e`)
+4. Copy the `.env.example` file to `.env`
+5. Set `EXPO_PUBLIC_APP_ID` to something like `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`
+6. Update the `bundleIdentifier` field in the `app.json` file with the bundle ID from step 3
+7. run `npx expo prebuild && npx expo run:ios --device`
+8. It will lilely fail; You need to trust the developper on your device:
+   Open the iOS device settings -> General -> Device Management -> Click Trust for the app
+
+[create a personal team]: https://stackoverflow.com/questions/4952820/test-ios-app-on-device-without-apple-developer-program-or-jailbreak/66484365#66484365
 
 ## `react-native-zcam1-capture`
 
