@@ -15,7 +15,9 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/succinctlabs/zcam1.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift}", "ios/generated/**/*.{h,m,mm}", "cpp/**/*.{hpp,cpp,c,h}", "cpp/generated/**/*.{hpp,cpp,c,h}"
+  # Exclude ios/generated from source_files since ReactCodegen generates these files centrally
+  s.source_files = "ios/**/*.{h,m,mm,swift}", "cpp/**/*.{hpp,cpp,c,h}", "cpp/generated/**/*.{hpp,cpp,c,h}"
+  s.exclude_files = "ios/generated/**/*"
   s.vendored_frameworks = "Zcam1C2paFramework.xcframework"
   s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
 
