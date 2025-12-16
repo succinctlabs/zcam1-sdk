@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.zcam1-capture-example",
+      "bundleIdentifier": "com.matt.zcam1-capture-example",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses your camera to capture photos and videos.",
         "NSPhotoLibraryUsageDescription": "This app need access to the photo gallery",
