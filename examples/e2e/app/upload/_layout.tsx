@@ -10,12 +10,6 @@ export default function StackLayout() {
           presentation: "modal",
         }}
       />
-      <Stack.Screen
-        name="proved"
-        options={{
-          presentation: "modal",
-        }}
-      />
     </Stack>
   );
 }

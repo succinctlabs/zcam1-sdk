@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Button, View } from "react-native";
+import { StyleSheet, Button, View, Text } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { FileSystem, Dirs, Util } from "react-native-file-access";
 import { DeviceInfo, initDevice, ZCamera } from "react-native-zcam1-capture";
+import Toast from "react-native-toast-message";
 
 export default function Home() {
   const camera = useRef<ZCamera>(null);
@@ -37,18 +38,37 @@ export default function Home() {
       if (!exists) return FileSystem.mkdir(targetPath);
     });
 
-    FileSystem.cp(photo?.path!, targetFile);
+    await FileSystem.cp(photo?.path!, targetFile);
+
+    Toast.show({
+      type: "success",
+      text1: "A photo has been captured",
+      text2: "And saved to an internal folder",
+    });
   };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          <ZCamera ref={camera} deviceInfo={deviceInfo!} settings={settings} />
+          {deviceInfo ? (
+            <ZCamera ref={camera} deviceInfo={deviceInfo} settings={settings} />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text>Initializing device...</Text>
+            </View>
+          )}
         </View>
         <View>
           <Button title="Capture" onPress={capture} />
         </View>
+        <Toast />
       </SafeAreaView>
     </SafeAreaProvider>
   );

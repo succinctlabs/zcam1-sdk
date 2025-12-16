@@ -2,10 +2,16 @@ import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { privateDirectory, ZImagePicker } from "react-native-zcam1-picker";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function Upload() {
   const router = useRouter();
   const path = privateDirectory() + "/captured";
+  const isFocused = useIsFocused();
+
+  if (!isFocused) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

@@ -10,7 +10,6 @@ export default function Index() {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(
     undefined,
   );
-  const [disabled, setDisabled] = useState(true);
 
   const settings = useMemo(() => {
     return {
@@ -24,7 +23,6 @@ export default function Index() {
     async function fetchDevice() {
       const deviceInfo = await initDevice(settings);
       setDeviceInfo(deviceInfo);
-      setDisabled(false);
     }
 
     fetchDevice();
@@ -60,7 +58,7 @@ export default function Index() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          <Button title="Pick photo" onPress={pick} disabled={disabled} />
+          <Button title="Pick photo" onPress={pick} disabled={!deviceInfo} />
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

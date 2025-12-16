@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { embedProof, initDevice, DeviceInfo } from "react-native-zcam1-prove";
+import Toast from "react-native-toast-message";
+import { FileSystem } from "react-native-file-access";
 
 export default function Proving() {
   const appId = process.env.EXPO_PUBLIC_APP_ID!;
@@ -38,9 +40,16 @@ export default function Proving() {
 
         try {
           await CameraRoll.saveAsset(outputPath, { album: "ZCAM1" });
-          console.log("Photo with proof saved");
+          await FileSystem.unlink(uri);
           router.dismiss();
-          router.navigate("/upload/proved");
+
+          Toast.show({
+            type: "success",
+            text1: "The proof has been generated",
+            text2: "The photo has benn saved to the iOS Photo Gallery",
+          });
+
+          router.navigate("/");
         } catch (error) {
           console.error("Error saving photo:", error);
         }
@@ -72,7 +81,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    marginTop: 8,
+    margin: 8,
     fontSize: 20,
     fontWeight: "600",
   },
