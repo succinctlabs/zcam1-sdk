@@ -43,13 +43,23 @@ export async function getCertChain(
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
   if (publicKey.kty === "EC") {
-    // Convert standard base64 to base64url format.
-    const toBase64Url = (b64: string): string => {
-      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    // The @pagopa/io-react-native-crypto library returns x and y in base64url format.
+    // Try to decode directly, and if that fails, try converting from standard base64.
+    const decodeBase64OrBase64Url = (encoded: string): Uint8Array => {
+      try {
+        // First try decoding as base64url (no padding).
+        return base64url.decode(encoded);
+      } catch (e) {
+        // If that fails, try converting from standard base64 to base64url.
+        const toBase64Url = (b64: string): string => {
+          return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+        };
+        return base64url.decode(toBase64Url(encoded));
+      }
     };
 
-    const x = base64url.decode(toBase64Url(publicKey.x));
-    const y = base64url.decode(toBase64Url(publicKey.y));
+    const x = decodeBase64OrBase64Url(publicKey.x);
+    const y = decodeBase64OrBase64Url(publicKey.y);
 
     const out = new Uint8Array(1 + x.length + y.length);
     out[0] = 0x04; // uncompressed point format
