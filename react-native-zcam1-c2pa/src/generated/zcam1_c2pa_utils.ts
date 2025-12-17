@@ -69,6 +69,24 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
+export function computeHash(
+  path: string,
+  exclusions: Array<Exclusion>,
+): ArrayBuffer /*throws*/ {
+  return FfiConverterArrayBuffer.lift(
+    uniffiCaller.rustCallWithError(
+      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*caller:*/ (callStatus) => {
+        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
+          FfiConverterString.lower(path),
+          FfiConverterArrayTypeExclusion.lower(exclusions),
+          callStatus,
+        );
+      },
+      /*liftString:*/ FfiConverterString.lift,
+    ),
+  );
+}
 export function extractManifest(
   path: string,
 ): ManifestStoreInterface /*throws*/ {
@@ -1178,6 +1196,14 @@ function uniffiEnsureInitialized() {
     throw new UniffiInternalError.ContractVersionMismatch(
       scaffoldingContractVersion,
       bindingsContractVersion,
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash() !==
+    43618
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_func_compute_hash",
     );
   }
   if (

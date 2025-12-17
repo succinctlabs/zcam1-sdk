@@ -13,11 +13,9 @@ Pod::Spec.new do |s|
   s.authors      = package["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
-  s.source       = { :git => "https://github.com/succinctlabs/zcam1.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/succinctlabs/zcam1-sdk.git", :tag => "#{s.version}" }
 
-  # Exclude ios/generated from source_files since ReactCodegen generates these files centrally
-  s.source_files = "ios/**/*.{h,m,mm,swift}", "cpp/**/*.{hpp,cpp,c,h}", "cpp/generated/**/*.{hpp,cpp,c,h}"
-  s.exclude_files = "ios/generated/**/*"
+  s.source_files = "ios/**/*.{h,m,mm,swift}", "ios/generated/**/*.{h,m,mm}", "cpp/**/*.{hpp,cpp,c,h}", "cpp/generated/**/*.{hpp,cpp,c,h}"
   s.vendored_frameworks = "Zcam1C2paFramework.xcframework"
   s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
 
@@ -43,12 +41,4 @@ Pod::Spec.new do |s|
       s.dependency "ReactCommon/turbomodule/core"
     end
   end
-
-  # Add dependency on ReactCodegen for codegen headers
-  s.dependency "ReactCodegen"
-
-  # Add header search paths for codegen after install_modules_dependencies
-  s.pod_target_xcconfig = {
-    'HEADER_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/../../../apps/zcam/ios/build/generated/ios"'
-  }
 end

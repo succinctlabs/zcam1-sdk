@@ -5,7 +5,7 @@ use c2pa::{hash_stream_by_alg, Reader};
 
 use crate::{
     error::Error,
-    types::{DataHash, ManifestStore},
+    types::{DataHash, Exclusion, ManifestStore},
 };
 
 pub mod error;
@@ -26,10 +26,18 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, Error> {
 }
 
 #[uniffi::export]
-pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, Error> {
+pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, Error> {
     let mut file = File::open(path.replace("file://", ""))?;
+    let exclusions_range = exclusions.iter().map(Into::into).collect();
+    let hash = hash_stream_by_alg("sha256", &mut file, Some(exclusions_range), true)?;
+
+    Ok(hash)
+}
+
+#[uniffi::export]
+pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, Error> {
     let expected_hash = Base64::decode_vec(&data_hash.hash)?;
-    let hash = hash_stream_by_alg("sha256", &mut file, Some(data_hash.as_hash_ranges()), true)?;
+    let hash = compute_hash(path, &data_hash.exclusions)?;
 
     Ok(hash == expected_hash)
 }
