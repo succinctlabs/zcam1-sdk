@@ -26,4 +26,10 @@ pub enum Error {
 
     #[error("Expected Unknown content in extension")]
     UnknownContentExpected,
+
+    #[error("RP ID mismatch: device RP ID does not match expected value")]
+    RpIdMismatch,
+
+    #[error("Invalid app ID format")]
+    InvalidAppId,
 }

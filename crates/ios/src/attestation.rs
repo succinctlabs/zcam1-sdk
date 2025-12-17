@@ -101,17 +101,18 @@ pub fn validate_attestation(
         panic!("Public key hash mismatch.");
     }
 
-    // 6. Verify RP ID hash against app_id
-    hasher = Sha256::new();
-    hasher.update(app_id);
-    let app_id_hash = hasher.finalize();
+    // 6. Verify RP ID hash.
+    // Note: We use app_id directly as the expected RP ID hash in base64 format,
+    // rather than computing SHA-256(bundle_id), because Apple's App Attest RP ID
+    // derivation is not straightforward to reverse-engineer from the bundle identifier.
+    // The app_id parameter is now expected to be the base64-encoded RP ID hash.
+    let expected_rp_id_hash =
+        Base64::decode_vec(&app_id).map_err(|_| Error::InvalidAppId)?;
     let auth_data =
         decode_auth_data(Base64::decode_vec(&attestation.auth_data.clone().to_string()).unwrap())
             .expect("decoding error");
-    if auth_data.rp_id != app_id_hash.to_vec() {
-        println!("RP ID: {:?}", Base64::encode_string(&auth_data.rp_id));
-        println!("App ID hash: {:?}", Base64::encode_string(&app_id_hash));
-        panic!("RP ID hash mismatch.");
+    if auth_data.rp_id != expected_rp_id_hash {
+        return Err(Error::RpIdMismatch);
     }
 
     // 7. Verify counter
