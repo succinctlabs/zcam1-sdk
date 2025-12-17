@@ -3,7 +3,6 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
-import { Platform } from "react-native";
 import {
   getCertChain,
   getContentPublicKey,

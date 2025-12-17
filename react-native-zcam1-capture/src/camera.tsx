@@ -5,12 +5,11 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { Dirs, Util } from "react-native-file-access";
+import { Dirs } from "react-native-file-access";
 import { base64 } from "@scure/base";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
-import { ManifestEditor } from "react-native-zcam1-c2pa";
+import { computeHash, ManifestEditor } from "react-native-zcam1-c2pa";
 import { DeviceInfo, Settings, ZPhoto } from ".";
-import { hashFile } from "./crypto";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
@@ -118,9 +117,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
-
-    // Compute hash of the captured file (for signImageWithDataHashed).
-    const dataHash = await hashFile(originalPath);
+    const dataHash = computeHash(originalPath, []);
 
     const tiff = (metadata as any)["{TIFF}"] ?? {};
     const when =
@@ -136,7 +133,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     let assertion: string;
     try {
       assertion = await generateHardwareSignatureWithAssertion(
-        dataHash,
+        base64.encode(new Uint8Array(dataHash)),
         this.props.deviceInfo.deviceKeyId,
       );
     } catch (error: any) {
@@ -181,10 +178,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }),
     );
 
+    const manifestStart = Date.now();
     // Sign the captured image with C2PA, producing a new signed JPEG file.
     await manifestEditor.embedManifestToFile(
       destinationPath,
-      base64.decode(dataHash),
+      dataHash,
       "image/jpeg",
       this.props.deviceInfo.contentKeyId,
       this.props.deviceInfo.certChainPem,
