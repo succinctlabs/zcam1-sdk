@@ -3,7 +3,7 @@ import {
   getPublicKeyFixed,
   PublicKey,
 } from "@pagopa/io-react-native-crypto";
-import { base64urlnopad } from "@scure/base";
+import { base64url } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
 import fetch from "cross-fetch";
 
@@ -43,8 +43,13 @@ export async function getCertChain(
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
   if (publicKey.kty === "EC") {
-    const x = base64urlnopad.decode(publicKey.x);
-    const y = base64urlnopad.decode(publicKey.y);
+    // Convert standard base64 to base64url format.
+    const toBase64Url = (b64: string): string => {
+      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    };
+
+    const x = base64url.decode(toBase64Url(publicKey.x));
+    const y = base64url.decode(toBase64Url(publicKey.y));
 
     const out = new Uint8Array(1 + x.length + y.length);
     out[0] = 0x04; // uncompressed point format

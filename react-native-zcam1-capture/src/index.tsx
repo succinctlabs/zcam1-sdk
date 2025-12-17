@@ -144,17 +144,24 @@ export async function updateRegistration(
     }
   }
 
+  const validatePayload = {
+    attestation,
+    keyId,
+    appId: settings.appId,
+    production: settings.production,
+  };
+  console.log("[ZCAM SDK] Sending to /ios/register/validate:", {
+    appId: settings.appId,
+    keyIdLength: keyId.length,
+    attestationLength: attestation.length,
+  });
+
   response = await fetch(settings.backendUrl + "/ios/register/validate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      attestation,
-      keyId,
-      appId: settings.appId,
-      production: settings.production,
-    }),
+    body: JSON.stringify(validatePayload),
   });
 
   if (!response.ok) {

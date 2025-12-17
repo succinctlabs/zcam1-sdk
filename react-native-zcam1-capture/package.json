@@ -38,8 +38,5 @@
   "peerDependencies": {
     "react": ">=19",
     "react-native": ">=0.81"
-  },
-  "publishConfig": {
-    "registry": "http://ip-10-0-72-133:4873/"
   }
 }
