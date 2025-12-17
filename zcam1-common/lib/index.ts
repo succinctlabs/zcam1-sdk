@@ -3,7 +3,7 @@ import {
   getPublicKeyFixed,
   PublicKey,
 } from "@pagopa/io-react-native-crypto";
-import { base64url } from "@scure/base";
+import { base64, base64url } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
 import fetch from "cross-fetch";
 
@@ -43,18 +43,36 @@ export async function getCertChain(
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
   if (publicKey.kty === "EC") {
-    // The @pagopa/io-react-native-crypto library returns x and y in base64url format.
-    // Try to decode directly, and if that fails, try converting from standard base64.
+    // The @pagopa/io-react-native-crypto library may return x and y in various base64 formats.
+    // Try multiple decoding strategies.
     const decodeBase64OrBase64Url = (encoded: string): Uint8Array => {
+      // Strategy 1: Try as-is with base64url decoder (handles base64url without padding).
       try {
-        // First try decoding as base64url (no padding).
         return base64url.decode(encoded);
-      } catch (e) {
-        // If that fails, try converting from standard base64 to base64url.
-        const toBase64Url = (b64: string): string => {
-          return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-        };
-        return base64url.decode(toBase64Url(encoded));
+      } catch (e1) {
+        // Strategy 2: Try adding padding if it's base64url without padding.
+        try {
+          const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
+          return base64url.decode(padded);
+        } catch (e2) {
+          // Strategy 3: Convert from standard base64 to base64url.
+          try {
+            const base64urlEncoded = encoded
+              .replace(/\+/g, "-")
+              .replace(/\//g, "_")
+              .replace(/=/g, "");
+            return base64url.decode(base64urlEncoded);
+          } catch (e3) {
+            // Strategy 4: It might be standard base64.
+            try {
+              return base64.decode(encoded);
+            } catch (e4) {
+              throw new Error(
+                `Failed to decode base64/base64url string: ${encoded.substring(0, 20)}... (all strategies failed)`
+              );
+            }
+          }
+        }
       }
     };
 

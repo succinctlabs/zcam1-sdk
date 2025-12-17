@@ -1,8 +1,11 @@
 {
   "name": "zcam1-common",
-  "version": "0.1.1-rc.2",
+  "version": "0.1.1-rc.5",
   "description": "ZCAM1 SDK low level primitives",
-  "main": "lib/index",
+  "main": "dist/index",
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc"
   },
