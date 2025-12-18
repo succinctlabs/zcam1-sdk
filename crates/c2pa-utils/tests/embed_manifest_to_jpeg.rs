@@ -43,7 +43,7 @@ async fn test_embed_manifest_to_jpg() {
     let destination_path = destination_path.join("output.jpg");
 
     editor
-        .embed_manifest_to_file(destination_path.to_str().unwrap(), "image/jpeg")
+        .embed_manifest_to_file(destination_path.to_str().unwrap(), "jpg")
         .await
         .unwrap();
 
