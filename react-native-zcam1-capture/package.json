@@ -15,6 +15,7 @@
   },
   "author": "leruaa",
   "license": "MIT",
+  "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
   "devDependencies": {
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0"
