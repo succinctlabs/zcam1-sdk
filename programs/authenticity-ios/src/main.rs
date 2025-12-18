@@ -14,7 +14,7 @@ pub fn main() {
         &auth_inputs.challenge,
         &auth_inputs.app_id,
         auth_inputs.app_attest_production,
-        true, // Skip full chain validation for development
+        !auth_inputs.app_attest_production, // Skip full chain validation for development
     )
     .unwrap();
 

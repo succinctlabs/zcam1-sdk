@@ -26,15 +26,21 @@ impl Verifier for IosVerifier {
             &expected_challenge,
             &inputs.app_id,
             inputs.production,
-            true, // Skip full chain validation for development (leaf_cert_only)
+            !inputs.production, // Skip full chain validation for development (leaf_cert_only)
         );
 
         match &result {
             Ok(_) => {
-                info!("Attestation validation succeeded for device {}", inputs.key_id);
+                info!(
+                    "Attestation validation succeeded for device {}",
+                    inputs.key_id
+                );
             }
             Err(e) => {
-                warn!("Attestation validation failed for device {}: {:?}", inputs.key_id, e);
+                warn!(
+                    "Attestation validation failed for device {}: {:?}",
+                    inputs.key_id, e
+                );
             }
         }
 
