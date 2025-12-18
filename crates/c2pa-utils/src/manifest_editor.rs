@@ -154,7 +154,7 @@ impl ManifestEditor {
         let input_bytes = self.strip_exclusions_from_source()?;
         let mut input_stream = Cursor::new(input_bytes);
         let destination = destination.replace("file://", "");
-        let mut output_file = File::open(destination)?;
+        let mut output_file = File::create(destination)?;
 
         builder
             .sign_async(&*self.signer, format, &mut input_stream, &mut output_file)
