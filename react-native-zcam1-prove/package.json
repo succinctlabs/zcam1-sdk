@@ -34,7 +34,7 @@
   "dependencies": {
     "@scure/base": "^2.0.0",
     "react-native-file-access": "^3.2.0",
-    "react-native-zcam1-c2pa": "^0.1.0",
+    "react-native-zcam1-c2pa": "^0.1.5",
     "zcam1-common": "^0.1.0"
   }
 }

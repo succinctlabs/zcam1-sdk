@@ -78,6 +78,8 @@ export async function embedProof(
   const manifestEditor = ManifestEditor.fromFileAndManifest(
     originalPath,
     store,
+    deviceInfo.contentKeyId,
+    deviceInfo.certChainPem,
   );
 
   // Generate the proof
@@ -101,10 +103,7 @@ export async function embedProof(
   // Embed the manifest to the photo
   await manifestEditor.embedManifestToFile(
     destinationPath,
-    base64.decode(dataHash.hash),
     "image/jpeg",
-    deviceInfo.contentKeyId,
-    deviceInfo.certChainPem,
   );
 
   return destinationPath;
