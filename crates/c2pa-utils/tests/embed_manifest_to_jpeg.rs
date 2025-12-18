@@ -38,15 +38,16 @@ async fn test_embed_manifest_to_jpg() {
     );
 
     let editor = ManifestEditor::with_signer("./tests/fixtures/sample.jpg", signer);
-    let destination_file = tempdir().unwrap().path().join("output.jpg");
-    let destination_path = destination_file.to_str().unwrap();
+    let destination_file = tempdir().unwrap();
+    let destination_path = destination_file.path();
+    let destination_path = destination_path.join("output.jpg");
 
     editor
-        .embed_manifest_to_file(destination_path, vec![0, 1, 2], "image/jpeg")
+        .embed_manifest_to_file(destination_path.to_str().unwrap(), "image/jpeg")
         .await
         .unwrap();
 
-    let store = extract_manifest(destination_path).unwrap();
+    let store = extract_manifest(destination_path.to_str().unwrap()).unwrap();
 
     println!("{store:#?}")
 }
