@@ -102,21 +102,14 @@ pub fn validate_attestation(
     }
 
     // 6. Verify RP ID hash.
-    // Note: We use app_id directly as the expected RP ID hash in base64 format,
-    // rather than computing SHA-256(bundle_id), because Apple's App Attest RP ID
-    // derivation is not straightforward to reverse-engineer from the bundle identifier.
-    // The app_id parameter is now expected to be the base64-encoded RP ID hash.
-    // Skip RP ID hash verification in development mode (when leaf_cert_only is true).
-    let auth_data_bytes =
-        Base64::decode_vec(&attestation.auth_data).map_err(Error::DecodeAuthDataFailed)?;
-    let auth_data = decode_auth_data(auth_data_bytes).expect("decoding error");
-
-    if !leaf_cert_only {
-        let expected_rp_id_hash =
-            Base64::decode_vec(&app_id).map_err(|_| Error::InvalidAppId)?;
-        if auth_data.rp_id != expected_rp_id_hash {
-            return Err(Error::RpIdMismatch);
-        }
+    hasher = Sha256::new();
+    hasher.update(app_id);
+    let app_id_hash = hasher.finalize();
+    let auth_data =
+        decode_auth_data(Base64::decode_vec(&attestation.auth_data.clone().to_string()).unwrap())
+            .expect("decoding error");
+    if auth_data.rp_id != app_id_hash.to_vec() {
+        return Err(Error::RpIdMismatch);
     }
 
     // 7. Verify counter
