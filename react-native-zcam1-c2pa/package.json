@@ -1,6 +1,6 @@
 {
   "name": "react-native-zcam1-c2pa",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "ZCAM1 C2PA SDK",
   "main": "src/index",
   "codegenConfig": {
@@ -9,6 +9,16 @@
     "jsSrcsDir": "src"
   },
   "type": "module",
+  "files": [
+    "src/",
+    "cpp/",
+    "ios/",
+    "Zcam1C2paFramework.xcframework/",
+    "Zcam1C2pa.podspec",
+    "README.md",
+    "turbo.json",
+    "ubrn.config.yaml"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
@@ -43,7 +53,6 @@
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
-    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
-    "postinstall": "ubrn checkout && CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release"
+    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/"
   }
 }
