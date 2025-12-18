@@ -26,4 +26,25 @@ pub enum Error {
 
     #[error("Expected Unknown content in extension")]
     UnknownContentExpected,
+
+    #[error("RP ID mismatch: device RP ID does not match expected value")]
+    RpIdMismatch,
+
+    #[error("Invalid app ID format")]
+    InvalidAppId,
+
+    #[error("Public key hash mismatch")]
+    PublicKeyHashMismatch,
+
+    #[error("Counter must be 0 for attestation")]
+    InvalidCounter,
+
+    #[error("AAGUID must be 16 bytes")]
+    InvalidAaguidLength,
+
+    #[error("AAGUID mismatch")]
+    AaguidMismatch,
+
+    #[error("AAGUID not found")]
+    AaguidNotFound,
 }

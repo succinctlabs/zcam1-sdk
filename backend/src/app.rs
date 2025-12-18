@@ -65,7 +65,7 @@ async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
-    info!("POST /ios/register/validate - key_id: {}", params.key_id);
+    info!("POST /ios/register/validate - key_id: {}, app_id: {}", params.key_id, params.app_id);
 
     let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
         (

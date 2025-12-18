@@ -9345,6 +9345,7 @@ dependencies = [
  "sp1-sdk",
  "spki",
  "thiserror 2.0.17",
+ "tracing",
  "x509-cert",
  "x509-parser 0.16.0",
  "zcam1-ios",

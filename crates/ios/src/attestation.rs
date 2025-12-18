@@ -98,10 +98,10 @@ pub fn validate_attestation(
     hasher.update(credential_public_key);
     let credential_public_key_hash = hasher.finalize();
     if credential_public_key_hash.to_vec() != key_id {
-        panic!("Public key hash mismatch.");
+        return Err(Error::PublicKeyHashMismatch);
     }
 
-    // 6. Verify RP ID hash against app_id
+    // 6. Verify RP ID hash.
     hasher = Sha256::new();
     hasher.update(app_id);
     let app_id_hash = hasher.finalize();
@@ -109,21 +109,19 @@ pub fn validate_attestation(
         decode_auth_data(Base64::decode_vec(&attestation.auth_data.clone().to_string()).unwrap())
             .expect("decoding error");
     if auth_data.rp_id != app_id_hash.to_vec() {
-        println!("RP ID: {:?}", Base64::encode_string(&auth_data.rp_id));
-        println!("App ID hash: {:?}", Base64::encode_string(&app_id_hash));
-        panic!("RP ID hash mismatch.");
+        return Err(Error::RpIdMismatch);
     }
 
     // 7. Verify counter
     if auth_data.counter > 0 {
-        panic!("Counter must be 0.");
+        return Err(Error::InvalidCounter);
     }
 
     // 8. Very aaguid is present and is 16 bytes, if production \x61\x70\x70\x61\x74\x74\x65\x73\x74\x00\x00\x00\x00\x00\x00\x00 or appattestdevelop if dev
     match &auth_data.aaguid {
         Some(aaguid) => {
             if aaguid.len() != 16 {
-                panic!("AAGUID must be 16 bytes.");
+                return Err(Error::InvalidAaguidLength);
             }
             // check in bytes and in ASCII
             if production
@@ -137,8 +135,7 @@ pub fn validate_attestation(
                             97, 112, 112, 97, 116, 116, 101, 115, 116, 0, 0, 0, 0, 0, 0, 0,
                         ])
             {
-                println!("aaguid: {:?}", aaguid.as_slice());
-                panic!("AAGUID mismatch (prod).");
+                return Err(Error::AaguidMismatch);
             }
 
             if !production
@@ -148,11 +145,10 @@ pub fn validate_attestation(
                         0x65, 0x6c, 0x6f, 0x70,
                     ]
             {
-                println!("aaguid: {:?}", aaguid.as_slice());
-                panic!("AAGUID mismatch (dev).");
+                return Err(Error::AaguidMismatch);
             }
         }
-        None => panic!("AAGUID not found."),
+        None => return Err(Error::AaguidNotFound),
     }
     Ok(hex::encode(credential_public_key))
 }

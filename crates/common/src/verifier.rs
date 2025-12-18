@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tracing::{info, warn};
 use zcam1_ios::{IosRegisterInputs, IosVerifier, validate_attestation};
 
 pub trait Verifier {
@@ -25,8 +26,23 @@ impl Verifier for IosVerifier {
             &expected_challenge,
             &inputs.app_id,
             inputs.production,
-            false,
+            !inputs.production, // Skip full chain validation for development (leaf_cert_only)
         );
+
+        match &result {
+            Ok(_) => {
+                info!(
+                    "Attestation validation succeeded for device {}",
+                    inputs.key_id
+                );
+            }
+            Err(e) => {
+                warn!(
+                    "Attestation validation failed for device {}: {:?}",
+                    inputs.key_id, e
+                );
+            }
+        }
 
         Ok(result.is_ok())
     }
