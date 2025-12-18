@@ -1,0 +1,8 @@
+{
+  "name": "zcam1-sdk",
+  "private": true,
+  "workspaces": [
+    "zcam1-common",
+    "react-native-zcam1-*"
+  ]
+}

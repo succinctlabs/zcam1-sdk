@@ -24,9 +24,6 @@
     "type": "turbo-module",
     "version": "0.54.8"
   },
-  "publishConfig": {
-    "registry": "http://ip-10-0-72-133:4873/"
-  },
   "dependencies": {
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@scure/base": "^2.0.0",

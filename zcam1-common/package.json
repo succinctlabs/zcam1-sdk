@@ -15,9 +15,6 @@
   "devDependencies": {
     "typescript": "^5.9.3"
   },
-  "publishConfig": {
-    "registry": "http://ip-10-0-72-133:4873/"
-  },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
     "@pagopa/io-react-native-crypto": "^1.2.4",
