@@ -176,9 +176,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       }),
     );
 
-    const manifestStart = Date.now();
-    // Sign the captured image with C2PA, producing a new signed JPEG file.
-    await manifestEditor.embedManifestToFile(destinationPath, "image/jpeg");
+    // Sign the captured image with C2PA, producing a new signed file.
+    await manifestEditor.embedManifestToFile(destinationPath, format);
 
     return new ZPhoto(originalPath, destinationPath);
   }
