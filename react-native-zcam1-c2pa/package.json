@@ -50,6 +50,7 @@
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
-    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/"
+    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
+    "prepublish": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release"
   }
 }
