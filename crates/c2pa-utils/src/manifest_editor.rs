@@ -17,17 +17,18 @@ use crate::{
     types::{Exclusion, ManifestStore},
 };
 
-#[derive(Debug, uniffi::Object)]
+#[derive(uniffi::Object)]
 pub struct ManifestEditor {
     source_file_path: String,
     exclusions: Vec<Exclusion>,
     builder: Arc<RwLock<Builder>>,
+    signer: Box<dyn AsyncSigner + Send>,
 }
 
 #[uniffi::export]
 impl ManifestEditor {
     #[uniffi::constructor(name = "new")]
-    pub fn new(path: &str) -> Self {
+    pub fn new(path: &str, key_tag: Vec<u8>, certs: &str) -> Self {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 
         let mut builder = Builder::new();
@@ -38,15 +39,30 @@ impl ManifestEditor {
             .push(ClaimGeneratorInfo::new("ZCAM1"));
         builder.definition.vendor = Some("Succinct".to_string());
 
+        let signer = CallbackSigner::new(
+            move |_context, data: &[u8]| {
+                sign_with_enclave(&key_tag, data)
+                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+            },
+            SigningAlg::Es256,
+            certs,
+        );
+
         Self {
             builder: Arc::new(RwLock::new(builder)),
             source_file_path: path.to_string(),
             exclusions: vec![],
+            signer: Box::new(signer),
         }
     }
 
     #[uniffi::constructor()]
-    pub fn from_file_and_manifest(path: &str, manifest: &ManifestStore) -> Result<Self, Error> {
+    pub fn from_file_and_manifest(
+        path: &str,
+        manifest: &ManifestStore,
+        key_tag: Vec<u8>,
+        certs: &str,
+    ) -> Result<Self, Error> {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 
         let active_manifest = manifest.active_manifest()?;
@@ -66,10 +82,20 @@ impl ManifestEditor {
 
         exclusions.sort_by_key(|e| e.start);
 
+        let signer = CallbackSigner::new(
+            move |_context, data: &[u8]| {
+                sign_with_enclave(&key_tag, data)
+                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+            },
+            SigningAlg::Es256,
+            certs,
+        );
+
         let editor = Self {
             source_file_path: path.to_string(),
             builder: Arc::new(RwLock::new(builder)),
             exclusions,
+            signer: Box::new(signer),
         };
 
         Ok(editor)
@@ -121,24 +147,14 @@ impl ManifestEditor {
         destination: &str,
         hash: Vec<u8>,
         format: &str,
-        key_tag: Vec<u8>,
-        certs: &str,
     ) -> Result<(), Error> {
         let mut builder = {
             let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
             std::mem::take(&mut *guard)
         };
-        let signer = CallbackSigner::new(
-            move |_context, data: &[u8]| {
-                sign_with_enclave(&key_tag, data)
-                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
-            },
-            SigningAlg::Es256,
-            certs,
-        );
 
         let placeholder_manifest =
-            builder.data_hashed_placeholder(signer.reserve_size(), format)?;
+            builder.data_hashed_placeholder(self.signer.reserve_size(), format)?;
 
         let bytes = self.strip_exclusions_from_source()?;
         let mut output: Vec<u8> = Vec::with_capacity(bytes.len() + placeholder_manifest.len());
@@ -160,7 +176,7 @@ impl ManifestEditor {
 
         // tell SDK to fill in the hash and sign to complete the manifest
         let final_manifest = builder
-            .sign_data_hashed_embeddable_async(&signer, &data_hash, "image/jpeg")
+            .sign_data_hashed_embeddable_async(&*self.signer, &data_hash, "image/jpeg")
             .await?;
 
         // Put the updated builder back into the RwLock
@@ -182,9 +198,30 @@ impl ManifestEditor {
 
         Ok(())
     }
+
+    async fn embed_manifest_to_jpeg(&self) {}
 }
 
 impl ManifestEditor {
+    pub fn with_signer<S: AsyncSigner + Send + 'static>(path: &str, signer: S) -> Self {
+        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
+
+        let mut builder = Builder::new();
+
+        builder
+            .definition
+            .claim_generator_info
+            .push(ClaimGeneratorInfo::new("ZCAM1"));
+        builder.definition.vendor = Some("Succinct".to_string());
+
+        Self {
+            builder: Arc::new(RwLock::new(builder)),
+            source_file_path: path.to_string(),
+            exclusions: vec![],
+            signer: Box::new(signer),
+        }
+    }
+
     fn strip_exclusions_from_source(&self) -> Result<Vec<u8>, Error> {
         let source = fs::read(&self.source_file_path)?;
         let mut dest = Vec::with_capacity(source.len());

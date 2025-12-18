@@ -9318,13 +9318,17 @@ dependencies = [
  "base64ct",
  "c2pa 0.72.0",
  "futures",
+ "p256",
  "pem",
  "security-framework 3.5.1",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.17",
+ "tokio",
  "uniffi",
  "x509-parser 0.18.0",
+ "zcam1-common",
 ]
 
 [[package]]
