@@ -18,7 +18,7 @@
     * The App Attest attestation generated at bootstrap
     * The App Attest assertion generated a step 3
     * Device metadata
-5. The C2PA manifest claim is signed with the content key generated ay bootstrap and embedded into the file
+5. The C2PA manifest claim is signed with the content key generated at bootstrap and embedded into the file
 
 ## Proof generation flow
 
