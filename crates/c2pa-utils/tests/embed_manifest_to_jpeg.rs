@@ -5,7 +5,7 @@ use p256::{
     elliptic_curve::rand_core::OsRng,
 };
 use serde_json::json;
-use tempfile::Builder as TempFileBuilder;
+use tempfile::tempdir;
 use zcam1_c2pa_utils::{extract_manifest, ManifestEditor};
 use zcam1_common::generate_cert_chain;
 
@@ -38,13 +38,15 @@ async fn test_embed_manifest_to_jpg() {
     );
 
     let editor = ManifestEditor::with_signer("./tests/fixtures/sample.jpg", signer);
-    let destination_file = TempFileBuilder::new().suffix(".jpg").tempfile().unwrap();
-    let destination_path = destination_file.path().to_str().unwrap();
+    let destination_file = tempdir().unwrap().path().join("output.jpg");
+    let destination_path = destination_file.to_str().unwrap();
 
     editor
         .embed_manifest_to_file(destination_path, vec![0, 1, 2], "image/jpeg")
         .await
         .unwrap();
 
-    let _ = extract_manifest(destination_path).unwrap();
+    let store = extract_manifest(destination_path).unwrap();
+
+    println!("{store:#?}")
 }
