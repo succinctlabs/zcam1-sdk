@@ -798,12 +798,10 @@ export interface ManifestEditorInterface {
   addTitle(title: string) /*throws*/ : void;
   embedManifestToFile(
     destination: string,
-    hash: ArrayBuffer,
     format: string,
-    keyTag: ArrayBuffer,
-    certs: string,
     asyncOpts_?: { signal: AbortSignal },
   ) /*throws*/ : Promise<void>;
+  embedManifestToJpeg(asyncOpts_?: { signal: AbortSignal }): Promise<void>;
   removeAssertion(label: string) /*throws*/ : boolean;
 }
 
@@ -814,12 +812,14 @@ export class ManifestEditor
   readonly [uniffiTypeNameSymbol] = "ManifestEditor";
   readonly [destructorGuardSymbol]: UniffiRustArcPtr;
   readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  constructor(path: string) {
+  constructor(path: string, keyTag: ArrayBuffer, certs: string) {
     super();
     const pointer = uniffiCaller.rustCall(
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
           FfiConverterString.lower(path),
+          FfiConverterArrayBuffer.lower(keyTag),
+          FfiConverterString.lower(certs),
           callStatus,
         );
       },
@@ -833,6 +833,8 @@ export class ManifestEditor
   public static fromFileAndManifest(
     path: string,
     manifest: ManifestStoreInterface,
+    keyTag: ArrayBuffer,
+    certs: string,
   ): ManifestEditorInterface /*throws*/ {
     return FfiConverterTypeManifestEditor.lift(
       uniffiCaller.rustCallWithError(
@@ -841,6 +843,8 @@ export class ManifestEditor
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
             FfiConverterString.lower(path),
             FfiConverterTypeManifestStore.lower(manifest),
+            FfiConverterArrayBuffer.lower(keyTag),
+            FfiConverterString.lower(certs),
             callStatus,
           );
         },
@@ -894,10 +898,7 @@ export class ManifestEditor
 
   public async embedManifestToFile(
     destination: string,
-    hash: ArrayBuffer,
     format: string,
-    keyTag: ArrayBuffer,
-    certs: string,
     asyncOpts_?: { signal: AbortSignal },
   ): Promise<void> /*throws*/ {
     const __stack = uniffiIsDebug ? new Error().stack : undefined;
@@ -908,10 +909,7 @@ export class ManifestEditor
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
             uniffiTypeManifestEditorObjectFactory.clonePointer(this),
             FfiConverterString.lower(destination),
-            FfiConverterArrayBuffer.lower(hash),
             FfiConverterString.lower(format),
-            FfiConverterArrayBuffer.lower(keyTag),
-            FfiConverterString.lower(certs),
           );
         },
         /*pollFunc:*/ nativeModule()
@@ -928,6 +926,38 @@ export class ManifestEditor
         /*errorHandler:*/ FfiConverterTypeError.lift.bind(
           FfiConverterTypeError,
         ),
+      );
+    } catch (__error: any) {
+      if (uniffiIsDebug && __error instanceof Error) {
+        __error.stack = __stack;
+      }
+      throw __error;
+    }
+  }
+
+  public async embedManifestToJpeg(asyncOpts_?: {
+    signal: AbortSignal;
+  }): Promise<void> {
+    const __stack = uniffiIsDebug ? new Error().stack : undefined;
+    try {
+      return await uniffiRustCallAsync(
+        /*rustCaller:*/ uniffiCaller,
+        /*rustFutureFunc:*/ () => {
+          return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+            uniffiTypeManifestEditorObjectFactory.clonePointer(this),
+          );
+        },
+        /*pollFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_void,
+        /*cancelFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_cancel_void,
+        /*completeFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_complete_void,
+        /*freeFunc:*/ nativeModule()
+          .ubrn_ffi_zcam1_c2pa_utils_rust_future_free_void,
+        /*liftFunc:*/ (_v) => {},
+        /*liftString:*/ FfiConverterString.lift,
+        /*asyncOpts:*/ asyncOpts_,
       );
     } catch (__error: any) {
       if (uniffiIsDebug && __error instanceof Error) {
@@ -1272,10 +1302,18 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file() !==
-    52341
+    9145
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file",
+    );
+  }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg() !==
+    21374
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg",
     );
   }
   if (
@@ -1296,7 +1334,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest() !==
-    60785
+    45600
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest",
@@ -1304,7 +1342,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new() !==
-    62044
+    9414
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_new",

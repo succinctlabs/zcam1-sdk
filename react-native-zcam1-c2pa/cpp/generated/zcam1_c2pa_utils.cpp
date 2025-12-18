@@ -117,9 +117,17 @@ void uniffi_zcam1_c2pa_utils_fn_free_manifesteditor(
     void *ptr, RustCallStatus *uniffi_out_err);
 void *
 uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
+<<<<<<< HEAD
     RustBuffer path, void *manifest, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
     RustBuffer path, RustCallStatus *uniffi_out_err);
+=======
+    RustBuffer path, void *manifest, RustBuffer key_tag, RustBuffer certs,
+    RustCallStatus *uniffi_out_err);
+void *uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
+    RustBuffer path, RustBuffer key_tag, RustBuffer certs,
+    RustCallStatus *uniffi_out_err);
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 void uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
     void *ptr, RustBuffer data, RustCallStatus *uniffi_out_err);
 void uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
@@ -129,8 +137,15 @@ void uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_title(
     void *ptr, RustBuffer title, RustCallStatus *uniffi_out_err);
 /*handle*/ uint64_t
 uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
+<<<<<<< HEAD
     void *ptr, RustBuffer destination, RustBuffer hash, RustBuffer format,
     RustBuffer key_tag, RustBuffer certs);
+=======
+    void *ptr, RustBuffer destination, RustBuffer format);
+/*handle*/ uint64_t
+uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+    void *ptr);
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 int8_t uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
     void *ptr, RustBuffer label, RustCallStatus *uniffi_out_err);
 void *
@@ -140,8 +155,11 @@ void uniffi_zcam1_c2pa_utils_fn_free_manifeststore(
     void *ptr, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
     void *ptr, RustCallStatus *uniffi_out_err);
+<<<<<<< HEAD
 RustBuffer uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
     RustBuffer path, RustBuffer exclusions, RustCallStatus *uniffi_out_err);
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 void *uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
     RustBuffer path, RustCallStatus *uniffi_out_err);
 int8_t uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
@@ -274,7 +292,10 @@ void ffi_zcam1_c2pa_utils_rust_future_free_void(
     /*handle*/ uint64_t handle);
 void ffi_zcam1_c2pa_utils_rust_future_complete_void(
     /*handle*/ uint64_t handle, RustCallStatus *uniffi_out_err);
+<<<<<<< HEAD
 uint16_t uniffi_zcam1_c2pa_utils_checksum_func_compute_hash();
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 uint16_t uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_func_verify_hash();
 uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifest_bindings();
@@ -286,6 +307,11 @@ uint16_t uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title();
 uint16_t
 uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file();
 uint16_t
+<<<<<<< HEAD
+=======
+uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg();
+uint16_t
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion();
 uint16_t
 uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest();
@@ -1806,7 +1832,11 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
       jsi::PropNameID::forAscii(rt,
                                 "ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_"
                                 "manifesteditor_from_file_and_manifest"),
+<<<<<<< HEAD
       2,
+=======
+      4,
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
       [this](jsi::Runtime &rt, const jsi::Value &thisVal,
              const jsi::Value *args, size_t count) -> jsi::Value {
         return this
@@ -1819,7 +1849,11 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
           jsi::PropNameID::forAscii(
               rt,
               "ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new"),
+<<<<<<< HEAD
           1,
+=======
+          3,
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
@@ -1867,13 +1901,32 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
       rt,
       jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_c2pa_utils_fn_method_"
                                     "manifesteditor_embed_manifest_to_file"),
+<<<<<<< HEAD
       6,
+=======
+      3,
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
       [this](jsi::Runtime &rt, const jsi::Value &thisVal,
              const jsi::Value *args, size_t count) -> jsi::Value {
         return this
             ->cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
                 rt, thisVal, args, count);
       });
+<<<<<<< HEAD
+=======
+  props["ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_"
+        "to_jpeg"] = jsi::Function::createFromHostFunction(
+      rt,
+      jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_c2pa_utils_fn_method_"
+                                    "manifesteditor_embed_manifest_to_jpeg"),
+      1,
+      [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+             const jsi::Value *args, size_t count) -> jsi::Value {
+        return this
+            ->cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+                rt, thisVal, args, count);
+      });
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
   props["ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_"
         "assertion"] = jsi::Function::createFromHostFunction(
       rt,
@@ -1920,6 +1973,7 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             ->cpp_uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
                 rt, thisVal, args, count);
       });
+<<<<<<< HEAD
   props["ubrn_uniffi_zcam1_c2pa_utils_fn_func_compute_hash"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -1931,6 +1985,8 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             return this->cpp_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
                 rt, thisVal, args, count);
           });
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
   props["ubrn_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2527,6 +2583,7 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             return this->cpp_ffi_zcam1_c2pa_utils_rust_future_complete_void(
                 rt, thisVal, args, count);
           });
+<<<<<<< HEAD
   props["ubrn_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2538,6 +2595,8 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             return this->cpp_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash(
                 rt, thisVal, args, count);
           });
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
   props["ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2649,6 +2708,22 @@ NativeZcam1C2paUtils::NativeZcam1C2paUtils(
             ->cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file(
                 rt, thisVal, args, count);
       });
+<<<<<<< HEAD
+=======
+  props["ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_"
+        "manifest_to_jpeg"] = jsi::Function::createFromHostFunction(
+      rt,
+      jsi::PropNameID::forAscii(rt,
+                                "ubrn_uniffi_zcam1_c2pa_utils_checksum_method_"
+                                "manifesteditor_embed_manifest_to_jpeg"),
+      0,
+      [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+             const jsi::Value *args, size_t count) -> jsi::Value {
+        return this
+            ->cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg(
+                rt, thisVal, args, count);
+      });
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
   props["ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_"
         "assertion"] = jsi::Function::createFromHostFunction(
       rt,
@@ -2964,6 +3039,13 @@ jsi::Value NativeZcam1C2paUtils::
           uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
               rt, callInvoker, args[0]),
           uniffi_jsi::Bridging<void *>::fromJs(rt, callInvoker, args[1]),
+<<<<<<< HEAD
+=======
+          uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
+              rt, callInvoker, args[2]),
+          uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
+              rt, callInvoker, args[3]),
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
           &status);
   uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::copyIntoJs(
       rt, callInvoker, status, args[count - 1]);
@@ -2979,6 +3061,13 @@ jsi::Value NativeZcam1C2paUtils::
   auto value = uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
       uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
                                                              args[0]),
+<<<<<<< HEAD
+=======
+      uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                             args[1]),
+      uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                             args[2]),
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
       &status);
   uniffi::zcam1_c2pa_utils::Bridging<RustCallStatus>::copyIntoJs(
       rt, callInvoker, status, args[count - 1]);
@@ -3045,6 +3134,7 @@ jsi::Value NativeZcam1C2paUtils::
           uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
               rt, callInvoker, args[1]),
           uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
+<<<<<<< HEAD
               rt, callInvoker, args[2]),
           uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
               rt, callInvoker, args[3]),
@@ -3052,6 +3142,20 @@ jsi::Value NativeZcam1C2paUtils::
               rt, callInvoker, args[4]),
           uniffi::zcam1_c2pa_utils::Bridging<RustBuffer>::fromJs(
               rt, callInvoker, args[5]));
+=======
+              rt, callInvoker, args[2]));
+
+  return uniffi_jsi::Bridging</*handle*/ uint64_t>::toJs(rt, callInvoker,
+                                                         value);
+}
+jsi::Value NativeZcam1C2paUtils::
+    cpp_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  auto value =
+      uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+          uniffi_jsi::Bridging<void *>::fromJs(rt, callInvoker, args[0]));
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 
   return uniffi_jsi::Bridging</*handle*/ uint64_t>::toJs(rt, callInvoker,
                                                          value);
@@ -3113,6 +3217,7 @@ jsi::Value NativeZcam1C2paUtils::
   return uniffi_jsi::Bridging<void *>::toJs(rt, callInvoker, value);
 }
 jsi::Value
+<<<<<<< HEAD
 NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
     size_t count) {
@@ -3131,6 +3236,8 @@ NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
                                                               value);
 }
 jsi::Value
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
     size_t count) {
@@ -3789,6 +3896,7 @@ NativeZcam1C2paUtils::cpp_ffi_zcam1_c2pa_utils_rust_future_complete_void(
 
   return jsi::Value::undefined();
 }
+<<<<<<< HEAD
 jsi::Value
 NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash(
     jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
@@ -3797,6 +3905,8 @@ NativeZcam1C2paUtils::cpp_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash(
 
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }
+=======
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
 jsi::Value NativeZcam1C2paUtils::
     cpp_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(
         jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
@@ -3874,6 +3984,18 @@ jsi::Value NativeZcam1C2paUtils::
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }
 jsi::Value NativeZcam1C2paUtils::
+<<<<<<< HEAD
+=======
+    cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  auto value =
+      uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg();
+
+  return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
+}
+jsi::Value NativeZcam1C2paUtils::
+>>>>>>> 422808f (chore: update react-native-zcam1-c2pa codegen)
     cpp_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion(
         jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
         size_t count) {

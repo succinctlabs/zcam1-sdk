@@ -54,10 +54,14 @@ interface NativeModuleInterface {
   ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
     path: Uint8Array,
     manifest: bigint,
+    keyTag: Uint8Array,
+    certs: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
   ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_new(
     path: Uint8Array,
+    keyTag: Uint8Array,
+    certs: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
@@ -79,10 +83,10 @@ interface NativeModuleInterface {
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_file(
     ptr: bigint,
     destination: Uint8Array,
-    hash: Uint8Array,
     format: Uint8Array,
-    keyTag: Uint8Array,
-    certs: Uint8Array,
+  ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_embed_manifest_to_jpeg(
+    ptr: bigint,
   ): bigint;
   ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
     ptr: bigint,
@@ -270,6 +274,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file(): number;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_jpeg(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest(): number;
