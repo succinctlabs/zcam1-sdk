@@ -46,15 +46,17 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 
 The examples lives under the `examples` folder in this repo. to run the examples on a device, complete the following steps:
 
-1. install Xcode
-2. If you don't have a developper account, you can [create a personal team].
-3. Go to an example folder (for instance `cd examples/e2e`)
-4. Copy the `.env.example` file to `.env`
-5. Set `EXPO_PUBLIC_APP_ID` to something like `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`
+1. Install Xcode
+2. Install Yalc: `npm i yalc -g`
+3. If you don't have an Apple developper account, you can [create a personal team].
+4. Go to an example folder (for instance `cd examples/e2e`)
+5. Copy the `.env.example` file to `.env`
+6. Set `EXPO_PUBLIC_APP_ID` to something like `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`
    To retrieve your Team ID, refer to the note below
-6. Update the `bundleIdentifier` field in the `app.json` file with the bundle ID from step 3
-7. run `npx expo prebuild && npx expo run:ios --device`
-8. It will lilely fail; You need to trust the developper on your device:
+7. Update the `bundleIdentifier` field in the `app.json` file with the bundle ID from step 3
+8. run `npm i`
+8. run `just run-e2e-example`
+9. It will lilely fail; You need to trust the developper on your device:
    Open the iOS device settings -> General -> Device Management -> Click Trust for the app
 
 [create a personal team]: https://stackoverflow.com/questions/4952820/test-ios-app-on-device-without-apple-developer-program-or-jailbreak/66484365#66484365

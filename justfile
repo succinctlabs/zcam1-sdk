@@ -1,74 +1,38 @@
-update-zcam1-common $NPM_CONFIG_REGISTRY:
-    #!/usr/bin/env sh
-    cd zcam1-common
-    npm unpublish --force
-    npm publish
 
-update-react-native-zcam1-c2pa $NPM_CONFIG_REGISTRY:
-    #!/usr/bin/env sh
-    cd react-native-zcam1-c2pa
-    npm unpublish --force
-    npm publish
+add-yalc:
+    cd zcam1-common && yalc publish
+    cd react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-capture && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-prove && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-verify && yalc add react-native-zcam1-c2pa && yalc publish
+    cd examples/capture && yalc add react-native-zcam1-capture react-native-zcam1-c2pa zcam1-common
 
-update-react-native-zcam1-capture $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-c2pa NPM_CONFIG_REGISTRY) (update-zcam1-common NPM_CONFIG_REGISTRY)
-    #!/usr/bin/env sh
-    cd react-native-zcam1-capture
-    npm rm react-native-zcam1-c2pa
-    npm i react-native-zcam1-c2pa@latest --force
-    npm rm zcam1-common
-    npm i zcam1-common@latest --force
-    npm unpublish --force
-    npm publish
+remove-yalc:
+    cd react-native-zcam1-capture && yalc remove --all
+    cd react-native-zcam1-prove && yalc remove --all
+    cd react-native-zcam1-verify && yalc remove --all
+    cd examples/capture && yalc remove --all
 
-update-react-native-zcam1-prove $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-c2pa NPM_CONFIG_REGISTRY) (update-zcam1-common NPM_CONFIG_REGISTRY)
-    #!/usr/bin/env sh
-    cd react-native-zcam1-prove
-    npm rm react-native-zcam1-c2pa
-    npm i react-native-zcam1-c2pa@latest --force
-    npm rm zcam1-common
-    npm i zcam1-common@latest --force
-    npm unpublish --force
-    npm publish
-
-update-react-native-zcam1-verify $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-c2pa NPM_CONFIG_REGISTRY)
-    #!/usr/bin/env sh
-    cd react-native-zcam1-verify
-    npm rm react-native-zcam1-c2pa
-    npm i react-native-zcam1-c2pa@latest --force
-    npm unpublish --force
-    npm publish
-
-update-capture-example $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-capture NPM_CONFIG_REGISTRY)
+run-capture-example:
     #!/usr/bin/env sh
     cd examples/capture
-    npm rm react-native-zcam1-capture
-    npm i react-native-zcam1-capture@latest --force
+    yalc update
+    npx expo prebuild && npx expo run:ios --device
 
-update-prove-example $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-prove NPM_CONFIG_REGISTRY)
+run-prove-example:
     #!/usr/bin/env sh
     cd examples/prove
-    npm rm react-native-zcam1-prove
-    npm i react-native-zcam1-prove@latest --force
+    yalc update
+    npx expo prebuild && npx expo run:ios --device
 
-update-verify-example $NPM_CONFIG_REGISTRY: (update-react-native-zcam1-verify NPM_CONFIG_REGISTRY)
+run-verify-example:
     #!/usr/bin/env sh
     cd examples/verify
-    npm rm react-native-zcam1-verify
-    npm i react-native-zcam1-verify@latest --force
+    yalc update
+    npx expo prebuild && npx expo run:ios --device
 
-update-all $NPM_CONFIG_REGISTRY: (update-capture-example NPM_CONFIG_REGISTRY) (update-prove-example NPM_CONFIG_REGISTRY) (update-verify-example NPM_CONFIG_REGISTRY)
-
-run-capture-example DEVICE:
+run-e2e-example:
     #!/usr/bin/env sh
-    cd examples/capture
-    npx expo prebuild && npx expo run:ios --device {{DEVICE}}
-
-run-prove-example DEVICE:
-    #!/usr/bin/env sh
-    cd examples/prove
-    npx expo prebuild && npx expo run:ios --device {{DEVICE}}
-
-run-verify-example DEVICE:
-    #!/usr/bin/env sh
-    cd examples/verify
-    npx expo prebuild && npx expo run:ios --device {{DEVICE}}
+    cd examples/e2e
+    yalc update
+    npx expo prebuild && npx expo run:ios --device
