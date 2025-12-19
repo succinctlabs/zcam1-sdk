@@ -109,24 +109,10 @@ export async function updateRegistration(
   keyId: string,
   settings: Settings,
 ): Promise<string> {
-  let response = await fetch(settings.backendUrl + "/ios/register/init", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ keyId }),
-  });
-
-  if (!response.ok) {
-    throw "failed to init:" + (await response.text());
-  }
-
-  let challenge = await response.text();
-
   // Try to get real attestation, but fall back to mock for simulator
   let attestation: string;
   try {
-    attestation = await getAttestation(challenge, keyId);
+    attestation = await getAttestation(keyId, keyId);
   } catch (error: any) {
     // If running in simulator, App Attest is not supported
     if (
@@ -142,23 +128,6 @@ export async function updateRegistration(
     } else {
       throw error;
     }
-  }
-
-  response = await fetch(settings.backendUrl + "/ios/register/validate", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      attestation,
-      keyId,
-      appId: settings.appId,
-      production: settings.production,
-    }),
-  });
-
-  if (!response.ok) {
-    throw "failed to validate:" + (await response.text());
   }
 
   return attestation;
