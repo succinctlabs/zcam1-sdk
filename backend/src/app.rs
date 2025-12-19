@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, info};
 use zcam1_common::{
-    Database, InMemoryDatabase, ProofRequest, ProvingClient, Stats, Verifier, generate_cert_chain,
+    Database, InMemoryDatabase, ProofRequest, ProvingClient, Stats, generate_cert_chain,
 };
 use zcam1_ios::{AuthInputs, IosRegisterInputs, IosVerifier};
 
@@ -42,19 +42,8 @@ async fn bootstrap_init(
 ) -> Result<String, (StatusCode, String)> {
     info!("POST /ios/register/init - key_id: {}", params.key_id);
 
-    let mut buf = [0u8; 16];
-
-    getrandom::fill(&mut buf)
-        .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?;
-    let challenge = hex::encode(buf);
-
-    state
-        .db
-        .init_device(params.key_id.clone(), challenge.clone());
-
-    info!("Initialized device {}", params.key_id);
-
-    Ok(challenge)
+    // Kept as backward compatibility
+    Ok(params.key_id)
 }
 
 /// Validates a device registration by verifying the attestation against the stored challenge.
@@ -65,39 +54,12 @@ async fn bootstrap_register(
     State(state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
-    info!("POST /ios/register/validate - key_id: {}, app_id: {}", params.key_id, params.app_id);
+    info!(
+        "POST /ios/register/validate - key_id: {}, app_id: {}",
+        params.key_id, params.app_id
+    );
 
-    let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
-        (
-            StatusCode::UNAUTHORIZED,
-            format!("The device {} is not initialized", params.app_id),
-        )
-    })?;
-
-    // Check if this is a simulator mock attestation
-    let is_simulator_mock = params.attestation.starts_with("SIMULATOR_MOCK_");
-
-    let is_valid = if is_simulator_mock {
-        // For simulator testing, accept mock attestations without validation
-        // This should only be used in development environments
-        info!(
-            "Accepting simulator mock attestation for device {}",
-            params.key_id
-        );
-        true
-    } else {
-        // Verify real attestation
-        let inputs = IosRegisterInputs::from(&params);
-        state
-            .verifier
-            .bootstrap_verify(&inputs, challenge.to_string())
-            .map_err(|err| (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()))?
-    };
-
-    if is_valid {
-        state.db.mark_device_as_trusted(params.key_id);
-    }
-
+    // Kept as backward compatibility
     Ok(())
 }
 
@@ -115,25 +77,10 @@ async fn request_proof(
     let request_id = state.db.create_proof_request();
     let cloned_request_id = request_id.clone();
 
-    let challenge = state.db.get_challenge(&params.key_id).ok_or_else(|| {
-        (
-            StatusCode::UNAUTHORIZED,
-            format!("The device {} is not registered", params.key_id),
-        )
-    })?;
-
-    if !challenge.is_trusted() {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!("The device {} is not trusted", params.key_id),
-        ));
-    }
-
     tokio::spawn(async move {
         // Check if this is a simulator mock attestation
         let is_simulator_mock = params.attestation.starts_with("SIMULATOR_MOCK_");
-
-        let inputs = params.into_auth_inputs(challenge.to_string());
+        let inputs = AuthInputs::from(params);
 
         let proof = if is_simulator_mock {
             state.mock_prover.prove(inputs)
@@ -273,16 +220,15 @@ pub struct IosRequestProofParams {
     pub app_attest_production: bool,
 }
 
-impl IosRequestProofParams {
-    pub fn into_auth_inputs(self, challenge: String) -> AuthInputs {
-        AuthInputs {
-            attestation: self.attestation,
-            assertion: self.assertion,
-            key_id: self.key_id,
-            data_hash: Base64::decode_vec(&self.data_hash).unwrap(),
-            challenge,
-            app_id: self.app_id,
-            app_attest_production: self.app_attest_production,
+impl From<IosRequestProofParams> for AuthInputs {
+    fn from(value: IosRequestProofParams) -> Self {
+        Self {
+            attestation: value.attestation,
+            assertion: value.assertion,
+            key_id: value.key_id,
+            data_hash: Base64::decode_vec(&value.data_hash).unwrap(),
+            app_id: value.app_id,
+            app_attest_production: value.app_attest_production,
         }
     }
 }

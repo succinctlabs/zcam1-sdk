@@ -8,12 +8,6 @@ use serde::Serialize;
 use sp1_sdk::SP1ProofWithPublicValues;
 
 pub trait Database {
-    fn init_device(&self, key_id: String, register_challenge: String);
-
-    fn mark_device_as_trusted(&self, key_id: String);
-
-    fn get_challenge(&self, key_id: &str) -> Option<Challenge>;
-
     fn create_proof_request(&self) -> String;
 
     fn get_proof_request(&self, id: &str) -> Option<ProofRequest>;
@@ -55,31 +49,10 @@ pub enum ProofRequest {
 
 #[derive(Debug, Default)]
 pub struct InMemoryDatabase {
-    challenges_by_key_ids: RwLock<HashMap<String, Challenge>>,
     proof_requests_by_ids: RwLock<HashMap<String, ProofRequest>>,
 }
 
 impl Database for InMemoryDatabase {
-    fn init_device(&self, key_id: String, register_challenge: String) {
-        let mut challenges_by_key_ids = self.challenges_by_key_ids.write().unwrap();
-
-        challenges_by_key_ids.insert(key_id, Challenge::Untrusted(register_challenge));
-    }
-
-    fn mark_device_as_trusted(&self, key_id: String) {
-        if let Some(challenge) = self.get_challenge(&key_id) {
-            let mut challenges_by_key_ids = self.challenges_by_key_ids.write().unwrap();
-
-            challenges_by_key_ids.insert(key_id, Challenge::Trusted(challenge.to_string()));
-        }
-    }
-
-    fn get_challenge(&self, key_id: &str) -> Option<Challenge> {
-        let challenges_by_key_ids = self.challenges_by_key_ids.read().unwrap();
-
-        challenges_by_key_ids.get(key_id).cloned()
-    }
-
     fn create_proof_request(&self) -> String {
         let mut buf = [0u8; 16];
 
@@ -118,20 +91,13 @@ impl Database for InMemoryDatabase {
     }
 
     fn stats(&self) -> Stats {
-        let challenges_by_key_ids = self.challenges_by_key_ids.read().unwrap();
         let proof_requests_by_ids = self.proof_requests_by_ids.read().unwrap();
-        let trusted_challenge_count = challenges_by_key_ids
-            .iter()
-            .filter(|(_, challenge)| challenge.is_trusted())
-            .count();
         let requested_proof_count = proof_requests_by_ids
             .iter()
             .filter(|(_, request)| matches!(request, ProofRequest::Requested))
             .count();
 
         Stats {
-            untrusted_challenge_count: trusted_challenge_count - challenges_by_key_ids.len(),
-            trusted_challenge_count,
             requested_proof_count,
             fulfilled_proof_count: requested_proof_count - proof_requests_by_ids.len(),
         }
@@ -141,8 +107,6 @@ impl Database for InMemoryDatabase {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Stats {
-    pub untrusted_challenge_count: usize,
-    pub trusted_challenge_count: usize,
     pub requested_proof_count: usize,
     pub fulfilled_proof_count: usize,
 }

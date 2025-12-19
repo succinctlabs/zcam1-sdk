@@ -11,7 +11,7 @@ pub fn main() {
     let public_key_uncompressed = validate_attestation(
         &auth_inputs.attestation,
         &auth_inputs.key_id,
-        &auth_inputs.challenge,
+        &auth_inputs.key_id,
         &auth_inputs.app_id,
         auth_inputs.app_attest_production,
         !auth_inputs.app_attest_production, // Skip full chain validation for development
