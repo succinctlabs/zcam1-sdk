@@ -143,3 +143,12 @@ impl From<&Exclusion> for HashRange {
         Self::new(value.start, value.length)
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Enum)]
+pub enum AuthenticityStatus {
+    Unknown,
+    NoManifest,
+    InvalidManifest,
+    Bindings,
+    Proof,
+}

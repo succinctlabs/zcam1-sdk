@@ -1,11 +1,12 @@
-use std::fs::File;
+use std::{fs::File, thread};
 
 use base64ct::{Base64, Encoding};
 use c2pa::{hash_stream_by_alg, Reader};
+use futures::channel::oneshot;
 
 use crate::{
     error::Error,
-    types::{DataHash, Exclusion, ManifestStore},
+    types::{AuthenticityStatus, DataHash, Exclusion, ManifestStore},
 };
 
 pub mod error;
@@ -23,6 +24,36 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, Error> {
     let store = serde_json::from_str::<ManifestStore>(&reader.detailed_json())?;
 
     Ok(store)
+}
+
+#[uniffi::export]
+pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
+    let path = path.to_string();
+    let (sender, receiver) = oneshot::channel();
+
+    thread::spawn(move || {
+        let status = match Reader::from_file(path.replace("file://", "")) {
+            Ok(reader) => {
+                match serde_json::from_str::<ManifestStore>(&reader.detailed_json())
+                    .map_err(Error::Json)
+                    .and_then(|store| store.active_manifest())
+                {
+                    Ok(active_manifest) => {
+                        match (active_manifest.bindings(), active_manifest.proof()) {
+                            (Some(_), None) => AuthenticityStatus::Bindings,
+                            (None, Some(_)) => AuthenticityStatus::Proof,
+                            (_, _) => AuthenticityStatus::InvalidManifest,
+                        }
+                    }
+                    Err(_) => AuthenticityStatus::InvalidManifest,
+                }
+            }
+            Err(_) => AuthenticityStatus::NoManifest,
+        };
+        let _ = sender.send(status);
+    });
+
+    receiver.await.unwrap()
 }
 
 #[uniffi::export]
