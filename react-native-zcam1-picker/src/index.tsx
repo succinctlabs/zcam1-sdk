@@ -1,14 +1,21 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlatList,
   TouchableOpacity,
   View,
   StyleSheet,
   Dimensions,
+  Text,
+  Image,
 } from "react-native";
-import { Image } from "expo-image";
 import { Dirs, FileSystem } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { useEffect, useState } from "react";
+import { FlashList } from "@shopify/flash-list";
+import {
+  authenticityStatus,
+  AuthenticityStatus,
+} from "react-native-zcam1-c2pa";
+
+export { AuthenticityStatus } from "react-native-zcam1-c2pa";
 
 export interface PrivateFolder {
   path: string;
@@ -18,8 +25,9 @@ export interface PhotoGallery {
   album: string;
 }
 
-export interface ZCameraProps {
+export interface ZImagePickerProps {
   source: PrivateFolder | PhotoGallery;
+  renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
   onSelect?: (uri: string) => void;
 }
 
@@ -31,7 +39,54 @@ export function privateDirectory(): string {
   return Dirs.DocumentDir;
 }
 
-export const ZImagePicker = (props: ZCameraProps) => {
+const ZImageItem = ({
+  uri,
+  renderBadge,
+  onSelect,
+}: {
+  uri: string;
+  renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
+  onSelect: (uri: string) => void;
+}) => {
+  const [authStatus, setAuthStatus] = useState<AuthenticityStatus>(
+    AuthenticityStatus.Unknown,
+  );
+
+  useEffect(() => {
+    let active = true;
+    const check = async () => {
+      const result = await authenticityStatus(uri);
+      if (active) {
+        setAuthStatus(result);
+        console.log(result);
+      }
+    };
+    check();
+    return () => {
+      active = false;
+    };
+  }, [uri]);
+
+  const badge = useMemo(() => {
+    return renderBadge ? renderBadge(authStatus) : null;
+  }, [renderBadge, authStatus]);
+
+  return (
+    <TouchableOpacity
+      style={styles.imageContainer}
+      onPress={() => onSelect(uri)}
+    >
+      <Image
+        style={[styles.image]}
+        source={{ uri }}
+        //cachePolicy="memory-disk"
+      />
+      {badge}
+    </TouchableOpacity>
+  );
+};
+
+export const ZImagePicker = (props: ZImagePickerProps) => {
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
@@ -57,10 +112,6 @@ export const ZImagePicker = (props: ZCameraProps) => {
       (a, b) => b.node.modificationTimestamp - a.node.modificationTimestamp,
     );
 
-    for (const p of photos.edges) {
-      console.log(p.node);
-    }
-
     const photoUris = photos.edges
       .map((photo) => photo.node.image.uri)
       .filter((path) => path !== null);
@@ -83,34 +134,29 @@ export const ZImagePicker = (props: ZCameraProps) => {
     setPhotos(photoUris);
   };
 
-  const handleSelect = (uri: string) => {
-    props.onSelect?.(uri);
-  };
+  const handleSelect = useCallback(
+    (uri: string) => props.onSelect?.(uri),
+    [props.onSelect],
+  );
 
-  const renderItem = ({ item }) => {
-    return (
-      <TouchableOpacity
-        style={styles.imageContainer}
-        onPress={() => handleSelect(item)}
-      >
-        <Image
-          style={[styles.image]}
-          source={{ uri: item }}
-          cachePolicy="memory-disk"
-        />
-      </TouchableOpacity>
-    );
-  };
+  const renderItem = useCallback(
+    ({ item }: { item: string }) => (
+      <ZImageItem
+        uri={item}
+        onSelect={handleSelect}
+        renderBadge={props.renderBadge}
+      />
+    ),
+    [handleSelect],
+  );
 
   return (
-    <View>
-      <FlatList
-        data={photos}
-        keyExtractor={(item) => item}
-        renderItem={renderItem}
-        numColumns={3}
-      />
-    </View>
+    <FlashList
+      data={photos}
+      renderItem={renderItem}
+      numColumns={3}
+      keyExtractor={(uri) => uri}
+    />
   );
 };
 
@@ -128,32 +174,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#e1e4e8",
   },
-  selectedImage: {
-    opacity: 0.5, // Dim image when selected
-    borderWidth: 2,
-    borderColor: "blue",
-  },
-  checkmarkContainer: {
-    position: "absolute",
-    bottom: 5,
-    right: 5,
-    backgroundColor: "blue",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkmark: { color: "white", fontWeight: "bold" },
-  uploadBtn: {
-    position: "absolute",
-    bottom: 30,
-    alignSelf: "center",
-    backgroundColor: "blue",
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 30,
-    elevation: 5,
-  },
-  btnText: { color: "white", fontWeight: "bold" },
 });

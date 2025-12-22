@@ -10,6 +10,7 @@
   "author": "leruaa",
   "license": "MIT",
   "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
+  "type": "module",
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
@@ -19,7 +20,8 @@
   },
   "dependencies": {
     "@react-native-camera-roll/camera-roll": "^7.10.2",
-    "expo-image": "^3.0.11",
-    "react-native-file-access": "^3.2.0"
+    "@shopify/flash-list": "^2.2.0",
+    "react-native-file-access": "^3.2.0",
+    "react-native-zcam1-c2pa": "^0.1.5"
   }
 }
