@@ -69,6 +69,40 @@ const uniffiIsDebug =
   false;
 // Public interface members begin here.
 
+export async function authenticityStatus(
+  path: string,
+  asyncOpts_?: { signal: AbortSignal },
+): Promise<AuthenticityStatus> {
+  const __stack = uniffiIsDebug ? new Error().stack : undefined;
+  try {
+    return await uniffiRustCallAsync(
+      /*rustCaller:*/ uniffiCaller,
+      /*rustFutureFunc:*/ () => {
+        return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_authenticity_status(
+          FfiConverterString.lower(path),
+        );
+      },
+      /*pollFunc:*/ nativeModule()
+        .ubrn_ffi_zcam1_c2pa_utils_rust_future_poll_rust_buffer,
+      /*cancelFunc:*/ nativeModule()
+        .ubrn_ffi_zcam1_c2pa_utils_rust_future_cancel_rust_buffer,
+      /*completeFunc:*/ nativeModule()
+        .ubrn_ffi_zcam1_c2pa_utils_rust_future_complete_rust_buffer,
+      /*freeFunc:*/ nativeModule()
+        .ubrn_ffi_zcam1_c2pa_utils_rust_future_free_rust_buffer,
+      /*liftFunc:*/ FfiConverterTypeAuthenticityStatus.lift.bind(
+        FfiConverterTypeAuthenticityStatus,
+      ),
+      /*liftString:*/ FfiConverterString.lift,
+      /*asyncOpts:*/ asyncOpts_,
+    );
+  } catch (__error: any) {
+    if (uniffiIsDebug && __error instanceof Error) {
+      __error.stack = __stack;
+    }
+    throw __error;
+  }
+}
 export function computeHash(
   path: string,
   exclusions: Array<Exclusion>,
@@ -438,6 +472,55 @@ const stringConverter = {
     ),
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
+
+export enum AuthenticityStatus {
+  Unknown,
+  NoManifest,
+  InvalidManifest,
+  Bindings,
+  Proof,
+}
+
+const FfiConverterTypeAuthenticityStatus = (() => {
+  const ordinalConverter = FfiConverterInt32;
+  type TypeName = AuthenticityStatus;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      switch (ordinalConverter.read(from)) {
+        case 1:
+          return AuthenticityStatus.Unknown;
+        case 2:
+          return AuthenticityStatus.NoManifest;
+        case 3:
+          return AuthenticityStatus.InvalidManifest;
+        case 4:
+          return AuthenticityStatus.Bindings;
+        case 5:
+          return AuthenticityStatus.Proof;
+        default:
+          throw new UniffiInternalError.UnexpectedEnumCase();
+      }
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      switch (value) {
+        case AuthenticityStatus.Unknown:
+          return ordinalConverter.write(1, into);
+        case AuthenticityStatus.NoManifest:
+          return ordinalConverter.write(2, into);
+        case AuthenticityStatus.InvalidManifest:
+          return ordinalConverter.write(3, into);
+        case AuthenticityStatus.Bindings:
+          return ordinalConverter.write(4, into);
+        case AuthenticityStatus.Proof:
+          return ordinalConverter.write(5, into);
+      }
+    }
+    allocationSize(value: TypeName): number {
+      return ordinalConverter.allocationSize(0);
+    }
+  }
+  return new FFIConverter();
+})();
 
 // Flat error type: Exception
 export enum Exception_Tags {
@@ -1229,6 +1312,14 @@ function uniffiEnsureInitialized() {
     );
   }
   if (
+    nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_authenticity_status() !==
+    16408
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_c2pa_utils_checksum_func_authenticity_status",
+    );
+  }
+  if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash() !==
     43618
   ) {
@@ -1353,6 +1444,7 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
+    FfiConverterTypeAuthenticityStatus,
     FfiConverterTypeClaim,
     FfiConverterTypeDataHash,
     FfiConverterTypeDeviceBindings,

@@ -105,6 +105,9 @@ interface NativeModuleInterface {
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
+  ubrn_uniffi_zcam1_c2pa_utils_fn_func_authenticity_status(
+    path: Uint8Array,
+  ): bigint;
   ubrn_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
     path: Uint8Array,
     exclusions: Uint8Array,
@@ -264,6 +267,7 @@ interface NativeModuleInterface {
     handle: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
+  ubrn_uniffi_zcam1_c2pa_utils_checksum_func_authenticity_status(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest(): number;
   ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash(): number;

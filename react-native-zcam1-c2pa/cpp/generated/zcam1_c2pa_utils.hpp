@@ -87,6 +87,9 @@ protected:
   cpp_uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_func_authenticity_status(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -250,6 +253,9 @@ protected:
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_ffi_zcam1_c2pa_utils_rust_future_complete_void(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value cpp_uniffi_zcam1_c2pa_utils_checksum_func_authenticity_status(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash(
