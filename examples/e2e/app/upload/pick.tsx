@@ -1,16 +1,12 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Image } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import {
-  privateDirectory,
-  ZImagePicker,
-  AuthenticityStatus,
-} from "react-native-zcam1-picker";
+import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
 import { useIsFocused } from "@react-navigation/native";
 
-export default function Upload() {
+export default function Pick() {
   const router = useRouter();
-  const path = privateDirectory() + "/captured";
+  const { path } = useLocalSearchParams<{ path: string }>();
   const isFocused = useIsFocused();
 
   if (!isFocused) {
@@ -67,6 +63,5 @@ const styles = StyleSheet.create({
     right: 6,
     width: 18,
     height: 18,
-    opacity: 0.5,
   },
 });

@@ -13,6 +13,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-camera-roll/camera-roll": "^7.10.2",
+    "@react-native-documents/picker": "^11.0.3",
     "@react-navigation/drawer": "^7.7.9",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
