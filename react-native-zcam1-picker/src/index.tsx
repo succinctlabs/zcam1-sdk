@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Dirs, FileSystem } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import {
   authenticityStatus,
   AuthenticityStatus,
@@ -48,9 +48,11 @@ const ZImageItem = ({
   renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
   onSelect: (uri: string) => void;
 }) => {
-  const [authStatus, setAuthStatus] = useState<AuthenticityStatus>(
+  const [authStatus, setAuthStatus] = useRecyclingState(
     AuthenticityStatus.Unknown,
+    [],
   );
+  const [imageLoaded, setImageLoaded] = useRecyclingState(false, []);
 
   useEffect(() => {
     let active = true;
@@ -58,7 +60,6 @@ const ZImageItem = ({
       const result = await authenticityStatus(uri);
       if (active) {
         setAuthStatus(result);
-        console.log(result);
       }
     };
     check();
@@ -77,9 +78,10 @@ const ZImageItem = ({
       onPress={() => onSelect(uri)}
     >
       <Image
-        style={[styles.image]}
+        style={[styles.image, { opacity: imageLoaded ? 1 : 0 }]}
         source={{ uri }}
-        //cachePolicy="memory-disk"
+        onLoadStart={() => setImageLoaded(false)}
+        onLoadEnd={() => setImageLoaded(true)}
       />
       {badge}
     </TouchableOpacity>
@@ -129,6 +131,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
 
     const photoUris = photoFiles
       .filter((f) => f.type === "file")
+      .filter((f) => !f.filename.startsWith("."))
       .map((f) => `file://${f.path}`);
 
     setPhotos(photoUris);
@@ -172,6 +175,5 @@ const styles = StyleSheet.create({
   },
   image: {
     flex: 1,
-    backgroundColor: "#e1e4e8",
   },
 });
