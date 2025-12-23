@@ -5,7 +5,6 @@ import {
 } from "@pagopa/io-react-native-crypto";
 import { base64urlnopad } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
-import fetch from "cross-fetch";
 
 const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
 
@@ -20,25 +19,6 @@ export async function getContentPublicKey(): Promise<PublicKey> {
   return await getPublicKeyFixed(CONTENT_KEY_TAG).catch(() => {
     return generate(CONTENT_KEY_TAG);
   });
-}
-
-export async function getCertChain(
-  leafJwt: ECKey,
-  backendUrl: string,
-): Promise<string> {
-  let response = await fetch(backendUrl + "/cert-chain", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(leafJwt),
-  });
-
-  if (!response.ok) {
-    throw "failed to retrieve the certificate chain:" + (await response.text());
-  }
-
-  return await response.text();
 }
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {

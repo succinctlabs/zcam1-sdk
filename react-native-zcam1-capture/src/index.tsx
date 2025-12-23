@@ -3,6 +3,7 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
+import { buildSelfSignedCertificate } from "react-native-zcam1-c2pa";
 import {
   getCertChain,
   getContentPublicKey,
@@ -30,6 +31,10 @@ export type DeviceInfo = {
 export type Settings = {
   backendUrl: string;
   appId: string;
+  rootCertSubject?: string;
+  intermediateCertSubject?: string;
+  leafSubject?: string;
+  leafOrganization?: string;
   production: boolean;
 };
 
@@ -63,9 +68,12 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
 
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  const certChainPem = await getCertChain(
+  const certChainPem = buildSelfSignedCertificate(
+    settings.rootCertSubject ?? "ZCAM1 Root Cert",
+    settings.intermediateCertSubject ?? "ZCAM1 Intermediate Cert",
+    settings.leafSubject ?? "ZCAM1 Leaf Cert",
+    settings.leafOrganization ?? "Succinct",
     contentPublicKey,
-    settings.backendUrl,
   );
 
   if (deviceKeyId === undefined) {

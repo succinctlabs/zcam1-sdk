@@ -1,11 +1,11 @@
-import { extractManifest, ManifestEditor } from "react-native-zcam1-c2pa";
+import {
+  buildSelfSignedCertificate,
+  extractManifest,
+  ManifestEditor,
+} from "react-native-zcam1-c2pa";
 import { generateProof, getVkHash } from "./proving";
 import { base64 } from "@scure/base";
-import {
-  getCertChain,
-  getContentPublicKey,
-  getSecureEnclaveKeyId,
-} from "zcam1-common";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "zcam1-common";
 import { Dirs } from "react-native-file-access";
 
 /**
@@ -13,6 +13,10 @@ import { Dirs } from "react-native-file-access";
  */
 export type Settings = {
   backendUrl: string;
+  rootCertSubject?: string;
+  intermediateCertSubject?: string;
+  leafSubject?: string;
+  leafOrganization?: string;
   production: boolean;
 };
 
@@ -44,9 +48,12 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
 
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  const certChainPem = await getCertChain(
+  const certChainPem = buildSelfSignedCertificate(
+    settings.rootCertSubject ?? "ZCAM1 Root Cert",
+    settings.intermediateCertSubject ?? "ZCAM1 Intermediate Cert",
+    settings.leafSubject ?? "ZCAM1 Leaf Cert",
+    settings.leafOrganization ?? "Succinct",
     contentPublicKey,
-    settings.backendUrl,
   );
 
   return { contentKeyId, certChainPem };
@@ -101,10 +108,7 @@ export async function embedProof(
     `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
   // Embed the manifest to the photo
-  await manifestEditor.embedManifestToFile(
-    destinationPath,
-    "image/jpeg",
-  );
+  await manifestEditor.embedManifestToFile(destinationPath, "image/jpeg");
 
   return destinationPath;
 }
