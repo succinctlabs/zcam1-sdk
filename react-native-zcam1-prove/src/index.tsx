@@ -3,10 +3,12 @@ import {
   extractManifest,
   ManifestEditor,
 } from "react-native-zcam1-c2pa";
-import { generateProof, getVkHash } from "./proving";
+import { IosProvingClientInterface } from "./proving";
 import { base64 } from "@scure/base";
 import { getContentPublicKey, getSecureEnclaveKeyId } from "zcam1-common";
 import { Dirs } from "react-native-file-access";
+
+export { IosProvingClient } from "./proving";
 
 /**
  * Configuration settings for backend communication.
@@ -68,6 +70,7 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
  */
 export async function embedProof(
   originalPath: string,
+  proverClient: IosProvingClientInterface,
   deviceInfo: DeviceInfo,
   settings: Settings,
 ): Promise<string> {
@@ -90,14 +93,24 @@ export async function embedProof(
   );
 
   // Generate the proof
-  const proof = await generateProof(bindings, dataHash.hash, settings);
-  let vkHash = await getVkHash(settings);
+  console.log("Request proof");
+  const proof = await proverClient.requestProof({
+    attestation: bindings.attestation,
+    assertion: bindings.assertion,
+    keyId: bindings.deviceKeyId,
+    dataHash: base64.decode(dataHash.hash),
+    appId: bindings.appId,
+    appAttestProduction: settings.production,
+  });
+  console.log("Done");
+  let vkHash = proverClient.vkHash();
+  console.log("VK Hash", vkHash);
 
   // Include the proof to the C2PA manifest
   manifestEditor.addAssertion(
     "succinct.proof",
     JSON.stringify({
-      data: base64.encode(proof),
+      data: base64.encode(new Uint8Array(proof)),
       vk_hash: vkHash,
     }),
   );

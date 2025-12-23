@@ -1,0 +1,7 @@
+rust:
+  repo: git@github.com:succinctlabs/zcam1.git
+  branch: main
+  # directory: ./..
+  manifestPath: crates/proving-bindings/Cargo.toml
+turboModule:
+  entrypoint: src/proving.tsx

@@ -2,6 +2,10 @@
 #
 .DS_Store
 
+# uniffi
+rust_modules/
+Zcam1ProveFramework.xcframework/
+
 # XDE
 .expo/
 
