@@ -1,0 +1,11 @@
+[package]
+name = "zcam1-proving-bindings"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zcam1-proving-utils.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_proving_bindings"

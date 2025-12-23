@@ -14,7 +14,3 @@ sha2 = { version = "0.10", features = ["oid"] }
 spki = { version = "0.7", features = ["pem", "alloc"] }
 uniffi = { version = "=0.29.3", features = [ "cli" ] }
 x509-cert = { version = "0.2", features = ["builder", "pem"] }
-
-[lib]
-crate-type = ["lib", "cdylib", "staticlib"]
-name = "zcam1_certs_utils"

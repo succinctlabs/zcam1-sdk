@@ -1,0 +1,13 @@
+[package]
+name = "zcam1-proving-utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde.workspace = true
+sp1-sdk.workspace = true
+thiserror.workspace = true
+uniffi.workspace = true
+
+[build-dependencies]
+sp1-build.workspace = true

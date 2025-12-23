@@ -9338,6 +9338,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-proving-bindings"
+version = "0.1.0"
+dependencies = [
+ "zcam1-proving-utils",
+]
+
+[[package]]
+name = "zcam1-proving-utils"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sp1-build",
+ "sp1-sdk",
+ "thiserror 2.0.17",
+ "uniffi",
+]
+
+[[package]]
 name = "zcam1-server"
 version = "0.1.0"
 dependencies = [
