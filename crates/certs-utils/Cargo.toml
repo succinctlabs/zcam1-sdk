@@ -1,0 +1,20 @@
+[package]
+name = "zcam1-certs-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json.workspace = true
+thiserror.workspace = true
+
+der = "0.7"
+p256 = { version = "0.13", features = ["jwk", "ecdsa", "pkcs8"] }
+rcgen = "0.14.5"
+sha2 = { version = "0.10", features = ["oid"] }
+spki = { version = "0.7", features = ["pem", "alloc"] }
+uniffi = { version = "=0.29.3", features = [ "cli" ] }
+x509-cert = { version = "0.2", features = ["builder", "pem"] }
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_certs_utils"

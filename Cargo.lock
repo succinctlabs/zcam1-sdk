@@ -817,7 +817,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5493c3bedbacf7fd7382c6346bbd66687d12bbaad3a89a2d2c303ee6cf20b048"
 dependencies = [
- "asn1-rs-derive 0.5.1",
+ "asn1-rs-derive",
  "asn1-rs-impl",
  "displaydoc",
  "nom",
@@ -828,38 +828,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "asn1-rs"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56624a96882bb8c26d61312ae18cb45868e5a9992ea73c58e45c3101e56a1e60"
-dependencies = [
- "asn1-rs-derive 0.6.0",
- "asn1-rs-impl",
- "displaydoc",
- "nom",
- "num-traits",
- "rusticata-macros",
- "thiserror 2.0.17",
- "time",
-]
-
-[[package]]
 name = "asn1-rs-derive"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "965c2d33e53cb6b267e148a4cb0760bc01f4904c1cd4bb4002a085bb016d1490"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.111",
- "synstructure",
-]
-
-[[package]]
-name = "asn1-rs-derive"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3109e49b1e4909e9db6515a30c633684d68cdeaa252f215214cb4fa1a5bfee2c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1882,7 +1854,7 @@ version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d529aa4d6246dfea1c71aa5bc557882917aaae2c52eb7b329bf5f66cf9008cc"
 dependencies = [
- "asn1-rs 0.6.2",
+ "asn1-rs",
  "async-generic",
  "async-recursion",
  "async-trait",
@@ -1966,7 +1938,7 @@ dependencies = [
  "windows-core 0.61.2",
  "wstd",
  "x509-certificate",
- "x509-parser 0.16.0",
+ "x509-parser",
  "zeroize",
  "zip",
 ]
@@ -1977,7 +1949,7 @@ version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76be5521025341618a0dfb13f783a034a2dde59c5ebee2eb5470a62f298e8638"
 dependencies = [
- "asn1-rs 0.6.2",
+ "asn1-rs",
  "async-generic",
  "async-trait",
  "atree",
@@ -2056,7 +2028,7 @@ dependencies = [
  "web-sys",
  "web-time",
  "windows-core 0.61.2",
- "x509-parser 0.16.0",
+ "x509-parser",
  "zeroize",
  "zip",
 ]
@@ -2708,21 +2680,7 @@ version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5cd0a5c643689626bec213c4d8bd4d96acc8ffdb4ad4bb6bc16abf27d5f4b553"
 dependencies = [
- "asn1-rs 0.6.2",
- "displaydoc",
- "nom",
- "num-bigint 0.4.6",
- "num-traits",
- "rusticata-macros",
-]
-
-[[package]]
-name = "der-parser"
-version = "10.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07da5016415d5a3c4dd39b11ed26f915f52fc4e0dc197d87908bc916e51bc1a6"
-dependencies = [
- "asn1-rs 0.7.1",
+ "asn1-rs",
  "displaydoc",
  "nom",
  "num-bigint 0.4.6",
@@ -2892,6 +2850,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "442039f5147480ba31067cb00ada1adae6892028e40e45fc5de7b7df6dcc1b5f"
 dependencies = [
  "const-random",
+]
+
+[[package]]
+name = "dng-to-jpeg"
+version = "0.1.0"
+dependencies = [
+ "sp1-zkvm",
 ]
 
 [[package]]
@@ -4794,16 +4759,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8d8034d9489cdaf79228eb9f6a3b8d7bb32ba00d6645ebd48eef4077ceb5bd9"
 dependencies = [
- "asn1-rs 0.6.2",
-]
-
-[[package]]
-name = "oid-registry"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12f40cff3dde1b6087cc5d5f5d4d65712f34016a03ed60e9c08dcc392736b5b7"
-dependencies = [
- "asn1-rs 0.7.1",
+ "asn1-rs",
 ]
 
 [[package]]
@@ -9210,31 +9166,14 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcbc162f30700d6f3f82a24bf7cc62ffe7caea42c0b2cba8bf7f3ae50cf51f69"
 dependencies = [
- "asn1-rs 0.6.2",
+ "asn1-rs",
  "data-encoding",
- "der-parser 9.0.0",
+ "der-parser",
  "lazy_static",
  "nom",
- "oid-registry 0.7.1",
+ "oid-registry",
  "rusticata-macros",
  "thiserror 1.0.69",
- "time",
-]
-
-[[package]]
-name = "x509-parser"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb3e137310115a65136898d2079f003ce33331a6c4b0d51f1531d1be082b6425"
-dependencies = [
- "asn1-rs 0.7.1",
- "data-encoding",
- "der-parser 10.0.0",
- "lazy_static",
- "nom",
- "oid-registry 0.8.1",
- "rusticata-macros",
- "thiserror 2.0.17",
  "time",
 ]
 
@@ -9311,6 +9250,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-c2pa-bindings"
+version = "0.1.0"
+dependencies = [
+ "zcam1-c2pa-utils",
+ "zcam1-certs-utils",
+]
+
+[[package]]
 name = "zcam1-c2pa-utils"
 version = "0.1.0"
 dependencies = [
@@ -9327,8 +9274,22 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "uniffi",
- "x509-parser 0.18.0",
  "zcam1-common",
+]
+
+[[package]]
+name = "zcam1-certs-utils"
+version = "0.1.0"
+dependencies = [
+ "der",
+ "p256",
+ "rcgen",
+ "serde_json",
+ "sha2",
+ "spki",
+ "thiserror 2.0.17",
+ "uniffi",
+ "x509-cert",
 ]
 
 [[package]]
@@ -9351,7 +9312,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tracing",
  "x509-cert",
- "x509-parser 0.16.0",
+ "x509-parser",
  "zcam1-ios",
 ]
 
@@ -9361,7 +9322,7 @@ version = "0.1.0"
 dependencies = [
  "base64ct",
  "bytes",
- "der-parser 9.0.0",
+ "der-parser",
  "eyre",
  "hex",
  "p256",
