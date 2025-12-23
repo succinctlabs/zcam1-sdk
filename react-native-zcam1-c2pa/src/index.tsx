@@ -12,11 +12,13 @@ if (!rustInstalled) {
 
 // Export the generated bindings to the app.
 export * from './generated/zcam1_c2pa_utils';
+export * from './generated/zcam1_certs_utils';
 
 // Now import the bindings so we can:
 // - intialize them
 // - export them as namespaced objects as the default export.
 import * as zcam1_c2pa_utils from './generated/zcam1_c2pa_utils';
+import * as zcam1_certs_utils from './generated/zcam1_certs_utils';
 
 // Initialize the generated bindings: mostly checksums, but also callbacks.
 // - the boolean flag ensures this loads exactly once, even if the JS code
@@ -24,6 +26,7 @@ import * as zcam1_c2pa_utils from './generated/zcam1_c2pa_utils';
 let initialized = false;
 if (!initialized) {
   zcam1_c2pa_utils.default.initialize();
+  zcam1_certs_utils.default.initialize();
   initialized = true;
 }
 
@@ -37,5 +40,6 @@ export async function uniffiInitAsync() {
 // Export the crates as individually namespaced objects.
 export default {
   zcam1_c2pa_utils,
+  zcam1_certs_utils,
 };
 
