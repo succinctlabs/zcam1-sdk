@@ -1,42 +1,32 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { embedProof, initDevice, DeviceInfo } from "react-native-zcam1-prove";
+import { useProver } from "react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
 import { FileSystem } from "react-native-file-access";
 
 export default function Proving() {
-  const appId = process.env.EXPO_PUBLIC_APP_ID!;
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <ProofGeneration />
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+function ProofGeneration() {
   const router = useRouter();
   const { uri } = useLocalSearchParams<{ uri?: string }>();
 
-  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(
-    undefined,
-  );
-
-  const settings = useMemo(() => {
-    return {
-      appId,
-      backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
-      production: false,
-    };
-  }, [appId]);
-
-  useEffect(() => {
-    async function fetchDevice() {
-      const deviceInfo = await initDevice(settings);
-      setDeviceInfo(deviceInfo);
-    }
-
-    fetchDevice();
-  }, [settings]);
+  const { provingClient, isInitializing, error } = useProver();
 
   useEffect(() => {
     async function generateProof() {
-      if (uri && deviceInfo) {
-        const outputPath = await embedProof(uri, deviceInfo, settings);
+      if (uri && provingClient) {
+        const outputPath = await provingClient.embedProof(uri);
 
         try {
           await CameraRoll.saveAsset(outputPath, { album: "ZCAM1" });
@@ -57,20 +47,29 @@ export default function Proving() {
     }
 
     generateProof();
-  }, [router, uri, deviceInfo, settings]);
+  }, [router, provingClient, uri]);
+
+  if (error) {
+    return <Text>{error.toString()}</Text>;
+  }
+
+  if (isInitializing) {
+    return (
+      <View>
+        <ActivityIndicator size={72} />
+        <Text style={styles.title}>Prover initializing...</Text>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <View>
-          <ActivityIndicator size={72} />
-          <Text style={styles.title}>Generating a proof...</Text>
-          <Text style={styles.subtitle}>
-            This may take a few seconds. Please keep the app open.
-          </Text>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <View>
+      <ActivityIndicator size={72} />
+      <Text style={styles.title}>Generating a proof...</Text>
+      <Text style={styles.subtitle}>
+        This may take a few seconds. Please keep the app open.
+      </Text>
+    </View>
   );
 }
 
