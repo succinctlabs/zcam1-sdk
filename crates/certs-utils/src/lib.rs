@@ -13,6 +13,25 @@ pub struct JwkEcKey {
     pub y: String,
 }
 
+#[derive(uniffi::Record)]
+pub struct SelfSignedCertChain {
+    pub root_cert_subject: String,
+    pub intermediate_cert_subject: String,
+    pub leaf_cert_subject: String,
+    pub leaf_organization: String,
+}
+
+impl Default for SelfSignedCertChain {
+    fn default() -> Self {
+        Self {
+            root_cert_subject: String::from("ZCAM1 Root Certificate"),
+            intermediate_cert_subject: String::from("ZCAM1 Intermediate Certificate"),
+            leaf_cert_subject: String::from("ZCAM1 Leaf Certificate"),
+            leaf_organization: String::from("Succinct Certificate"),
+        }
+    }
+}
+
 impl TryFrom<&JwkEcKey> for p256::elliptic_curve::JwkEcKey {
     type Error = serde_json::Error;
 
@@ -28,17 +47,22 @@ impl TryFrom<&JwkEcKey> for p256::elliptic_curve::JwkEcKey {
     }
 }
 
-#[uniffi::export]
+#[uniffi::export(default(cert_chain_params = None))]
 pub fn build_self_signed_certificate(
-    root_cert_subject: &str,
-    intermediate_cert_subject: &str,
-    leaf_subject: &str,
-    leaf_organization: &str,
     leaf_jwk: &JwkEcKey,
+    cert_chain_params: Option<SelfSignedCertChain>,
 ) -> Result<String, Error> {
+    let cert_chain_params = cert_chain_params.unwrap_or_default();
     let cert_chain = CertChainBuilder::new()
-        .self_signed(root_cert_subject, intermediate_cert_subject)?
-        .build(&leaf_jwk.try_into()?, leaf_subject, leaf_organization)?;
+        .self_signed(
+            &cert_chain_params.root_cert_subject,
+            &cert_chain_params.intermediate_cert_subject,
+        )?
+        .build(
+            &leaf_jwk.try_into()?,
+            &cert_chain_params.leaf_cert_subject,
+            &cert_chain_params.leaf_organization,
+        )?;
 
     Ok(cert_chain)
 }
