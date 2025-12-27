@@ -33,7 +33,9 @@ import nativeModule, {
 import {
   type UniffiByteArray,
   AbstractFfiConverterByteArray,
+  FfiConverterBool,
   FfiConverterInt32,
+  FfiConverterOptional,
   RustBuffer,
   UniffiError,
   UniffiInternalError,
@@ -56,22 +58,16 @@ const uniffiIsDebug =
 // Public interface members begin here.
 
 export function buildSelfSignedCertificate(
-  rootCertSubject: string,
-  intermediateCertSubject: string,
-  leafSubject: string,
-  leafOrganization: string,
   leafJwk: JwkEcKey,
+  certChainParams: SelfSignedCertChain | undefined = undefined,
 ): string /*throws*/ {
   return FfiConverterString.lift(
     uniffiCaller.rustCallWithError(
       /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_certs_utils_fn_func_build_self_signed_certificate(
-          FfiConverterString.lower(rootCertSubject),
-          FfiConverterString.lower(intermediateCertSubject),
-          FfiConverterString.lower(leafSubject),
-          FfiConverterString.lower(leafOrganization),
           FfiConverterTypeJwkEcKey.lower(leafJwk),
+          FfiConverterOptionalTypeSelfSignedCertChain.lower(certChainParams),
           callStatus,
         );
       },
@@ -79,6 +75,58 @@ export function buildSelfSignedCertificate(
     ),
   );
 }
+
+export type ExistingCertChain = {
+  pem: string;
+};
+
+/**
+ * Generated factory for {@link ExistingCertChain} record objects.
+ */
+export const ExistingCertChain = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<ExistingCertChain, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_certs_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<ExistingCertChain>,
+  });
+})();
+
+const FfiConverterTypeExistingCertChain = (() => {
+  type TypeName = ExistingCertChain;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        pem: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.pem, into);
+    }
+    allocationSize(value: TypeName): number {
+      return FfiConverterString.allocationSize(value.pem);
+    }
+  }
+  return new FFIConverter();
+})();
 
 export type JwkEcKey = {
   kty: string;
@@ -138,6 +186,72 @@ const FfiConverterTypeJwkEcKey = (() => {
         FfiConverterString.allocationSize(value.crv) +
         FfiConverterString.allocationSize(value.x) +
         FfiConverterString.allocationSize(value.y)
+      );
+    }
+  }
+  return new FFIConverter();
+})();
+
+export type SelfSignedCertChain = {
+  rootCertSubject: string;
+  intermediateCertSubject: string;
+  leafCertSubject: string;
+  leafOrganization: string;
+};
+
+/**
+ * Generated factory for {@link SelfSignedCertChain} record objects.
+ */
+export const SelfSignedCertChain = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<SelfSignedCertChain, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link SelfSignedCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link SelfSignedCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_certs_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<SelfSignedCertChain>,
+  });
+})();
+
+const FfiConverterTypeSelfSignedCertChain = (() => {
+  type TypeName = SelfSignedCertChain;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        rootCertSubject: FfiConverterString.read(from),
+        intermediateCertSubject: FfiConverterString.read(from),
+        leafCertSubject: FfiConverterString.read(from),
+        leafOrganization: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.rootCertSubject, into);
+      FfiConverterString.write(value.intermediateCertSubject, into);
+      FfiConverterString.write(value.leafCertSubject, into);
+      FfiConverterString.write(value.leafOrganization, into);
+    }
+    allocationSize(value: TypeName): number {
+      return (
+        FfiConverterString.allocationSize(value.rootCertSubject) +
+        FfiConverterString.allocationSize(value.intermediateCertSubject) +
+        FfiConverterString.allocationSize(value.leafCertSubject) +
+        FfiConverterString.allocationSize(value.leafOrganization)
       );
     }
   }
@@ -400,6 +514,11 @@ const FfiConverterTypeError = (() => {
   return new FfiConverter();
 })();
 
+// FfiConverter for SelfSignedCertChain | undefined
+const FfiConverterOptionalTypeSelfSignedCertChain = new FfiConverterOptional(
+  FfiConverterTypeSelfSignedCertChain,
+);
+
 /**
  * This should be called before anything else.
  *
@@ -424,7 +543,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_certs_utils_checksum_func_build_self_signed_certificate() !==
-    62575
+    13636
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_certs_utils_checksum_func_build_self_signed_certificate",
@@ -436,6 +555,8 @@ export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeError,
+    FfiConverterTypeExistingCertChain,
     FfiConverterTypeJwkEcKey,
+    FfiConverterTypeSelfSignedCertChain,
   },
 });

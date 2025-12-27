@@ -24,11 +24,8 @@ interface NativeModuleInterface {
     uniffi_out_err: UniffiRustCallStatus,
   ): string;
   ubrn_uniffi_zcam1_certs_utils_fn_func_build_self_signed_certificate(
-    rootCertSubject: Uint8Array,
-    intermediateCertSubject: Uint8Array,
-    leafSubject: Uint8Array,
-    leafOrganization: Uint8Array,
     leafJwk: Uint8Array,
+    certChainParams: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): Uint8Array;
   ubrn_uniffi_zcam1_certs_utils_checksum_func_build_self_signed_certificate(): number;

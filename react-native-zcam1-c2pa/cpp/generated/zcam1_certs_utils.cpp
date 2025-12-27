@@ -101,8 +101,7 @@ typedef struct UniffiForeignFutureStructVoid {
 typedef void (*UniffiForeignFutureCompleteVoid)(
     uint64_t callback_data, UniffiForeignFutureStructVoid result);
 RustBuffer uniffi_zcam1_certs_utils_fn_func_build_self_signed_certificate(
-    RustBuffer root_cert_subject, RustBuffer intermediate_cert_subject,
-    RustBuffer leaf_subject, RustBuffer leaf_organization, RustBuffer leaf_jwk,
+    RustBuffer leaf_jwk, RustBuffer cert_chain_params,
     RustCallStatus *uniffi_out_err);
 RustBuffer
 ffi_zcam1_certs_utils_rustbuffer_alloc(uint64_t size,
@@ -1665,7 +1664,7 @@ NativeZcam1CertsUtils::NativeZcam1CertsUtils(
           rt,
           jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_certs_utils_fn_func_"
                                         "build_self_signed_certificate"),
-          5,
+          2,
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
@@ -1774,12 +1773,6 @@ jsi::Value NativeZcam1CertsUtils::
                                                               args[0]),
       uniffi::zcam1_certs_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
                                                               args[1]),
-      uniffi::zcam1_certs_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
-                                                              args[2]),
-      uniffi::zcam1_certs_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
-                                                              args[3]),
-      uniffi::zcam1_certs_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
-                                                              args[4]),
       &status);
   uniffi::zcam1_certs_utils::Bridging<RustCallStatus>::copyIntoJs(
       rt, callInvoker, status, args[count - 1]);
