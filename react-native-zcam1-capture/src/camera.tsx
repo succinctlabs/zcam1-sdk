@@ -8,8 +8,15 @@ import {
 import { Dirs } from "react-native-file-access";
 import { base64 } from "@scure/base";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
-import { computeHash, ManifestEditor } from "react-native-zcam1-c2pa";
-import { DeviceInfo, Settings, ZPhoto } from ".";
+import {
+  buildSelfSignedCertificate,
+  computeHash,
+  ExistingCertChain,
+  ManifestEditor,
+  SelfSignedCertChain,
+} from "react-native-zcam1-c2pa";
+import { getContentPublicKey } from "zcam1-common";
+import { CaptureInfo, Settings, ZPhoto } from ".";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
@@ -29,9 +36,9 @@ export interface ZCameraProps {
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
 
-  deviceInfo: DeviceInfo;
+  captureInfo: CaptureInfo;
 
-  settings: Settings;
+  certChain?: SelfSignedCertChain | ExistingCertChain;
 
   /** Optional style for the underlying native view. */
   style?: StyleProp<ViewStyle>;
@@ -82,6 +89,26 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   /** Reference to the underlying native view (if needed later). */
   private nativeRef = React.createRef<any>();
 
+  private certChainPem: string;
+
+  constructor(props: ZCameraProps) {
+    super(props);
+    let certChainPem: string;
+
+    if (props.certChain && "pem" in props.certChain) {
+      certChainPem = props.certChain.pem;
+    } else {
+      console.warn("[ZCAM1] Using a self signed certificate");
+
+      certChainPem = buildSelfSignedCertificate(
+        props.captureInfo.contentPublicKey,
+        props.certChain,
+      );
+    }
+
+    this.certChainPem = certChainPem;
+  }
+
   /**
    * Capture a photo using the native Swift camera and return a signed `ZPhoto`.
    *
@@ -128,7 +155,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     try {
       assertion = await generateHardwareSignatureWithAssertion(
         base64.encode(new Uint8Array(dataHash)),
-        this.props.deviceInfo.deviceKeyId,
+        this.props.captureInfo.deviceKeyId,
       );
     } catch (error: any) {
       if (
@@ -140,7 +167,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         );
         // Use a mock attestation for simulator testing
         // In production, this would need to be rejected by the backend
-        assertion = `SIMULATOR_MOCK_${this.props.deviceInfo.deviceKeyId}_${Date.now()}`;
+        assertion = `SIMULATOR_MOCK_${this.props.captureInfo.deviceKeyId}_${Date.now()}`;
       } else {
         throw error;
       }
@@ -148,8 +175,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const manifestEditor = new ManifestEditor(
       originalPath,
-      this.props.deviceInfo.contentKeyId,
-      this.props.deviceInfo.certChainPem,
+      this.props.captureInfo.contentKeyId,
+      this.certChainPem,
     );
 
     // Add the "capture" action to the manifest.
@@ -169,9 +196,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     manifestEditor.addAssertion(
       "succinct.bindings",
       JSON.stringify({
-        app_id: this.props.settings.appId,
-        device_key_id: this.props.deviceInfo.deviceKeyId,
-        attestation: this.props.deviceInfo.attestation,
+        app_id: this.props.captureInfo.appId,
+        device_key_id: this.props.captureInfo.deviceKeyId,
+        attestation: this.props.captureInfo.attestation,
         assertion,
       }),
     );

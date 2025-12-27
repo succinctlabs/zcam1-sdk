@@ -3,12 +3,16 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
-import { buildSelfSignedCertificate } from "react-native-zcam1-c2pa";
 import {
-  getCertChain,
   getContentPublicKey,
   getSecureEnclaveKeyId,
+  ECKey,
 } from "zcam1-common";
+
+export {
+  buildSelfSignedCertificate,
+  SelfSignedCertChain,
+} from "react-native-zcam1-c2pa";
 
 /**
  * Camera component for capturing photos with secure enclave integration.
@@ -18,10 +22,11 @@ export { ZCamera } from "./camera";
 /**
  * Device registration information including keys, certificate chain, and attestation.
  */
-export type DeviceInfo = {
+export type CaptureInfo = {
+  appId: string;
   deviceKeyId: string;
+  contentPublicKey: ECKey;
   contentKeyId: Uint8Array;
-  certChainPem: string;
   attestation: string;
 };
 
@@ -29,12 +34,7 @@ export type DeviceInfo = {
  * Configuration settings for device initialization and backend communication.
  */
 export type Settings = {
-  backendUrl: string;
   appId: string;
-  rootCertSubject?: string;
-  intermediateCertSubject?: string;
-  leafSubject?: string;
-  leafOrganization?: string;
   production: boolean;
 };
 
@@ -56,10 +56,9 @@ export class ZPhoto {
  * @param settings - Configuration settings for initialization
  * @returns Device information including keys, certificate chain, and attestation
  */
-export async function initDevice(settings: Settings): Promise<DeviceInfo> {
+export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   let deviceKeyId: string | undefined;
   let contentKeyId: Uint8Array | undefined;
-
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
@@ -67,14 +66,6 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
   }
 
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
-
-  const certChainPem = buildSelfSignedCertificate(
-    settings.rootCertSubject ?? "ZCAM1 Root Cert",
-    settings.intermediateCertSubject ?? "ZCAM1 Intermediate Cert",
-    settings.leafSubject ?? "ZCAM1 Leaf Cert",
-    settings.leafOrganization ?? "Succinct",
-    contentPublicKey,
-  );
 
   if (deviceKeyId === undefined) {
     // Try to generate hardware key, but fall back to mock for simulator
@@ -104,7 +95,13 @@ export async function initDevice(settings: Settings): Promise<DeviceInfo> {
 
   const attestation = await updateRegistration(deviceKeyId, settings);
 
-  return { deviceKeyId, contentKeyId, certChainPem, attestation };
+  return {
+    appId: settings.appId,
+    deviceKeyId,
+    contentPublicKey,
+    contentKeyId,
+    attestation,
+  };
 }
 
 /**
