@@ -32,10 +32,12 @@ interface NativeModuleInterface {
     uniffi_out_err: UniffiRustCallStatus,
   ): void;
   ubrn_uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_mock(
+    callback: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
   ubrn_uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_new(
     privateKey: Uint8Array,
+    callback: Uint8Array,
     uniffi_out_err: UniffiRustCallStatus,
   ): bigint;
   ubrn_uniffi_zcam1_proving_utils_fn_method_iosprovingclient_request_proof(
@@ -46,6 +48,9 @@ interface NativeModuleInterface {
     ptr: bigint,
     uniffi_out_err: UniffiRustCallStatus,
   ): Uint8Array;
+  ubrn_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+    vtable: UniffiVTableCallbackInterfaceInitialized,
+  ): void;
   ubrn_ffi_zcam1_proving_utils_rust_future_poll_u8(
     handle: bigint,
     callback: UniffiRustFutureContinuationCallback,
@@ -197,6 +202,7 @@ interface NativeModuleInterface {
   ubrn_uniffi_zcam1_proving_utils_checksum_method_iosprovingclient_vk_hash(): number;
   ubrn_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_mock(): number;
   ubrn_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new(): number;
+  ubrn_uniffi_zcam1_proving_utils_checksum_method_initialized_initialized(): number;
   ubrn_ffi_zcam1_proving_utils_uniffi_contract_version(): number;
   ubrn_uniffi_internal_fn_method_iosprovingclient_ffi__bless_pointer(
     pointer: bigint,
@@ -327,6 +333,13 @@ export type UniffiForeignFutureCompleteVoid = (
   callbackData: bigint,
   result: UniffiForeignFutureStructVoid,
 ) => void;
+type UniffiCallbackInterfaceInitializedMethod0 = (
+  uniffiHandle: bigint,
+) => UniffiResult<void>;
+export type UniffiVTableCallbackInterfaceInitialized = {
+  initialized: UniffiCallbackInterfaceInitializedMethod0;
+  uniffiFree: UniffiCallbackInterfaceFree;
+};
 
 // UniffiRustFutureContinuationCallback is generated as part of the component interface's
 // ffi_definitions. However, we need it in the runtime.

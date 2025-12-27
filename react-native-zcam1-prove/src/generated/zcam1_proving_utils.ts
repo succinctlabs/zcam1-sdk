@@ -29,29 +29,37 @@ import nativeModule, {
   type UniffiForeignFutureCompleteRustBuffer,
   type UniffiForeignFutureStructVoid,
   type UniffiForeignFutureCompleteVoid,
+  type UniffiVTableCallbackInterfaceInitialized,
 } from "./zcam1_proving_utils-ffi";
 import {
   type FfiConverter,
   type UniffiByteArray,
+  type UniffiHandle,
   type UniffiObjectFactory,
+  type UniffiReferenceHolder,
   type UniffiRustArcPtr,
+  type UniffiRustCallStatus,
   type UnsafeMutableRawPointer,
   AbstractFfiConverterByteArray,
   FfiConverterArrayBuffer,
   FfiConverterBool,
+  FfiConverterCallback,
   FfiConverterInt32,
   FfiConverterObject,
+  FfiConverterOptional,
   FfiConverterUInt64,
   RustBuffer,
   UniffiAbstractObject,
   UniffiError,
   UniffiInternalError,
+  UniffiResult,
   UniffiRustCaller,
   destructorGuardSymbol,
   pointerLiteralSymbol,
   uniffiCreateFfiConverterString,
   uniffiCreateRecord,
   uniffiRustCallAsync,
+  uniffiTraitInterfaceCall,
   uniffiTypeNameSymbol,
   variantOrdinalSymbol,
 } from "uniffi-bindgen-react-native";
@@ -66,6 +74,51 @@ const uniffiIsDebug =
   process?.env?.NODE_ENV !== "production" ||
   false;
 // Public interface members begin here.
+
+export interface Initialized {
+  initialized(): void;
+}
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+const uniffiCallbackInterfaceInitialized: {
+  vtable: UniffiVTableCallbackInterfaceInitialized;
+  register: () => void;
+} = {
+  // Create the VTable using a series of closures.
+  // ts automatically converts these into C callback functions.
+  vtable: {
+    initialized: (uniffiHandle: bigint) => {
+      const uniffiMakeCall = (): void => {
+        const jsCallback = FfiConverterTypeInitialized.lift(uniffiHandle);
+        return jsCallback.initialized();
+      };
+      const uniffiResult = UniffiResult.ready<void>();
+      const uniffiHandleSuccess = (obj: any) => {};
+      const uniffiHandleError = (code: number, errBuf: UniffiByteArray) => {
+        UniffiResult.writeError(uniffiResult, code, errBuf);
+      };
+      uniffiTraitInterfaceCall(
+        /*makeCall:*/ uniffiMakeCall,
+        /*handleSuccess:*/ uniffiHandleSuccess,
+        /*handleError:*/ uniffiHandleError,
+        /*lowerString:*/ FfiConverterString.lower,
+      );
+      return uniffiResult;
+    },
+    uniffiFree: (uniffiHandle: UniffiHandle): void => {
+      // Initialized: this will throw a stale handle error if the handle isn't found.
+      FfiConverterTypeInitialized.drop(uniffiHandle);
+    },
+  },
+  register: () => {
+    nativeModule().ubrn_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+      uniffiCallbackInterfaceInitialized.vtable,
+    );
+  },
+};
+
+// FfiConverter protocol for callback interfaces
+const FfiConverterTypeInitialized = new FfiConverterCallback<Initialized>();
 
 export type IosAuthInputs = {
   attestation: string;
@@ -168,10 +221,11 @@ const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
 
 // Flat error type: Exception
 export enum Exception_Tags {
+  ProverNotInitialized = "ProverNotInitialized",
   Sp1 = "Sp1",
 }
 export const Exception = (() => {
-  class Sp1 extends UniffiError {
+  class ProverNotInitialized extends UniffiError {
     /**
      * @private
      * This field is private and should not be used.
@@ -183,6 +237,28 @@ export const Exception = (() => {
      */
     readonly [variantOrdinalSymbol] = 1;
 
+    public readonly tag = Exception_Tags.ProverNotInitialized;
+
+    constructor(message: string) {
+      super("Exception", "ProverNotInitialized", message);
+    }
+
+    static instanceOf(e: any): e is ProverNotInitialized {
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 1;
+    }
+  }
+  class Sp1 extends UniffiError {
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    /**
+     * @private
+     * This field is private and should not be used.
+     */
+    readonly [variantOrdinalSymbol] = 2;
+
     public readonly tag = Exception_Tags.Sp1;
 
     constructor(message: string) {
@@ -190,7 +266,7 @@ export const Exception = (() => {
     }
 
     static instanceOf(e: any): e is Sp1 {
-      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 1;
+      return instanceOf(e) && (e as any)[variantOrdinalSymbol] === 2;
     }
   }
 
@@ -199,6 +275,7 @@ export const Exception = (() => {
     return (e as any)[uniffiTypeNameSymbol] === "Exception";
   }
   return {
+    ProverNotInitialized,
     Sp1,
     instanceOf,
   };
@@ -217,6 +294,11 @@ const FfiConverterTypeError = (() => {
     read(from: RustBuffer): TypeName {
       switch (intConverter.read(from)) {
         case 1:
+          return new Exception.ProverNotInitialized(
+            FfiConverterString.read(from),
+          );
+
+        case 2:
           return new Exception.Sp1(FfiConverterString.read(from));
 
         default:
@@ -240,7 +322,7 @@ export interface IosProvingClientInterface {
     inputs: IosAuthInputs,
     asyncOpts_?: { signal: AbortSignal },
   ) /*throws*/ : Promise<ArrayBuffer>;
-  vkHash(): string;
+  vkHash() /*throws*/ : string;
 }
 
 export class IosProvingClient
@@ -250,12 +332,16 @@ export class IosProvingClient
   readonly [uniffiTypeNameSymbol] = "IosProvingClient";
   readonly [destructorGuardSymbol]: UniffiRustArcPtr;
   readonly [pointerLiteralSymbol]: UnsafeMutableRawPointer;
-  constructor(privateKey: string) {
+  constructor(
+    privateKey: string,
+    callback: Initialized | undefined = undefined,
+  ) {
     super();
     const pointer = uniffiCaller.rustCall(
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_new(
           FfiConverterString.lower(privateKey),
+          FfiConverterOptionalTypeInitialized.lower(callback),
           callStatus,
         );
       },
@@ -266,11 +352,14 @@ export class IosProvingClient
       uniffiTypeIosProvingClientObjectFactory.bless(pointer);
   }
 
-  public static mock(): IosProvingClientInterface {
+  public static mock(
+    callback: Initialized | undefined = undefined,
+  ): IosProvingClientInterface {
     return FfiConverterTypeIosProvingClient.lift(
       uniffiCaller.rustCall(
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_mock(
+            FfiConverterOptionalTypeInitialized.lower(callback),
             callStatus,
           );
         },
@@ -318,9 +407,10 @@ export class IosProvingClient
     }
   }
 
-  public vkHash(): string {
+  public vkHash(): string /*throws*/ {
     return FfiConverterString.lift(
-      uniffiCaller.rustCall(
+      uniffiCaller.rustCallWithError(
+        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_proving_utils_fn_method_iosprovingclient_vk_hash(
             uniffiTypeIosProvingClientObjectFactory.clonePointer(this),
@@ -419,6 +509,11 @@ const FfiConverterTypeIosProvingClient = new FfiConverterObject(
   uniffiTypeIosProvingClientObjectFactory,
 );
 
+// FfiConverter for Initialized | undefined
+const FfiConverterOptionalTypeInitialized = new FfiConverterOptional(
+  FfiConverterTypeInitialized,
+);
+
 /**
  * This should be called before anything else.
  *
@@ -451,7 +546,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_proving_utils_checksum_method_iosprovingclient_vk_hash() !==
-    63090
+    9850
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_proving_utils_checksum_method_iosprovingclient_vk_hash",
@@ -459,7 +554,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_mock() !==
-    51251
+    63763
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_mock",
@@ -467,12 +562,22 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new() !==
-    19585
+    47251
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new",
     );
   }
+  if (
+    nativeModule().ubrn_uniffi_zcam1_proving_utils_checksum_method_initialized_initialized() !==
+    19597
+  ) {
+    throw new UniffiInternalError.ApiChecksumMismatch(
+      "uniffi_zcam1_proving_utils_checksum_method_initialized_initialized",
+    );
+  }
+
+  uniffiCallbackInterfaceInitialized.register();
 }
 
 export default Object.freeze({

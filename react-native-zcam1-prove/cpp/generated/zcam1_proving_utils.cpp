@@ -100,19 +100,29 @@ typedef struct UniffiForeignFutureStructVoid {
 } UniffiForeignFutureStructVoid;
 typedef void (*UniffiForeignFutureCompleteVoid)(
     uint64_t callback_data, UniffiForeignFutureStructVoid result);
+typedef void (*UniffiCallbackInterfaceInitializedMethod0)(
+    uint64_t uniffi_handle, void *uniffi_out_return,
+    RustCallStatus *rust_call_status);
+typedef struct UniffiVTableCallbackInterfaceInitialized {
+  UniffiCallbackInterfaceInitializedMethod0 initialized;
+  UniffiCallbackInterfaceFree uniffi_free;
+} UniffiVTableCallbackInterfaceInitialized;
 void *uniffi_zcam1_proving_utils_fn_clone_iosprovingclient(
     void *ptr, RustCallStatus *uniffi_out_err);
 void uniffi_zcam1_proving_utils_fn_free_iosprovingclient(
     void *ptr, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_mock(
-    RustCallStatus *uniffi_out_err);
+    RustBuffer callback, RustCallStatus *uniffi_out_err);
 void *uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_new(
-    RustBuffer private_key, RustCallStatus *uniffi_out_err);
+    RustBuffer private_key, RustBuffer callback,
+    RustCallStatus *uniffi_out_err);
 /*handle*/ uint64_t
 uniffi_zcam1_proving_utils_fn_method_iosprovingclient_request_proof(
     void *ptr, RustBuffer inputs);
 RustBuffer uniffi_zcam1_proving_utils_fn_method_iosprovingclient_vk_hash(
     void *ptr, RustCallStatus *uniffi_out_err);
+void uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+    UniffiVTableCallbackInterfaceInitialized *vtable);
 RustBuffer
 ffi_zcam1_proving_utils_rustbuffer_alloc(uint64_t size,
                                          RustCallStatus *uniffi_out_err);
@@ -247,6 +257,7 @@ uint16_t uniffi_zcam1_proving_utils_checksum_method_iosprovingclient_vk_hash();
 uint16_t
 uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_mock();
 uint16_t uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new();
+uint16_t uniffi_zcam1_proving_utils_checksum_method_initialized_initialized();
 uint32_t ffi_zcam1_proving_utils_uniffi_contract_version();
 }
 
@@ -715,6 +726,118 @@ static void cleanup() {
 }
 } // namespace
   // uniffi::zcam1_proving_utils::st::foreignfuture::foreignfuture::free
+
+// Callback function:
+// uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::vtablecallbackinterfaceinitialized::free::UniffiCallbackInterfaceFree
+//
+// We have the following constraints:
+// - we need to pass a function pointer to Rust.
+// - we need a jsi::Runtime and jsi::Function to call into JS.
+// - function pointers can't store state, so we can't use a lamda.
+//
+// For this, we store a lambda as a global, as `rsLambda`. The `callback`
+// function calls the lambda, which itself calls the `body` which then calls
+// into JS.
+//
+// We then give the `callback` function pointer to Rust which will call the
+// lambda sometime in the future.
+namespace uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::
+    vtablecallbackinterfaceinitialized::free {
+using namespace facebook;
+
+// We need to store a lambda in a global so we can call it from
+// a function pointer. The function pointer is passed to Rust.
+static std::function<void(uint64_t)> rsLambda = nullptr;
+
+// This is the main body of the callback. It's called from the lambda,
+// which itself is called from the callback function which is passed to Rust.
+static void body(jsi::Runtime &rt,
+                 std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
+                 std::shared_ptr<jsi::Value> callbackValue,
+                 uint64_t rs_handle) {
+
+  // Convert the arguments from Rust, into jsi::Values.
+  // We'll use the Bridging class to do this…
+  auto js_handle =
+      uniffi_jsi::Bridging<uint64_t>::toJs(rt, callInvoker, rs_handle);
+
+  // Now we are ready to call the callback.
+  // We are already on the JS thread, because this `body` function was
+  // invoked from the CallInvoker.
+  try {
+    // Getting the callback function
+    auto cb = callbackValue->asObject(rt).asFunction(rt);
+    auto uniffiResult = cb.call(rt, js_handle);
+
+  } catch (const jsi::JSError &error) {
+    std::cout << "Error in callback UniffiCallbackInterfaceFree: "
+              << error.what() << std::endl;
+    throw error;
+  }
+}
+
+static void callback(uint64_t rs_handle) {
+  // If the runtime has shutdown, then there is no point in trying to
+  // call into Javascript. BUT how do we tell if the runtime has shutdown?
+  //
+  // Answer: the module destructor calls into callback `cleanup` method,
+  // which nulls out the rsLamda.
+  //
+  // If rsLamda is null, then there is no runtime to call into.
+  if (rsLambda == nullptr) {
+    // This only occurs when destructors are calling into Rust free/drop,
+    // which causes the JS callback to be dropped.
+    return;
+  }
+
+  // The runtime, the actual callback jsi::funtion, and the callInvoker
+  // are all in the lambda.
+  rsLambda(rs_handle);
+}
+
+static UniffiCallbackInterfaceFree
+makeCallbackFunction( // uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::vtablecallbackinterfaceinitialized::free
+    jsi::Runtime &rt,
+    std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
+    const jsi::Value &value) {
+  if (rsLambda != nullptr) {
+    // `makeCallbackFunction` is called in two circumstances:
+    //
+    // 1. at startup, when initializing callback interface vtables.
+    // 2. when polling futures. This happens at least once per future that is
+    //    exposed to Javascript. We know that this is always the same function,
+    //    `uniffiFutureContinuationCallback` in `async-rust-calls.ts`.
+    //
+    // We can therefore return the callback function without making anything
+    // new if we've been initialized already.
+    return callback;
+  }
+  auto callbackFunction = value.asObject(rt).asFunction(rt);
+  auto callbackValue = std::make_shared<jsi::Value>(rt, callbackFunction);
+  rsLambda = [&rt, callInvoker, callbackValue](uint64_t rs_handle) {
+    // We immediately make a lambda which will do the work of transforming the
+    // arguments into JSI values and calling the callback.
+    uniffi_runtime::UniffiCallFunc jsLambda =
+        [callInvoker, callbackValue, rs_handle](jsi::Runtime &rt) mutable {
+          body(rt, callInvoker, callbackValue, rs_handle);
+        };
+    // We'll then call that lambda from the callInvoker which will
+    // look after calling it on the correct thread.
+
+    callInvoker->invokeNonBlocking(rt, jsLambda);
+  };
+  return callback;
+}
+
+// This method is called from the destructor of NativeZcam1ProvingUtils, which
+// only happens when the jsi::Runtime is being destroyed.
+static void cleanup() {
+  // The lambda holds a reference to the the Runtime, so when this is nulled
+  // out, then the pointer will no longer be left dangling.
+  rsLambda = nullptr;
+}
+} // namespace
+  // uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::vtablecallbackinterfaceinitialized::free
 namespace uniffi::zcam1_proving_utils {
 using namespace facebook;
 using CallInvoker = uniffi_runtime::UniffiCallInvoker;
@@ -1617,6 +1740,170 @@ template <> struct Bridging<UniffiForeignFutureCompleteVoid> {
   }
 };
 } // namespace uniffi::zcam1_proving_utils
+  // Implementation of callback function calling from Rust to JS
+  // CallbackInterfaceInitializedMethod0
+
+// Callback function:
+// uniffi::zcam1_proving_utils::cb::callbackinterfaceinitializedmethod0::UniffiCallbackInterfaceInitializedMethod0
+//
+// We have the following constraints:
+// - we need to pass a function pointer to Rust.
+// - we need a jsi::Runtime and jsi::Function to call into JS.
+// - function pointers can't store state, so we can't use a lamda.
+//
+// For this, we store a lambda as a global, as `rsLambda`. The `callback`
+// function calls the lambda, which itself calls the `body` which then calls
+// into JS.
+//
+// We then give the `callback` function pointer to Rust which will call the
+// lambda sometime in the future.
+namespace uniffi::zcam1_proving_utils::cb::callbackinterfaceinitializedmethod0 {
+using namespace facebook;
+
+// We need to store a lambda in a global so we can call it from
+// a function pointer. The function pointer is passed to Rust.
+static std::function<void(uint64_t, void *, RustCallStatus *)> rsLambda =
+    nullptr;
+
+// This is the main body of the callback. It's called from the lambda,
+// which itself is called from the callback function which is passed to Rust.
+static void body(jsi::Runtime &rt,
+                 std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
+                 std::shared_ptr<jsi::Value> callbackValue,
+                 uint64_t rs_uniffiHandle, void *rs_uniffiOutReturn,
+                 RustCallStatus *uniffi_call_status) {
+
+  // Convert the arguments from Rust, into jsi::Values.
+  // We'll use the Bridging class to do this…
+  auto js_uniffiHandle =
+      uniffi_jsi::Bridging<uint64_t>::toJs(rt, callInvoker, rs_uniffiHandle);
+
+  // Now we are ready to call the callback.
+  // We are already on the JS thread, because this `body` function was
+  // invoked from the CallInvoker.
+  try {
+    // Getting the callback function
+    auto cb = callbackValue->asObject(rt).asFunction(rt);
+    auto uniffiResult = cb.call(rt, js_uniffiHandle);
+
+    // Now copy the result back from JS into the RustCallStatus object.
+    uniffi::zcam1_proving_utils::Bridging<RustCallStatus>::copyFromJs(
+        rt, callInvoker, uniffiResult, uniffi_call_status);
+
+    if (uniffi_call_status->code != UNIFFI_CALL_STATUS_OK) {
+      // The JS callback finished abnormally, so we cannot retrieve the return
+      // value.
+      return;
+    }
+
+  } catch (const jsi::JSError &error) {
+    std::cout << "Error in callback UniffiCallbackInterfaceInitializedMethod0: "
+              << error.what() << std::endl;
+    throw error;
+  }
+}
+
+static void callback(uint64_t rs_uniffiHandle, void *rs_uniffiOutReturn,
+                     RustCallStatus *uniffi_call_status) {
+  // If the runtime has shutdown, then there is no point in trying to
+  // call into Javascript. BUT how do we tell if the runtime has shutdown?
+  //
+  // Answer: the module destructor calls into callback `cleanup` method,
+  // which nulls out the rsLamda.
+  //
+  // If rsLamda is null, then there is no runtime to call into.
+  if (rsLambda == nullptr) {
+    // This only occurs when destructors are calling into Rust free/drop,
+    // which causes the JS callback to be dropped.
+    return;
+  }
+
+  // The runtime, the actual callback jsi::funtion, and the callInvoker
+  // are all in the lambda.
+  rsLambda(rs_uniffiHandle, rs_uniffiOutReturn, uniffi_call_status);
+}
+
+static UniffiCallbackInterfaceInitializedMethod0
+makeCallbackFunction( // uniffi::zcam1_proving_utils::cb::callbackinterfaceinitializedmethod0
+    jsi::Runtime &rt,
+    std::shared_ptr<uniffi_runtime::UniffiCallInvoker> callInvoker,
+    const jsi::Value &value) {
+  if (rsLambda != nullptr) {
+    // `makeCallbackFunction` is called in two circumstances:
+    //
+    // 1. at startup, when initializing callback interface vtables.
+    // 2. when polling futures. This happens at least once per future that is
+    //    exposed to Javascript. We know that this is always the same function,
+    //    `uniffiFutureContinuationCallback` in `async-rust-calls.ts`.
+    //
+    // We can therefore return the callback function without making anything
+    // new if we've been initialized already.
+    return callback;
+  }
+  auto callbackFunction = value.asObject(rt).asFunction(rt);
+  auto callbackValue = std::make_shared<jsi::Value>(rt, callbackFunction);
+  rsLambda = [&rt, callInvoker,
+              callbackValue](uint64_t rs_uniffiHandle, void *rs_uniffiOutReturn,
+                             RustCallStatus *uniffi_call_status) {
+    // We immediately make a lambda which will do the work of transforming the
+    // arguments into JSI values and calling the callback.
+    uniffi_runtime::UniffiCallFunc jsLambda =
+        [callInvoker, callbackValue, rs_uniffiHandle, rs_uniffiOutReturn,
+         uniffi_call_status](jsi::Runtime &rt) mutable {
+          body(rt, callInvoker, callbackValue, rs_uniffiHandle,
+               rs_uniffiOutReturn, uniffi_call_status);
+        };
+    // We'll then call that lambda from the callInvoker which will
+    // look after calling it on the correct thread.
+    callInvoker->invokeBlocking(rt, jsLambda);
+  };
+  return callback;
+}
+
+// This method is called from the destructor of NativeZcam1ProvingUtils, which
+// only happens when the jsi::Runtime is being destroyed.
+static void cleanup() {
+  // The lambda holds a reference to the the Runtime, so when this is nulled
+  // out, then the pointer will no longer be left dangling.
+  rsLambda = nullptr;
+}
+} // namespace
+  // uniffi::zcam1_proving_utils::cb::callbackinterfaceinitializedmethod0
+namespace uniffi::zcam1_proving_utils {
+using namespace facebook;
+using CallInvoker = uniffi_runtime::UniffiCallInvoker;
+
+template <> struct Bridging<UniffiVTableCallbackInterfaceInitialized> {
+  static UniffiVTableCallbackInterfaceInitialized
+  fromJs(jsi::Runtime &rt, std::shared_ptr<CallInvoker> callInvoker,
+         const jsi::Value &jsValue) {
+    // Check if the input is an object
+    if (!jsValue.isObject()) {
+      throw jsi::JSError(
+          rt,
+          "Expected an object for UniffiVTableCallbackInterfaceInitialized");
+    }
+
+    // Get the object from the jsi::Value
+    auto jsObject = jsValue.getObject(rt);
+
+    // Create the vtable struct
+    UniffiVTableCallbackInterfaceInitialized rsObject;
+
+    // Create the vtable from the js callbacks.
+    rsObject.initialized = uniffi::zcam1_proving_utils::cb::
+        callbackinterfaceinitializedmethod0::makeCallbackFunction(
+            rt, callInvoker, jsObject.getProperty(rt, "initialized"));
+    rsObject.uniffi_free =
+        uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::
+            vtablecallbackinterfaceinitialized::free::makeCallbackFunction(
+                rt, callInvoker, jsObject.getProperty(rt, "uniffiFree"));
+
+    return rsObject;
+  }
+};
+
+} // namespace uniffi::zcam1_proving_utils
 
 namespace uniffi::zcam1_proving_utils {
 using namespace facebook;
@@ -1704,7 +1991,7 @@ NativeZcam1ProvingUtils::NativeZcam1ProvingUtils(
       rt,
       jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_proving_utils_fn_"
                                     "constructor_iosprovingclient_mock"),
-      0,
+      1,
       [this](jsi::Runtime &rt, const jsi::Value &thisVal,
              const jsi::Value *args, size_t count) -> jsi::Value {
         return this
@@ -1716,7 +2003,7 @@ NativeZcam1ProvingUtils::NativeZcam1ProvingUtils(
           rt,
           jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_proving_utils_fn_"
                                         "constructor_iosprovingclient_new"),
-          1,
+          2,
           [this](jsi::Runtime &rt, const jsi::Value &thisVal,
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
@@ -1745,6 +2032,18 @@ NativeZcam1ProvingUtils::NativeZcam1ProvingUtils(
                  const jsi::Value *args, size_t count) -> jsi::Value {
             return this
                 ->cpp_uniffi_zcam1_proving_utils_fn_method_iosprovingclient_vk_hash(
+                    rt, thisVal, args, count);
+          });
+  props["ubrn_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized"] =
+      jsi::Function::createFromHostFunction(
+          rt,
+          jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_proving_utils_fn_"
+                                        "init_callback_vtable_initialized"),
+          1,
+          [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+                 const jsi::Value *args, size_t count) -> jsi::Value {
+            return this
+                ->cpp_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
                     rt, thisVal, args, count);
           });
   props["ubrn_ffi_zcam1_proving_utils_rust_future_poll_u8"] =
@@ -2374,6 +2673,18 @@ NativeZcam1ProvingUtils::NativeZcam1ProvingUtils(
             ->cpp_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new(
                 rt, thisVal, args, count);
       });
+  props["ubrn_uniffi_zcam1_proving_utils_checksum_method_initialized_"
+        "initialized"] = jsi::Function::createFromHostFunction(
+      rt,
+      jsi::PropNameID::forAscii(rt, "ubrn_uniffi_zcam1_proving_utils_checksum_"
+                                    "method_initialized_initialized"),
+      0,
+      [this](jsi::Runtime &rt, const jsi::Value &thisVal,
+             const jsi::Value *args, size_t count) -> jsi::Value {
+        return this
+            ->cpp_uniffi_zcam1_proving_utils_checksum_method_initialized_initialized(
+                rt, thisVal, args, count);
+      });
   props["ubrn_ffi_zcam1_proving_utils_uniffi_contract_version"] =
       jsi::Function::createFromHostFunction(
           rt,
@@ -2440,6 +2751,11 @@ NativeZcam1ProvingUtils::~NativeZcam1ProvingUtils() {
   uniffi::zcam1_proving_utils::cb::rustfuturecontinuationcallback::cleanup();
   // Cleanup for "free" callback function CallbackInterfaceFree
   uniffi::zcam1_proving_utils::st::foreignfuture::foreignfuture::free::
+      cleanup();
+  uniffi::zcam1_proving_utils::st::vtablecallbackinterfaceinitialized::
+      vtablecallbackinterfaceinitialized::free::cleanup();
+  // Cleanup for callback function CallbackInterfaceInitializedMethod0
+  uniffi::zcam1_proving_utils::cb::callbackinterfaceinitializedmethod0::
       cleanup();
 }
 
@@ -2514,8 +2830,10 @@ jsi::Value NativeZcam1ProvingUtils::
         size_t count) {
   RustCallStatus status =
       uniffi::zcam1_proving_utils::Bridging<RustCallStatus>::rustSuccess(rt);
-  auto value =
-      uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_mock(&status);
+  auto value = uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_mock(
+      uniffi::zcam1_proving_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                                args[0]),
+      &status);
   uniffi::zcam1_proving_utils::Bridging<RustCallStatus>::copyIntoJs(
       rt, callInvoker, status, args[count - 1]);
 
@@ -2530,6 +2848,8 @@ jsi::Value NativeZcam1ProvingUtils::
   auto value = uniffi_zcam1_proving_utils_fn_constructor_iosprovingclient_new(
       uniffi::zcam1_proving_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
                                                                 args[0]),
+      uniffi::zcam1_proving_utils::Bridging<RustBuffer>::fromJs(rt, callInvoker,
+                                                                args[1]),
       &status);
   uniffi::zcam1_proving_utils::Bridging<RustCallStatus>::copyIntoJs(
       rt, callInvoker, status, args[count - 1]);
@@ -2562,6 +2882,21 @@ jsi::Value NativeZcam1ProvingUtils::
 
   return uniffi::zcam1_proving_utils::Bridging<RustBuffer>::toJs(
       rt, callInvoker, value);
+}
+jsi::Value NativeZcam1ProvingUtils::
+    cpp_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  auto vtableInstance = uniffi::zcam1_proving_utils::Bridging<
+      UniffiVTableCallbackInterfaceInitialized>::fromJs(rt, callInvoker,
+                                                        args[0]);
+
+  std::lock_guard<std::mutex> lock(
+      uniffi::zcam1_proving_utils::registry::vtableMutex);
+  uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+      uniffi::zcam1_proving_utils::registry::putTable(
+          "UniffiVTableCallbackInterfaceInitialized", vtableInstance));
+  return jsi::Value::undefined();
 }
 jsi::Value
 NativeZcam1ProvingUtils::cpp_ffi_zcam1_proving_utils_rust_future_poll_u8(
@@ -3247,6 +3582,15 @@ jsi::Value NativeZcam1ProvingUtils::
         size_t count) {
   auto value =
       uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new();
+
+  return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
+}
+jsi::Value NativeZcam1ProvingUtils::
+    cpp_uniffi_zcam1_proving_utils_checksum_method_initialized_initialized(
+        jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+        size_t count) {
+  auto value =
+      uniffi_zcam1_proving_utils_checksum_method_initialized_initialized();
 
   return uniffi_jsi::Bridging<uint16_t>::toJs(rt, callInvoker, value);
 }

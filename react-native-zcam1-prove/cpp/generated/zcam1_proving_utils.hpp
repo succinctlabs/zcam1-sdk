@@ -48,6 +48,9 @@ protected:
   jsi::Value cpp_uniffi_zcam1_proving_utils_fn_method_iosprovingclient_vk_hash(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
+  jsi::Value cpp_uniffi_zcam1_proving_utils_fn_init_callback_vtable_initialized(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
   jsi::Value cpp_ffi_zcam1_proving_utils_rust_future_poll_u8(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
@@ -218,6 +221,10 @@ protected:
       size_t count);
   jsi::Value
   cpp_uniffi_zcam1_proving_utils_checksum_constructor_iosprovingclient_new(
+      jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
+      size_t count);
+  jsi::Value
+  cpp_uniffi_zcam1_proving_utils_checksum_method_initialized_initialized(
       jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args,
       size_t count);
   jsi::Value cpp_ffi_zcam1_proving_utils_uniffi_contract_version(
