@@ -10,6 +10,17 @@
   "author": "leruaa",
   "license": "MIT",
   "homepage": "https://github.com/succinctlabs/zcam1-sdk.git#readme",
+  "type": "module",
+  "files": [
+    "src/",
+    "cpp/",
+    "ios/",
+    "Zcam1ProveFramework.xcframework/",
+    "Zcam1Prove.podspec",
+    "README.md",
+    "turbo.json",
+    "ubrn.config.yaml"
+  ],
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
