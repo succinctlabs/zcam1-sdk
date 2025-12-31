@@ -1,4 +1,4 @@
-use crate::{builder::CertChainBuilder, error::Error};
+use crate::{builder::CertChainBuilder, error::CertsError};
 
 mod builder;
 mod error;
@@ -51,7 +51,7 @@ impl TryFrom<&JwkEcKey> for p256::elliptic_curve::JwkEcKey {
 pub fn build_self_signed_certificate(
     leaf_jwk: &JwkEcKey,
     cert_chain_params: Option<SelfSignedCertChain>,
-) -> Result<String, Error> {
+) -> Result<String, CertsError> {
     let cert_chain_params = cert_chain_params.unwrap_or_default();
     let cert_chain = CertChainBuilder::new()
         .self_signed(

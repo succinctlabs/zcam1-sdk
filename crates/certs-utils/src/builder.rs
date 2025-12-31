@@ -19,7 +19,7 @@ use x509_cert::{
     time::Validity,
 };
 
-use crate::error::Error;
+use crate::error::CertsError;
 
 pub struct CertChainBuilder<C> {
     root_certificate: C,
@@ -38,7 +38,7 @@ impl CertChainBuilder<()> {
         &self,
         root_cert_subject: &str,
         intermediate_cert_subject: &str,
-    ) -> Result<CertChainBuilder<CaCert>, Error> {
+    ) -> Result<CertChainBuilder<CaCert>, CertsError> {
         let mut params = CertificateParams::new(vec![root_cert_subject.to_string()])?;
         params.is_ca = IsCa::Ca(rcgen::BasicConstraints::Constrained(0));
         params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
@@ -76,7 +76,7 @@ impl CertChainBuilder<CaCert> {
         client_pub_key: VerifyingKey,
         subject_cn: &str,
         organization: &str,
-    ) -> Result<String, Error> {
+    ) -> Result<String, CertsError> {
         let spki_der = client_pub_key.to_public_key_der()?;
         let spki = SubjectPublicKeyInfoOwned::from_der(spki_der.as_bytes())?;
 
@@ -111,7 +111,7 @@ impl CertChainBuilder<CaCert> {
         leaf_jwk: &JwkEcKey,
         leaf_subject: &str,
         leaf_organization: &str,
-    ) -> Result<String, Error> {
+    ) -> Result<String, CertsError> {
         let leaf_pem = self.build_leaf_cert(
             leaf_jwk.to_public_key()?.into(),
             leaf_subject,
@@ -125,7 +125,7 @@ impl CertChainBuilder<CaCert> {
     }
 }
 
-fn build_intermediate_cert(root_certificate: &CaCert, subject: &str) -> Result<CaCert, Error> {
+fn build_intermediate_cert(root_certificate: &CaCert, subject: &str) -> Result<CaCert, CertsError> {
     // Generate key pair for the intermediate CA
     let intermediate_signing_key = SigningKey::random(&mut OsRng);
     let intermediate_verifying_key = VerifyingKey::from(&intermediate_signing_key);

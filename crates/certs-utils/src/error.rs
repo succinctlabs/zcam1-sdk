@@ -3,7 +3,7 @@ use x509_cert::spki;
 
 #[derive(Debug, Error, uniffi::Error)]
 #[uniffi(flat_error)]
-pub enum Error {
+pub enum CertsError {
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 
