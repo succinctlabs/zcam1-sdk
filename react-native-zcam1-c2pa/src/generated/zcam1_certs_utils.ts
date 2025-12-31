@@ -78,6 +78,58 @@ export function buildSelfSignedCertificate(
   );
 }
 
+export type ExistingCertChain = {
+  pem: string;
+};
+
+/**
+ * Generated factory for {@link ExistingCertChain} record objects.
+ */
+export const ExistingCertChain = (() => {
+  const defaults = () => ({});
+  const create = (() => {
+    return uniffiCreateRecord<ExistingCertChain, ReturnType<typeof defaults>>(
+      defaults,
+    );
+  })();
+  return Object.freeze({
+    /**
+     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    create,
+
+    /**
+     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
+     * in Rust, in the {@link zcam1_certs_utils} crate.
+     */
+    new: create,
+
+    /**
+     * Defaults specified in the {@link zcam1_certs_utils} crate.
+     */
+    defaults: () => Object.freeze(defaults()) as Partial<ExistingCertChain>,
+  });
+})();
+
+const FfiConverterTypeExistingCertChain = (() => {
+  type TypeName = ExistingCertChain;
+  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
+    read(from: RustBuffer): TypeName {
+      return {
+        pem: FfiConverterString.read(from),
+      };
+    }
+    write(value: TypeName, into: RustBuffer): void {
+      FfiConverterString.write(value.pem, into);
+    }
+    allocationSize(value: TypeName): number {
+      return FfiConverterString.allocationSize(value.pem);
+    }
+  }
+  return new FFIConverter();
+})();
+
 export type JwkEcKey = {
   kty: string;
   crv: string;
@@ -505,6 +557,7 @@ export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeCertsError,
+    FfiConverterTypeExistingCertChain,
     FfiConverterTypeJwkEcKey,
     FfiConverterTypeSelfSignedCertChain,
   },

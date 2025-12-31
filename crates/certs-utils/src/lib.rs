@@ -21,6 +21,11 @@ pub struct SelfSignedCertChain {
     pub leaf_organization: String,
 }
 
+#[derive(uniffi::Record)]
+pub struct ExistingCertChain {
+    pub pem: String,
+}
+
 impl Default for SelfSignedCertChain {
     fn default() -> Self {
         Self {
