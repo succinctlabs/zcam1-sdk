@@ -2,8 +2,8 @@ import React from "react";
 import {
   Platform,
   requireNativeComponent,
-  StyleProp,
-  ViewStyle,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { Dirs } from "react-native-file-access";
 import { base64 } from "@scure/base";
@@ -15,8 +15,7 @@ import {
   ManifestEditor,
   SelfSignedCertChain,
 } from "react-native-zcam1-c2pa";
-import { getContentPublicKey } from "zcam1-common";
-import { CaptureInfo, Settings, ZPhoto } from ".";
+import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
@@ -175,7 +174,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const manifestEditor = new ManifestEditor(
       originalPath,
-      this.props.captureInfo.contentKeyId,
+      this.props.captureInfo.contentKeyId.buffer as ArrayBuffer,
       this.certChainPem,
     );
 

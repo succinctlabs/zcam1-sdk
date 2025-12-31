@@ -6,7 +6,7 @@ import EncryptedStorage from "react-native-encrypted-storage";
 import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
-  ECKey,
+  type ECKey,
 } from "zcam1-common";
 
 export {
