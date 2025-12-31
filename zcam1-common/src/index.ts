@@ -1,7 +1,7 @@
 import {
   generate,
   getPublicKeyFixed,
-  PublicKey,
+  type PublicKey,
 } from "@pagopa/io-react-native-crypto";
 import { base64urlnopad } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";

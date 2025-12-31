@@ -2,9 +2,9 @@
   "name": "zcam1-common",
   "version": "0.1.0",
   "description": "ZCAM1 SDK low level primitives",
-  "main": "lib/index",
+  "main": "./lib/module/index.js",
   "scripts": {
-    "build": "tsc"
+    "prepare": "bob build"
   },
   "repository": {
     "type": "git",
@@ -13,6 +13,7 @@
   "author": "leruaa",
   "license": "MIT",
   "devDependencies": {
+    "react-native-builder-bob": "^0.40.17",
     "typescript": "^5.9.3"
   },
   "dependencies": {
@@ -20,5 +21,38 @@
     "@pagopa/io-react-native-crypto": "^1.2.4",
     "@scure/base": "^2.0.0",
     "cross-fetch": "^4.1.0"
-  }
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./lib/typescript/src/index.d.ts",
+  "files": [
+    "src",
+    "lib",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      "typescript"
+    ]
+  },
+  "eslintIgnore": [
+    "node_modules/",
+    "lib/"
+  ]
 }
