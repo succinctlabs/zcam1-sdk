@@ -4,7 +4,7 @@ use c2pa::HashRange;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::error::Error;
+use crate::error::C2paError;
 
 // `Reader::json()` and `Reader::detailed_json()` returns 2 differents things:
 //
@@ -25,20 +25,20 @@ pub struct ManifestStore<T = Manifest> {
 
 #[uniffi::export]
 impl ManifestStore {
-    pub fn active_manifest(&self) -> Result<Manifest, Error> {
+    pub fn active_manifest(&self) -> Result<Manifest, C2paError> {
         self.manifests
             .get(&self.active_manifest)
             .cloned()
-            .ok_or_else(|| Error::NoActiveManifest)
+            .ok_or_else(|| C2paError::NoActiveManifest)
     }
 }
 
 impl RawManifestStore {
-    pub fn raw_active_manifest(&self) -> Result<Value, Error> {
+    pub fn raw_active_manifest(&self) -> Result<Value, C2paError> {
         self.manifests
             .get(&self.active_manifest)
             .cloned()
-            .ok_or_else(|| Error::NoActiveManifest)
+            .ok_or_else(|| C2paError::NoActiveManifest)
     }
 }
 

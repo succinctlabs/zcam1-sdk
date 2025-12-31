@@ -2,7 +2,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error, uniffi::Error)]
 #[uniffi(flat_error)]
-pub enum Error {
+pub enum C2paError {
     #[error(transparent)]
     C2pa(#[from] c2pa::Error),
 
@@ -22,12 +22,12 @@ pub enum Error {
     Poisoned,
 }
 
-impl From<Error> for c2pa::Error {
-    fn from(value: Error) -> Self {
+impl From<C2paError> for c2pa::Error {
+    fn from(value: C2paError) -> Self {
         match value {
-            Error::C2pa(error) => error,
-            Error::Json(error) => c2pa::Error::JsonError(error),
-            Error::Io(error) => c2pa::Error::IoError(error),
+            C2paError::C2pa(error) => error,
+            C2paError::Json(error) => c2pa::Error::JsonError(error),
+            C2paError::Io(error) => c2pa::Error::IoError(error),
             other => c2pa::Error::OtherError(Box::new(other)),
         }
     }

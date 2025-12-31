@@ -5,7 +5,7 @@ use c2pa::{hash_stream_by_alg, Reader};
 use futures::channel::oneshot;
 
 use crate::{
-    error::Error,
+    error::C2paError,
     types::{AuthenticityStatus, DataHash, Exclusion, ManifestStore},
 };
 
@@ -19,7 +19,7 @@ uniffi::setup_scaffolding!();
 pub use manifest_editor::ManifestEditor;
 
 #[uniffi::export]
-pub fn extract_manifest(path: &str) -> Result<ManifestStore, Error> {
+pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
     let store = serde_json::from_str::<ManifestStore>(&reader.detailed_json())?;
 
@@ -35,7 +35,7 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
         let status = match Reader::from_file(path.replace("file://", "")) {
             Ok(reader) => {
                 match serde_json::from_str::<ManifestStore>(&reader.detailed_json())
-                    .map_err(Error::Json)
+                    .map_err(C2paError::Json)
                     .and_then(|store| store.active_manifest())
                 {
                     Ok(active_manifest) => {
@@ -57,7 +57,7 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
 }
 
 #[uniffi::export]
-pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, Error> {
+pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, C2paError> {
     let mut file = File::open(path.replace("file://", ""))?;
     let exclusions_range = exclusions.iter().map(Into::into).collect();
     let hash = hash_stream_by_alg("sha256", &mut file, Some(exclusions_range), true)?;
@@ -66,7 +66,7 @@ pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, Err
 }
 
 #[uniffi::export]
-pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, Error> {
+pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, C2paError> {
     let expected_hash = Base64::decode_vec(&data_hash.hash)?;
     let hash = compute_hash(path, &data_hash.exclusions)?;
 

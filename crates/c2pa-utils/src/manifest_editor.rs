@@ -11,7 +11,7 @@ use c2pa::{
 use serde_json::Value;
 
 use crate::{
-    error::Error,
+    error::C2paError,
     signing::sign_with_enclave,
     types::{Exclusion, ManifestStore},
 };
@@ -61,7 +61,7 @@ impl ManifestEditor {
         manifest: &ManifestStore,
         key_tag: Vec<u8>,
         certs: &str,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, C2paError> {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 
         let active_manifest = manifest.active_manifest()?;
@@ -100,16 +100,16 @@ impl ManifestEditor {
         Ok(editor)
     }
 
-    pub fn add_title(&self, title: &str) -> Result<(), Error> {
-        let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
+    pub fn add_title(&self, title: &str) -> Result<(), C2paError> {
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
 
         builder.definition.title = Some(title.to_string());
 
         Ok(())
     }
 
-    pub fn add_action(&self, data: &str) -> Result<(), Error> {
-        let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
+    pub fn add_action(&self, data: &str) -> Result<(), C2paError> {
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
         let data = serde_json::from_str::<Value>(data)?;
 
         builder.add_action(&data)?;
@@ -117,8 +117,8 @@ impl ManifestEditor {
         Ok(())
     }
 
-    pub fn add_assertion(&self, label: &str, data: &str) -> Result<(), Error> {
-        let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
+    pub fn add_assertion(&self, label: &str, data: &str) -> Result<(), C2paError> {
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
         let data = serde_json::from_str::<Value>(data)?;
 
         builder.add_assertion(label, &data)?;
@@ -126,8 +126,8 @@ impl ManifestEditor {
         Ok(())
     }
 
-    pub fn remove_assertion(&self, label: &str) -> Result<bool, Error> {
-        let mut builder = self.builder.write().map_err(|_| Error::Poisoned)?;
+    pub fn remove_assertion(&self, label: &str) -> Result<bool, C2paError> {
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
         if let Some(index) = builder
             .definition
             .assertions
@@ -145,9 +145,9 @@ impl ManifestEditor {
         &self,
         destination: &str,
         format: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), C2paError> {
         let mut builder = {
-            let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
+            let mut guard = self.builder.write().map_err(|_| C2paError::Poisoned)?;
             std::mem::take(&mut *guard)
         };
 
@@ -162,7 +162,7 @@ impl ManifestEditor {
 
         // Put the updated builder back into the RwLock
         {
-            let mut guard = self.builder.write().map_err(|_| Error::Poisoned)?;
+            let mut guard = self.builder.write().map_err(|_| C2paError::Poisoned)?;
             *guard = builder;
         }
 
@@ -192,7 +192,7 @@ impl ManifestEditor {
         }
     }
 
-    fn strip_exclusions_from_source(&self) -> Result<Vec<u8>, Error> {
+    fn strip_exclusions_from_source(&self) -> Result<Vec<u8>, C2paError> {
         let source = fs::read(&self.source_file_path)?;
         let mut dest = Vec::with_capacity(source.len());
 
