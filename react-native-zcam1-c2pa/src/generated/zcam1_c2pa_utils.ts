@@ -109,7 +109,9 @@ export function computeHash(
 ): ArrayBuffer /*throws*/ {
   return FfiConverterArrayBuffer.lift(
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_compute_hash(
           FfiConverterString.lower(path),
@@ -126,7 +128,9 @@ export function extractManifest(
 ): ManifestStoreInterface /*throws*/ {
   return FfiConverterTypeManifestStore.lift(
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_extract_manifest(
           FfiConverterString.lower(path),
@@ -143,7 +147,9 @@ export function verifyHash(
 ): boolean /*throws*/ {
   return FfiConverterBool.lift(
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_func_verify_hash(
           FfiConverterString.lower(path),
@@ -522,8 +528,8 @@ const FfiConverterTypeAuthenticityStatus = (() => {
   return new FFIConverter();
 })();
 
-// Flat error type: Exception
-export enum Exception_Tags {
+// Flat error type: C2paError
+export enum C2paError_Tags {
   C2pa = "C2pa",
   Json = "Json",
   Io = "Io",
@@ -531,23 +537,23 @@ export enum Exception_Tags {
   NoActiveManifest = "NoActiveManifest",
   Poisoned = "Poisoned",
 }
-export const Exception = (() => {
+export const C2paError = (() => {
   class C2pa extends UniffiError {
     /**
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 1;
 
-    public readonly tag = Exception_Tags.C2pa;
+    public readonly tag = C2paError_Tags.C2pa;
 
     constructor(message: string) {
-      super("Exception", "C2pa", message);
+      super("C2paError", "C2pa", message);
     }
 
     static instanceOf(e: any): e is C2pa {
@@ -559,17 +565,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 2;
 
-    public readonly tag = Exception_Tags.Json;
+    public readonly tag = C2paError_Tags.Json;
 
     constructor(message: string) {
-      super("Exception", "Json", message);
+      super("C2paError", "Json", message);
     }
 
     static instanceOf(e: any): e is Json {
@@ -581,17 +587,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 3;
 
-    public readonly tag = Exception_Tags.Io;
+    public readonly tag = C2paError_Tags.Io;
 
     constructor(message: string) {
-      super("Exception", "Io", message);
+      super("C2paError", "Io", message);
     }
 
     static instanceOf(e: any): e is Io {
@@ -603,17 +609,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 4;
 
-    public readonly tag = Exception_Tags.Base64;
+    public readonly tag = C2paError_Tags.Base64;
 
     constructor(message: string) {
-      super("Exception", "Base64", message);
+      super("C2paError", "Base64", message);
     }
 
     static instanceOf(e: any): e is Base64 {
@@ -625,17 +631,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 5;
 
-    public readonly tag = Exception_Tags.NoActiveManifest;
+    public readonly tag = C2paError_Tags.NoActiveManifest;
 
     constructor(message: string) {
-      super("Exception", "NoActiveManifest", message);
+      super("C2paError", "NoActiveManifest", message);
     }
 
     static instanceOf(e: any): e is NoActiveManifest {
@@ -647,17 +653,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "C2paError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 6;
 
-    public readonly tag = Exception_Tags.Poisoned;
+    public readonly tag = C2paError_Tags.Poisoned;
 
     constructor(message: string) {
-      super("Exception", "Poisoned", message);
+      super("C2paError", "Poisoned", message);
     }
 
     static instanceOf(e: any): e is Poisoned {
@@ -666,8 +672,8 @@ export const Exception = (() => {
   }
 
   // Utility function which does not rely on instanceof.
-  function instanceOf(e: any): e is Exception {
-    return (e as any)[uniffiTypeNameSymbol] === "Exception";
+  function instanceOf(e: any): e is C2paError {
+    return (e as any)[uniffiTypeNameSymbol] === "C2paError";
   }
   return {
     C2pa,
@@ -680,35 +686,35 @@ export const Exception = (() => {
   };
 })();
 
-// Union type for Exception error type.
+// Union type for C2paError error type.
 
-export type Exception = InstanceType<
-  (typeof Exception)[keyof Omit<typeof Exception, "instanceOf">]
+export type C2paError = InstanceType<
+  (typeof C2paError)[keyof Omit<typeof C2paError, "instanceOf">]
 >;
 
-const FfiConverterTypeError = (() => {
+const FfiConverterTypeC2paError = (() => {
   const intConverter = FfiConverterInt32;
-  type TypeName = Exception;
+  type TypeName = C2paError;
   class FfiConverter extends AbstractFfiConverterByteArray<TypeName> {
     read(from: RustBuffer): TypeName {
       switch (intConverter.read(from)) {
         case 1:
-          return new Exception.C2pa(FfiConverterString.read(from));
+          return new C2paError.C2pa(FfiConverterString.read(from));
 
         case 2:
-          return new Exception.Json(FfiConverterString.read(from));
+          return new C2paError.Json(FfiConverterString.read(from));
 
         case 3:
-          return new Exception.Io(FfiConverterString.read(from));
+          return new C2paError.Io(FfiConverterString.read(from));
 
         case 4:
-          return new Exception.Base64(FfiConverterString.read(from));
+          return new C2paError.Base64(FfiConverterString.read(from));
 
         case 5:
-          return new Exception.NoActiveManifest(FfiConverterString.read(from));
+          return new C2paError.NoActiveManifest(FfiConverterString.read(from));
 
         case 6:
-          return new Exception.Poisoned(FfiConverterString.read(from));
+          return new C2paError.Poisoned(FfiConverterString.read(from));
 
         default:
           throw new UniffiInternalError.UnexpectedEnumCase();
@@ -921,7 +927,9 @@ export class ManifestEditor
   ): ManifestEditorInterface /*throws*/ {
     return FfiConverterTypeManifestEditor.lift(
       uniffiCaller.rustCallWithError(
-        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+        /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+          FfiConverterTypeC2paError,
+        ),
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_constructor_manifesteditor_from_file_and_manifest(
             FfiConverterString.lower(path),
@@ -938,7 +946,9 @@ export class ManifestEditor
 
   public addAction(data: string): void /*throws*/ {
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_action(
           uniffiTypeManifestEditorObjectFactory.clonePointer(this),
@@ -952,7 +962,9 @@ export class ManifestEditor
 
   public addAssertion(label: string, data: string): void /*throws*/ {
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_assertion(
           uniffiTypeManifestEditorObjectFactory.clonePointer(this),
@@ -967,7 +979,9 @@ export class ManifestEditor
 
   public addTitle(title: string): void /*throws*/ {
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+        FfiConverterTypeC2paError,
+      ),
       /*caller:*/ (callStatus) => {
         nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_add_title(
           uniffiTypeManifestEditorObjectFactory.clonePointer(this),
@@ -1006,8 +1020,8 @@ export class ManifestEditor
         /*liftFunc:*/ (_v) => {},
         /*liftString:*/ FfiConverterString.lift,
         /*asyncOpts:*/ asyncOpts_,
-        /*errorHandler:*/ FfiConverterTypeError.lift.bind(
-          FfiConverterTypeError,
+        /*errorHandler:*/ FfiConverterTypeC2paError.lift.bind(
+          FfiConverterTypeC2paError,
         ),
       );
     } catch (__error: any) {
@@ -1053,7 +1067,9 @@ export class ManifestEditor
   public removeAssertion(label: string): boolean /*throws*/ {
     return FfiConverterBool.lift(
       uniffiCaller.rustCallWithError(
-        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+        /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+          FfiConverterTypeC2paError,
+        ),
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifesteditor_remove_assertion(
             uniffiTypeManifestEditorObjectFactory.clonePointer(this),
@@ -1175,7 +1191,9 @@ export class ManifestStore
   public activeManifest(): ManifestInterface /*throws*/ {
     return FfiConverterTypeManifest.lift(
       uniffiCaller.rustCallWithError(
-        /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+        /*liftError:*/ FfiConverterTypeC2paError.lift.bind(
+          FfiConverterTypeC2paError,
+        ),
         /*caller:*/ (callStatus) => {
           return nativeModule().ubrn_uniffi_zcam1_c2pa_utils_fn_method_manifeststore_active_manifest(
             uniffiTypeManifestStoreObjectFactory.clonePointer(this),
@@ -1321,7 +1339,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_compute_hash() !==
-    43618
+    6894
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_func_compute_hash",
@@ -1329,7 +1347,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest() !==
-    11474
+    13636
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_func_extract_manifest",
@@ -1337,7 +1355,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_func_verify_hash() !==
-    4643
+    42955
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_func_verify_hash",
@@ -1369,7 +1387,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action() !==
-    29468
+    17308
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_action",
@@ -1377,7 +1395,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion() !==
-    51373
+    1861
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_assertion",
@@ -1385,7 +1403,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title() !==
-    13559
+    41603
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_add_title",
@@ -1393,7 +1411,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file() !==
-    9145
+    51702
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_embed_manifest_to_file",
@@ -1409,7 +1427,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion() !==
-    58419
+    9530
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifesteditor_remove_assertion",
@@ -1417,7 +1435,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest() !==
-    55585
+    39667
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_method_manifeststore_active_manifest",
@@ -1425,7 +1443,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest() !==
-    45600
+    337
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_c2pa_utils_checksum_constructor_manifesteditor_from_file_and_manifest",
@@ -1445,10 +1463,10 @@ export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
     FfiConverterTypeAuthenticityStatus,
+    FfiConverterTypeC2paError,
     FfiConverterTypeClaim,
     FfiConverterTypeDataHash,
     FfiConverterTypeDeviceBindings,
-    FfiConverterTypeError,
     FfiConverterTypeExclusion,
     FfiConverterTypeManifest,
     FfiConverterTypeManifestEditor,

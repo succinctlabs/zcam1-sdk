@@ -63,7 +63,9 @@ export function buildSelfSignedCertificate(
 ): string /*throws*/ {
   return FfiConverterString.lift(
     uniffiCaller.rustCallWithError(
-      /*liftError:*/ FfiConverterTypeError.lift.bind(FfiConverterTypeError),
+      /*liftError:*/ FfiConverterTypeCertsError.lift.bind(
+        FfiConverterTypeCertsError,
+      ),
       /*caller:*/ (callStatus) => {
         return nativeModule().ubrn_uniffi_zcam1_certs_utils_fn_func_build_self_signed_certificate(
           FfiConverterTypeJwkEcKey.lower(leafJwk),
@@ -75,58 +77,6 @@ export function buildSelfSignedCertificate(
     ),
   );
 }
-
-export type ExistingCertChain = {
-  pem: string;
-};
-
-/**
- * Generated factory for {@link ExistingCertChain} record objects.
- */
-export const ExistingCertChain = (() => {
-  const defaults = () => ({});
-  const create = (() => {
-    return uniffiCreateRecord<ExistingCertChain, ReturnType<typeof defaults>>(
-      defaults,
-    );
-  })();
-  return Object.freeze({
-    /**
-     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
-     * in Rust, in the {@link zcam1_certs_utils} crate.
-     */
-    create,
-
-    /**
-     * Create a frozen instance of {@link ExistingCertChain}, with defaults specified
-     * in Rust, in the {@link zcam1_certs_utils} crate.
-     */
-    new: create,
-
-    /**
-     * Defaults specified in the {@link zcam1_certs_utils} crate.
-     */
-    defaults: () => Object.freeze(defaults()) as Partial<ExistingCertChain>,
-  });
-})();
-
-const FfiConverterTypeExistingCertChain = (() => {
-  type TypeName = ExistingCertChain;
-  class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-    read(from: RustBuffer): TypeName {
-      return {
-        pem: FfiConverterString.read(from),
-      };
-    }
-    write(value: TypeName, into: RustBuffer): void {
-      FfiConverterString.write(value.pem, into);
-    }
-    allocationSize(value: TypeName): number {
-      return FfiConverterString.allocationSize(value.pem);
-    }
-  }
-  return new FFIConverter();
-})();
 
 export type JwkEcKey = {
   kty: string;
@@ -283,8 +233,8 @@ const stringConverter = {
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
 
-// Flat error type: Exception
-export enum Exception_Tags {
+// Flat error type: CertsError
+export enum CertsError_Tags {
   Json = "Json",
   RcGen = "RcGen",
   Der = "Der",
@@ -293,23 +243,23 @@ export enum Exception_Tags {
   EllipticCurve = "EllipticCurve",
   X509Cert = "X509Cert",
 }
-export const Exception = (() => {
+export const CertsError = (() => {
   class Json extends UniffiError {
     /**
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 1;
 
-    public readonly tag = Exception_Tags.Json;
+    public readonly tag = CertsError_Tags.Json;
 
     constructor(message: string) {
-      super("Exception", "Json", message);
+      super("CertsError", "Json", message);
     }
 
     static instanceOf(e: any): e is Json {
@@ -321,17 +271,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 2;
 
-    public readonly tag = Exception_Tags.RcGen;
+    public readonly tag = CertsError_Tags.RcGen;
 
     constructor(message: string) {
-      super("Exception", "RcGen", message);
+      super("CertsError", "RcGen", message);
     }
 
     static instanceOf(e: any): e is RcGen {
@@ -343,17 +293,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 3;
 
-    public readonly tag = Exception_Tags.Der;
+    public readonly tag = CertsError_Tags.Der;
 
     constructor(message: string) {
-      super("Exception", "Der", message);
+      super("CertsError", "Der", message);
     }
 
     static instanceOf(e: any): e is Der {
@@ -365,17 +315,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 4;
 
-    public readonly tag = Exception_Tags.Spki;
+    public readonly tag = CertsError_Tags.Spki;
 
     constructor(message: string) {
-      super("Exception", "Spki", message);
+      super("CertsError", "Spki", message);
     }
 
     static instanceOf(e: any): e is Spki {
@@ -387,17 +337,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 5;
 
-    public readonly tag = Exception_Tags.Pkcs8;
+    public readonly tag = CertsError_Tags.Pkcs8;
 
     constructor(message: string) {
-      super("Exception", "Pkcs8", message);
+      super("CertsError", "Pkcs8", message);
     }
 
     static instanceOf(e: any): e is Pkcs8 {
@@ -409,17 +359,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 6;
 
-    public readonly tag = Exception_Tags.EllipticCurve;
+    public readonly tag = CertsError_Tags.EllipticCurve;
 
     constructor(message: string) {
-      super("Exception", "EllipticCurve", message);
+      super("CertsError", "EllipticCurve", message);
     }
 
     static instanceOf(e: any): e is EllipticCurve {
@@ -431,17 +381,17 @@ export const Exception = (() => {
      * @private
      * This field is private and should not be used.
      */
-    readonly [uniffiTypeNameSymbol]: string = "Exception";
+    readonly [uniffiTypeNameSymbol]: string = "CertsError";
     /**
      * @private
      * This field is private and should not be used.
      */
     readonly [variantOrdinalSymbol] = 7;
 
-    public readonly tag = Exception_Tags.X509Cert;
+    public readonly tag = CertsError_Tags.X509Cert;
 
     constructor(message: string) {
-      super("Exception", "X509Cert", message);
+      super("CertsError", "X509Cert", message);
     }
 
     static instanceOf(e: any): e is X509Cert {
@@ -450,8 +400,8 @@ export const Exception = (() => {
   }
 
   // Utility function which does not rely on instanceof.
-  function instanceOf(e: any): e is Exception {
-    return (e as any)[uniffiTypeNameSymbol] === "Exception";
+  function instanceOf(e: any): e is CertsError {
+    return (e as any)[uniffiTypeNameSymbol] === "CertsError";
   }
   return {
     Json,
@@ -465,38 +415,38 @@ export const Exception = (() => {
   };
 })();
 
-// Union type for Exception error type.
+// Union type for CertsError error type.
 
-export type Exception = InstanceType<
-  (typeof Exception)[keyof Omit<typeof Exception, "instanceOf">]
+export type CertsError = InstanceType<
+  (typeof CertsError)[keyof Omit<typeof CertsError, "instanceOf">]
 >;
 
-const FfiConverterTypeError = (() => {
+const FfiConverterTypeCertsError = (() => {
   const intConverter = FfiConverterInt32;
-  type TypeName = Exception;
+  type TypeName = CertsError;
   class FfiConverter extends AbstractFfiConverterByteArray<TypeName> {
     read(from: RustBuffer): TypeName {
       switch (intConverter.read(from)) {
         case 1:
-          return new Exception.Json(FfiConverterString.read(from));
+          return new CertsError.Json(FfiConverterString.read(from));
 
         case 2:
-          return new Exception.RcGen(FfiConverterString.read(from));
+          return new CertsError.RcGen(FfiConverterString.read(from));
 
         case 3:
-          return new Exception.Der(FfiConverterString.read(from));
+          return new CertsError.Der(FfiConverterString.read(from));
 
         case 4:
-          return new Exception.Spki(FfiConverterString.read(from));
+          return new CertsError.Spki(FfiConverterString.read(from));
 
         case 5:
-          return new Exception.Pkcs8(FfiConverterString.read(from));
+          return new CertsError.Pkcs8(FfiConverterString.read(from));
 
         case 6:
-          return new Exception.EllipticCurve(FfiConverterString.read(from));
+          return new CertsError.EllipticCurve(FfiConverterString.read(from));
 
         case 7:
-          return new Exception.X509Cert(FfiConverterString.read(from));
+          return new CertsError.X509Cert(FfiConverterString.read(from));
 
         default:
           throw new UniffiInternalError.UnexpectedEnumCase();
@@ -543,7 +493,7 @@ function uniffiEnsureInitialized() {
   }
   if (
     nativeModule().ubrn_uniffi_zcam1_certs_utils_checksum_func_build_self_signed_certificate() !==
-    13636
+    5154
   ) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_zcam1_certs_utils_checksum_func_build_self_signed_certificate",
@@ -554,8 +504,7 @@ function uniffiEnsureInitialized() {
 export default Object.freeze({
   initialize: uniffiEnsureInitialized,
   converters: {
-    FfiConverterTypeError,
-    FfiConverterTypeExistingCertChain,
+    FfiConverterTypeCertsError,
     FfiConverterTypeJwkEcKey,
     FfiConverterTypeSelfSignedCertChain,
   },

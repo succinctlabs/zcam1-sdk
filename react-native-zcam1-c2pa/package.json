@@ -2,7 +2,8 @@
   "name": "react-native-zcam1-c2pa",
   "version": "0.1.5",
   "description": "ZCAM1 C2PA SDK",
-  "main": "src/index",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
   "codegenConfig": {
     "name": "Zcam1C2paSpec",
     "type": "modules",
@@ -10,9 +11,13 @@
   },
   "type": "module",
   "files": [
-    "src/",
-    "cpp/",
-    "ios/",
+    "src",
+    "lib",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "cpp",
+    "ios",
     "Zcam1C2paFramework.xcframework/",
     "Zcam1C2pa.podspec",
     "README.md",
@@ -30,16 +35,13 @@
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0",
     "install": "^0.13.0",
-    "npm": "^11.6.4"
-  },
-  "create-react-native-library": {
-    "languages": "kotlin-objc",
-    "type": "turbo-module",
-    "version": "0.54.8"
+    "npm": "^11.6.4",
+    "react-native-builder-bob": "^0.40.17",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "uniffi-bindgen-react-native": "^0.29.3-1",
-    "prettier": "^3.7.3"
+    "prettier": "^3.7.3",
+    "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "peerDependencies": {
     "react": ">=19",
@@ -51,6 +53,37 @@
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
-    "prepublish": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release"
-  }
+    "prepublish": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release",
+    "prepare": "bob build"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "create-react-native-library": {
+    "languages": "kotlin-objc",
+    "type": "turbo-module",
+    "version": "0.54.8"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      "typescript"
+    ]
+  },
+  "eslintIgnore": [
+    "node_modules/",
+    "lib/"
+  ]
 }
