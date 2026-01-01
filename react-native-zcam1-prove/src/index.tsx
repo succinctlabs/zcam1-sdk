@@ -13,9 +13,9 @@ import {
   ExistingCertChain,
 } from "react-native-zcam1-c2pa";
 import {
-  Initialized,
+  type Initialized,
   IosProvingClient,
-  IosProvingClientInterface,
+  type IosProvingClientInterface,
 } from "./proving";
 import { base64 } from "@scure/base";
 import { getContentPublicKey, getSecureEnclaveKeyId } from "zcam1-common";
@@ -194,7 +194,7 @@ export class ProvingClient {
     const manifestEditor = ManifestEditor.fromFileAndManifest(
       originalPath,
       store,
-      this.contentKeyId,
+      this.contentKeyId.buffer as ArrayBuffer,
       this.certChainPem,
     );
 
@@ -203,7 +203,7 @@ export class ProvingClient {
       attestation: bindings.attestation,
       assertion: bindings.assertion,
       keyId: bindings.deviceKeyId,
-      dataHash: base64.decode(dataHash.hash),
+      dataHash: base64.decode(dataHash.hash).buffer as ArrayBuffer,
       appId: bindings.appId,
       appAttestProduction: this.production,
     });
