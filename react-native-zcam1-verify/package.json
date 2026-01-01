@@ -2,7 +2,7 @@
   "name": "react-native-zcam1-verify",
   "version": "0.1.1",
   "description": "ZCAM1 Verify SDK",
-  "main": "src/index",
+  "main": "./lib/module/index.js",
   "codegenConfig": {
     "name": "Zcam1VerifySpec",
     "type": "modules",
@@ -35,6 +35,44 @@
     "ubrn:web": "ubrn build web",
     "ubrn:checkout": "ubrn checkout",
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
-    "postinstall": "ubrn checkout && CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release"
-  }
+    "postinstall": "ubrn checkout && CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release",
+    "prepare": "bob build"
+  },
+  "devDependencies": {
+    "react-native-builder-bob": "^0.40.17",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./lib/typescript/src/index.d.ts",
+  "files": [
+    "src",
+    "lib",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      "typescript"
+    ]
+  },
+  "eslintIgnore": [
+    "node_modules/",
+    "lib/"
+  ]
 }

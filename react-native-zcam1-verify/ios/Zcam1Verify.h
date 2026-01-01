@@ -4,7 +4,7 @@
 #endif
 
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <Zcam1VerifySpec/Zcam1VerifySpec.h>
+#import "Zcam1VerifySpec.h"
 
 @interface Zcam1Verify : NSObject <NativeZcam1VerifySpec>
 #else

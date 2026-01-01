@@ -2,7 +2,7 @@ import { base64 } from "@scure/base";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import {
   extractManifest,
-  ManifestInterface,
+  type ManifestInterface,
   verifyHash,
 } from "react-native-zcam1-c2pa";
 import { verifyGroth16 } from "./verifier";
@@ -60,5 +60,9 @@ function verifyProofFromManifest(activeManifest: ManifestInterface): boolean {
   publicInputs.set(dataHash);
   publicInputs.set(appleRootCert, dataHash.length);
 
-  return verifyGroth16(base64.decode(proof.data), publicInputs, proof.vkHash);
+  return verifyGroth16(
+    base64.decode(proof.data).buffer as ArrayBuffer,
+    publicInputs.buffer,
+    proof.vkHash,
+  );
 }
