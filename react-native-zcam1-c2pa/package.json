@@ -13,11 +13,12 @@
   "files": [
     "src",
     "lib",
+    "scripts",
+    "cpp",
+    "ios",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "cpp",
-    "ios",
     "Zcam1C2paFramework.xcframework/",
     "Zcam1C2pa.podspec",
     "README.md",
@@ -48,13 +49,13 @@
     "react-native": ">=0.81"
   },
   "scripts": {
-    "ubrn:checkout": "ubrn checkout",
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
-    "prepublish": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release",
-    "prepare": "bob build"
+    "build": "bob build",
+    "prepack": "npm run ubrn:ios -- --release && npm run build",
+    "postinstall": "./scripts/download-framework.sh"
   },
   "exports": {
     ".": {
