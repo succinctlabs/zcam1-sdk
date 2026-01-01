@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    C2pa(#[from] zcam1_c2pa_utils::error::Error),
+    C2pa(#[from] zcam1_c2pa_utils::error::C2paError),
 
     #[error(transparent)]
     Base64(#[from] base64ct::Error),
