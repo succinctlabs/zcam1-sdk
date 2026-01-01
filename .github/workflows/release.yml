@@ -10,9 +10,17 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
 
     steps:
+      - name: Set up Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.4
+
+      - name: Verify Xcode version
+        run: xcodebuild -version
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
