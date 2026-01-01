@@ -36,7 +36,7 @@ jobs:
       - name: Publish react-native-zcam1-c2pa
         run: |
           cd react-native-zcam1-c2pa
-          npm ci
+          SKIP_FRAMEWORK_DOWNLOAD=true npm ci
           npm version ${{ github.event.inputs.version }}
           # npm publish
           npm run ubrn:ios
