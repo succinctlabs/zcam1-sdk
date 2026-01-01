@@ -1,4 +1,4 @@
-name: Release iOS Frameworks
+name: Release ZCAM1 SDK
 
 on:
   workflow_dispatch:
@@ -36,6 +36,7 @@ jobs:
       - name: Publish react-native-zcam1-c2pa
         run: |
           cd react-native-zcam1-c2pa
+          npm ci
           npm version ${{ github.event.inputs.version }}
           # npm publish
           npm run ubrn:ios
