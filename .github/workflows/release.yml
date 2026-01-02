@@ -34,27 +34,25 @@ jobs:
           git tag v${{ github.event.inputs.version }}
           git push origin v${{ github.event.inputs.version }}
 
-      - name: Create the GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: ZCAM1 SDK v${{ github.event.inputs.version }}
-          draft: true
-          body: |
-            # ZCAM1 SDK Release v${{ github.event.inputs.version }}
-
       - name: Publish react-native-zcam1-c2pa
         run: |
           cd react-native-zcam1-c2pa
-          SKIP_FRAMEWORK_DOWNLOAD=true npm ci
+          npm ci
           npm version ${{ github.event.inputs.version }}
           # npm publish
           npm run ubrn:ios
           zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
 
-      - name: Update the GitHub Release
+      - name: Add the framework to the GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
+          draft: true
           files: |
             react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
+
+      - name: Finalize the GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: ZCAM1 SDK v${{ github.event.inputs.version }}
