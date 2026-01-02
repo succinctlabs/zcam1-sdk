@@ -17,17 +17,44 @@ import {
 
 export { AuthenticityStatus } from "react-native-zcam1-c2pa";
 
+/**
+ * Configuration for loading images from a private folder.
+ */
 export interface PrivateFolder {
+  /**
+   * The file system path to the private folder containing images.
+   */
   path: string;
 }
 
+/**
+ * Configuration for loading images from the device's photo gallery.
+ */
 export interface PhotoGallery {
-  album: string;
+  /**
+   * The name of the album to load images from.
+   */
+  album?: string;
 }
 
+/**
+ * Props for the ZImagePicker component.
+ */
 export interface ZImagePickerProps {
+  /**
+   * The source from which to load images. Can be either a PrivateFolder or PhotoGallery.
+   */
   source: PrivateFolder | PhotoGallery;
+  /**
+   * Optional function to render a badge based on the authenticity status of an image.
+   * @param status - The authenticity status of the image.
+   * @returns A React element to display as a badge, or null to display nothing.
+   */
   renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
+  /**
+   * Optional callback function that is called when an image is selected.
+   * @param uri - The URI of the selected image.
+   */
   onSelect?: (uri: string) => void;
 }
 
@@ -88,6 +115,26 @@ const ZImageItem = ({
   );
 };
 
+/**
+ * A component that displays a grid of images from either a private folder or photo gallery.
+ * Each image can display an authenticity badge and be selected by the user.
+ *
+ * @example
+ * ```tsx
+ * // Load from private folder
+ * <ZImagePicker
+ *   source={{ path: privateDirectory() }}
+ *   renderBadge={(status) => <Badge status={status} />}
+ *   onSelect={(uri) => console.log('Selected:', uri)}
+ * />
+ *
+ * // Load from photo gallery album
+ * <ZImagePicker
+ *   source={{ album: 'MyAlbum' }}
+ *   onSelect={(uri) => console.log('Selected:', uri)}
+ * />
+ * ```
+ */
 export const ZImagePicker = (props: ZImagePickerProps) => {
   const [photos, setPhotos] = useState<string[]>([]);
 
