@@ -3,8 +3,11 @@
 .DS_Store
 
 # uniffi
+src/generated/
 rust_modules/
 Zcam1ProveFramework.xcframework/
+cpp/
+ios/
 
 # XDE
 .expo/

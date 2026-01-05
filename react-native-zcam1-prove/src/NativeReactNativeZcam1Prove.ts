@@ -7,4 +7,4 @@ export interface Spec extends TurboModule {
   cleanupRustCrate(): boolean;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('Zcam1Prove');
+export default TurboModuleRegistry.getEnforcing<Spec>('ReactNativeZcam1Prove');

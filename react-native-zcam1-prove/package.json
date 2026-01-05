@@ -29,7 +29,7 @@
     "react-native": "*"
   },
   "codegenConfig": {
-    "name": "Zcam1ProveSpec",
+    "name": "ReactNativeZcam1ProveSpec",
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
