@@ -1,5 +1,5 @@
 {
-  "name": "zcam1-common",
+  "name": "@succinctlabs/react-native-zcam1-common",
   "version": "0.1.0",
   "description": "ZCAM1 SDK low level primitives",
   "main": "./lib/module/index.js",

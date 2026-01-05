@@ -1,6 +1,5 @@
-
 add-yalc:
-    cd zcam1-common && yalc publish
+    cd react-native-zcam1-common && yalc publish
     cd react-native-zcam1-c2pa && yalc publish
     cd react-native-zcam1-capture && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
     cd react-native-zcam1-prove && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
