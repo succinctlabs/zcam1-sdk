@@ -1,3 +1,5 @@
 rust:
   directory: ./..
   manifestPath: crates/c2pa-bindings/Cargo.toml
+ios:
+  frameworkName: Zcam1C2paFramework

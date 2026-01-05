@@ -7,6 +7,8 @@ ios/C2PA/C2PAC.xcframework/
 # uniffi
 rust_modules/
 Zcam1C2paFramework.xcframework/
+cpp/
+ios/
 
 # macOS
 .DS_Store

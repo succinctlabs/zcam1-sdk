@@ -1,11 +1,11 @@
 {
-  "name": "react-native-zcam1-c2pa",
-  "version": "0.1.5",
+  "name": "@succinctlabs/react-native-zcam1-c2pa",
+  "version": "0.1.0",
   "description": "ZCAM1 C2PA SDK",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "codegenConfig": {
-    "name": "Zcam1C2paSpec",
+    "name": "ReactNativeZcam1C2paSpec",
     "type": "modules",
     "jsSrcsDir": "src"
   },
@@ -19,11 +19,9 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "Zcam1C2paFramework.xcframework/",
-    "Zcam1C2pa.podspec",
+    "ReactNativeZcam1C2pa.podspec",
     "README.md",
-    "turbo.json",
-    "ubrn.config.yaml"
+    "turbo.json"
   ],
   "repository": {
     "type": "git",

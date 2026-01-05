@@ -10,12 +10,7 @@
         "android",
         "!android/build",
         "src/*.ts",
-        "src/*.tsx",
-        "example/package.json",
-        "example/android",
-        "!example/android/.gradle",
-        "!example/android/build",
-        "!example/android/app/build"
+        "src/*.tsx"
       ],
       "outputs": []
     },
@@ -25,17 +20,7 @@
         "RCT_USE_RN_DEP",
         "RCT_USE_PREBUILT_RNCORE"
       ],
-      "inputs": [
-        "package.json",
-        "*.podspec",
-        "ios",
-        "src/*.ts",
-        "src/*.tsx",
-        "example/package.json",
-        "example/ios",
-        "!example/ios/build",
-        "!example/ios/Pods"
-      ],
+      "inputs": ["package.json", "*.podspec", "ios", "src/*.ts", "src/*.tsx"],
       "outputs": []
     }
   }
