@@ -14,7 +14,7 @@ import {
   ExistingCertChain,
   ManifestEditor,
   SelfSignedCertChain,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 

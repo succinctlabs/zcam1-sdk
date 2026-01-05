@@ -7,12 +7,12 @@ import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
   type ECKey,
-} from "zcam1-common";
+} from "@succinctlabs/react-native-zcam1-common";
 
 export {
   buildSelfSignedCertificate,
   SelfSignedCertChain,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Camera component for capturing photos with secure enclave integration.
