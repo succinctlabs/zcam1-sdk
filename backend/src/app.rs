@@ -37,7 +37,7 @@ pub fn build_app() -> Router {
 /// This endpoint creates a new challenge for the device identified by `key_id`
 /// and stores it in the database for later validation.
 async fn bootstrap_init(
-    State(state): State<Arc<RequestState>>,
+    State(_state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterInitRequest>,
 ) -> Result<String, (StatusCode, String)> {
     info!("POST /ios/register/init - key_id: {}", params.key_id);
@@ -51,7 +51,7 @@ async fn bootstrap_init(
 /// This endpoint verifies the attestation provided by the device and marks it as trusted
 /// if the verification succeeds.
 async fn bootstrap_register(
-    State(state): State<Arc<RequestState>>,
+    State(_state): State<Arc<RequestState>>,
     Json(params): Json<IosRegisterValidateParams>,
 ) -> Result<(), (StatusCode, String)> {
     info!(
@@ -223,6 +223,12 @@ pub struct IosRequestProofParams {
 impl From<IosRequestProofParams> for AuthInputs {
     fn from(value: IosRequestProofParams) -> Self {
         Self {
+            // TODO: Photo data should be provided by the client
+            // For now, using empty placeholders to fix compilation
+            photo_bytes: vec![],
+            format: String::from("jpeg"),
+
+            // Attestation data from request
             attestation: value.attestation,
             assertion: value.assertion,
             key_id: value.key_id,

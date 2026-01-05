@@ -46,6 +46,12 @@ impl IosProvingClient {
         let inputs = AuthInputs {
             photo_bytes: std::fs::read(file_path)?,
             format: format.to_string(),
+            // Attestation fields - these will be extracted from the photo manifest
+            attestation: String::new(),
+            assertion: String::new(),
+            key_id: String::new(),
+            data_hash: vec![],
+            app_id: String::new(),
             app_attest_production: inputs.app_attest_production,
         };
         self.0
