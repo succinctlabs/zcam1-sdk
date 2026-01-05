@@ -38,7 +38,7 @@ jobs:
         run: |
           cd react-native-zcam1-c2pa
           npm ci
-          npm version ${{ github.event.inputs.version }}
+          # npm version ${{ github.event.inputs.version }}
           # npm publish
           npm run ubrn:ios
           zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
