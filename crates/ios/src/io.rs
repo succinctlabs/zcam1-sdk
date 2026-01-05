@@ -3,11 +3,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthInputs {
-    pub attestation: String, // b64
-    pub assertion: String,   // b64
-    pub key_id: String,      // b64
-    pub data_hash: Vec<u8>,
-    pub app_id: String,
+    pub photo_bytes: Vec<u8>,
+    pub format: String,
     pub app_attest_production: bool,
 }
 

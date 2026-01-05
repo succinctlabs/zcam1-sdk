@@ -10,6 +10,7 @@ use sp1_sdk::{
     SP1ProvingKey, SP1Stdin, include_elf,
     network::{NetworkMode, get_default_rpc_url_for_mode},
 };
+use zcam1_ios::AuthInputs;
 
 use crate::error::Error;
 
@@ -22,7 +23,7 @@ pub trait Initialized: Send + Sync {
 }
 
 #[derive(uniffi::Object)]
-pub struct IosProvingClient(ProvingClient<IosAuthInputs>);
+pub struct IosProvingClient(ProvingClient<AuthInputs>);
 
 #[uniffi::export]
 impl IosProvingClient {
@@ -36,7 +37,17 @@ impl IosProvingClient {
         Self(ProvingClient::mock(callback))
     }
 
-    pub async fn request_proof(&self, inputs: IosAuthInputs) -> Result<Vec<u8>, Error> {
+    pub async fn request_proof(
+        &self,
+        file_path: &str,
+        format: &str,
+        inputs: IosProofRequestInputs,
+    ) -> Result<Vec<u8>, Error> {
+        let inputs = AuthInputs {
+            photo_bytes: std::fs::read(file_path)?,
+            format: format.to_string(),
+            app_attest_production: inputs.app_attest_production,
+        };
         self.0
             .request_proof(inputs)
             .await
@@ -103,7 +114,7 @@ where
     }
 }
 
-impl ProvingClient<IosAuthInputs> {
+impl ProvingClient<AuthInputs> {
     pub fn ios(private_key: String, callback: Option<Box<dyn Initialized>>) -> Self {
         let rpc_url = get_default_rpc_url_for_mode(NetworkMode::Reserved);
         let signer = NetworkSigner::local(&private_key).unwrap();
@@ -166,21 +177,6 @@ impl EitherProver {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
-pub struct IosAuthInputs {
-    pub attestation: String, // b64
-    pub assertion: String,   // b64
-    pub key_id: String,      // b64
-    pub data_hash: Vec<u8>,
-    pub app_id: String,
+pub struct IosProofRequestInputs {
     pub app_attest_production: bool,
-}
-
-impl From<IosAuthInputs> for sp1_sdk::SP1Stdin {
-    fn from(inputs: IosAuthInputs) -> Self {
-        let mut stdin = sp1_sdk::SP1Stdin::new();
-
-        stdin.write(&inputs);
-
-        stdin
-    }
 }

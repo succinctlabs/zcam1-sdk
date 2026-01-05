@@ -1,4 +1,8 @@
-use std::{fs::File, thread};
+use std::{
+    fs::File,
+    io::{Read, Seek},
+    thread,
+};
 
 use base64ct::{Base64, Encoding};
 use c2pa::{hash_stream_by_alg, Reader};
@@ -10,15 +14,22 @@ use crate::{
 };
 
 pub mod error;
-mod manifest_editor;
-mod signing;
+
 pub mod types;
+
+#[cfg(feature = "editor")]
+mod manifest_editor;
+
+#[cfg(feature = "editor")]
+mod signing;
 
 uniffi::setup_scaffolding!();
 
+#[cfg(feature = "editor")]
 pub use manifest_editor::ManifestEditor;
 
 #[uniffi::export]
+#[cfg(feature = "io")]
 pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
     let store = serde_json::from_str::<ManifestStore>(&reader.detailed_json())?;
@@ -26,7 +37,23 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     Ok(store)
 }
 
+pub fn extract_manifest_from_stream(
+    format: &str,
+    stream: impl Read + Seek + Send,
+) -> Result<ManifestStore, C2paError> {
+    let reader = Reader::from_stream(format, stream)?;
+    let store = serde_json::from_str::<ManifestStore>(&reader.detailed_json())?;
+
+    Ok(store)
+}
+
 #[uniffi::export]
+pub fn format_from_path(path: &str) -> Option<String> {
+    c2pa::format_from_path(path)
+}
+
+#[uniffi::export]
+#[cfg(feature = "io")]
 pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     let path = path.to_string();
     let (sender, receiver) = oneshot::channel();
@@ -59,8 +86,18 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
 #[uniffi::export]
 pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, C2paError> {
     let mut file = File::open(path.replace("file://", ""))?;
+    compute_hash_from_stream(&mut file, exclusions)
+}
+
+pub fn compute_hash_from_stream<R>(
+    stream: &mut R,
+    exclusions: &[Exclusion],
+) -> Result<Vec<u8>, C2paError>
+where
+    R: Read + Seek + ?Sized,
+{
     let exclusions_range = exclusions.iter().map(Into::into).collect();
-    let hash = hash_stream_by_alg("sha256", &mut file, Some(exclusions_range), true)?;
+    let hash = hash_stream_by_alg("sha256", stream, Some(exclusions_range), true)?;
 
     Ok(hash)
 }

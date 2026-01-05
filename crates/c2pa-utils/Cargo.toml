@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.89"
 base64ct.workspace = true
-c2pa = { version = "0.72.0", default-features = false, features = ["file_io", "rust_native_crypto"] }
+c2pa.workspace = true
 futures = "0.3.31"
 pem = "3.0.6"
-security-framework = "3.5.1"
+security-framework = { version = "3.5.1", optional = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -17,9 +17,13 @@ uniffi = { version = "=0.29.3", features = [ "cli" ] }
 
 [dev-dependencies]
 zcam1-common.workspace = true
-tempfile = "3.15.0"
+tempfile = "3.23.0"
 tokio = { version = "1.48", default-features = false, features = [
     "rt",
     "macros"
 ] }
 p256 = { version = "0.13", features = ["jwk", "ecdsa"] }
+
+[features]
+io = ["c2pa/file_io"]
+editor = ["dep:security-framework"]
