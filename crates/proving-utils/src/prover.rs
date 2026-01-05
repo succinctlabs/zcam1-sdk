@@ -39,23 +39,21 @@ impl IosProvingClient {
 
     pub async fn request_proof(
         &self,
-        file_path: &str,
-        format: &str,
-        inputs: IosProofRequestInputs,
+        inputs: IosAuthInputs,
     ) -> Result<Vec<u8>, Error> {
-        let inputs = AuthInputs {
-            photo_bytes: std::fs::read(file_path)?,
-            format: format.to_string(),
-            // Attestation fields - these will be extracted from the photo manifest
-            attestation: String::new(),
-            assertion: String::new(),
-            key_id: String::new(),
-            data_hash: vec![],
-            app_id: String::new(),
+        let auth_inputs = AuthInputs {
+            photo_bytes: std::fs::read(&inputs.photo_path)?,
+            format: inputs.photo_format.clone(),
+            // Attestation fields from the client
+            attestation: inputs.attestation,
+            assertion: inputs.assertion,
+            key_id: inputs.key_id,
+            data_hash: inputs.data_hash,
+            app_id: inputs.app_id,
             app_attest_production: inputs.app_attest_production,
         };
         self.0
-            .request_proof(inputs)
+            .request_proof(auth_inputs)
             .await
             .map(|proof| proof.bytes())
     }
@@ -179,6 +177,19 @@ impl EitherProver {
                 .map_err(|err| Error::Sp1(err.to_string())),
         }
     }
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct IosAuthInputs {
+    pub attestation: String,
+    pub assertion: String,
+    pub key_id: String,
+    pub data_hash: Vec<u8>,
+    pub app_id: String,
+    pub app_attest_production: bool,
+    pub photo_path: String,
+    pub photo_format: String,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, uniffi::Record)]
