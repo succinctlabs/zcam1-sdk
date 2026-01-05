@@ -1,6 +1,6 @@
 {
-  "name": "react-native-zcam1-verify",
-  "version": "0.1.1",
+  "name": "@succinctlabs/react-native-zcam1-verify",
+  "version": "0.1.0",
   "description": "ZCAM1 Verify SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -20,6 +20,7 @@
     "@contentauth/c2pa-types": "^0.4.0",
     "@noble/hashes": "^2.0.1",
     "@scure/base": "^2.0.0",
+    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.0",
     "react-native-zcam1-c2pa": "^0.1.0",
     "uniffi-bindgen-react-native": "^0.29.3-1"
   },
@@ -56,7 +57,12 @@
     "lib",
     "!**/__tests__",
     "!**/__fixtures__",
-    "!**/__mocks__"
+    "!**/__mocks__",
+    "cpp",
+    "ios",
+    "Zcam1Prove.podspec",
+    "README.md",
+    "turbo.json"
   ],
   "react-native-builder-bob": {
     "source": "src",
