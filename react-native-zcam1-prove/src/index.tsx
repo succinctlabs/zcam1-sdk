@@ -202,6 +202,11 @@ export class ProvingClient {
     );
 
     // Generate the proof
+    // Determine photo format from file extension
+    const photoFormat = originalPath.toLowerCase().endsWith('.heic') ? 'heic' :
+                       originalPath.toLowerCase().endsWith('.png') ? 'png' :
+                       originalPath.toLowerCase().endsWith('.webp') ? 'webp' : 'jpeg';
+
     const proof = await this.client.requestProof({
       attestation: bindings.attestation,
       assertion: bindings.assertion,
@@ -209,6 +214,8 @@ export class ProvingClient {
       dataHash: base64.decode(dataHash.hash).buffer as ArrayBuffer,
       appId: bindings.appId,
       appAttestProduction: this.production,
+      photoPath: originalPath,
+      photoFormat: photoFormat,
     });
     let vkHash = this.client.vkHash();
 
