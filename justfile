@@ -1,12 +1,12 @@
 add-yalc:
     cd react-native-zcam1-common && yalc publish
     cd react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-capture && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-prove && yalc add zcam1-common react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-verify && yalc add react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-picker && yalc add react-native-zcam1-c2pa && yalc publish
-    cd examples/capture && yalc add react-native-zcam1-capture react-native-zcam1-c2pa zcam1-common
-    cd examples/e2e && yalc add react-native-zcam1-capture react-native-zcam1-prove react-native-zcam1-picker react-native-zcam1-c2pa zcam1-common
+    cd react-native-zcam1-capture && yalc add @succinctlabs/react-native-zcam1-common @succinctlabs/react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-prove && yalc add @succinctlabs/react-native-zcam1-common @succinctlabs/react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-verify && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
+    cd react-native-zcam1-picker && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
+    cd examples/capture && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
+    cd examples/e2e && yalc add react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-picker @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
 
 remove-yalc:
     cd react-native-zcam1-capture && yalc remove --all
