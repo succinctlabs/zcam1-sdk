@@ -8,10 +8,11 @@ import React, {
 import {
   buildSelfSignedCertificate,
   extractManifest,
+  formatFromPath,
   ManifestEditor,
   SelfSignedCertChain,
   ExistingCertChain,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 import {
   type Initialized,
   IosProvingClient,
@@ -184,14 +185,12 @@ export class ProvingClient {
    */
   async embedProof(originalPath: string): Promise<string> {
     const store = extractManifest(originalPath);
-    const activeManifest = store.activeManifest();
-    const dataHash = activeManifest.dataHash();
-    const bindings = activeManifest.bindings();
-
     originalPath = originalPath.replace("file://", "");
 
-    if (bindings === undefined) {
-      throw new Error("No device bindings found in the C2PA manifest");
+    const format = formatFromPath(originalPath);
+
+    if (format === undefined) {
+      throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
     const manifestEditor = ManifestEditor.fromFileAndManifest(
@@ -202,12 +201,7 @@ export class ProvingClient {
     );
 
     // Generate the proof
-    const proof = await this.client.requestProof({
-      attestation: bindings.attestation,
-      assertion: bindings.assertion,
-      keyId: bindings.deviceKeyId,
-      dataHash: base64.decode(dataHash.hash).buffer as ArrayBuffer,
-      appId: bindings.appId,
+    const proof = await this.client.requestProof(originalPath, format, {
       appAttestProduction: this.production,
     });
     let vkHash = this.client.vkHash();
@@ -227,7 +221,7 @@ export class ProvingClient {
       `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
     // Embed the manifest to the photo
-    await manifestEditor.embedManifestToFile(destinationPath, "image/jpeg");
+    await manifestEditor.embedManifestToFile(destinationPath, format);
 
     return destinationPath;
   }
