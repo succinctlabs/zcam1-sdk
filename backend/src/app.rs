@@ -74,6 +74,23 @@ async fn request_proof(
 ) -> Result<String, (StatusCode, String)> {
     info!("POST /ios/request-proof - key_id: {}", params.key_id);
 
+    // Validate that photo data is provided
+    if params.photo_bytes.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Missing photo_bytes: Photo data is required for proof generation".to_string(),
+        ));
+    }
+
+    // Validate photo format
+    let valid_formats = ["jpeg", "jpg", "png", "heic", "webp"];
+    if !valid_formats.contains(&params.photo_format.to_lowercase().as_str()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("Invalid photo_format '{}'. Supported formats: {:?}", params.photo_format, valid_formats),
+        ));
+    }
+
     let request_id = state.db.create_proof_request();
     let cloned_request_id = request_id.clone();
 
@@ -218,15 +235,16 @@ pub struct IosRequestProofParams {
     pub data_hash: String,   // b64
     pub app_id: String,
     pub app_attest_production: bool,
+    pub photo_bytes: String, // b64 encoded photo data
+    pub photo_format: String, // e.g., "jpeg", "png", "heic"
 }
 
 impl From<IosRequestProofParams> for AuthInputs {
     fn from(value: IosRequestProofParams) -> Self {
         Self {
-            // TODO: Photo data should be provided by the client
-            // For now, using empty placeholders to fix compilation
-            photo_bytes: vec![],
-            format: String::from("jpeg"),
+            // Photo data from the client
+            photo_bytes: Base64::decode_vec(&value.photo_bytes).unwrap_or_default(),
+            format: value.photo_format,
 
             // Attestation data from request
             attestation: value.attestation,
