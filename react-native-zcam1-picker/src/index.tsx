@@ -13,9 +13,9 @@ import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import {
   authenticityStatus,
   AuthenticityStatus,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 
-export { AuthenticityStatus } from "react-native-zcam1-c2pa";
+export { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Configuration for loading images from a private folder.
