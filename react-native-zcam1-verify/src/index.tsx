@@ -4,7 +4,7 @@ import {
   extractManifest,
   type ManifestInterface,
   verifyHash,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 import { verifyGroth16 } from "./verifier";
 
 const APPLE_ROOT_CERT =

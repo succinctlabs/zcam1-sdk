@@ -18,14 +18,17 @@ import {
   type IosProvingClientInterface,
 } from "./proving";
 import { base64 } from "@scure/base";
-import { getContentPublicKey, getSecureEnclaveKeyId } from "zcam1-common";
+import {
+  getContentPublicKey,
+  getSecureEnclaveKeyId,
+} from "@succinctlabs/react-native-zcam1-common";
 import { Dirs } from "react-native-file-access";
 
 export { IosProvingClient } from "./proving";
 export {
   buildSelfSignedCertificate,
   SelfSignedCertChain,
-} from "react-native-zcam1-c2pa";
+} from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Configuration settings for backend communication.
