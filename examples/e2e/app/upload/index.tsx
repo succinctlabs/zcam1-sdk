@@ -8,7 +8,7 @@ export default function Index() {
   const router = useRouter();
 
   const privateFolder = () => {
-    const path = privateDirectory() + "/captured";
+    const path = privateDirectory();
     router.push({ pathname: "/upload/pick", params: { path } });
   };
 

@@ -1,11 +1,12 @@
-import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useProver } from "@succinctlabs/react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
-import { FileSystem } from "react-native-file-access";
+import { FileSystem, Util } from "react-native-file-access";
+import { isEmulator } from "react-native-device-info";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export default function Proving() {
   return (
@@ -29,8 +30,17 @@ function ProofGeneration() {
         const outputPath = await provingClient.embedProof(uri);
 
         try {
-          await CameraRoll.saveAsset(outputPath, { album: "ZCAM1" });
+          const targetPath = privateDirectory();
+          const targetFile = targetPath + "/" + Util.basename(outputPath);
+
+          await FileSystem.cp(outputPath, targetFile);
           await FileSystem.unlink(uri);
+
+          const emulator = await isEmulator();
+          if (emulator) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          }
+
           router.dismiss();
 
           Toast.show({

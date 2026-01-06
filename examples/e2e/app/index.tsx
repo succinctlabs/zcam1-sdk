@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Button, View, Text } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { FileSystem, Dirs, Util } from "react-native-file-access";
+import { FileSystem, Util } from "react-native-file-access";
 import {
   CaptureInfo,
   initCapture,
   ZCamera,
 } from "@succinctlabs/react-native-zcam1-capture";
 import Toast from "react-native-toast-message";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export default function Home() {
   const camera = useRef<ZCamera>(null);
@@ -34,8 +35,8 @@ export default function Home() {
 
   const capture = async () => {
     const photo = await camera.current?.takePhoto();
-    const targetPath = Dirs.DocumentDir + "/captured/";
-    const targetFile = targetPath + Util.basename(photo?.path!);
+    const targetPath = privateDirectory();
+    const targetFile = targetPath + "/" + Util.basename(photo?.path!);
 
     await FileSystem.exists(targetPath).then((exists) => {
       if (!exists) return FileSystem.mkdir(targetPath);
