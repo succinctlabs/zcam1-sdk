@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
 import { FileSystem } from "react-native-file-access";
 

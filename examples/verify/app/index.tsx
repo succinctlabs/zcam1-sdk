@@ -1,7 +1,7 @@
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { launchImageLibrary } from "react-native-image-picker";
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
 
 export default function Index() {
   const pick = async () => {
@@ -14,7 +14,6 @@ export default function Index() {
 
     const verifier = new VerifiableFile(result.assets![0].uri!);
 
-    console.log("Is hash valid", verifier.verifyHash());
     console.log("Is proof valid", verifier.verifyProof());
   };
 

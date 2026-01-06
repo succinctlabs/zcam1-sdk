@@ -1,7 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Image } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
+import {
+  ZImagePicker,
+  AuthenticityStatus,
+} from "@succinctlabs/react-native-zcam1-picker";
 import { useIsFocused } from "@react-navigation/native";
 
 export default function Pick() {

@@ -66,7 +66,7 @@
     "cpp",
     "ios",
     "Zcam1VerifyFramework.xcframework",
-    "Zcam1Prove.podspec",
+    "ReactNativeZcam1Verify.podspec",
     "README.md",
     "turbo.json"
   ],

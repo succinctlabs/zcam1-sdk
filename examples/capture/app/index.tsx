@@ -2,19 +2,22 @@ import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { StyleSheet, Button, View, Text } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { DeviceInfo, initDevice, ZCamera } from "react-native-zcam1-capture";
+import {
+  CaptureInfo,
+  initCapture,
+  ZCamera,
+} from "@succinctlabs/react-native-zcam1-capture";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);
   const appId = process.env.EXPO_PUBLIC_APP_ID!;
-  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo | undefined>(
     undefined,
   );
 
   const settings = useMemo(() => {
     return {
       appId,
-      backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
       production: false,
     };
   }, [appId]);
@@ -22,8 +25,8 @@ export default function Index() {
   useEffect(() => {
     async function fetchDevice() {
       try {
-        const deviceInfo = await initDevice(settings);
-        setDeviceInfo(deviceInfo);
+        const captureInfo = await initCapture(settings);
+        setCaptureInfo(captureInfo);
       } catch (error) {
         console.error("Failed to initialize device:", error);
       }
@@ -49,8 +52,8 @@ export default function Index() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
-          {deviceInfo ? (
-            <ZCamera ref={camera} deviceInfo={deviceInfo} settings={settings} />
+          {captureInfo ? (
+            <ZCamera ref={camera} captureInfo={captureInfo} />
           ) : (
             <View
               style={{
@@ -64,7 +67,7 @@ export default function Index() {
           )}
         </View>
         <View>
-          <Button title="Capture" onPress={capture} disabled={!deviceInfo} />
+          <Button title="Capture" onPress={capture} disabled={!captureInfo} />
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

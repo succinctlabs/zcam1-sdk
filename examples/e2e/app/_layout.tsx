@@ -1,5 +1,5 @@
 import { Drawer } from "expo-router/drawer";
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
 
 export default function Layout() {
   return (

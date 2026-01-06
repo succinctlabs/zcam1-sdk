@@ -1,8 +1,7 @@
 import { useRouter } from "expo-router";
 import { Button, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { privateDirectory } from "react-native-zcam1-picker";
-import { FileSystem } from "react-native-file-access";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 import { pickDirectory } from "@react-native-documents/picker";
 
 export default function Index() {

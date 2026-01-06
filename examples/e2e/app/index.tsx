@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Button, View, Text } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { FileSystem, Dirs, Util } from "react-native-file-access";
-import { CaptureInfo, initCapture, ZCamera } from "react-native-zcam1-capture";
+import {
+  CaptureInfo,
+  initCapture,
+  ZCamera,
+} from "@succinctlabs/react-native-zcam1-capture";
 import Toast from "react-native-toast-message";
 
 export default function Home() {
