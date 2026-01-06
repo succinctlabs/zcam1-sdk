@@ -28,7 +28,9 @@ import { Dirs } from "react-native-file-access";
 export { IosProvingClient } from "./proving";
 export {
   buildSelfSignedCertificate,
+  authenticityStatus,
   SelfSignedCertChain,
+  AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**

@@ -15,7 +15,10 @@ import {
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 
-export { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-c2pa";
+export {
+  authenticityStatus,
+  AuthenticityStatus,
+} from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Configuration for loading images from a private folder.
