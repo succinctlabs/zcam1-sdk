@@ -46,7 +46,7 @@ function ProofGeneration() {
           Toast.show({
             type: "success",
             text1: "The proof has been generated",
-            text2: "The photo has benn saved to the iOS Photo Gallery",
+            text2: "The photo has been saved to the iOS Photo Gallery",
           });
 
           router.navigate("/");

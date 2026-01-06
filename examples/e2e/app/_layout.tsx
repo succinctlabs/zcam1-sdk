@@ -5,6 +5,7 @@ import { Drawer } from "expo-router/drawer";
 import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
 import { pickDirectory } from "@react-native-documents/picker";
 import { Pressable } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 import Entypo from "@expo/vector-icons/Entypo";
 import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
@@ -39,7 +40,25 @@ export default function Layout() {
             },
           }}
         />
+        <Drawer.Screen
+          name="verify"
+          options={{
+            drawerLabel: "Verify",
+            title: "Verify",
+          }}
+          listeners={{
+            drawerItemPress: (e) => {
+              e.preventDefault();
+
+              router.push({
+                pathname: "/verify",
+                params: { path: privateDirectory() },
+              });
+            },
+          }}
+        />
       </Drawer>
+      <Toast topOffset={80} />
     </ProverProvider>
   );
 }

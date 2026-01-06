@@ -72,7 +72,6 @@ export default function Home() {
         <View>
           <Button title="Capture" onPress={capture} />
         </View>
-        <Toast />
       </SafeAreaView>
     </SafeAreaProvider>
   );

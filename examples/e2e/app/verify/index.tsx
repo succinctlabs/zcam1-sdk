@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Image } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { authenticityStatus } from "@succinctlabs/react-native-zcam1-prove";
 import {
   ZImagePicker,
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-picker";
 import { useIsFocused } from "@react-navigation/native";
+import { authenticityStatus } from "@succinctlabs/react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
 
 export default function Pick() {
@@ -50,14 +50,12 @@ export default function Pick() {
           onSelect={async (uri) => {
             const authStatus = await authenticityStatus(uri);
 
-            if (authStatus === AuthenticityStatus.Bindings) {
-              router.push({ pathname: "/upload/proving", params: { uri } });
+            if (authStatus === AuthenticityStatus.Proof) {
+              router.push({ pathname: "/verify/report", params: { uri } });
             } else {
-              console.log("The image must contains bindings");
               Toast.show({
                 type: "error",
-                text1: "The image must contains bindings",
-                text2: "Please try again with a different image",
+                text1: "The image must contains a authenticity proof",
               });
             }
           }}
