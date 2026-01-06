@@ -1,30 +1,57 @@
-import { useRouter } from "expo-router";
-import { Button, StyleSheet } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StyleSheet, Image } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
-import { pickDirectory } from "@react-native-documents/picker";
+import {
+  ZImagePicker,
+  AuthenticityStatus,
+} from "@succinctlabs/react-native-zcam1-picker";
+import { useIsFocused } from "@react-navigation/native";
 
-export default function Index() {
+export default function Pick() {
   const router = useRouter();
+  const { path } = useLocalSearchParams<{ path: string }>();
+  const isFocused = useIsFocused();
 
-  const privateFolder = () => {
-    const path = privateDirectory();
-    router.push({ pathname: "/upload/pick", params: { path } });
+  if (!isFocused) {
+    return null;
+  }
+
+  console.log("path", path);
+
+  const renderBadge = (
+    status: AuthenticityStatus,
+  ): React.ReactElement | null => {
+    switch (status) {
+      case AuthenticityStatus.Bindings:
+        return (
+          <Image
+            source={require("../../assets/images/bindings.png")}
+            style={styles.badgeIcon}
+            resizeMode="contain"
+          />
+        );
+      case AuthenticityStatus.Proof:
+        return (
+          <Image
+            source={require("../../assets/images/proof.png")}
+            style={styles.badgeIcon}
+            resizeMode="contain"
+          />
+        );
+      default:
+        return null;
+    }
   };
-
-  const selectFolder = async () => {
-    const { uri: path } = await pickDirectory({
-      requestLongTermAccess: true,
-    });
-
-    router.push({ pathname: "/upload/pick", params: { path } });
-  };
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Button onPress={privateFolder} title="App private folder" />
-        <Button onPress={selectFolder} title="Select..." />
+        <ZImagePicker
+          source={{ path: path }}
+          onSelect={(uri) =>
+            router.push({ pathname: "/upload/proving", params: { uri } })
+          }
+          renderBadge={renderBadge}
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -34,5 +61,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+  },
+  badgeIcon: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
   },
 });
