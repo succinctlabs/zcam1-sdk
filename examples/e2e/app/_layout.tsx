@@ -11,9 +11,10 @@ import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export default function Layout() {
   const router = useRouter();
+  const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
 
   return (
-    <ProverProvider settings={{ production: false }}>
+    <ProverProvider settings={{ privateKey, production: false }}>
       <Drawer>
         <Drawer.Screen
           name="index"

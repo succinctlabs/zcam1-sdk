@@ -5,7 +5,6 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useProver } from "@succinctlabs/react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
 import { FileSystem, Util } from "react-native-file-access";
-import { isEmulator } from "react-native-device-info";
 import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export default function Proving() {
@@ -26,6 +25,8 @@ function ProofGeneration() {
 
   useEffect(() => {
     async function generateProof() {
+      const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
+
       if (uri && provingClient) {
         const outputPath = await provingClient.embedProof(uri);
 
@@ -36,8 +37,7 @@ function ProofGeneration() {
           await FileSystem.cp(outputPath, targetFile);
           await FileSystem.unlink(uri);
 
-          const emulator = await isEmulator();
-          if (emulator) {
+          if (privateKey === undefined) {
             await new Promise((resolve) => setTimeout(resolve, 2000));
           }
 
