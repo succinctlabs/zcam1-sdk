@@ -6,7 +6,7 @@ add-yalc:
     cd react-native-zcam1-verify && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
     cd react-native-zcam1-picker && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
     cd examples/capture && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
-    cd examples/e2e && yalc add react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-picker @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
+    cd examples/e2e && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-picker @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
 
 remove-yalc:
     cd react-native-zcam1-capture && yalc remove --all
@@ -39,3 +39,11 @@ run-e2e-example:
     cd examples/e2e
     yalc update
     npx expo prebuild && npx expo run:ios --device
+
+publish $NPM_CONFIG_REGISTRY:
+    cd react-native-zcam1-common && npm publish --access public
+    cd react-native-zcam1-c2pa && npm publish --access public
+    cd react-native-zcam1-capture && npm publish --access public
+    cd react-native-zcam1-prove && npm publish --access public
+    cd react-native-zcam1-verify && npm publish --access public
+    cd react-native-zcam1-picker && npm publish --access public

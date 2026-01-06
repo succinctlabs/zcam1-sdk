@@ -1,10 +1,11 @@
 {
   "name": "@succinctlabs/react-native-zcam1-common",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ZCAM1 SDK low level primitives",
   "main": "./lib/module/index.js",
   "scripts": {
-    "prepare": "bob build"
+    "build": "bob build",
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-prove",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ZCAM1 Proving SDK",
   "main": "./lib/module/index.js",
   "repository": {
@@ -14,12 +14,14 @@
   "files": [
     "src",
     "lib",
+    "scripts",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
     "cpp",
     "ios",
-    "Zcam1Prove.podspec",
+    "ReactNativeZcam1Prove.podspec",
+    "Zcam1ProveFramework.xcframework",
     "README.md",
     "turbo.json",
     "ubrn.config.yaml"
@@ -44,8 +46,8 @@
   },
   "dependencies": {
     "@scure/base": "^2.0.0",
-    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.0",
-    "@succinctlabs/react-native-zcam1-common": "^0.1.0",
+    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.1",
+    "@succinctlabs/react-native-zcam1-common": "^0.1.1",
     "react-native-file-access": "^3.2.0"
   },
   "scripts": {
@@ -54,8 +56,13 @@
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
-    "prepublish": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate --release",
-    "prepare": "bob build"
+    "build": "bob build",
+    "prepack": "npm run ubrn:ios -- --release && npm run build",
+    "prepublish": "[ -z $NPM_CONFIG_REGISTRY ] && mv Zcam1ProveFramework.xcframework Zcam1ProveFramework.xcframework.excluded",
+    "preyalcpublish": "mv Zcam1ProveFramework.xcframework.excluded Zcam1ProveFramework.xcframework",
+    "postyalcpublish": "mv Zcam1ProveFramework.xcframework Zcam1ProveFramework.xcframework.excluded",
+    "postpublish": "if [ -e Zcam1ProveFramework.xcframework.excluded ]; then mv Zcam1ProveFramework.xcframework.excluded Zcam1ProveFramework.xcframework; fi",
+    "postinstall": "./scripts/download-framework.sh Zcam1ProveFramework.xcframework"
   },
   "devDependencies": {
     "react-native-builder-bob": "^0.40.17",

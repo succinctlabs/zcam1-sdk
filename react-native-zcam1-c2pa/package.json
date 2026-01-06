@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-c2pa",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ZCAM1 C2PA SDK",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -20,6 +20,7 @@
     "!**/__fixtures__",
     "!**/__mocks__",
     "ReactNativeZcam1C2pa.podspec",
+    "Zcam1C2paFramework.xcframework",
     "README.md",
     "turbo.json"
   ],
@@ -53,7 +54,11 @@
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
     "build": "bob build",
     "prepack": "npm run ubrn:ios -- --release && npm run build",
-    "postinstall": "./scripts/download-framework.sh"
+    "prepublish": "[ -z \"$NPM_CONFIG_REGISTRY\" ] && mv Zcam1C2paFramework.xcframework Zcam1C2paFramework.xcframework.excluded",
+    "preyalcpublish": "mv Zcam1C2paFramework.xcframework.excluded Zcam1C2paFramework.xcframework",
+    "postyalcpublish": "mv Zcam1C2paFramework.xcframework Zcam1C2paFramework.xcframework.excluded",
+    "postpublish": "if [ -e Zcam1C2paFramework.xcframework.excluded ]; then mv Zcam1C2paFramework.xcframework.excluded Zcam1C2paFramework.xcframework; fi",
+    "postinstall": "./scripts/download-framework.sh Zcam1C2paFramework.xcframework"
   },
   "exports": {
     ".": {

@@ -4,4 +4,4 @@ rust:
 turboModule:
   entrypoint: src/proving.tsx
 ios:
-  frameworkName: Zcam1ProveSpec
+  frameworkName: Zcam1ProveFramework
