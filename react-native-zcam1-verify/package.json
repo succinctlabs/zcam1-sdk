@@ -65,6 +65,7 @@
     "!**/__mocks__",
     "cpp",
     "ios",
+    "Zcam1VerifyFramework.xcframework",
     "Zcam1Prove.podspec",
     "README.md",
     "turbo.json"

@@ -4,3 +4,5 @@ rust:
   manifestPath: uniffi-verifier/Cargo.toml
 turboModule:
   entrypoint: src/verifier.tsx
+ios:
+  frameworkName: Zcam1VerifyFramework
