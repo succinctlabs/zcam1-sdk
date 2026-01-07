@@ -162,14 +162,22 @@ impl EitherProver {
         match self {
             EitherProver::Network { prover } => prover
                 .prove(pk, &stdin)
+                .groth16()
                 .run_async()
                 .await
                 .map_err(|err| Error::Sp1(err.to_string())),
-            EitherProver::Mock { prover } => prover
-                .prove(pk, &stdin)
-                .groth16()
-                .run()
-                .map_err(|err| Error::Sp1(err.to_string())),
+            EitherProver::Mock { prover } => {
+                prover
+                    .execute(&pk.elf, &stdin)
+                    .run()
+                    .map_err(|err| Error::Sp1(err.to_string()))?;
+
+                prover
+                    .prove(pk, &stdin)
+                    .groth16()
+                    .run()
+                    .map_err(|err| Error::Sp1(err.to_string()))
+            }
         }
     }
 }
