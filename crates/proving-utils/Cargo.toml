@@ -12,3 +12,6 @@ uniffi.workspace = true
 
 [build-dependencies]
 sp1-build.workspace = true
+
+[dev-dependencies]
+sp1-sdk.workspace = true
