@@ -15,7 +15,6 @@ use zcam1_ios::AuthInputs;
 use crate::error::Error;
 
 pub const IOS_AUTHENCITY_ELF: &[u8] = include_elf!("authenticity-ios");
-pub const MOCK_ELF: &[u8] = include_elf!("mock");
 
 #[uniffi::export(callback_interface)]
 pub trait Initialized: Send + Sync {
@@ -80,7 +79,7 @@ where
 
         thread::spawn(move || {
             let prover = CpuProver::mock();
-            let (pk, vk) = prover.setup(MOCK_ELF);
+            let (pk, vk) = prover.setup(IOS_AUTHENCITY_ELF);
             let _ = cloned_prover.set(EitherProver::Mock {
                 prover: Box::new(prover),
             });
