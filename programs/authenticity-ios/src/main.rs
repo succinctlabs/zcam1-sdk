@@ -5,7 +5,7 @@ use std::io::Cursor;
 
 use base64ct::{Base64, Encoding};
 use zcam1_c2pa_utils::{compute_hash_from_stream, extract_manifest_from_stream};
-use zcam1_ios::{APPLE_ROOT_CERT, AuthInputs, validate_assertion, validate_attestation};
+use zcam1_ios::{validate_assertion, validate_attestation, AuthInputs, APPLE_ROOT_CERT};
 
 pub fn main() {
     let auth_inputs = sp1_zkvm::io::read::<AuthInputs>();
@@ -19,24 +19,27 @@ pub fn main() {
 
     assert_eq!(data_hash.hash, client_data);
 
-    let public_key_uncompressed = validate_attestation(
-        &bindings.attestation,
-        &bindings.device_key_id,
-        &bindings.device_key_id,
-        &bindings.app_id,
-        auth_inputs.app_attest_production,
-        !auth_inputs.app_attest_production, // Skip full chain validation for development
-    )
-    .unwrap();
+    // Skip App Attest validation if we are on a simulator
+    if !bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        let public_key_uncompressed = validate_attestation(
+            &bindings.attestation,
+            &bindings.device_key_id,
+            &bindings.device_key_id,
+            &bindings.app_id,
+            auth_inputs.app_attest_production,
+            !auth_inputs.app_attest_production, // Skip full chain validation for development
+        )
+        .unwrap();
 
-    validate_assertion(
-        &bindings.assertion,
-        client_data.as_bytes(),
-        &public_key_uncompressed,
-        &bindings.app_id,
-        0,
-    )
-    .unwrap();
+        validate_assertion(
+            &bindings.assertion,
+            client_data.as_bytes(),
+            &public_key_uncompressed,
+            &bindings.app_id,
+            0,
+        )
+        .unwrap();
+    }
 
     sp1_zkvm::io::commit_slice(&photo_hash);
     sp1_zkvm::io::commit_slice(APPLE_ROOT_CERT.as_bytes());
