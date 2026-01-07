@@ -21,7 +21,9 @@ export default function Index() {
     console.log("File", result.assets![0].uri);
 
     if (provingClient !== null) {
-      const outputPath = await provingClient.embedProof(result.assets![0].uri!);
+      const outputPath = await provingClient.waitAndEmbedProof(
+        result.assets![0].uri!,
+      );
 
       console.log("Output File", outputPath);
 

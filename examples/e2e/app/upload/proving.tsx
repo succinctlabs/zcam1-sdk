@@ -1,8 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { useProver } from "@succinctlabs/react-native-zcam1-prove";
+import {
+  useProofRequestStatus,
+  useProver,
+} from "@succinctlabs/react-native-zcam1-prove";
 import Toast from "react-native-toast-message";
 import { FileSystem, Util } from "react-native-file-access";
 import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
@@ -22,13 +25,26 @@ function ProofGeneration() {
   const { uri } = useLocalSearchParams<{ uri?: string }>();
 
   const { provingClient, isInitializing, error } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
 
   useEffect(() => {
-    async function generateProof() {
+    async function requestProof() {
+      if (uri && provingClient) {
+        const requestId = await provingClient.requestProof(uri);
+        setRequestId(requestId);
+      }
+    }
+
+    requestProof();
+  }, [provingClient, uri]);
+
+  useEffect(() => {
+    async function embedProof() {
       const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
 
-      if (uri && provingClient) {
-        const outputPath = await provingClient.embedProof(uri);
+      if (uri && provingClient && proof) {
+        const outputPath = await provingClient.embedProof(uri, proof);
 
         try {
           const targetPath = privateDirectory();
@@ -56,8 +72,8 @@ function ProofGeneration() {
       }
     }
 
-    generateProof();
-  }, [router, provingClient, uri]);
+    embedProof();
+  }, [router, provingClient, uri, proof]);
 
   if (error) {
     return <Text>{error.toString()}</Text>;
@@ -79,6 +95,7 @@ function ProofGeneration() {
       <Text style={styles.subtitle}>
         This may take a few seconds. Please keep the app open.
       </Text>
+      <Text>Proof status: {fulfillementStatus}</Text>
     </View>
   );
 }
