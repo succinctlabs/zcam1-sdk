@@ -9,7 +9,7 @@ COPY programs ./programs
 
 # Install SP1
 RUN curl -L https://sp1.succinct.xyz | bash && \
-    ~/.sp1/bin/sp1up -v v5.2.3 && \
+    ~/.sp1/bin/sp1up -v v5.2.4 && \
     ~/.sp1/bin/cargo-prove prove --version
 
 
