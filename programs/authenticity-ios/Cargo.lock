@@ -397,7 +397,7 @@ checksum = "b35204fbdc0b3f4446b89fc1ac2cf84a8a68971995d0bf2e925ec7cd960f9cb3"
 [[package]]
 name = "c2pa"
 version = "0.73.1"
-source = "git+https://github.com/succinctlabs/c2pa-rs?branch=aurelien%2Fsp1-fixes#ff5c594a66d5baa089824986a4a946455a9065e5"
+source = "git+https://github.com/succinctlabs/c2pa-rs?branch=aurelien%2Fsp1-fixes#cc3aa0ad9e4752f5e93478f40bc3b91e7b8f145a"
 dependencies = [
  "asn1-rs",
  "async-generic",
