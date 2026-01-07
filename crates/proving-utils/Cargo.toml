@@ -10,6 +10,9 @@ sp1-sdk.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
 
+alloy-primitives = { version = "1.5.2", features = ["getrandom"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+
 [build-dependencies]
 sp1-build.workspace = true
 

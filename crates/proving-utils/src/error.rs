@@ -6,6 +6,9 @@ pub enum Error {
     #[error("Prover not initialized")]
     ProverNotInitialized,
 
+    #[error("Failed to parse a proof request Id: {0}")]
+    FailedToParseProofRequestId(#[from] alloy_primitives::hex::FromHexError),
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
