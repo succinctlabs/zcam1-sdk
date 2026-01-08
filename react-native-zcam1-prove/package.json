@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-prove",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "ZCAM1 Proving SDK",
   "main": "./lib/module/index.js",
   "repository": {

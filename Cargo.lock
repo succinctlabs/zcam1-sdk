@@ -7090,7 +7090,7 @@ dependencies = [
 [[package]]
 name = "sp1-build"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "anyhow",
  "cargo_metadata 0.18.1",
@@ -7103,7 +7103,7 @@ dependencies = [
 [[package]]
 name = "sp1-core-executor"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -7141,7 +7141,7 @@ dependencies = [
 [[package]]
 name = "sp1-core-machine"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "bincode",
  "cbindgen",
@@ -7196,7 +7196,7 @@ dependencies = [
 [[package]]
 name = "sp1-cuda"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "bincode",
  "ctrlc",
@@ -7212,7 +7212,7 @@ dependencies = [
 [[package]]
 name = "sp1-curves"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "cfg-if",
  "dashu",
@@ -7233,7 +7233,7 @@ dependencies = [
 [[package]]
 name = "sp1-derive"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -7274,7 +7274,7 @@ dependencies = [
 [[package]]
 name = "sp1-primitives"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "bincode",
  "blake3",
@@ -7293,7 +7293,7 @@ dependencies = [
 [[package]]
 name = "sp1-prover"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "anyhow",
  "bincode",
@@ -7338,7 +7338,7 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-circuit"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "hashbrown 0.14.5",
  "itertools 0.13.0",
@@ -7372,7 +7372,7 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-compiler"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "backtrace",
  "itertools 0.13.0",
@@ -7393,7 +7393,7 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-core"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "backtrace",
  "cbindgen",
@@ -7435,7 +7435,7 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-derive"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -7444,7 +7444,7 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-gnark-ffi"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "anyhow",
  "bincode",
@@ -7469,7 +7469,7 @@ dependencies = [
 [[package]]
 name = "sp1-sdk"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "alloy-primitives",
  "alloy-signer",
@@ -7521,7 +7521,7 @@ dependencies = [
 [[package]]
 name = "sp1-stark"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "arrayref",
  "hashbrown 0.14.5",
@@ -7554,7 +7554,7 @@ dependencies = [
 [[package]]
 name = "sp1-verifier"
 version = "5.2.4"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#56e0585f935ebd9242c28378d08a74232a92e5d7"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support#cc739648d52f7322ec9ed02ec30972d8fd42b36b"
 dependencies = [
  "blake3",
  "cfg-if",
@@ -9396,6 +9396,7 @@ name = "zcam1-proving-utils"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "bincode",
  "serde",
  "sp1-build",
  "sp1-sdk",

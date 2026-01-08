@@ -37,3 +37,8 @@ sp1-build = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/io
 sp1-sdk = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-prover = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-verifier = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
+
+# sp1-build = { path = "../sp1/crates/build" }
+# sp1-sdk = { path = "../sp1/crates/sdk" }
+# sp1-prover = { path = "../sp1/crates/prover" }
+# sp1-verifier = { path = "../sp1/crates/verifier" }
