@@ -3,6 +3,8 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useReducer,
+  useRef,
   useState,
 } from "react";
 import {
@@ -53,7 +55,8 @@ export type Settings = {
  */
 async function createProvingClient(
   settings: Settings,
-  callback: Initialized,
+  onInitialized: Initialized,
+  onProofRequest?: (requestId: string, photoPath: string) => void,
 ): Promise<ProvingClient> {
   let certChainPem: string;
   let client: IosProvingClientInterface;
@@ -77,9 +80,9 @@ async function createProvingClient(
   }
 
   if (settings.privateKey) {
-    client = new IosProvingClient(settings.privateKey, callback);
+    client = new IosProvingClient(settings.privateKey, onInitialized);
   } else {
-    client = IosProvingClient.mock(callback);
+    client = IosProvingClient.mock(onInitialized);
   }
 
   return new ProvingClient(
@@ -87,11 +90,14 @@ async function createProvingClient(
     contentKeyId,
     certChainPem,
     settings.production,
+    onProofRequest,
   );
 }
 
 export type ProverContextValue = {
   provingClient: ProvingClient | null;
+  provingTasks: ProvingTasksState;
+  provingTasksCount: number;
   isInitializing: boolean;
   error: unknown;
 };
@@ -103,6 +109,43 @@ export type ProofRequestContextValue = {
   proof: ArrayBuffer | undefined;
 };
 
+export type ProvingTask = {
+  photoPath: string;
+  createdAtMs: number;
+};
+
+export type ProvingTasksState = Record<string, ProvingTask>;
+
+type ProvingTasksAction =
+  | { type: "reset" }
+  | { type: "requested"; requestId: string; photoPath: string }
+  | { type: "removed"; requestId: string };
+
+function provingTasksReducer(
+  state: ProvingTasksState,
+  action: ProvingTasksAction,
+): ProvingTasksState {
+  switch (action.type) {
+    case "reset":
+      return {};
+    case "requested":
+      return {
+        ...state,
+        [action.requestId]: {
+          photoPath: action.photoPath,
+          createdAtMs: Date.now(),
+        },
+      };
+    case "removed": {
+      if (!(action.requestId in state)) return state;
+      const { [action.requestId]: _removed, ...rest } = state;
+      return rest;
+    }
+    default:
+      return state;
+  }
+}
+
 const ProverContext = createContext<ProverContextValue | null>(null);
 
 export type ProverProviderProps = {
@@ -111,31 +154,81 @@ export type ProverProviderProps = {
    * Provider configuration. The provider always initializes itself from these settings.
    */
   settings: Settings;
+
+  onFulfilled?: (
+    requestId: string,
+    photoPath: string,
+    proof: ArrayBuffer,
+    provingClient: ProvingClient,
+  ) => void;
+  onUnfulfillable?: (requestId: string) => void;
 };
 
-export function ProverProvider({ children, settings }: ProverProviderProps) {
+export function ProverProvider({
+  children,
+  settings,
+  onFulfilled,
+  onUnfulfillable,
+}: ProverProviderProps) {
   const [provingClient, setProvingClient] = useState<ProvingClient | null>(
     null,
   );
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
+  const [provingTasks, dispatchProvingTasks] = useReducer(
+    provingTasksReducer,
+    {},
+  );
+
+  const provingTasksRef = useRef<ProvingTasksState>({});
+
+  // Keep a ref to the latest tasks so async callbacks don't read stale state.
+  useEffect(() => {
+    provingTasksRef.current = provingTasks;
+  }, [provingTasks]);
+
+  const dispatchProvingTasksSync = (action: ProvingTasksAction) => {
+    provingTasksRef.current = provingTasksReducer(
+      provingTasksRef.current,
+      action,
+    );
+    dispatchProvingTasks(action);
+  };
+
+  const provingTasksCount = useMemo(
+    () => Object.keys(provingTasks).length,
+    [provingTasks],
+  );
+
+  // Initialize proving client
   useEffect(() => {
     let cancelled = false;
 
     setIsInitializing(true);
     setError(null);
     setProvingClient(null);
+    dispatchProvingTasksSync({ type: "reset" });
 
     (async () => {
       try {
-        const provingClient = await createProvingClient(settings, {
-          initialized: () => {
-            if (cancelled) return;
-            setProvingClient(provingClient);
-            setIsInitializing(false);
+        const provingClient = await createProvingClient(
+          settings,
+          {
+            initialized: () => {
+              if (cancelled) return;
+              setProvingClient(provingClient);
+              setIsInitializing(false);
+            },
           },
-        });
+          (requestId: string, photoPath: string) => {
+            dispatchProvingTasksSync({
+              type: "requested",
+              requestId,
+              photoPath,
+            });
+          },
+        );
       } catch (e) {
         if (cancelled) return;
         setError(e);
@@ -147,13 +240,97 @@ export function ProverProvider({ children, settings }: ProverProviderProps) {
     };
   }, [settings]);
 
+  // Poll the proving client to keep task statuses fresh.
+  useEffect(() => {
+    if (!provingClient) return;
+
+    let cancelled = false;
+    let inFlight = false;
+
+    const pollOnce = async () => {
+      if (cancelled) return;
+      if (inFlight) return;
+
+      const entries = Object.entries(provingTasksRef.current);
+      if (entries.length === 0) return;
+
+      inFlight = true;
+      try {
+        const results = await Promise.allSettled(
+          entries.map(async ([requestId]) => {
+            const status = await provingClient.getProofStatus(requestId);
+            return { requestId, status };
+          }),
+        );
+
+        if (cancelled) return;
+
+        for (const r of results) {
+          if (r.status !== "fulfilled") continue;
+
+          const { requestId, status } = r.value;
+
+          const task = provingTasksRef.current[requestId];
+          if (!task) continue;
+
+          if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+            dispatchProvingTasksSync({ type: "removed", requestId });
+
+            if (onFulfilled) {
+              if (!status.proof) {
+                console.warn(
+                  "[ZCAM1] Fulfilled proof request returned no proof bytes",
+                  requestId,
+                );
+              } else {
+                onFulfilled(
+                  requestId,
+                  task.photoPath,
+                  status.proof,
+                  provingClient,
+                );
+              }
+            }
+          } else if (
+            status.fulfillmentStatus === FulfillmentStatus.Unfulfillable
+          ) {
+            dispatchProvingTasksSync({ type: "removed", requestId });
+
+            if (onUnfulfillable) {
+              onUnfulfillable(requestId);
+            }
+          }
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error("[ZCAM1] ProvingTasksProvider polling failed", e);
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    // Kick off once immediately, then poll on an interval.
+    void pollOnce();
+    const intervalId = setInterval(() => {
+      void pollOnce();
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [provingClient, onFulfilled, onUnfulfillable]);
+
   const value = useMemo<ProverContextValue>(
     () => ({
       provingClient,
+      provingTasks,
+      provingTasksCount,
       isInitializing,
       error,
     }),
-    [provingClient, isInitializing, error],
+    [provingClient, provingTasks, provingTasksCount, isInitializing, error],
   );
 
   return (
@@ -240,17 +417,20 @@ export class ProvingClient {
   contentKeyId: Uint8Array;
   certChainPem: string;
   production: boolean;
+  onProofRequest?: (requestId: string, photoPath: string) => void;
 
   constructor(
     client: IosProvingClientInterface,
     contentKeyId: Uint8Array,
     certChainPem: string,
     production: boolean,
+    onProofRequest?: (requestId: string, photoPath: string) => void,
   ) {
     this.client = client;
     this.contentKeyId = contentKeyId;
     this.certChainPem = certChainPem;
     this.production = production;
+    this.onProofRequest = onProofRequest;
   }
 
   /**
@@ -268,9 +448,15 @@ export class ProvingClient {
       throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
-    return await this.client.requestProof(originalPath, format, {
+    const requestId = await this.client.requestProof(originalPath, format, {
       appAttestProduction: this.production,
     });
+
+    if (this.onProofRequest) {
+      this.onProofRequest(requestId, originalPath);
+    }
+
+    return requestId;
   }
 
   async getProofStatus(requestId: string): Promise<ProofRequestStatus> {
@@ -285,7 +471,6 @@ export class ProvingClient {
    * @returns Path to the new file with embedded proof
    */
   async embedProof(originalPath: string, proof: ArrayBuffer): Promise<string> {
-    console.log("Start embedProof");
     const store = extractManifest(originalPath);
     originalPath = originalPath.replace("file://", "");
     const format = formatFromPath(originalPath);
@@ -303,8 +488,6 @@ export class ProvingClient {
 
     const vkHash = this.client.vkHash();
 
-    console.log("Adding assertion");
-
     // Include the proof to the C2PA manifest
     manifestEditor.addAssertion(
       "succinct.proof",
@@ -314,14 +497,12 @@ export class ProvingClient {
       }),
     );
 
-    console.log("Removing assertion");
     manifestEditor.removeAssertion("succinct.bindings");
 
     const destinationPath =
       Dirs.CacheDir +
       `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
 
-    console.log("Embed the manifest");
     // Embed the manifest to the photo
     await manifestEditor.embedManifestToFile(destinationPath, format);
 
