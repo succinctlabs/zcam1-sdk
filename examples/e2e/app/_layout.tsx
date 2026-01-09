@@ -1,20 +1,55 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
+import {
+  ProverProvider,
+  ProvingClient,
+} from "@succinctlabs/react-native-zcam1-prove";
 import { pickDirectory } from "@react-native-documents/picker";
 import { Pressable } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import Entypo from "@expo/vector-icons/Entypo";
 import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
+import { FileSystem, Util } from "react-native-file-access";
 
 export default function Layout() {
   const router = useRouter();
   const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
 
+  const onFulfilled = useCallback(
+    async (
+      requestId: string,
+      photoPath: string,
+      proof: ArrayBuffer,
+      provingClient: ProvingClient,
+    ) => {
+      const outputPath = await provingClient.embedProof(photoPath, proof);
+
+      try {
+        const targetPath = privateDirectory();
+        const targetFile = targetPath + "/" + Util.basename(outputPath);
+
+        await FileSystem.cp(outputPath, targetFile);
+        await FileSystem.unlink(photoPath);
+      } catch (error) {
+        console.error("Error saving photo:", error);
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "The proof has been generated",
+        text2: "The photo has been saved to a private folder",
+      });
+    },
+    [],
+  );
+
   return (
-    <ProverProvider settings={{ privateKey, production: false }}>
+    <ProverProvider
+      settings={{ privateKey, production: false }}
+      onFulfilled={onFulfilled}
+    >
       <Drawer>
         <Drawer.Screen
           name="index"

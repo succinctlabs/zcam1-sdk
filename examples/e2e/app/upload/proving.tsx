@@ -6,9 +6,6 @@ import {
   useProofRequestStatus,
   useProver,
 } from "@succinctlabs/react-native-zcam1-prove";
-import Toast from "react-native-toast-message";
-import { FileSystem, Util } from "react-native-file-access";
-import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export default function Proving() {
   return (
@@ -41,34 +38,8 @@ function ProofGeneration() {
 
   useEffect(() => {
     async function embedProof() {
-      const privateKey = process.env.EXPO_PUBLIC_PRIVATE_KEY;
-
       if (uri && provingClient && proof) {
-        const outputPath = await provingClient.embedProof(uri, proof);
-
-        try {
-          const targetPath = privateDirectory();
-          const targetFile = targetPath + "/" + Util.basename(outputPath);
-
-          await FileSystem.cp(outputPath, targetFile);
-          await FileSystem.unlink(uri);
-
-          if (privateKey === undefined) {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-          }
-
-          router.dismiss();
-
-          Toast.show({
-            type: "success",
-            text1: "The proof has been generated",
-            text2: "The photo has been saved to the iOS Photo Gallery",
-          });
-
-          router.navigate("/");
-        } catch (error) {
-          console.error("Error saving photo:", error);
-        }
+        router.dismiss();
       }
     }
 
