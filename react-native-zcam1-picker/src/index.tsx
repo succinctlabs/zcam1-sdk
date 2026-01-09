@@ -48,6 +48,14 @@ export interface ZImagePickerProps {
    * The source from which to load images. Can be either a PrivateFolder or PhotoGallery.
    */
   source: PrivateFolder | PhotoGallery;
+
+  /**
+   * Change this value to force the picker to reload images.
+   * Useful when the underlying folder/album contents may have changed
+   * while this screen stayed mounted.
+   */
+  refreshToken?: string | number;
+
   /**
    * Optional function to render a badge based on the authenticity status of an image.
    * @param status - The authenticity status of the image.
@@ -57,6 +65,7 @@ export interface ZImagePickerProps {
     uri: string,
     status: AuthenticityStatus,
   ) => React.ReactElement | null;
+
   /**
    * Optional callback function that is called when an image is selected.
    * @param uri - The URI of the selected image.
@@ -86,9 +95,9 @@ const ZImageItem = ({
 }) => {
   const [authStatus, setAuthStatus] = useRecyclingState(
     AuthenticityStatus.Unknown,
-    [],
+    [uri],
   );
-  const [imageLoaded, setImageLoaded] = useRecyclingState(false, []);
+  const [imageLoaded, setImageLoaded] = useRecyclingState(false, [uri]);
 
   useEffect(() => {
     let active = true;
@@ -118,6 +127,10 @@ const ZImageItem = ({
         source={{ uri }}
         onLoadStart={() => setImageLoaded(false)}
         onLoadEnd={() => setImageLoaded(true)}
+        onError={(e) => {
+          console.warn("Image failed to load", uri, e.nativeEvent);
+          setImageLoaded(true);
+        }}
       />
       {badge}
     </TouchableOpacity>
@@ -147,51 +160,59 @@ const ZImageItem = ({
 export const ZImagePicker = (props: ZImagePickerProps) => {
   const [photos, setPhotos] = useState<string[]>([]);
 
+  const sourceKey = useMemo(() => {
+    if ("album" in props.source) return `album:${props.source.album ?? ""}`;
+    else if ("path" in props.source) return `path:${props.source.path}`;
+    else return "unknown";
+  }, [props.source]);
+
   useEffect(() => {
-    if ("album" in props.source) {
-      loadImagesfromPhotoGallery(props.source);
-    } else if ("path" in props.source) {
-      loadImagesfromPrivateFolder(props.source);
-    }
-  }, []);
+    let cancelled = false;
 
-  const loadImagesfromPhotoGallery = async (
-    source: PhotoGallery,
-  ): Promise<void> => {
-    const photos = await CameraRoll.getPhotos({
-      first: 20,
-      groupTypes: "Album",
-      groupName: source.album,
-      assetType: "Photos",
-    });
+    const run = async () => {
+      try {
+        if ("album" in props.source) {
+          const result = await CameraRoll.getPhotos({
+            first: 20,
+            groupTypes: "Album",
+            groupName: props.source.album,
+            assetType: "Photos",
+          });
 
-    // Sort photos with most recent first (descending timestamp)
-    photos.edges.sort(
-      (a, b) => b.node.modificationTimestamp - a.node.modificationTimestamp,
-    );
+          result.edges.sort(
+            (a, b) =>
+              b.node.modificationTimestamp - a.node.modificationTimestamp,
+          );
 
-    const photoUris = photos.edges
-      .map((photo) => photo.node.image.uri)
-      .filter((path) => path !== null);
+          const photoUris = result.edges
+            .map((photo) => photo.node.image.uri)
+            .filter((path) => path !== null);
 
-    setPhotos(photoUris);
-  };
+          if (!cancelled) setPhotos(photoUris);
+        } else if ("path" in props.source) {
+          const photoFiles = await FileSystem.statDir(props.source.path);
 
-  const loadImagesfromPrivateFolder = async (
-    source: PrivateFolder,
-  ): Promise<void> => {
-    const photoFiles = await FileSystem.statDir(source.path);
+          photoFiles.sort((a, b) => b.lastModified - a.lastModified);
 
-    // Sort photos with most recent first (descending timestamp)
-    photoFiles.sort((a, b) => b.lastModified - a.lastModified);
+          const photoUris = photoFiles
+            .filter((f) => f.type === "file")
+            .filter((f) => !f.filename.startsWith("."))
+            .map((f) => `file://${f.path}`);
 
-    const photoUris = photoFiles
-      .filter((f) => f.type === "file")
-      .filter((f) => !f.filename.startsWith("."))
-      .map((f) => `file://${f.path}`);
+          if (!cancelled) setPhotos(photoUris);
+        }
+      } catch (e) {
+        console.warn("ZImagePicker: failed to load images", e);
+        if (!cancelled) setPhotos([]);
+      }
+    };
 
-    setPhotos(photoUris);
-  };
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceKey, props.refreshToken]);
 
   const handleSelect = useCallback(
     (uri: string) => props.onSelect?.(uri),
