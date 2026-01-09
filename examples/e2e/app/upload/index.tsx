@@ -1,13 +1,95 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StyleSheet, Image } from "react-native";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { authenticityStatus } from "@succinctlabs/react-native-zcam1-prove";
+import {
+  authenticityStatus,
+  useProver,
+} from "@succinctlabs/react-native-zcam1-prove";
 import {
   ZImagePicker,
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-picker";
 import { useIsFocused } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
+import { useEffect, useState } from "react";
+
+type BadgeProps = {
+  uri: string;
+  status: AuthenticityStatus;
+};
+
+function Badge({
+  uri,
+  status: originalStatus,
+}: BadgeProps): React.ReactElement | null {
+  const { provingTasks } = useProver();
+  const [status, setStatus] = useState(originalStatus);
+  const [wasProving, setWasProving] = useState(false);
+
+  const isProving = Object.values(provingTasks ?? {})
+    .map((t) => "file://" + t.photoPath)
+    .includes(uri);
+
+  useEffect(() => {
+    if (isProving) {
+      setWasProving(true);
+    }
+
+    const nextStatus = wasProving ? AuthenticityStatus.Proof : originalStatus;
+
+    setStatus(nextStatus);
+  }, [isProving, wasProving, originalStatus]);
+
+  const renderIcon = (name: "certificate-outline" | "attachment-check") => (
+    <View style={styles.badgeIcon}>
+      <LinearGradient
+        colors={["rgba(255,255,255,0.0)", "rgba(255,255,255,0.9)"]}
+        start={{ x: 0.5, y: 0.5 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.badgeIconGradient}
+        pointerEvents="none"
+      />
+      <MaterialCommunityIcons
+        name={name}
+        size={24}
+        color="black"
+        style={styles.badgeIconImage}
+      />
+    </View>
+  );
+
+  const renderLoader = () => (
+    <View style={styles.badgeIcon}>
+      <LinearGradient
+        colors={["rgba(255,255,255,0.0)", "rgba(255,255,255,0.7)"]}
+        start={{ x: 0.5, y: 0.5 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.badgeIconGradient}
+        pointerEvents="none"
+      />
+      <ActivityIndicator
+        size={18}
+        style={styles.badgeIconImage}
+        color="black"
+      />
+    </View>
+  );
+
+  if (isProving) {
+    return renderLoader();
+  }
+
+  switch (status) {
+    case AuthenticityStatus.Bindings:
+      return renderIcon("attachment-check");
+    case AuthenticityStatus.Proof:
+      return renderIcon("certificate-outline");
+    default:
+      return null;
+  }
+}
 
 export default function Pick() {
   const router = useRouter();
@@ -18,30 +100,10 @@ export default function Pick() {
     return null;
   }
 
-  const renderBadge = (
-    status: AuthenticityStatus,
-  ): React.ReactElement | null => {
-    switch (status) {
-      case AuthenticityStatus.Bindings:
-        return (
-          <Image
-            source={require("../../assets/images/bindings.png")}
-            style={styles.badgeIcon}
-            resizeMode="contain"
-          />
-        );
-      case AuthenticityStatus.Proof:
-        return (
-          <Image
-            source={require("../../assets/images/proof.png")}
-            style={styles.badgeIcon}
-            resizeMode="contain"
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  const renderBadge = (uri: string, status: AuthenticityStatus) => (
+    <Badge uri={uri} status={status} />
+  );
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -75,9 +137,26 @@ const styles = StyleSheet.create({
   },
   badgeIcon: {
     position: "absolute",
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
+    top: 0,
+    right: 0,
+    width: 128,
+    height: 128,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeIconGradient: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  badgeIconImage: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
   },
 });
