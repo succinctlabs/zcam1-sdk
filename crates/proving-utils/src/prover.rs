@@ -1,12 +1,14 @@
 use std::{
-    collections::HashMap,
     marker::PhantomData,
+    num::NonZeroUsize,
     str::FromStr,
     sync::{Arc, Mutex, OnceLock},
     thread,
+    time::{Duration, Instant},
 };
 
 use alloy_primitives::B256;
+use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{
     CpuProver, HashableKey, NetworkProver, NetworkSigner, Prover, SP1ProofWithPublicValues,
@@ -90,7 +92,7 @@ where
             let _ = cloned_prover.set(EitherProver::Mock {
                 prover: Box::new(prover),
                 pk: Box::new(pk),
-                proof_requests: Mutex::new(HashMap::new()),
+                proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
             });
             let _ = cloned_vk_hash.set(vk.bytes32());
 
@@ -164,7 +166,7 @@ enum EitherProver {
     Mock {
         prover: Box<CpuProver>,
         pk: Box<SP1ProvingKey>,
-        proof_requests: Mutex<HashMap<String, SP1ProofWithPublicValues>>,
+        proof_requests: Mutex<LruCache<String, (Instant, SP1ProofWithPublicValues)>>,
     },
 }
 
@@ -200,7 +202,10 @@ impl EitherProver {
                     .run()
                     .map_err(|err| Error::Sp1(err.to_string()))?;
 
-                proof_requests.insert(id.clone(), proof);
+                let fulfilled_instant =
+                    Instant::now().checked_add(Duration::from_secs(10)).unwrap();
+
+                proof_requests.put(id.clone(), (fulfilled_instant, proof));
 
                 Ok(id)
             }
@@ -234,13 +239,22 @@ impl EitherProver {
                 pk: _,
                 proof_requests,
             } => {
-                let mut proof_requests = proof_requests.lock().unwrap();
+                let proof_requests = proof_requests.lock().unwrap();
 
-                let status = match proof_requests.remove(request_id) {
-                    Some(proof) => ProofRequestStatus {
-                        fulfillment_status: Sp1FulfillmentStatus::Fulfilled.into(),
-                        proof: Some(proof.bytes()),
-                    },
+                let status = match proof_requests.peek(request_id) {
+                    Some((fulfilled_instant, proof)) => {
+                        let now = Instant::now();
+                        let fulfillment_status = if *fulfilled_instant < now {
+                            Sp1FulfillmentStatus::Fulfilled.into()
+                        } else {
+                            Sp1FulfillmentStatus::Assigned.into()
+                        };
+
+                        ProofRequestStatus {
+                            fulfillment_status,
+                            proof: Some(proof.bytes()),
+                        }
+                    }
                     None => ProofRequestStatus {
                         fulfillment_status: Sp1FulfillmentStatus::UnspecifiedFulfillmentStatus
                             .into(),
@@ -260,13 +274,13 @@ pub struct IosProofRequestInputs {
     pub app_attest_production: bool,
 }
 
-#[derive(uniffi::Record)]
+#[derive(Debug, uniffi::Record)]
 pub struct ProofRequestStatus {
     pub fulfillment_status: FulfillmentStatus,
     pub proof: Option<Vec<u8>>,
 }
 
-#[derive(uniffi::Enum)]
+#[derive(Debug, Eq, PartialEq, uniffi::Enum)]
 pub enum FulfillmentStatus {
     UnspecifiedFulfillmentStatus = 0,
     Requested = 1,
