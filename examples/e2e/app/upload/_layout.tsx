@@ -5,7 +5,7 @@ export default function StackLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen
-        name="proving"
+        name="details"
         options={{
           presentation: "modal",
         }}

@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -11,9 +11,7 @@ import {
   ZImagePicker,
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-picker";
-import { useIsFocused } from "@react-navigation/native";
-import Toast from "react-native-toast-message";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type BadgeProps = {
   uri: string;
@@ -94,11 +92,14 @@ function Badge({
 export default function Pick() {
   const router = useRouter();
   const { path } = useLocalSearchParams<{ path: string }>();
-  const isFocused = useIsFocused();
 
-  if (!isFocused) {
-    return null;
-  }
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshToken((x) => x + 1);
+    }, []),
+  );
 
   const renderBadge = (uri: string, status: AuthenticityStatus) => (
     <Badge uri={uri} status={status} />
@@ -109,19 +110,14 @@ export default function Pick() {
       <SafeAreaView style={styles.container}>
         <ZImagePicker
           source={{ path: path }}
+          refreshToken={refreshToken}
           onSelect={async (uri) => {
             const authStatus = await authenticityStatus(uri);
 
-            if (authStatus === AuthenticityStatus.Bindings) {
-              router.push({ pathname: "/upload/proving", params: { uri } });
-            } else {
-              console.log("The image must contains bindings");
-              Toast.show({
-                type: "error",
-                text1: "The image must contains bindings",
-                text2: "Please try again with a different image",
-              });
-            }
+            router.push({
+              pathname: "/upload/details",
+              params: { uri, authStatus: authStatus.toString() },
+            });
           }}
           renderBadge={renderBadge}
         />

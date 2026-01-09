@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
+import { ActivityIndicator, View, Text, StyleSheet, Image } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useProofRequestStatus,
@@ -37,14 +37,10 @@ function ProofGeneration() {
   }, [provingClient, uri]);
 
   useEffect(() => {
-    async function embedProof() {
-      if (uri && provingClient && proof) {
-        router.dismiss();
-      }
+    if (requestId && proof) {
+      router.dismiss();
     }
-
-    embedProof();
-  }, [router, provingClient, uri, proof]);
+  }, [router, requestId, proof]);
 
   if (error) {
     return <Text>{error.toString()}</Text>;
@@ -53,6 +49,7 @@ function ProofGeneration() {
   if (isInitializing) {
     return (
       <View>
+        <Image source={{ uri }} />
         <ActivityIndicator size={72} />
         <Text style={styles.title}>Prover initializing...</Text>
       </View>

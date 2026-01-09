@@ -62,8 +62,8 @@ export default function Layout() {
         <Drawer.Screen
           name="upload"
           options={{
-            drawerLabel: "Upload",
-            title: "Upload",
+            drawerLabel: "Gallery",
+            title: "Gallery",
           }}
           listeners={{
             drawerItemPress: (e) => {
@@ -71,23 +71,6 @@ export default function Layout() {
 
               router.push({
                 pathname: "/upload",
-                params: { path: privateDirectory() },
-              });
-            },
-          }}
-        />
-        <Drawer.Screen
-          name="verify"
-          options={{
-            drawerLabel: "Verify",
-            title: "Verify",
-          }}
-          listeners={{
-            drawerItemPress: (e) => {
-              e.preventDefault();
-
-              router.push({
-                pathname: "/verify",
                 params: { path: privateDirectory() },
               });
             },
