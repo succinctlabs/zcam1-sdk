@@ -53,7 +53,10 @@ export interface ZImagePickerProps {
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
    */
-  renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
+  renderBadge?: (
+    uri: string,
+    status: AuthenticityStatus,
+  ) => React.ReactElement | null;
   /**
    * Optional callback function that is called when an image is selected.
    * @param uri - The URI of the selected image.
@@ -75,7 +78,10 @@ const ZImageItem = ({
   onSelect,
 }: {
   uri: string;
-  renderBadge?: (status: AuthenticityStatus) => React.ReactElement | null;
+  renderBadge?: (
+    uri: string,
+    status: AuthenticityStatus,
+  ) => React.ReactElement | null;
   onSelect: (uri: string) => void;
 }) => {
   const [authStatus, setAuthStatus] = useRecyclingState(
@@ -99,8 +105,8 @@ const ZImageItem = ({
   }, [uri]);
 
   const badge = useMemo(() => {
-    return renderBadge ? renderBadge(authStatus) : null;
-  }, [renderBadge, authStatus]);
+    return renderBadge ? renderBadge(uri, authStatus) : null;
+  }, [renderBadge, uri, authStatus]);
 
   return (
     <TouchableOpacity
