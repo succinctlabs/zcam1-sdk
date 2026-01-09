@@ -29,7 +29,7 @@ import {
 } from "@succinctlabs/react-native-zcam1-common";
 import { Dirs } from "react-native-file-access";
 
-export { IosProvingClient } from "./proving";
+export { IosProvingClient, FulfillmentStatus } from "./proving";
 export {
   buildSelfSignedCertificate,
   authenticityStatus,
