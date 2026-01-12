@@ -12,7 +12,7 @@ fn test_validate() {
     let public_key = validate_attestation(
         &bindings.attestation,
         &bindings.device_key_id,
-        "c491de5ec76b37dd3b7594281fd51e4c",
+        &bindings.device_key_id,
         &bindings.app_id,
         false,
         false,

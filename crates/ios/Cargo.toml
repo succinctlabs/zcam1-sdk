@@ -22,7 +22,7 @@ x509-verify = { version = "0.4.5", features = ["p256", "p384", "x509", "pem"] }
 x509-cert = "0.2.5"
 
 [dev-dependencies]
-zcam1-c2pa-utils.workspace = true
+zcam1-c2pa-utils = { workspace = true, features = ["io"] }
 
 [features]
 proving = ["dep:sp1-sdk"]
