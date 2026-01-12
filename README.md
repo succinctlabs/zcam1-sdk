@@ -47,25 +47,32 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 The examples lives under the `examples` folder in this repo. to run the examples on a device, complete the following steps:
 
 1. Install Xcode
-2. Install Yalc: `npm i yalc -g`
-3. If you don't have an Apple developper account, you can [create a personal team].
-4. Go to an example folder (for instance `cd examples/e2e`)
-5. Copy the `.env.example` file to `.env`
-6. Set `EXPO_PUBLIC_APP_ID` to something like `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`
+2. If you don't have an Apple developper account, you can [create a personal team].
+3. Go to an example folder (for instance `cd examples/e2e`)
+4. Copy the `.env.example` file to `.env`
+5. Set `EXPO_PUBLIC_APP_ID` to something like `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`
    To retrieve your Team ID, refer to the note below
-7. Update the `bundleIdentifier` field in the `app.json` file with the bundle ID from step 3
-8. run `npm i`
+6. Update the `bundleIdentifier` field in the `app.json` file with the bundle ID from step 5
+7. run `npm i`
 8. run `just run-e2e-example`
-9. It will lilely fail; You need to trust the developper on your device:
+9. If you test on a real device, it will lilely fail; You need to trust the developper on your device:
    Open the iOS device settings -> General -> Device Management -> Click Trust for the app
-
-[create a personal team]: https://stackoverflow.com/questions/4952820/test-ios-app-on-device-without-apple-developer-program-or-jailbreak/66484365#66484365
 
 > [!NOTE]
 > To retrieve your Team ID, complete the following steps:
 > 1. Open Keychain access on your Mac
 > 2. Locate a certificate named "Apple Development" and open it
 > 3. The Team ID is the field "Organizational unit" under "Subject name" section
+
+[create a personal team]: https://stackoverflow.com/questions/4952820/test-ios-app-on-device-without-apple-developer-program-or-jailbreak/66484365#66484365
+
+## Local developpment
+
+## Local developpment
+
+We use [Yalc] to iterate on the local React Native/TypeScript packages in this monorepo (especially when running the apps in `examples/*`) without publishing to npm. Each React Native library folder ships `just` recipes that publishes the package to Yalc and adds it to the example apps (for instance `add-yalc-to-e2e`). When you make changes to a library, run `yalc publish --push` in the library folder to refresh what the example app consumes. To go back to the registry versions, remove Yalc overrides with `just remove-yalc` and reinstall dependencies.
+
+[Yalc]: https://github.com/wclr/yalc
 
 ## `react-native-zcam1-capture`
 

@@ -1,0 +1,5 @@
+update $NPM_CONFIG_REGISTRY:
+    npm i @succinctlabs/react-native-zcam1-capture
+    npm i @succinctlabs/react-native-zcam1-picker
+    npm i @succinctlabs/react-native-zcam1-prove
+    npm i @succinctlabs/react-native-zcam1-verify

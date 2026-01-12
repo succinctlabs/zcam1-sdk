@@ -1,0 +1,3 @@
+add-yalc-to-e2e:
+    yalc publish
+    cd ../examples/e2e && yalc add @succinctlabs/react-native-zcam1-c2pa
