@@ -1,22 +1,17 @@
 import React from "react";
 import {
-  Platform,
   requireNativeComponent,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { Dirs } from "react-native-file-access";
-import { base64 } from "@scure/base";
-import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import {
   buildSelfSignedCertificate,
-  computeHash,
   ExistingCertChain,
-  ManifestEditor,
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
-import { type CaptureInfo, ZPhoto } from ".";
+import { type CaptureInfo, embedBindings, ZPhoto } from ".";
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
+import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -137,73 +132,29 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
-    const dataHash = computeHash(originalPath, []);
 
     const tiff = (metadata as any)["{TIFF}"] ?? {};
+
+    console.log("All metadata:", metadata);
+    console.log("TIFF metadata:", tiff);
+
     const when =
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
+    const deviceMake = tiff.Model || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
 
-    // Build destination path for the signed asset (JPEG).
-    const destinationPath =
-      Dirs.CacheDir +
-      `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${format}`;
-
-    let assertion: string;
-    try {
-      assertion = await generateHardwareSignatureWithAssertion(
-        base64.encode(new Uint8Array(dataHash)),
-        this.props.captureInfo.deviceKeyId,
-      );
-    } catch (error: any) {
-      if (
-        error?.code === "-1" ||
-        error?.message?.includes("UNSUPPORTED_SERVICE")
-      ) {
-        console.warn(
-          "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
-        );
-        // Use a mock attestation for simulator testing
-        // In production, this would need to be rejected by the backend
-        assertion = `SIMULATOR_MOCK_${this.props.captureInfo.deviceKeyId}_${Date.now()}`;
-      } else {
-        throw error;
-      }
-    }
-
-    const manifestEditor = new ManifestEditor(
+    const destinationPath = await embedBindings(
       originalPath,
-      this.props.captureInfo.contentKeyId.buffer as ArrayBuffer,
+      when,
+      {
+        device_make: deviceMake,
+        device_model: deviceModel,
+        software_version: softwareVersion,
+      },
+      this.props.captureInfo,
       this.certChainPem,
     );
-
-    // Add the "capture" action to the manifest.
-    manifestEditor.addAction(
-      JSON.stringify({
-        action: "c2pa.capture",
-        when,
-        parameters: {
-          device_make: Platform.OS === "ios" ? "Apple" : "Unknown",
-          device_model: deviceModel,
-          software_version: softwareVersion,
-        },
-      }),
-    );
-
-    // Add an assertion containing all data needed to later generate a  proof
-    manifestEditor.addAssertion(
-      "succinct.bindings",
-      JSON.stringify({
-        app_id: this.props.captureInfo.appId,
-        device_key_id: this.props.captureInfo.deviceKeyId,
-        attestation: this.props.captureInfo.attestation,
-        assertion,
-      }),
-    );
-
-    // Sign the captured image with C2PA, producing a new signed file.
-    await manifestEditor.embedManifestToFile(destinationPath, format);
 
     return new ZPhoto(originalPath, destinationPath);
   }

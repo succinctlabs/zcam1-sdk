@@ -1,3 +1,7 @@
 add-yalc-to-e2e:
     yalc publish
     cd ../examples/e2e && yalc add @succinctlabs/react-native-zcam1-capture
+
+add-yalc-to-capture:
+    yalc publish
+    cd ../examples/capture && yalc add @succinctlabs/react-native-zcam1-capture
