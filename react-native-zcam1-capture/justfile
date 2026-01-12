@@ -5,3 +5,6 @@ add-yalc-to-e2e:
 add-yalc-to-capture:
     yalc publish
     cd ../examples/capture && yalc add @succinctlabs/react-native-zcam1-capture
+
+publish $NPM_CONFIG_REGISTRY:
+    npm publish --access public
