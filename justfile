@@ -21,31 +21,27 @@ remove-yalc:
 run-capture-example:
     #!/usr/bin/env sh
     cd examples/capture
-    yalc update
     npx expo prebuild && npx expo run:ios --device
 
 run-prove-example:
     #!/usr/bin/env sh
     cd examples/prove
-    yalc update
     npx expo prebuild && npx expo run:ios --device
 
 run-verify-example:
     #!/usr/bin/env sh
     cd examples/verify
-    yalc update
     npx expo prebuild && npx expo run:ios --device
 
 run-e2e-example:
     #!/usr/bin/env sh
     cd examples/e2e
-    yalc update
     npx expo prebuild && npx expo run:ios --device
 
 publish $NPM_CONFIG_REGISTRY:
-    # cd react-native-zcam1-common && npm publish --access public
-    # cd react-native-zcam1-c2pa && npm publish --access public
-    # cd react-native-zcam1-capture && npm publish --access public
+    cd react-native-zcam1-common && npm publish --access public
+    cd react-native-zcam1-c2pa && npm publish --access public
+    cd react-native-zcam1-capture && npm publish --access public
     cd react-native-zcam1-prove && npm publish --access public
-    # cd react-native-zcam1-verify && npm publish --access public
+    cd react-native-zcam1-verify && npm publish --access public
     cd react-native-zcam1-picker && npm publish --access public
