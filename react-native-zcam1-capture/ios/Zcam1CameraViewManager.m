@@ -41,8 +41,14 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic) BOOL isActive;
 // @property (nonatomic, copy) NSString *position;      // "front" | "back"
 // @property (nonatomic, copy) NSString *captureFormat; // "jpeg" | "dng"
+// @property (nonatomic) CGFloat zoom;                  // 1.0 = no zoom
+// @property (nonatomic) BOOL torch;                    // torch on/off
+// @property (nonatomic) float exposure;               // exposure bias in EV
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);
 RCT_EXPORT_VIEW_PROPERTY(captureFormat, NSString);
+RCT_EXPORT_VIEW_PROPERTY(zoom, CGFloat);
+RCT_EXPORT_VIEW_PROPERTY(torch, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(exposure, float);
 
 @end

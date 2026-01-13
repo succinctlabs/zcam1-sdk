@@ -33,6 +33,8 @@ export interface TakeNativePhotoResult {
   metadata?: { [key: string]: unknown } | null;
 }
 
+export type FlashMode = "off" | "on" | "auto";
+
 export interface Spec extends TurboModule {
   /**
    * Capture a photo using the native camera stack (Swift/AVFoundation)
@@ -46,6 +48,26 @@ export interface Spec extends TurboModule {
   takeNativePhoto(
     format: TakeNativePhotoFormat,
     position: "front" | "back",
+    flash: FlashMode,
   ): Promise<TakeNativePhotoResult>;
+
+  /**
+   * Set zoom factor programmatically.
+   * @param factor Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+   */
+  setZoom(factor: number): void;
+
+  /**
+   * Get the maximum supported zoom factor (capped at 10x).
+   */
+  getMaxZoom(): Promise<number>;
+
+  /**
+   * Focus at a normalized point in the preview.
+   * Also adjusts exposure point if supported.
+   * @param x Normalized x coordinate (0-1, left to right)
+   * @param y Normalized y coordinate (0-1, top to bottom)
+   */
+  focusAtPoint(x: number, y: number): void;
 }
 export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");
