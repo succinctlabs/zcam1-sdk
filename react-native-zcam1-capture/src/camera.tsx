@@ -10,7 +10,7 @@ import {
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, embedBindings, ZPhoto } from ".";
-import NativeZcam1Sdk from "./NativeZcam1Sdk";
+import NativeZcam1Sdk, { type FlashMode } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
@@ -30,6 +30,13 @@ export interface ZCameraProps {
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
 
+  /** Zoom factor (1.0 = no zoom, 2.0 = 2x). Defaults to 1.0. */
+  zoom?: number;
+  /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
+  torch?: boolean;
+  /** Exposure compensation in EV units. Defaults to 0. */
+  exposure?: number;
+
   captureInfo: CaptureInfo;
 
   certChain?: SelfSignedCertChain | ExistingCertChain;
@@ -41,6 +48,8 @@ export interface ZCameraProps {
 /** Options for a single capture call. */
 export interface TakePhotoOptions {
   format?: CaptureFormat;
+  /** Flash mode for this capture. Defaults to "off". */
+  flash?: FlashMode;
 }
 
 /** Shape expected from the native Swift capture implementation. */
@@ -59,6 +68,9 @@ type NativeCameraViewProps = {
   isActive?: boolean;
   position?: "front" | "back";
   captureFormat?: CaptureFormat;
+  zoom?: number;
+  torch?: boolean;
+  exposure?: number;
 };
 
 /**
@@ -104,6 +116,22 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
+   * Get the maximum supported zoom factor (capped at 10x).
+   */
+  async getMaxZoom(): Promise<number> {
+    return NativeZcam1Sdk.getMaxZoom();
+  }
+
+  /**
+   * Focus at a point in the preview. Also adjusts exposure point if supported.
+   * @param x Normalized x coordinate (0-1, left to right)
+   * @param y Normalized y coordinate (0-1, top to bottom)
+   */
+  focusAtPoint(x: number, y: number): void {
+    NativeZcam1Sdk.focusAtPoint(x, y);
+  }
+
+  /**
    * Capture a photo using the native Swift camera and return a signed `ZPhoto`.
    *
    * The native side is expected to expose a `capturePhoto` method on the
@@ -117,11 +145,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   async takePhoto(options: TakePhotoOptions = {}): Promise<ZPhoto> {
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
+    const flash: FlashMode = options.flash ?? "off";
 
     // Capture using native Swift camera (preview handled by native view).
     const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
+      flash,
     );
 
     if (!result || !result.filePath) {
@@ -165,6 +195,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       isActive = true,
       position = "back",
       captureFormat,
+      zoom = 1.0,
+      torch = false,
+      exposure = 0,
       style,
     } = this.props;
 
@@ -175,6 +208,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         isActive={isActive}
         position={position}
         captureFormat={captureFormat}
+        zoom={zoom}
+        torch={torch}
+        exposure={exposure}
       />
     );
   }

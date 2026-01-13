@@ -143,6 +143,11 @@ public final class Zcam1CameraService: NSObject {
     // Keep strong references to in-flight delegates so they live until completion
     private var inFlightDelegates: [PhotoCaptureDelegate] = []
 
+    // Camera control state
+    private var currentZoom: CGFloat = 1.0
+    private var flashMode: AVCaptureDevice.FlashMode = .off
+    private var currentExposureBias: Float = 0.0
+
     private override init() {
         super.init()
     }
@@ -267,6 +272,104 @@ public final class Zcam1CameraService: NSObject {
         sessionQueue.async {
             guard let session = self.captureSession, session.isRunning else { return }
             session.stopRunning()
+        }
+    }
+
+    // MARK: - Camera Controls
+
+    /// Set zoom factor. Clamped to device's supported range (max 10x).
+    /// - Parameter factor: Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+    public func setZoom(_ factor: CGFloat) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            do {
+                try device.lockForConfiguration()
+                let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
+                let clampedZoom = min(max(factor, 1.0), maxZoom)
+                device.videoZoomFactor = clampedZoom
+                self.currentZoom = clampedZoom
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to set zoom: \(error)")
+            }
+        }
+    }
+
+    /// Get the maximum supported zoom factor (capped at 10x).
+    public func getMaxZoom() -> CGFloat {
+        guard let device = videoInput?.device else { return 1.0 }
+        return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+    }
+
+    /// Set torch mode (continuous flashlight during preview).
+    /// - Parameter enabled: Whether torch should be on.
+    public func setTorch(_ enabled: Bool) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            guard device.hasTorch && device.isTorchAvailable else { return }
+            do {
+                try device.lockForConfiguration()
+                device.torchMode = enabled ? .on : .off
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to set torch: \(error)")
+            }
+        }
+    }
+
+    /// Set flash mode for the next capture.
+    /// - Parameter mode: "off", "on", or "auto".
+    public func setFlashMode(_ mode: String) {
+        switch mode.lowercased() {
+        case "on":
+            flashMode = .on
+        case "auto":
+            flashMode = .auto
+        default:
+            flashMode = .off
+        }
+    }
+
+    /// Focus at a specific point in the preview.
+    /// - Parameter point: Normalized coordinates (0-1, 0-1) where (0,0) is top-left.
+    public func focusAtPoint(_ point: CGPoint) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            guard device.isFocusPointOfInterestSupported else { return }
+            do {
+                try device.lockForConfiguration()
+                device.focusPointOfInterest = point
+                device.focusMode = .autoFocus
+
+                // Also set exposure point if supported.
+                if device.isExposurePointOfInterestSupported {
+                    device.exposurePointOfInterest = point
+                    device.exposureMode = .autoExpose
+                }
+
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to focus: \(error)")
+            }
+        }
+    }
+
+    /// Set exposure compensation.
+    /// - Parameter bias: Exposure bias in EV units (typically -2.0 to +2.0).
+    public func setExposureCompensation(_ bias: Float) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            do {
+                try device.lockForConfiguration()
+                let minBias = device.minExposureTargetBias
+                let maxBias = device.maxExposureTargetBias
+                let clampedBias = min(max(bias, minBias), maxBias)
+                device.setExposureTargetBias(clampedBias, completionHandler: nil)
+                self.currentExposureBias = clampedBias
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to set exposure: \(error)")
+            }
         }
     }
 
@@ -479,6 +582,13 @@ public final class Zcam1CameraService: NSObject {
 
                     }
 
+                    // Configure flash if available.
+                    if let device = self.videoInput?.device, device.hasFlash {
+                        if self.photoOutput.supportedFlashModes.contains(self.flashMode) {
+                            settings.flashMode = self.flashMode
+                        }
+                    }
+
                     // Create delegate to handle capture and keep it alive until completion
                     let delegate = PhotoCaptureDelegate(
                         format: format,
@@ -522,6 +632,27 @@ public final class Zcam1CameraView: UIView {
 
     /// "jpeg" or "dng" (controls what JS will request on capture)
     public var captureFormat: String = "jpeg"
+
+    /// Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+    public var zoom: CGFloat = 1.0 {
+        didSet {
+            Zcam1CameraService.shared.setZoom(zoom)
+        }
+    }
+
+    /// Whether torch (flashlight) is enabled during preview.
+    public var torch: Bool = false {
+        didSet {
+            Zcam1CameraService.shared.setTorch(torch)
+        }
+    }
+
+    /// Exposure compensation in EV units.
+    public var exposure: Float = 0.0 {
+        didSet {
+            Zcam1CameraService.shared.setExposureCompensation(exposure)
+        }
+    }
 
     // Convenience access to the preview layer
     private var previewLayer: AVCaptureVideoPreviewLayer {

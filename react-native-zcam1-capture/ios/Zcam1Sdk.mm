@@ -27,9 +27,10 @@
 
 
 - (void)takeNativePhoto:(NSString *)format
-                         position:(NSString *)position
-                          resolve:(RCTPromiseResolveBlock)resolve
-                           reject:(RCTPromiseRejectBlock)reject
+               position:(NSString *)position
+                  flash:(NSString *)flash
+                resolve:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject
 {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
@@ -38,6 +39,11 @@
     // If empty strings are passed, let Swift fall back to its defaults
     NSString *positionString = (position.length > 0) ? position : nil; // "front" or "back"
     NSString *formatString   = (format.length > 0)   ? format   : nil; // "jpeg" or "dng"
+
+    // Set flash mode before capture.
+    if (flash.length > 0) {
+      [service setFlashMode:flash];
+    }
 
     [service takePhotoWithPositionString:positionString
                             formatString:formatString
@@ -60,6 +66,39 @@
 #else
   // Swift-generated header is not available (no Swift camera implementation linked).
   reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS Swift component", nil);
+#endif
+}
+
+- (void)setZoom:(double)factor
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    [[Zcam1CameraService shared] setZoom:factor];
+  }
+#endif
+}
+
+- (void)getMaxZoom:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    CGFloat maxZoom = [[Zcam1CameraService shared] getMaxZoom];
+    resolve(@(maxZoom));
+    return;
+  }
+#endif
+  resolve(@(1.0));
+}
+
+- (void)focusAtPoint:(double)x
+                   y:(double)y
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    CGPoint point = CGPointMake(x, y);
+    [[Zcam1CameraService shared] focusAtPoint:point];
+  }
 #endif
 }
 

@@ -27,6 +27,11 @@ export {
 export { ZCamera } from "./camera";
 
 /**
+ * Flash mode for photo capture.
+ */
+export { type FlashMode } from "./NativeZcam1Sdk";
+
+/**
  * Device registration information including keys, certificate chain, and attestation.
  */
 export type CaptureInfo = {
