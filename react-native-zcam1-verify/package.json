@@ -36,7 +36,7 @@
     "ubrn:checkout": "ubrn checkout",
     "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
     "build": "bob build",
-    "prepack": "npm run ubrn:ios -- --release && npm run build && if [ -z $NPM_CONFIG_REGISTRY ]; then mv Zcam1VerifyFramework.xcframework Zcam1VerifyFramework.xcframework.excluded: fi",
+    "prepack": "npm run ubrn:ios -- --release && npm run build && if [ -z $NPM_CONFIG_REGISTRY ]; then mv Zcam1VerifyFramework.xcframework Zcam1VerifyFramework.xcframework.excluded; fi",
     "preyalcpublish": "mv Zcam1VerifyFramework.xcframework.excluded Zcam1VerifyFramework.xcframework",
     "postyalcpublish": "mv Zcam1VerifyFramework.xcframework Zcam1VerifyFramework.xcframework.excluded",
     "postpublish": "if [ -e Zcam1VerifyFramework.xcframework.excluded ]; then mv Zcam1VerifyFramework.xcframework.excluded Zcam1VerifyFramework.xcframework; fi",
