@@ -2,7 +2,7 @@
   "name": "@succinctlabs/react-native-zcam1-capture",
   "version": "0.1.4",
   "description": "ZCAM1 Capture SDK",
-  "main": "./lib/module/index.js",
+  "main": "./src/index.tsx",
   "codegenConfig": {
     "name": "Zcam1SdkSpec",
     "type": "modules",
@@ -43,7 +43,7 @@
     ".": {
       "source": "./src/index.tsx",
       "types": "./lib/typescript/src/index.d.ts",
-      "default": "./lib/module/index.js"
+      "default": "./src/index.tsx"
     },
     "./package.json": "./package.json"
   },

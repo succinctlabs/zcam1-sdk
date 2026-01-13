@@ -6,7 +6,6 @@ import EncryptedStorage from "react-native-encrypted-storage";
 import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
-  type ECKey,
 } from "@succinctlabs/react-native-zcam1-common";
 
 export {
@@ -14,52 +13,28 @@ export {
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 
-/**
- * Camera component for capturing photos with secure enclave integration.
- */
+// Re-export types from types.ts (no cycle because types.ts doesn't import from here)
+export {
+  type CaptureInfo,
+  type MetadataInfo,
+  type Settings,
+  ZPhoto,
+} from "./types";
+
+// Re-export embedBindings from embed.ts (no cycle because embed.ts doesn't import from here)
+export { embedBindings } from "./embed";
+
+// Export camera component (no cycle because camera.tsx imports from types.ts and embed.ts, not here)
 export { ZCamera } from "./camera";
 
-/**
- * Flash mode for photo capture.
- */
+// Export flash mode type
 export { type FlashMode } from "./NativeZcam1Sdk";
 
-/**
- * Device registration information including keys, certificate chain, and attestation.
- */
-export type CaptureInfo = {
-  appId: string;
-  deviceKeyId: string;
-  contentPublicKey: ECKey;
-  contentKeyId: Uint8Array;
-  attestation: string;
-};
-
-/**
- * Configuration settings for device initialization and backend communication.
- */
-export type Settings = {
-  appId: string;
-  production: boolean;
-};
-
-/**
- * Represents a captured photo with its original and processed file paths.
- */
-export class ZPhoto {
-  originalPath: string;
-  path: string;
-
-  constructor(originalPath: string, path: string) {
-    this.originalPath = originalPath;
-    this.path = path;
-  }
-}
+// Import types for use in this file
+import type { CaptureInfo, Settings } from "./types";
 
 /**
  * Initializes the device by generating keys, obtaining certificate chain, and registering with the backend.
- * @param settings - Configuration settings for initialization
- * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   let deviceKeyId: string | undefined;
@@ -73,11 +48,9 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
   if (deviceKeyId === undefined) {
-    // Try to generate hardware key, but fall back to mock for simulator
     try {
       deviceKeyId = await generateHardwareKey();
     } catch (error: any) {
-      // If running in simulator, hardware key generation is not supported
       if (
         error?.code === "-1" ||
         error?.message?.includes("UNSUPPORTED_SERVICE")
@@ -85,7 +58,6 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         console.warn(
           "[ZCAM] Running in simulator - using mock device key. This is for development only.",
         );
-        // Generate a mock device key for simulator testing
         deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
       } else {
         throw error;
@@ -111,20 +83,15 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
 /**
  * Updates device registration by performing attestation with the backend.
- * @param keyId - The hardware key identifier
- * @param settings - Configuration settings for registration
- * @returns Attestation data and challenge
  */
 export async function updateRegistration(
   keyId: string,
   settings: Settings,
 ): Promise<string> {
-  // Try to get real attestation, but fall back to mock for simulator
   let attestation: string;
   try {
     attestation = await getAttestation(keyId, keyId);
   } catch (error: any) {
-    // If running in simulator, App Attest is not supported
     if (
       error?.code === "-1" ||
       error?.message?.includes("UNSUPPORTED_SERVICE")
@@ -132,8 +99,6 @@ export async function updateRegistration(
       console.warn(
         "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
       );
-      // Use a mock attestation for simulator testing
-      // In production, this would need to be rejected by the backend
       attestation = `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
     } else {
       throw error;
