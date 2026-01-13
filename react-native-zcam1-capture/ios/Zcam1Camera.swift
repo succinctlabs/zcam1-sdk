@@ -708,8 +708,19 @@ public final class Zcam1CameraView: UIView {
             if error == nil, let session = svc.captureSession {
                 self.previewLayer.session = session
                 self.updateRunningState()
+                // Re-apply camera settings after session is configured.
+                self.applyCurrentSettings()
             }
         }
+    }
+
+    /// Apply current zoom, torch, and exposure settings to the camera.
+    /// Called after session configuration to ensure settings are applied.
+    private func applyCurrentSettings() {
+        let svc = Zcam1CameraService.shared
+        svc.setZoom(zoom)
+        svc.setTorch(torch)
+        svc.setExposureCompensation(exposure)
     }
 
     private func updateRunningState() {
