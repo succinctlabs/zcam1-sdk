@@ -6,12 +6,16 @@ import {
 } from "react-native";
 import {
   buildSelfSignedCertificate,
+  computeHash,
   ExistingCertChain,
+  formatFromPath,
+  ManifestEditor,
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
-import { type CaptureInfo, embedBindings, ZPhoto } from ".";
+import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk, { type FlashMode } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
+import { Dirs, Util } from "react-native-file-access";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -29,18 +33,16 @@ export interface ZCameraProps {
   isActive?: boolean;
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
-
   /** Zoom factor (1.0 = no zoom, 2.0 = 2x). Defaults to 1.0. */
   zoom?: number;
   /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
   torch?: boolean;
   /** Exposure compensation in EV units. Defaults to 0. */
   exposure?: number;
-
+  /** Capture information used to generate C2PA bindings for each photo. */
   captureInfo: CaptureInfo;
-
+  /** Optional certificate chain used to sign the C2PA manifest. */
   certChain?: SelfSignedCertChain | ExistingCertChain;
-
   /** Optional style for the underlying native view. */
   style?: StyleProp<ViewStyle>;
 }
@@ -71,6 +73,12 @@ type NativeCameraViewProps = {
   zoom?: number;
   torch?: boolean;
   exposure?: number;
+};
+
+type MetadataInfo = {
+  device_make: string;
+  device_model: string;
+  software_version: string;
 };
 
 /**
@@ -214,4 +222,66 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       />
     );
   }
+}
+
+/**
+ * Embeds C2PA bindings and capture metadata into a photo, producing a new signed file.
+ */
+async function embedBindings(
+  originalPath: string,
+  when: string,
+  metadata: MetadataInfo,
+  captureInfo: CaptureInfo,
+  certChainPem: string,
+) {
+  originalPath = originalPath.replace("file://", "");
+  const dataHash = computeHash(originalPath, []);
+  const format = formatFromPath(originalPath);
+  const ext = Util.extname(originalPath);
+
+  if (format === undefined) {
+    throw new Error(`Unsupported file format: ${originalPath}`);
+  }
+
+  const destinationPath =
+    Dirs.CacheDir +
+    `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+
+  const assertion = await generateAppAttestAssertionFromPhotoHash(
+    dataHash,
+    captureInfo.deviceKeyId,
+  );
+
+  const manifestEditor = new ManifestEditor(
+    originalPath,
+    captureInfo.contentKeyId.buffer as ArrayBuffer,
+    certChainPem,
+  );
+
+  // Add the "capture" action to the manifest.
+  manifestEditor.addAction(
+    JSON.stringify({
+      action: "succinct.capture",
+      when,
+      parameters: metadata,
+    }),
+  );
+
+  // Add an assertion containing all data needed to later generate a  proof
+  manifestEditor.addAssertion(
+    "succinct.bindings",
+    JSON.stringify({
+      app_id: captureInfo.appId,
+      device_key_id: captureInfo.deviceKeyId,
+      attestation: captureInfo.attestation,
+      assertion,
+    }),
+  );
+
+  console.log("Dest", destinationPath);
+
+  // Sign the captured image with C2PA, producing a new signed file.
+  await manifestEditor.embedManifestToFile(destinationPath, format);
+
+  return destinationPath;
 }
