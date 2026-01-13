@@ -79,6 +79,13 @@ type MetadataInfo = {
   device_make: string;
   device_model: string;
   software_version: string;
+  x_resolution: number;
+  y_resolution: number;
+  orientation: string;
+  iso: string[];
+  exposure_time: number;
+  depth_of_field: number;
+  focal_length: number;
 };
 
 /**
@@ -171,10 +178,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const originalPath = result.filePath;
     const metadata = result.metadata ?? {};
 
-    const tiff = (metadata as any)["{TIFF}"] ?? {};
-
-    console.log("All metadata:", metadata);
-    console.log("TIFF metadata:", tiff);
+    const exif = metadata["{Exif}"] ?? {};
+    const tiff = metadata["{TIFF}"] ?? {};
 
     const when =
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
@@ -189,6 +194,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         device_make: deviceMake,
         device_model: deviceModel,
         software_version: softwareVersion,
+        x_resolution: tiff.XResolution,
+        y_resolution: tiff.YResolution,
+        orientation: metadata.Orientation,
+        iso: exif.ISOSpeedRatings,
+        exposure_time: exif.ExposureTime,
+        depth_of_field: exif.FNumber,
+        focal_length: exif.FocalLength,
       },
       this.props.captureInfo,
       this.certChainPem,
