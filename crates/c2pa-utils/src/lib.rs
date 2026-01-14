@@ -47,13 +47,16 @@ pub fn extract_manifest_from_stream(
     Ok(store)
 }
 
+/// Return a MIME type given a file path.
+///
+/// This function will use the file extension to determine the MIME type.
 #[uniffi::export]
 pub fn format_from_path(path: &str) -> Option<String> {
     c2pa::format_from_path(path)
 }
 
-#[uniffi::export]
 #[cfg(feature = "io")]
+#[uniffi::export]
 pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     let path = path.to_string();
     let (sender, receiver) = oneshot::channel();
@@ -83,6 +86,7 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     receiver.await.unwrap()
 }
 
+#[cfg(feature = "io")]
 #[uniffi::export]
 pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, C2paError> {
     let mut file = File::open(path.replace("file://", ""))?;
@@ -102,6 +106,7 @@ where
     Ok(hash)
 }
 
+#[cfg(feature = "io")]
 #[uniffi::export]
 pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, C2paError> {
     let expected_hash = Base64::decode_vec(&data_hash.hash)?;

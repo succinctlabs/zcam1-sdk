@@ -168,8 +168,6 @@ impl ManifestEditor {
 
         Ok(())
     }
-
-    async fn embed_manifest_to_jpeg(&self) {}
 }
 
 impl ManifestEditor {
