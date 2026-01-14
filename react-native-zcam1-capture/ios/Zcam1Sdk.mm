@@ -78,6 +78,19 @@
 #endif
 }
 
+- (void)getMinZoom:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    CGFloat minZoom = [[Zcam1CameraService shared] getMinZoom];
+    resolve(@(minZoom));
+    return;
+  }
+#endif
+  resolve(@(1.0));
+}
+
 - (void)getMaxZoom:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
 {
@@ -89,6 +102,19 @@
   }
 #endif
   resolve(@(1.0));
+}
+
+- (void)getSwitchOverZoomFactors:(RCTPromiseResolveBlock)resolve
+                          reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSArray<NSNumber *> *factors = [[Zcam1CameraService shared] getSwitchOverZoomFactors];
+    resolve(factors);
+    return;
+  }
+#endif
+  resolve(@[]);
 }
 
 - (void)focusAtPoint:(double)x

@@ -177,11 +177,26 @@ public final class Zcam1CameraService: NSObject {
             // We'll handle this case specially in takePhoto() to return a test image.
             return nil
         #else
-            if let device = AVCaptureDevice.default(
-                .builtInWideAngleCamera, for: .video, position: position)
-            {
+            // Prefer virtual devices that combine multiple cameras for seamless zoom.
+            // Order matters - first available is used.
+            let deviceTypes: [AVCaptureDevice.DeviceType] = [
+                .builtInTripleCamera,      // Ultra-wide + Wide + Telephoto
+                .builtInDualWideCamera,    // Ultra-wide + Wide
+                .builtInDualCamera,        // Wide + Telephoto
+                .builtInWideAngleCamera,   // Wide only (fallback)
+            ]
+
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: deviceTypes,
+                mediaType: .video,
+                position: position
+            )
+
+            // Return the first available device (most capable virtual device).
+            if let device = discoverySession.devices.first {
                 return device
             }
+
             // Fallback to any video device.
             return AVCaptureDevice.default(for: .video)
         #endif
@@ -277,15 +292,18 @@ public final class Zcam1CameraService: NSObject {
 
     // MARK: - Camera Controls
 
-    /// Set zoom factor. Clamped to device's supported range (max 10x).
-    /// - Parameter factor: Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+    /// Set zoom factor using the device's actual range.
+    /// For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
+    /// 2.0 is wide-angle (1x user-facing), etc.
+    /// - Parameter factor: Device zoom factor (use getMinZoom/getMaxZoom for valid range)
     public func setZoom(_ factor: CGFloat) {
         sessionQueue.async {
             guard let device = self.videoInput?.device else { return }
             do {
                 try device.lockForConfiguration()
-                let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
-                let clampedZoom = min(max(factor, 1.0), maxZoom)
+                let minZoom = device.minAvailableVideoZoomFactor
+                let maxZoom = min(device.maxAvailableVideoZoomFactor, 15.0)
+                let clampedZoom = min(max(factor, minZoom), maxZoom)
                 device.videoZoomFactor = clampedZoom
                 self.currentZoom = clampedZoom
                 device.unlockForConfiguration()
@@ -295,10 +313,25 @@ public final class Zcam1CameraService: NSObject {
         }
     }
 
-    /// Get the maximum supported zoom factor (capped at 10x).
+    /// Get the minimum supported zoom factor.
+    /// For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+    public func getMinZoom() -> CGFloat {
+        guard let device = videoInput?.device else { return 1.0 }
+        return device.minAvailableVideoZoomFactor
+    }
+
+    /// Get the maximum supported zoom factor (capped at 15x for UX).
     public func getMaxZoom() -> CGFloat {
         guard let device = videoInput?.device else { return 1.0 }
-        return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+        return min(device.maxAvailableVideoZoomFactor, 15.0)
+    }
+
+    /// Get the zoom factors where the device switches between physical lenses.
+    /// Returns empty array for single-camera devices.
+    /// For triple camera: typically [2.0, 6.0] meaning switch to wide at 2x, telephoto at 6x.
+    public func getSwitchOverZoomFactors() -> [CGFloat] {
+        guard let device = videoInput?.device else { return [] }
+        return device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
     }
 
     /// Set torch mode (continuous flashlight during preview).

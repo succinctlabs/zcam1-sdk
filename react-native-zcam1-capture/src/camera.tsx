@@ -33,7 +33,11 @@ export interface ZCameraProps {
   isActive?: boolean;
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
-  /** Zoom factor (1.0 = no zoom, 2.0 = 2x). Defaults to 1.0. */
+  /**
+   * Zoom factor. For devices with ultra-wide lens, 1.0 = ultra-wide (0.5x user-facing),
+   * 2.0 = wide-angle (1x user-facing). Use getMinZoom/getMaxZoom for valid range.
+   * Defaults to 2.0 (1x user-facing) for devices with ultra-wide, otherwise 1.0.
+   */
   zoom?: number;
   /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
   torch?: boolean;
@@ -131,10 +135,28 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
-   * Get the maximum supported zoom factor (capped at 10x).
+   * Get the minimum supported zoom factor.
+   * For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+   */
+  async getMinZoom(): Promise<number> {
+    return NativeZcam1Sdk.getMinZoom();
+  }
+
+  /**
+   * Get the maximum supported zoom factor (capped at 15x for UX).
    */
   async getMaxZoom(): Promise<number> {
     return NativeZcam1Sdk.getMaxZoom();
+  }
+
+  /**
+   * Get the zoom factors where the device switches between physical lenses.
+   * Returns empty array for single-camera devices.
+   * For triple camera: typically [2.0, 6.0] meaning switch to wide at 2x, telephoto at 6x.
+   * The first element represents the "1x" zoom (user-facing), e.g., 2.0 device factor = 1x user-facing.
+   */
+  async getSwitchOverZoomFactors(): Promise<number[]> {
+    return NativeZcam1Sdk.getSwitchOverZoomFactors();
   }
 
   /**
@@ -215,7 +237,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       isActive = true,
       position = "back",
       captureFormat,
-      zoom = 1.0,
+      // Default to 2.0 (1x user-facing) for devices with ultra-wide.
+      // On single-camera devices, 2.0 will be clamped to device's max (usually 1.0).
+      zoom = 2.0,
       torch = false,
       exposure = 0,
       style,
