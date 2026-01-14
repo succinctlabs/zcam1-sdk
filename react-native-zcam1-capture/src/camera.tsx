@@ -152,8 +152,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   /**
    * Get the zoom factors where the device switches between physical lenses.
    * Returns empty array for single-camera devices.
-   * For triple camera: typically [2.0, 6.0] meaning switch to wide at 2x, telephoto at 6x.
-   * The first element represents the "1x" zoom (user-facing), e.g., 2.0 device factor = 1x user-facing.
+   * For triple camera: typically [2.0, 6.0] meaning:
+   * - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+   * - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+   * - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
    */
   async getSwitchOverZoomFactors(): Promise<number[]> {
     return NativeZcam1Sdk.getSwitchOverZoomFactors();

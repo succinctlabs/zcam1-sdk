@@ -328,7 +328,10 @@ public final class Zcam1CameraService: NSObject {
 
     /// Get the zoom factors where the device switches between physical lenses.
     /// Returns empty array for single-camera devices.
-    /// For triple camera: typically [2.0, 6.0] meaning switch to wide at 2x, telephoto at 6x.
+    /// For triple camera: typically [2.0, 6.0] meaning:
+    /// - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+    /// - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+    /// - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
     public func getSwitchOverZoomFactors() -> [CGFloat] {
         guard let device = videoInput?.device else { return [] }
         return device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
