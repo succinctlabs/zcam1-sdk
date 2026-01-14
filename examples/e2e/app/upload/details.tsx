@@ -16,6 +16,7 @@ import {
 import { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-picker";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import Toast from "react-native-toast-message";
 
 export default function Details() {
   const { uri, authStatus } = useLocalSearchParams<{
@@ -23,14 +24,16 @@ export default function Details() {
     authStatus: string;
   }>();
 
+  const verifier = useMemo(() => new VerifiableFile(uri), [uri]);
+
   let actions = undefined;
 
   switch (authStatus) {
     case AuthenticityStatus.Bindings.toString():
-      actions = <Bindings uri={uri} />;
+      actions = <Bindings uri={uri} verifier={verifier} />;
       break;
     case AuthenticityStatus.Proof.toString():
-      actions = <Proof uri={uri} />;
+      actions = <Proof uri={uri} verifier={verifier} />;
       break;
   }
 
@@ -40,11 +43,18 @@ export default function Details() {
         <Image source={{ uri }} style={styles.image} />
         <View style={styles.actions}>{actions}</View>
       </SafeAreaView>
+      <Toast />
     </SafeAreaProvider>
   );
 }
 
-function Bindings({ uri }: { uri: string }) {
+function Bindings({
+  uri,
+  verifier,
+}: {
+  uri: string;
+  verifier: VerifiableFile;
+}) {
   const { provingClient, isInitializing, provingTasks } = useProver();
   const [requestId, setRequestId] = useState<string | null>(null);
   const [isProving, setIsProving] = useState(false);
@@ -86,6 +96,22 @@ function Bindings({ uri }: { uri: string }) {
     }
   }, [provingClient, uri]);
 
+  const verifyBindings = useCallback(async () => {
+    const isValid = verifier.verifyBindings(false);
+
+    if (isValid) {
+      Toast.show({
+        type: "success",
+        text1: "The bindings are valid",
+      });
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "The bindings are invalid",
+      });
+    }
+  }, [verifier]);
+
   return (
     <View>
       {!isProving && (
@@ -94,6 +120,12 @@ function Bindings({ uri }: { uri: string }) {
           <Button
             title="Generate a proof"
             onPress={requestProof}
+            disabled={isInitializing}
+          />
+
+          <Button
+            title="Verify the bindings"
+            onPress={verifyBindings}
             disabled={isInitializing}
           />
         </View>
@@ -119,21 +151,19 @@ function Bindings({ uri }: { uri: string }) {
   );
 }
 
-function Proof({ uri }: { uri: string }) {
+function Proof({ uri, verifier }: { uri: string; verifier: VerifiableFile }) {
   const [isValid, setIsValid] = useState<boolean | undefined>(undefined);
   const [hash, setHash] = useState<string | undefined>(undefined);
 
   const verifyProof = useCallback(async () => {
     try {
-      const verifier = new VerifiableFile(uri);
-
       setIsValid(verifier.verifyProof());
       setHash(verifier.dataHash());
     } catch (error) {
       console.error(error);
       setIsValid(false);
     }
-  }, [uri]);
+  }, [verifier]);
 
   return (
     <View>
@@ -147,8 +177,7 @@ function Proof({ uri }: { uri: string }) {
         <View>
           <Text style={styles.title}>The proof is valid!</Text>
           <Text>
-            The hash {hash} from the public values match the actual photo hash{" "}
-            {hash}
+            The hash {hash} from the public values match the actual photo hash
           </Text>
         </View>
       )}
