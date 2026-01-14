@@ -332,9 +332,9 @@ public final class Zcam1CameraService: NSObject {
     /// - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
     /// - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
     /// - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
-    public func getSwitchOverZoomFactors() -> [CGFloat] {
+    public func getSwitchOverZoomFactors() -> [NSNumber] {
         guard let device = videoInput?.device else { return [] }
-        return device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) }
+        return device.virtualDeviceSwitchOverVideoZoomFactors.map { $0 }
     }
 
     /// Set torch mode (continuous flashlight during preview).
