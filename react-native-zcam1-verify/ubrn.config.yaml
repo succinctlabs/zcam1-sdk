@@ -1,7 +1,6 @@
 rust:
-  repo: https://github.com/succinctlabs/example-sp1-wasm-verifier
-  branch: main
-  manifestPath: uniffi-verifier/Cargo.toml
+  directory: ./..
+  manifestPath: crates/verify-bindings/Cargo.toml
 turboModule:
   entrypoint: src/verifier.tsx
 ios:

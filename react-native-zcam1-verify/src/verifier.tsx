@@ -12,11 +12,13 @@ if (!rustInstalled) {
 
 // Export the generated bindings to the app.
 export * from './generated/sp1_uniffi_verifier';
+export * from './generated/zcam1_verify_bindings';
 
 // Now import the bindings so we can:
 // - intialize them
 // - export them as namespaced objects as the default export.
 import * as sp1_uniffi_verifier from './generated/sp1_uniffi_verifier';
+import * as zcam1_verify_bindings from './generated/zcam1_verify_bindings';
 
 // Initialize the generated bindings: mostly checksums, but also callbacks.
 // - the boolean flag ensures this loads exactly once, even if the JS code
@@ -24,6 +26,7 @@ import * as sp1_uniffi_verifier from './generated/sp1_uniffi_verifier';
 let initialized = false;
 if (!initialized) {
   sp1_uniffi_verifier.default.initialize();
+  zcam1_verify_bindings.default.initialize();
   initialized = true;
 }
 
@@ -37,5 +40,6 @@ export async function uniffiInitAsync() {
 // Export the crates as individually namespaced objects.
 export default {
   sp1_uniffi_verifier,
+  zcam1_verify_bindings,
 };
 
