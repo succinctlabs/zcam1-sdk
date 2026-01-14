@@ -302,7 +302,7 @@ public final class Zcam1CameraService: NSObject {
             do {
                 try device.lockForConfiguration()
                 let minZoom = device.minAvailableVideoZoomFactor
-                let maxZoom = min(device.maxAvailableVideoZoomFactor, 15.0)
+                let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
                 let clampedZoom = min(max(factor, minZoom), maxZoom)
                 device.videoZoomFactor = clampedZoom
                 self.currentZoom = clampedZoom
@@ -323,7 +323,7 @@ public final class Zcam1CameraService: NSObject {
     /// Get the maximum supported zoom factor (capped at 15x for UX).
     public func getMaxZoom() -> CGFloat {
         guard let device = videoInput?.device else { return 1.0 }
-        return min(device.maxAvailableVideoZoomFactor, 15.0)
+        return min(device.maxAvailableVideoZoomFactor, 20.0)
     }
 
     /// Get the zoom factors where the device switches between physical lenses.
