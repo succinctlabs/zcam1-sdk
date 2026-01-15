@@ -104,7 +104,6 @@ const ZImageItem = ({
     AuthenticityStatus.Unknown,
     [uri],
   );
-  const [imageLoaded, setImageLoaded] = useRecyclingState(false, [uri]);
 
   useEffect(() => {
     let active = true;
@@ -129,16 +128,7 @@ const ZImageItem = ({
       style={styles.imageContainer}
       onPress={() => onSelect(uri)}
     >
-      <Image
-        style={[styles.image, { opacity: imageLoaded ? 1 : 0 }]}
-        source={{ uri }}
-        onLoadStart={() => setImageLoaded(false)}
-        onLoadEnd={() => setImageLoaded(true)}
-        onError={(e) => {
-          console.warn("Image failed to load", uri, e.nativeEvent);
-          setImageLoaded(true);
-        }}
-      />
+      <Image style={styles.image} source={{ uri }} />
       {badge}
     </TouchableOpacity>
   );
