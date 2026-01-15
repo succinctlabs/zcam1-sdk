@@ -2,5 +2,7 @@ target/
 .yalc
 yalc.lock
 
+**/.npmrc
+
 # macOS
 .DS_Store

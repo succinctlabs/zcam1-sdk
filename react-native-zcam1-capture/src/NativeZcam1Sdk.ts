@@ -115,14 +115,32 @@ export interface Spec extends TurboModule {
 
   /**
    * Set zoom factor programmatically.
-   * @param factor Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+   * For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
+   * 2.0 is wide-angle (1x user-facing), etc.
+   * @param factor Device zoom factor (use getMinZoom/getMaxZoom for valid range)
    */
   setZoom(factor: number): void;
 
   /**
-   * Get the maximum supported zoom factor (capped at 10x).
+   * Get the minimum supported zoom factor.
+   * For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+   */
+  getMinZoom(): Promise<number>;
+
+  /**
+   * Get the maximum supported zoom factor (capped at 15x for UX).
    */
   getMaxZoom(): Promise<number>;
+
+  /**
+   * Get the zoom factors where the device switches between physical lenses.
+   * Returns empty array for single-camera devices.
+   * For triple camera: typically [2.0, 6.0] meaning:
+   * - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+   * - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+   * - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
+   */
+  getSwitchOverZoomFactors(): Promise<number[]>;
 
   /**
    * Focus at a normalized point in the preview.

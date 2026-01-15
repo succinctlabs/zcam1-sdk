@@ -37,7 +37,11 @@ export interface ZCameraProps {
   isActive?: boolean;
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
-  /** Zoom factor (1.0 = no zoom, 2.0 = 2x). Defaults to 1.0. */
+  /**
+   * Zoom factor. For devices with ultra-wide lens, 1.0 = ultra-wide (0.5x user-facing),
+   * 2.0 = wide-angle (1x user-facing). Use getMinZoom/getMaxZoom for valid range.
+   * Defaults to 2.0 (1x user-facing) for devices with ultra-wide, otherwise 1.0.
+   */
   zoom?: number;
   /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
   torch?: boolean;
@@ -143,10 +147,30 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
-   * Get the maximum supported zoom factor (capped at 10x).
+   * Get the minimum supported zoom factor.
+   * For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+   */
+  async getMinZoom(): Promise<number> {
+    return NativeZcam1Sdk.getMinZoom();
+  }
+
+  /**
+   * Get the maximum supported zoom factor (capped at 15x for UX).
    */
   async getMaxZoom(): Promise<number> {
     return NativeZcam1Sdk.getMaxZoom();
+  }
+
+  /**
+   * Get the zoom factors where the device switches between physical lenses.
+   * Returns empty array for single-camera devices.
+   * For triple camera: typically [2.0, 6.0] meaning:
+   * - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+   * - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+   * - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
+   */
+  async getSwitchOverZoomFactors(): Promise<number[]> {
+    return NativeZcam1Sdk.getSwitchOverZoomFactors();
   }
 
   /**
@@ -286,7 +310,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       isActive = true,
       position = "back",
       captureFormat,
-      zoom = 1.0,
+      // Default to 2.0 (1x user-facing) for devices with ultra-wide.
+      // On single-camera devices, 2.0 will be clamped to device's max (usually 1.0).
+      zoom = 2.0,
       torch = false,
       exposure = 0,
       style,
