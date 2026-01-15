@@ -13,7 +13,11 @@ import {
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, ZPhoto } from ".";
-import NativeZcam1Sdk, { type FlashMode } from "./NativeZcam1Sdk";
+import NativeZcam1Sdk, {
+  type FlashMode,
+  type StartNativeVideoRecordingResult,
+  type StopNativeVideoRecordingResult,
+} from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 import { Dirs, Util } from "react-native-file-access";
 
@@ -75,7 +79,7 @@ type NativeCameraViewProps = {
   exposure?: number;
 };
 
-type MetadataInfo = {
+type PhotoMetadataInfo = {
   device_make: string;
   device_model: string;
   software_version: string;
@@ -87,6 +91,8 @@ type MetadataInfo = {
   depth_of_field: number;
   focal_length: number;
 };
+
+type VideoMetadataInfo = {};
 
 /**
  * Native Swift-backed camera preview view.
@@ -109,6 +115,12 @@ const Zcam1CameraView =
 export class ZCamera extends React.PureComponent<ZCameraProps> {
   /** Reference to the underlying native view (if needed later). */
   private nativeRef = React.createRef<any>();
+
+  /** Best-effort JS-side guard; native is the source of truth. */
+  private recordingInProgress: boolean = false;
+
+  /** Captured for convenience/debugging; cleared after stop. */
+  private lastVideoStartResult: StartNativeVideoRecordingResult | null = null;
 
   private certChainPem: string;
 
@@ -144,6 +156,65 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    */
   focusAtPoint(x: number, y: number): void {
     NativeZcam1Sdk.focusAtPoint(x, y);
+  }
+
+  /**
+   * Start recording a native video to a temporary `.mov` file.
+   *
+   * Promise resolves once the native recorder reports it has started.
+   */
+  async startVideoRecording(
+    position: "front" | "back" = this.props.position || "back",
+  ): Promise<StartNativeVideoRecordingResult> {
+    if (this.recordingInProgress) {
+      throw new Error(
+        "Video recording is already in progress. Call stopVideoRecording() first.",
+      );
+    }
+
+    this.recordingInProgress = true;
+    this.lastVideoStartResult = null;
+
+    try {
+      const result = await NativeZcam1Sdk.startNativeVideoRecording(position);
+      this.lastVideoStartResult = result;
+      return result;
+    } catch (e) {
+      // Roll back local state if native failed to start.
+      this.recordingInProgress = false;
+      this.lastVideoStartResult = null;
+      throw e;
+    }
+  }
+
+  /**
+   * Stop the current native video recording and return the finalized file path + metadata.
+   */
+  async stopVideoRecording(): Promise<StopNativeVideoRecordingResult> {
+    if (!this.recordingInProgress) {
+      throw new Error(
+        "No video recording is in progress. Call startVideoRecording() first.",
+      );
+    }
+
+    try {
+      const result = await NativeZcam1Sdk.stopNativeVideoRecording();
+      const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
+
+      result.filePath = await embedBindings(
+        result.filePath,
+        when,
+        {},
+        this.props.captureInfo,
+        this.certChainPem,
+      );
+
+      return result;
+    } finally {
+      // Always clear local state regardless of native outcome.
+      this.recordingInProgress = false;
+      this.lastVideoStartResult = null;
+    }
   }
 
   /**
@@ -242,12 +313,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 async function embedBindings(
   originalPath: string,
   when: string,
-  metadata: MetadataInfo,
+  metadata: PhotoMetadataInfo | VideoMetadataInfo,
   captureInfo: CaptureInfo,
   certChainPem: string,
 ) {
   originalPath = originalPath.replace("file://", "");
-  const dataHash = computeHash(originalPath, []);
+  const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
   const ext = Util.extname(originalPath);
 
@@ -289,8 +360,6 @@ async function embedBindings(
       assertion,
     }),
   );
-
-  console.log("Dest", destinationPath);
 
   // Sign the captured image with C2PA, producing a new signed file.
   await manifestEditor.embedManifestToFile(destinationPath, format);

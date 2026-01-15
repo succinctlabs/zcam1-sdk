@@ -33,6 +33,53 @@ export interface TakeNativePhotoResult {
   metadata?: { [key: string]: unknown } | null;
 }
 
+export type NativeVideoRecordingFormat = "mov";
+
+export interface StartNativeVideoRecordingResult {
+  /**
+   * Indicates that recording successfully started.
+   */
+  status: "recording";
+
+  /**
+   * Local filesystem path to the in-progress movie file.
+   */
+  filePath: string;
+
+  /**
+   * Container format for the recording.
+   */
+  format: NativeVideoRecordingFormat;
+
+  /**
+   * Whether audio is included in this recording.
+   * This depends on microphone permission and native session configuration.
+   */
+  hasAudio: boolean;
+}
+
+export interface StopNativeVideoRecordingResult {
+  /**
+   * Local filesystem path to the finalized movie file.
+   */
+  filePath: string;
+
+  /**
+   * Container format for the recording.
+   */
+  format: NativeVideoRecordingFormat;
+
+  /**
+   * Whether audio is included in this recording.
+   */
+  hasAudio: boolean;
+
+  /**
+   * Duration of the recorded clip in seconds (if available).
+   */
+  durationSeconds?: number;
+}
+
 export type FlashMode = "off" | "on" | "auto";
 
 export interface Spec extends TurboModule {
@@ -50,6 +97,21 @@ export interface Spec extends TurboModule {
     position: "front" | "back",
     flash: FlashMode,
   ): Promise<TakeNativePhotoResult>;
+
+  /**
+   * Start recording a video using the native camera stack.
+   *
+   * The recording is written to a temporary file and continues until
+   * `stopNativeVideoRecording()` is called.
+   */
+  startNativeVideoRecording(
+    position: "front" | "back",
+  ): Promise<StartNativeVideoRecordingResult>;
+
+  /**
+   * Stop an in-progress recording and return the finalized file path + metadata.
+   */
+  stopNativeVideoRecording(): Promise<StopNativeVideoRecordingResult>;
 
   /**
    * Set zoom factor programmatically.

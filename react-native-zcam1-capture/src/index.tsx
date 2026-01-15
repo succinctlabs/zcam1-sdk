@@ -25,6 +25,14 @@ export { ZCamera } from "./camera";
 export { type FlashMode } from "./NativeZcam1Sdk";
 
 /**
+ * Native video recording results.
+ */
+export type {
+  StartNativeVideoRecordingResult,
+  StopNativeVideoRecordingResult,
+} from "./NativeZcam1Sdk";
+
+/**
  * Device registration information including keys, certificate chain, and attestation.
  */
 export type CaptureInfo = {
