@@ -96,8 +96,15 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             try data.write(to: tmpURL, options: [.atomic])
 
             var metadata: [String: Any] = photo.metadata
+
+            // Extract TIFF dictionary (device info, resolution)
             if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
                 metadata["{TIFF}"] = tiffDict
+            }
+
+            // Extract EXIF dictionary (ISO, exposure, focal length, aperture)
+            if let exifDict = metadata[kCGImagePropertyExifDictionary as String] as? [String: Any] {
+                metadata["{Exif}"] = exifDict
             }
 
             let result: [String: Any] = [

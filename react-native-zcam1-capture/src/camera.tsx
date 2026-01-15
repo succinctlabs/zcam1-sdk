@@ -181,9 +181,33 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const exif = metadata["{Exif}"] ?? {};
     const tiff = metadata["{TIFF}"] ?? {};
 
+    // DEBUG: Log raw metadata to verify extraction
+    console.log("[ZCAM1 DEBUG] Raw metadata keys:", Object.keys(metadata));
+    console.log("[ZCAM1 DEBUG] TIFF:", JSON.stringify(tiff, null, 2));
+    console.log("[ZCAM1 DEBUG] EXIF:", JSON.stringify(exif, null, 2));
+    console.log(
+      "[ZCAM1 DEBUG] MetadataInfo:",
+      JSON.stringify(
+        {
+          device_make: tiff.Make,
+          device_model: tiff.Model,
+          software_version: tiff.Software,
+          x_resolution: tiff.XResolution,
+          y_resolution: tiff.YResolution,
+          orientation: metadata.Orientation,
+          iso: exif.ISOSpeedRatings,
+          exposure_time: exif.ExposureTime,
+          depth_of_field: exif.FNumber,
+          focal_length: exif.FocalLength,
+        },
+        null,
+        2,
+      ),
+    );
+
     const when =
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
-    const deviceMake = tiff.Model || "Apple";
+    const deviceMake = tiff.Make || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
 
