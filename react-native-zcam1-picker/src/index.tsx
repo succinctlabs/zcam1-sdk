@@ -185,7 +185,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
           });
 
           result.edges.sort((a, b) =>
-            b.node.modificationTimestamp - a.node.modificationTimestamp
+            a.node.modificationTimestamp - b.node.modificationTimestamp
           );
 
           const photoUris = result.edges
@@ -196,7 +196,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         } else if ("path" in props.source) {
           const photoFiles = await FileSystem.statDir(props.source.path);
 
-          photoFiles.sort((a, b) => b.lastModified - a.lastModified);
+          photoFiles.sort((a, b) => a.lastModified - b.lastModified);
 
           const photoUris = photoFiles
             .filter((f) => f.type === "file")
