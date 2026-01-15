@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TouchableOpacity,
-  View,
   StyleSheet,
   Dimensions,
-  Text,
   Image,
 } from "react-native";
 import { Dirs, FileSystem } from "react-native-file-access";
@@ -236,7 +234,6 @@ const { width } = Dimensions.get("window");
 const IMAGE_SIZE = width / 3;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
