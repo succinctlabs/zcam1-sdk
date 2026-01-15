@@ -13,7 +13,11 @@ import {
   SelfSignedCertChain,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, ZPhoto } from ".";
-import NativeZcam1Sdk, { type FlashMode } from "./NativeZcam1Sdk";
+import NativeZcam1Sdk, {
+  type FlashMode,
+  type StartNativeVideoRecordingResult,
+  type StopNativeVideoRecordingResult,
+} from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 import { Dirs, Util } from "react-native-file-access";
 
@@ -33,7 +37,11 @@ export interface ZCameraProps {
   isActive?: boolean;
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
-  /** Zoom factor (1.0 = no zoom, 2.0 = 2x). Defaults to 1.0. */
+  /**
+   * Zoom factor. For devices with ultra-wide lens, 1.0 = ultra-wide (0.5x user-facing),
+   * 2.0 = wide-angle (1x user-facing). Use getMinZoom/getMaxZoom for valid range.
+   * Defaults to 2.0 (1x user-facing) for devices with ultra-wide, otherwise 1.0.
+   */
   zoom?: number;
   /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
   torch?: boolean;
@@ -75,7 +83,7 @@ type NativeCameraViewProps = {
   exposure?: number;
 };
 
-type MetadataInfo = {
+type PhotoMetadataInfo = {
   device_make: string;
   device_model: string;
   software_version: string;
@@ -87,6 +95,8 @@ type MetadataInfo = {
   depth_of_field: number;
   focal_length: number;
 };
+
+type VideoMetadataInfo = {};
 
 /**
  * Native Swift-backed camera preview view.
@@ -110,6 +120,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   /** Reference to the underlying native view (if needed later). */
   private nativeRef = React.createRef<any>();
 
+  /** Best-effort JS-side guard; native is the source of truth. */
+  private recordingInProgress: boolean = false;
+
+  /** Captured for convenience/debugging; cleared after stop. */
+  private lastVideoStartResult: StartNativeVideoRecordingResult | null = null;
+
   private certChainPem: string;
 
   constructor(props: ZCameraProps) {
@@ -131,10 +147,30 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
-   * Get the maximum supported zoom factor (capped at 10x).
+   * Get the minimum supported zoom factor.
+   * For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+   */
+  async getMinZoom(): Promise<number> {
+    return NativeZcam1Sdk.getMinZoom();
+  }
+
+  /**
+   * Get the maximum supported zoom factor (capped at 15x for UX).
    */
   async getMaxZoom(): Promise<number> {
     return NativeZcam1Sdk.getMaxZoom();
+  }
+
+  /**
+   * Get the zoom factors where the device switches between physical lenses.
+   * Returns empty array for single-camera devices.
+   * For triple camera: typically [2.0, 6.0] meaning:
+   * - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+   * - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+   * - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
+   */
+  async getSwitchOverZoomFactors(): Promise<number[]> {
+    return NativeZcam1Sdk.getSwitchOverZoomFactors();
   }
 
   /**
@@ -144,6 +180,65 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    */
   focusAtPoint(x: number, y: number): void {
     NativeZcam1Sdk.focusAtPoint(x, y);
+  }
+
+  /**
+   * Start recording a native video to a temporary `.mov` file.
+   *
+   * Promise resolves once the native recorder reports it has started.
+   */
+  async startVideoRecording(
+    position: "front" | "back" = this.props.position || "back",
+  ): Promise<StartNativeVideoRecordingResult> {
+    if (this.recordingInProgress) {
+      throw new Error(
+        "Video recording is already in progress. Call stopVideoRecording() first.",
+      );
+    }
+
+    this.recordingInProgress = true;
+    this.lastVideoStartResult = null;
+
+    try {
+      const result = await NativeZcam1Sdk.startNativeVideoRecording(position);
+      this.lastVideoStartResult = result;
+      return result;
+    } catch (e) {
+      // Roll back local state if native failed to start.
+      this.recordingInProgress = false;
+      this.lastVideoStartResult = null;
+      throw e;
+    }
+  }
+
+  /**
+   * Stop the current native video recording and return the finalized file path + metadata.
+   */
+  async stopVideoRecording(): Promise<StopNativeVideoRecordingResult> {
+    if (!this.recordingInProgress) {
+      throw new Error(
+        "No video recording is in progress. Call startVideoRecording() first.",
+      );
+    }
+
+    try {
+      const result = await NativeZcam1Sdk.stopNativeVideoRecording();
+      const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
+
+      result.filePath = await embedBindings(
+        result.filePath,
+        when,
+        {},
+        this.props.captureInfo,
+        this.certChainPem,
+      );
+
+      return result;
+    } finally {
+      // Always clear local state regardless of native outcome.
+      this.recordingInProgress = false;
+      this.lastVideoStartResult = null;
+    }
   }
 
   /**
@@ -215,7 +310,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       isActive = true,
       position = "back",
       captureFormat,
-      zoom = 1.0,
+      // Default to 2.0 (1x user-facing) for devices with ultra-wide.
+      // On single-camera devices, 2.0 will be clamped to device's max (usually 1.0).
+      zoom = 2.0,
       torch = false,
       exposure = 0,
       style,
@@ -242,12 +339,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 async function embedBindings(
   originalPath: string,
   when: string,
-  metadata: MetadataInfo,
+  metadata: PhotoMetadataInfo | VideoMetadataInfo,
   captureInfo: CaptureInfo,
   certChainPem: string,
 ) {
   originalPath = originalPath.replace("file://", "");
-  const dataHash = computeHash(originalPath, []);
+  const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
   const ext = Util.extname(originalPath);
 
@@ -289,8 +386,6 @@ async function embedBindings(
       assertion,
     }),
   );
-
-  console.log("Dest", destinationPath);
 
   // Sign the captured image with C2PA, producing a new signed file.
   await manifestEditor.embedManifestToFile(destinationPath, format);

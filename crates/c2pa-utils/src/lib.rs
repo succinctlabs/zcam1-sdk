@@ -4,13 +4,12 @@ use std::{
     thread,
 };
 
-use base64ct::{Base64, Encoding};
 use c2pa::{hash_stream_by_alg, Reader};
 use futures::channel::oneshot;
 
 use crate::{
     error::C2paError,
-    types::{AuthenticityStatus, DataHash, Exclusion, ManifestStore},
+    types::{AuthenticityStatus, ManifestStore},
 };
 
 pub mod error;
@@ -32,6 +31,16 @@ pub use manifest_editor::ManifestEditor;
 #[cfg(feature = "io")]
 pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
+
+    // `Reader::json()` and `Reader::detailed_json()` returns 2 differents things:
+    //
+    // The manifests from the `manifests` map returned by `Reader::json()` can be
+    // deserialized to `ManifestDefinition` and thus can be used in
+    // `Builder::from_json`.
+    // The drawback of `Reader::json()` is the the data hash is not included.
+    //
+    // The data hash is included when using `Reader::detailed_json()`, but
+    // the manifests can't be deserialized to `ManifestDefinition`.
     let store = serde_json::from_str::<ManifestStore>(&reader.detailed_json())?;
 
     Ok(store)
@@ -86,31 +95,14 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     receiver.await.unwrap()
 }
 
+/// Compute the hash for a file.
+///
+/// Note: the file should **not** have a C2PA manifest embedded.
 #[cfg(feature = "io")]
 #[uniffi::export]
-pub fn compute_hash(path: &str, exclusions: &[Exclusion]) -> Result<Vec<u8>, C2paError> {
+pub fn compute_hash(path: &str) -> Result<Vec<u8>, C2paError> {
     let mut file = File::open(path.replace("file://", ""))?;
-    compute_hash_from_stream(&mut file, exclusions)
-}
-
-pub fn compute_hash_from_stream<R>(
-    stream: &mut R,
-    exclusions: &[Exclusion],
-) -> Result<Vec<u8>, C2paError>
-where
-    R: Read + Seek + ?Sized,
-{
-    let exclusions_range = exclusions.iter().map(Into::into).collect();
-    let hash = hash_stream_by_alg("sha256", stream, Some(exclusions_range), true)?;
+    let hash = hash_stream_by_alg("sha256", &mut file, None, true)?;
 
     Ok(hash)
-}
-
-#[cfg(feature = "io")]
-#[uniffi::export]
-pub fn verify_hash(path: &str, data_hash: &DataHash) -> Result<bool, C2paError> {
-    let expected_hash = Base64::decode_vec(&data_hash.hash)?;
-    let hash = compute_hash(path, &data_hash.exclusions)?;
-
-    Ok(hash == expected_hash)
 }

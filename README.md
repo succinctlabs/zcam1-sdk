@@ -68,8 +68,6 @@ The examples lives under the `examples` folder in this repo. to run the examples
 
 ## Local developpment
 
-## Local developpment
-
 We use [Yalc] to iterate on the local React Native/TypeScript packages in this monorepo (especially when running the apps in `examples/*`) without publishing to npm. Each React Native library folder ships `just` recipes that publishes the package to Yalc and adds it to the example apps (for instance `add-yalc-to-e2e`). When you make changes to a library, run `yalc publish --push` in the library folder to refresh what the example app consumes. To go back to the registry versions, remove Yalc overrides with `just remove-yalc` and reinstall dependencies.
 
 [Yalc]: https://github.com/wclr/yalc

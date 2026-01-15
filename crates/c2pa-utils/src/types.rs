@@ -1,40 +1,27 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io::{Read, Seek},
+    sync::Arc,
+};
 
-use c2pa::HashRange;
+use c2pa::{
+    assertions::{BmffHash, DataHash},
+    HashRange,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::C2paError;
 
-// `Reader::json()` and `Reader::detailed_json()` returns 2 differents things:
-//
-// The manifests from the `manifests` map returned by `Reader::json()` can be
-// deserialized to `ManifestDefinition` and thus can be used in
-// `Builder::from_json`.
-// The drawback of `Reader::json()` is the the data hash is not included.
-//
-// The data hash is included when using `Reader::detailed_json()`, but
-// the manifests can't be deserialized to `ManifestDefinition`.
-pub type RawManifestStore = ManifestStore<Value>;
-
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
-pub struct ManifestStore<T = Manifest> {
+pub struct ManifestStore {
     pub active_manifest: String,
-    pub manifests: HashMap<String, T>,
+    pub manifests: HashMap<String, Manifest>,
 }
 
 #[uniffi::export]
 impl ManifestStore {
     pub fn active_manifest(&self) -> Result<Manifest, C2paError> {
-        self.manifests
-            .get(&self.active_manifest)
-            .cloned()
-            .ok_or_else(|| C2paError::NoActiveManifest)
-    }
-}
-
-impl RawManifestStore {
-    pub fn raw_active_manifest(&self) -> Result<Value, C2paError> {
         self.manifests
             .get(&self.active_manifest)
             .cloned()
@@ -58,14 +45,19 @@ impl Manifest {
         self.assertion_store.proof.clone()
     }
 
-    pub fn data_hash(&self) -> DataHash {
-        self.assertion_store.data_hash.clone()
+    #[uniffi::method(name = "hash")]
+    pub fn hash_string(&self) -> Option<String> {
+        self.assertion_store.hash.value()
     }
 }
 
 impl Manifest {
     pub fn action(&self, label: &str) -> Option<&Value> {
         self.assertion_store.actions.get(label)
+    }
+
+    pub fn hash(&self) -> &AssetHash {
+        &self.assertion_store.hash
     }
 }
 
@@ -82,8 +74,8 @@ pub struct AssertionStore {
     pub proof: Option<Proof>,
     #[serde(rename = "c2pa.actions.v2")]
     pub actions: Actions,
-    #[serde(rename = "c2pa.hash.data")]
-    pub data_hash: DataHash,
+    #[serde(alias = "c2pa.hash.bmff.v3", alias = "c2pa.hash.data")]
+    pub hash: AssetHash,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,18 +109,34 @@ pub struct Proof {
     pub vk_hash: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
-pub struct DataHash {
-    pub name: String,
-    pub alg: String,
-    pub hash: String,
-    #[serde(default)]
-    pub exclusions: Vec<Exclusion>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AssetHash {
+    Data(Arc<DataHash>),
+    Bmff(Arc<BmffHash>),
 }
 
-impl DataHash {
-    pub fn as_hash_ranges(&self) -> Vec<HashRange> {
-        self.exclusions.iter().map(Into::into).collect()
+impl AssetHash {
+    /// Returns the asset hash as a base64 string.
+    pub fn value(&self) -> Option<String> {
+        match self {
+            AssetHash::Data(data_hash) => Some(String::from_utf8(data_hash.hash.clone()).unwrap()),
+            AssetHash::Bmff(bmff_hash) => bmff_hash
+                .hash()
+                .map(|h| String::from_utf8(h.clone()).unwrap()),
+        }
+    }
+
+    pub fn compute_hash_from_stream<R>(&self, stream: &mut R) -> Result<Vec<u8>, C2paError>
+    where
+        R: Read + Seek + ?Sized,
+    {
+        let hash = match self {
+            AssetHash::Data(data_hash) => data_hash.hash_from_stream(stream)?,
+            AssetHash::Bmff(bmff_hash) => bmff_hash.hash_from_stream(stream)?,
+        };
+
+        Ok(hash)
     }
 }
 
@@ -151,4 +159,66 @@ pub enum AuthenticityStatus {
     InvalidManifest,
     Bindings,
     Proof,
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::types::AssertionStore;
+
+    #[test]
+    fn test_deser_hash() {
+        let json = json!({
+            "c2pa.actions.v2": {
+                "actions": []
+            },
+            "c2pa.hash.bmff.v3": {
+                "exclusions": [
+                    {
+                    "xpath": "/uuid",
+                    "length": null,
+                    "data": [
+                        {
+                        "offset": 8,
+                        "value": "2P7D1hsOSDySl1goh37EgQ=="
+                        }
+                    ],
+                    "subset": null,
+                    "version": null,
+                    "flags": null,
+                    "exact": null
+                    },
+                    {
+                    "xpath": "/ftyp",
+                    "length": null,
+                    "data": null,
+                    "subset": null,
+                    "version": null,
+                    "flags": null,
+                    "exact": null
+                    },
+                    {
+                    "xpath": "/mfra",
+                    "length": null,
+                    "data": null,
+                    "subset": null,
+                    "version": null,
+                    "flags": null,
+                    "exact": null
+                    }
+                ],
+                "alg": "sha256",
+                "hash": "VNtDCaAx/XHJUJdTmRaPZfNScgKhXSVwlK0yILwWJkE=",
+                "name": "jumbf manifest"
+            }
+        });
+
+        let store = serde_json::from_value::<AssertionStore>(json).unwrap();
+
+        assert_eq!(
+            store.hash.value().unwrap(),
+            String::from("VNtDCaAx/XHJUJdTmRaPZfNScgKhXSVwlK0yILwWJkE=")
+        )
+    }
 }

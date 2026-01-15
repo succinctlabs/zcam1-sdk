@@ -5,3 +5,18 @@ add-yalc-to-e2e:
 add-yalc-to-capture-lib:
     yalc publish
     cd ../react-native-zcam1-capture && yalc add @succinctlabs/react-native-zcam1-c2pa
+
+add-yalc-to-prove-lib:
+    yalc publish
+    cd ../react-native-zcam1-prove && yalc add @succinctlabs/react-native-zcam1-c2pa
+
+add-yalc-to-verify-lib:
+    yalc publish
+    cd ../react-native-zcam1-verify && yalc add @succinctlabs/react-native-zcam1-c2pa
+
+add-yalc-to-picker-lib:
+    yalc publish
+    cd ../react-native-zcam1-picker && yalc add @succinctlabs/react-native-zcam1-c2pa
+
+publish $NPM_CONFIG_REGISTRY:
+    npm publish --access public

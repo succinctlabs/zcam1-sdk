@@ -1,66 +1,67 @@
 {
-  "name": "@succinctlabs/react-native-zcam1-picker",
-  "version": "0.1.5",
-  "description": "ZCAM1 SDK Image Picker",
-  "main": "./lib/module/index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
-  },
-  "author": "leruaa",
-  "license": "MIT",
-  "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
-  "type": "module",
-  "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
-  },
-  "devDependencies": {
-    "@types/react": "^19.1.0",
-    "react-native-builder-bob": "^0.40.17",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@react-native-camera-roll/camera-roll": "^7.10.2",
-    "@shopify/flash-list": "^2.2.0",
-    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.2",
-    "react-native-file-access": "^3.2.0"
-  },
-  "exports": {
-    ".": {
-      "source": "./src/index.tsx",
-      "types": "./lib/typescript/src/index.d.ts",
-      "default": "./lib/module/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "types": "./lib/typescript/src/index.d.ts",
-  "scripts": {
-    "build": "bob build",
-    "prepack": "npm run build"
-  },
-  "files": [
-    "src",
-    "lib",
-    "!**/__tests__",
-    "!**/__fixtures__",
-    "!**/__mocks__"
-  ],
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "lib",
-    "targets": [
-      [
-        "module",
-        {
-          "esm": true
-        }
-      ],
-      "typescript"
-    ]
-  },
-  "eslintIgnore": [
-    "node_modules/",
-    "lib/"
-  ]
+	"name": "@succinctlabs/react-native-zcam1-picker",
+	"version": "0.1.6",
+	"description": "ZCAM1 SDK Image Picker",
+	"main": "./lib/module/index.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
+	},
+	"author": "leruaa",
+	"license": "MIT",
+	"homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
+	"type": "module",
+	"peerDependencies": {
+		"react": "*",
+		"react-native": "*"
+	},
+	"devDependencies": {
+		"@types/react": "^19.1.0",
+		"react-native-builder-bob": "^0.40.17",
+		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@react-native-camera-roll/camera-roll": "^7.10.2",
+		"@shopify/flash-list": "^2.2.0",
+		"@succinctlabs/react-native-zcam1-c2pa": "^0.1.3",
+		"react-native-create-thumbnail": "^2.2.0",
+		"react-native-file-access": "^3.2.0"
+	},
+	"exports": {
+		".": {
+			"source": "./src/index.tsx",
+			"types": "./lib/typescript/src/index.d.ts",
+			"default": "./lib/module/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"types": "./lib/typescript/src/index.d.ts",
+	"scripts": {
+		"build": "bob build",
+		"prepack": "npm run build"
+	},
+	"files": [
+		"src",
+		"lib",
+		"!**/__tests__",
+		"!**/__fixtures__",
+		"!**/__mocks__"
+	],
+	"react-native-builder-bob": {
+		"source": "src",
+		"output": "lib",
+		"targets": [
+			[
+				"module",
+				{
+					"esm": true
+				}
+			],
+			"typescript"
+		]
+	},
+	"eslintIgnore": [
+		"node_modules/",
+		"lib/"
+	]
 }

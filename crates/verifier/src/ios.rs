@@ -29,7 +29,9 @@ pub fn verify_proof(path: &str) -> Result<bool, Error> {
         .ok_or_else(|| Error::ProofNotFound)?;
     let mut public_inputs = vec![];
 
-    public_inputs.append(&mut Base64::decode_vec(&active_manifest.data_hash().hash)?);
+    public_inputs.append(&mut Base64::decode_vec(
+        &active_manifest.hash().value().unwrap(),
+    )?);
     public_inputs.append(&mut APPLE_ROOT_CERT.as_bytes().to_vec());
 
     sp1_verifier::Groth16Verifier::verify(
