@@ -17,3 +17,6 @@ add-yalc-to-verify-lib:
 add-yalc-to-picker-lib:
     yalc publish
     cd ../react-native-zcam1-picker && yalc add @succinctlabs/react-native-zcam1-c2pa
+
+publish $NPM_CONFIG_REGISTRY:
+    npm publish --access public
