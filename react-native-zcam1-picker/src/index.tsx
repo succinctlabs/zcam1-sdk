@@ -7,8 +7,9 @@ import {
   Text,
   Image,
 } from "react-native";
-import { Dirs, FileSystem } from "react-native-file-access";
+import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { createThumbnail } from "react-native-create-thumbnail";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import {
   authenticityStatus,
@@ -105,6 +106,7 @@ const ZImageItem = ({
     [uri],
   );
   const [imageLoaded, setImageLoaded] = useRecyclingState(false, [uri]);
+  const [thumbnail, setThumbnail] = useRecyclingState(uri, [uri]);
 
   useEffect(() => {
     let active = true;
@@ -114,10 +116,26 @@ const ZImageItem = ({
         setAuthStatus(result);
       }
     };
+
     check();
     return () => {
       active = false;
     };
+  }, [uri]);
+
+  useEffect(() => {
+    const buildThumbnail = async () => {
+      const ext = Util.extname(uri)?.toLowerCase();
+
+      if (ext === "mov" || ext === "mp4") {
+        const thumbnail = await createThumbnail({
+          url: uri.replace("file://", ""),
+        });
+        setThumbnail(thumbnail.path);
+      }
+    };
+
+    buildThumbnail();
   }, [uri]);
 
   const badge = useMemo(() => {
@@ -131,7 +149,7 @@ const ZImageItem = ({
     >
       <Image
         style={[styles.image, { opacity: imageLoaded ? 1 : 0 }]}
-        source={{ uri }}
+        source={{ uri: thumbnail }}
         onLoadStart={() => setImageLoaded(false)}
         onLoadEnd={() => setImageLoaded(true)}
         onError={(e) => {
@@ -183,7 +201,6 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             first: 20,
             groupTypes: "Album",
             groupName: props.source.album,
-            assetType: "Photos",
           });
 
           result.edges.sort((a, b) => {
