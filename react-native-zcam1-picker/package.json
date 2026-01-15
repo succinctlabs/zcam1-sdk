@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-picker",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "ZCAM1 SDK Image Picker",
   "main": "./lib/module/index.js",
   "repository": {
