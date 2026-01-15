@@ -136,8 +136,8 @@ export function Screen() {
 
 ## Limitations / notes
 
-- Photo gallery source currently loads the first 20 photos and does not paginate.
-- The image list is loaded once on mount; if `source` changes you should remount the component (the current implementation doesn’t react to prop changes).
+- "Photo gallery source (`album`) loads a maximum of 20 photos. This limitation does not apply to private folder source (`path`) since it loads all available photos."
+  - Why do we need `album` as a source? Can we nuke this?
 - Only photos are shown (no videos).
 - Single-selection only (tap returns one `uri` via `onSelect`).
 - This package does not request runtime permissions for you; handle permission prompts in your app before rendering a photo gallery source.

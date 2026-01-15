@@ -3,7 +3,6 @@ import { utf8ToBytes } from "@noble/hashes/utils.js";
 import {
   extractManifest,
   type ManifestInterface,
-  verifyHash,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
 
@@ -29,18 +28,10 @@ export class VerifiableFile {
   }
 
   /**
-   * Verifies that the file's content hash matches the hash in the C2PA manifest.
-   * @returns True if the hash is valid, false otherwise
-   */
-  verifyHash(): boolean {
-    return verifyHash(this.path, this.activeManifest.dataHash());
-  }
-
-  /**
    * Verifies the manifest's bindings (e.g., App Attest).
    */
   verifyBindings(appAttestProduction: boolean): boolean {
-    const photoHash = base64.decode(this.activeManifest.dataHash().hash);
+    const photoHash = base64.decode(this.activeManifest.hash()!);
     return verifyBindingsFromManifest(
       this.activeManifest.bindings()!,
       photoHash.buffer as ArrayBuffer,
@@ -60,8 +51,8 @@ export class VerifiableFile {
    * Returns the file's content hash as recorded in the active C2PA manifest.
    * @returns The manifest data hash (base64-encoded string)
    */
-  dataHash(): string {
-    return this.activeManifest.dataHash().hash;
+  dataHash(): string | undefined {
+    return this.activeManifest.hash();
   }
 }
 
@@ -72,7 +63,7 @@ function verifyProofFromManifest(activeManifest: ManifestInterface): boolean {
     throw new Error("The proof was not found in the manifest");
   }
 
-  let dataHashB64 = activeManifest.dataHash().hash;
+  let dataHashB64 = activeManifest.hash()!;
   const dataHash = base64.decode(dataHashB64);
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 

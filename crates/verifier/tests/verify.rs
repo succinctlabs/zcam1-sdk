@@ -7,7 +7,8 @@ const IMAGE_WITH_VALID_PROOF: &str = "./tests/fixtures/with_proof.jpg";
 fn test_verify_hash() {
     let store = extract_manifest(IMAGE_WITH_VALID_PROOF).unwrap();
     let active_manifest = store.active_manifest().unwrap();
-    let is_valid = verify_hash(IMAGE_WITH_VALID_PROOF, &active_manifest.data_hash()).unwrap();
+    let hash = active_manifest.hash();
+    let is_valid = verify_hash(IMAGE_WITH_VALID_PROOF, hash).unwrap();
 
     assert!(is_valid)
 }

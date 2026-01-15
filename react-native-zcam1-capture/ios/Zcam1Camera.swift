@@ -126,6 +126,36 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
     }
 }
 
+/// Internal helper that acts as the AVCaptureFileOutputRecordingDelegate.
+/// This keeps AVFoundation protocol types out of the @objc-visible service API.
+@available(iOS 16.0, *)
+private final class MovieCaptureDelegate: NSObject, AVCaptureFileOutputRecordingDelegate {
+    private unowned let owner: Zcam1CameraService
+
+    init(owner: Zcam1CameraService) {
+        self.owner = owner
+        super.init()
+    }
+
+    func fileOutput(
+        _ output: AVCaptureFileOutput,
+        didStartRecordingTo fileURL: URL,
+        from connections: [AVCaptureConnection]
+    ) {
+        owner.enqueueVideoRecordingDidStart(outputFileURL: fileURL)
+    }
+
+    func fileOutput(
+        _ output: AVCaptureFileOutput,
+        didFinishRecordingTo outputFileURL: URL,
+        from connections: [AVCaptureConnection],
+        error: Error?
+    ) {
+        owner.enqueueVideoRecordingDidFinish(outputFileURL: outputFileURL, error: error)
+        owner.enqueueDidFinishVideoCapture(delegate: self)
+    }
+}
+
 // MARK: - Camera Service
 
 /// Shared service that owns the AVCaptureSession and performs still captures.
@@ -142,13 +172,23 @@ public final class Zcam1CameraService: NSObject {
     // Underlying capture session and IO
     public private(set) var captureSession: AVCaptureSession?
     private var videoInput: AVCaptureDeviceInput?
+    private var audioInput: AVCaptureDeviceInput?
+
     private let photoOutput = AVCapturePhotoOutput()
+    private let movieOutput = AVCaptureMovieFileOutput()
 
     // Serial queue for all session operations
     private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session")
 
     // Keep strong references to in-flight delegates so they live until completion
     private var inFlightDelegates: [PhotoCaptureDelegate] = []
+    private var inFlightMovieDelegates: [MovieCaptureDelegate] = []
+
+    // Video recording state (single in-flight recording)
+    private var activeMovieOutputURL: URL?
+    private var activeVideoHasAudio: Bool = false
+    private var pendingVideoStartCompletion: ((NSDictionary?, NSError?) -> Void)?
+    private var pendingVideoStopCompletion: ((NSDictionary?, NSError?) -> Void)?
 
     // Camera control state
     private var currentZoom: CGFloat = 1.0
@@ -176,6 +216,21 @@ public final class Zcam1CameraService: NSObject {
         }
     }
 
+    public func ensureMicrophoneAuthorization(completion: @escaping (Bool) -> Void) {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            completion(true)
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                DispatchQueue.main.async {
+                    completion(granted)
+                }
+            }
+        default:
+            completion(false)
+        }
+    }
+
     // MARK: - Session Setup
 
     private func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
@@ -184,11 +239,26 @@ public final class Zcam1CameraService: NSObject {
             // We'll handle this case specially in takePhoto() to return a test image.
             return nil
         #else
-            if let device = AVCaptureDevice.default(
-                .builtInWideAngleCamera, for: .video, position: position)
-            {
+            // Prefer virtual devices that combine multiple cameras for seamless zoom.
+            // Order matters - first available is used.
+            let deviceTypes: [AVCaptureDevice.DeviceType] = [
+                .builtInTripleCamera,      // Ultra-wide + Wide + Telephoto
+                .builtInDualWideCamera,    // Ultra-wide + Wide
+                .builtInDualCamera,        // Wide + Telephoto
+                .builtInWideAngleCamera,   // Wide only (fallback)
+            ]
+
+            let discoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: deviceTypes,
+                mediaType: .video,
+                position: position
+            )
+
+            // Return the first available device (most capable virtual device).
+            if let device = discoverySession.devices.first {
                 return device
             }
+
             // Fallback to any video device.
             return AVCaptureDevice.default(for: .video)
         #endif
@@ -284,15 +354,18 @@ public final class Zcam1CameraService: NSObject {
 
     // MARK: - Camera Controls
 
-    /// Set zoom factor. Clamped to device's supported range (max 10x).
-    /// - Parameter factor: Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+    /// Set zoom factor using the device's actual range.
+    /// For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
+    /// 2.0 is wide-angle (1x user-facing), etc.
+    /// - Parameter factor: Device zoom factor (use getMinZoom/getMaxZoom for valid range)
     public func setZoom(_ factor: CGFloat) {
         sessionQueue.async {
             guard let device = self.videoInput?.device else { return }
             do {
                 try device.lockForConfiguration()
-                let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
-                let clampedZoom = min(max(factor, 1.0), maxZoom)
+                let minZoom = device.minAvailableVideoZoomFactor
+                let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
+                let clampedZoom = min(max(factor, minZoom), maxZoom)
                 device.videoZoomFactor = clampedZoom
                 self.currentZoom = clampedZoom
                 device.unlockForConfiguration()
@@ -302,10 +375,28 @@ public final class Zcam1CameraService: NSObject {
         }
     }
 
-    /// Get the maximum supported zoom factor (capped at 10x).
+    /// Get the minimum supported zoom factor.
+    /// For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
+    public func getMinZoom() -> CGFloat {
+        guard let device = videoInput?.device else { return 1.0 }
+        return device.minAvailableVideoZoomFactor
+    }
+
+    /// Get the maximum supported zoom factor (capped at 15x for UX).
     public func getMaxZoom() -> CGFloat {
         guard let device = videoInput?.device else { return 1.0 }
-        return min(device.activeFormat.videoMaxZoomFactor, 10.0)
+        return min(device.maxAvailableVideoZoomFactor, 20.0)
+    }
+
+    /// Get the zoom factors where the device switches between physical lenses.
+    /// Returns empty array for single-camera devices.
+    /// For triple camera: typically [2.0, 6.0] meaning:
+    /// - Below 2.0: ultra-wide lens (0.5x-1x user-facing)
+    /// - At 2.0: switches FROM ultra-wide TO wide lens (1x user-facing)
+    /// - At 6.0: switches FROM wide TO telephoto lens (3x user-facing)
+    public func getSwitchOverZoomFactors() -> [NSNumber] {
+        guard let device = videoInput?.device else { return [] }
+        return device.virtualDeviceSwitchOverVideoZoomFactors.map { $0 }
     }
 
     /// Set torch mode (continuous flashlight during preview).
@@ -385,6 +476,109 @@ public final class Zcam1CameraService: NSObject {
     fileprivate func didFinishCapture(delegate: PhotoCaptureDelegate) {
         if let index = inFlightDelegates.firstIndex(where: { $0 === delegate }) {
             inFlightDelegates.remove(at: index)
+        }
+    }
+
+    // Delegate callbacks can arrive on arbitrary threads. Route all state mutations through `sessionQueue`.
+    fileprivate func enqueueVideoRecordingDidStart(outputFileURL: URL) {
+        sessionQueue.async {
+            self.videoRecordingDidStart(outputFileURL: outputFileURL)
+        }
+    }
+
+    fileprivate func enqueueVideoRecordingDidFinish(outputFileURL: URL, error: Error?) {
+        sessionQueue.async {
+            self.videoRecordingDidFinish(outputFileURL: outputFileURL, error: error)
+        }
+    }
+
+    fileprivate func enqueueDidFinishVideoCapture(delegate: MovieCaptureDelegate) {
+        sessionQueue.async {
+            self.didFinishVideoCapture(delegate: delegate)
+        }
+    }
+
+    fileprivate func didFinishVideoCapture(delegate: MovieCaptureDelegate) {
+        if let index = inFlightMovieDelegates.firstIndex(where: { $0 === delegate }) {
+            inFlightMovieDelegates.remove(at: index)
+        }
+    }
+
+    // NOTE: Must be called on `sessionQueue`.
+    fileprivate func videoRecordingDidStart(outputFileURL: URL) {
+        let result: [String: Any] = [
+            "status": "recording",
+            "filePath": outputFileURL.path,
+            "format": "mov",
+            "hasAudio": self.activeVideoHasAudio,
+        ]
+        let startCompletion = pendingVideoStartCompletion
+        pendingVideoStartCompletion = nil
+        DispatchQueue.main.async {
+            startCompletion?(result as NSDictionary, nil)
+        }
+    }
+
+    // NOTE: Must be called on `sessionQueue`.
+    fileprivate func videoRecordingDidFinish(outputFileURL: URL, error: Error?) {
+        // Restore session for still capture.
+        if let session = self.captureSession {
+            session.beginConfiguration()
+
+            if session.outputs.contains(self.movieOutput) {
+                session.removeOutput(self.movieOutput)
+            }
+
+            if let audioInput = self.audioInput {
+                session.removeInput(audioInput)
+                self.audioInput = nil
+            }
+
+            if session.canSetSessionPreset(.photo) {
+                session.sessionPreset = .photo
+            }
+
+            session.commitConfiguration()
+        }
+
+        if let error = error as NSError? {
+            // Prefer resolving stop completion if present; otherwise resolve start completion (e.g. start failed).
+            let stopCompletion = pendingVideoStopCompletion
+            let startCompletion = pendingVideoStartCompletion
+            pendingVideoStopCompletion = nil
+            pendingVideoStartCompletion = nil
+            activeMovieOutputURL = nil
+            activeVideoHasAudio = false
+
+            DispatchQueue.main.async {
+                if let stopCompletion = stopCompletion {
+                    stopCompletion(nil, error)
+                } else {
+                    startCompletion?(nil, error)
+                }
+            }
+            return
+        }
+
+        var result: [String: Any] = [
+            "filePath": outputFileURL.path,
+            "format": "mov",
+            "hasAudio": self.activeVideoHasAudio,
+        ]
+
+        let asset = AVURLAsset(url: outputFileURL)
+        let seconds = CMTimeGetSeconds(asset.duration)
+        if seconds.isFinite && !seconds.isNaN && seconds >= 0 {
+            result["durationSeconds"] = seconds
+        }
+
+        let stopCompletion = pendingVideoStopCompletion
+        pendingVideoStopCompletion = nil
+        activeMovieOutputURL = nil
+        activeVideoHasAudio = false
+
+        DispatchQueue.main.async {
+            stopCompletion?(result as NSDictionary, nil)
         }
     }
 
@@ -606,6 +800,215 @@ public final class Zcam1CameraService: NSObject {
                     self.photoOutput.capturePhoto(with: settings, delegate: delegate)
                 }
             }
+        }
+    }
+
+    // MARK: - Video Capture API (Objective-C-friendly)
+
+    /// Starts video recording to a temporary `.mov` file.
+    /// Call `stopVideoRecording` to finish and receive the final file path.
+    public func startVideoRecording(
+        positionString: String?,
+        completion: @escaping (NSDictionary?, NSError?) -> Void
+    ) {
+        #if targetEnvironment(simulator)
+            let err = NSError(
+                domain: "Zcam1CameraService",
+                code: -40,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "Video recording is not supported on the iOS simulator"
+                ]
+            )
+            completion(nil, err)
+            return
+        #endif
+
+        ensureCameraAuthorization { authorized in
+            guard authorized else {
+                let err = NSError(
+                    domain: "Zcam1CameraService",
+                    code: -10,
+                    userInfo: [NSLocalizedDescriptionKey: "Camera access not authorized"]
+                )
+                completion(nil, err)
+                return
+            }
+
+            let startWithMicAuthorized: (Bool) -> Void = { micAuthorized in
+                let position: AVCaptureDevice.Position
+                switch positionString?.lowercased() {
+                case "front":
+                    position = .front
+                default:
+                    position = .back
+                }
+
+                self.configureSessionIfNeeded(position: position) { error in
+                    if let error = error {
+                        completion(nil, error as NSError)
+                        return
+                    }
+
+                    self.sessionQueue.async {
+                        guard let session = self.captureSession else {
+                            let err = NSError(
+                                domain: "Zcam1CameraService",
+                                code: -11,
+                                userInfo: [
+                                    NSLocalizedDescriptionKey: "Capture session not configured"
+                                ]
+                            )
+                            DispatchQueue.main.async {
+                                completion(nil, err)
+                            }
+                            return
+                        }
+
+                        guard !self.movieOutput.isRecording else {
+                            let err = NSError(
+                                domain: "Zcam1CameraService",
+                                code: -42,
+                                userInfo: [
+                                    NSLocalizedDescriptionKey:
+                                        "A video recording is already in progress"
+                                ]
+                            )
+                            DispatchQueue.main.async {
+                                completion(nil, err)
+                            }
+                            return
+                        }
+
+                        // Switch session into a video-capable configuration.
+                        do {
+                            session.beginConfiguration()
+
+                            if session.canSetSessionPreset(.high) {
+                                session.sessionPreset = .high
+                            }
+
+                            if !session.outputs.contains(self.movieOutput) {
+                                if session.canAddOutput(self.movieOutput) {
+                                    session.addOutput(self.movieOutput)
+                                    // Single, finalized file (no fragments).
+                                    self.movieOutput.movieFragmentInterval = .invalid
+
+                                    // Basic recording configuration (orientation + stabilization).
+                                    if let connection = self.movieOutput.connection(with: .video) {
+                                        if connection.isVideoOrientationSupported {
+                                            connection.videoOrientation = .portrait
+                                        }
+                                        if connection.isVideoStabilizationSupported {
+                                            connection.preferredVideoStabilizationMode = .auto
+                                        }
+                                    }
+                                } else {
+                                    throw NSError(
+                                        domain: "Zcam1CameraService",
+                                        code: -43,
+                                        userInfo: [
+                                            NSLocalizedDescriptionKey:
+                                                "Cannot add movie output to session"
+                                        ]
+                                    )
+                                }
+                            }
+
+                            // Track whether we actually have an audio input attached (not just permission).
+                            self.activeVideoHasAudio = false
+
+                            if micAuthorized {
+                                if let existingAudioInput = self.audioInput,
+                                    session.inputs.contains(where: { $0 === existingAudioInput })
+                                {
+                                    self.activeVideoHasAudio = true
+                                } else if self.audioInput == nil,
+                                    let audioDevice = AVCaptureDevice.default(for: .audio)
+                                {
+                                    let audioInput = try AVCaptureDeviceInput(device: audioDevice)
+                                    if session.canAddInput(audioInput) {
+                                        session.addInput(audioInput)
+                                        self.audioInput = audioInput
+                                        self.activeVideoHasAudio = true
+                                    } else {
+                                        self.audioInput = nil
+                                        self.activeVideoHasAudio = false
+                                    }
+                                }
+                            } else if let audioInput = self.audioInput {
+                                session.removeInput(audioInput)
+                                self.audioInput = nil
+                                self.activeVideoHasAudio = false
+                            }
+
+                            session.commitConfiguration()
+                        } catch {
+                            session.commitConfiguration()
+                            DispatchQueue.main.async {
+                                completion(nil, error as NSError)
+                            }
+                            return
+                        }
+
+                        if !session.isRunning {
+                            session.startRunning()
+                        }
+
+                        // Prepare output URL.
+                        let filename = "zcam1-\(UUID().uuidString).mov"
+                        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(
+                            filename)
+
+                        // Remove any existing file at the path (defensive).
+                        if FileManager.default.fileExists(atPath: tmpURL.path) {
+                            try? FileManager.default.removeItem(at: tmpURL)
+                        }
+
+                        self.activeMovieOutputURL = tmpURL
+                        self.pendingVideoStartCompletion = completion
+                        self.pendingVideoStopCompletion = nil
+
+                        let delegate = MovieCaptureDelegate(owner: self)
+                        self.inFlightMovieDelegates.append(delegate)
+                        self.movieOutput.startRecording(to: tmpURL, recordingDelegate: delegate)
+                    }
+                }
+            }
+
+            let hasMicUsageDescription =
+                Bundle.main.object(forInfoDictionaryKey: "NSMicrophoneUsageDescription") != nil
+
+            // If the app didn't declare NSMicrophoneUsageDescription, do not request mic permission
+            // (requesting would crash). Proceed with video-only recording.
+            if !hasMicUsageDescription {
+                startWithMicAuthorized(false)
+                return
+            }
+
+            self.ensureMicrophoneAuthorization { micAuthorized in
+                startWithMicAuthorized(micAuthorized)
+            }
+        }
+    }
+
+    /// Stops an in-progress video recording and returns `{ filePath, format, durationSeconds? }`.
+    public func stopVideoRecording(completion: @escaping (NSDictionary?, NSError?) -> Void) {
+        sessionQueue.async {
+            guard self.movieOutput.isRecording else {
+                let err = NSError(
+                    domain: "Zcam1CameraService",
+                    code: -44,
+                    userInfo: [NSLocalizedDescriptionKey: "No active video recording to stop"]
+                )
+                DispatchQueue.main.async {
+                    completion(nil, err)
+                }
+                return
+            }
+
+            self.pendingVideoStopCompletion = completion
+            self.movieOutput.stopRecording()
         }
     }
 

@@ -6,7 +6,8 @@ use std::{
 };
 
 use c2pa::{
-    settings::Settings, AsyncSigner, Builder, CallbackSigner, ClaimGeneratorInfo, SigningAlg,
+    settings::Settings, AsyncSigner, Builder, BuilderIntent, CallbackSigner, ClaimGeneratorInfo,
+    DigitalSourceType, SigningAlg,
 };
 use serde_json::Value;
 
@@ -58,29 +59,10 @@ impl ManifestEditor {
     #[uniffi::constructor()]
     pub fn from_file_and_manifest(
         path: &str,
-        manifest: &ManifestStore,
+        store: &ManifestStore,
         key_tag: Vec<u8>,
         certs: &str,
     ) -> Result<Self, C2paError> {
-        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
-
-        let active_manifest = manifest.active_manifest()?;
-        let mut exclusions = active_manifest.data_hash().exclusions.clone();
-
-        let mut builder = Builder::new();
-
-        builder
-            .definition
-            .claim_generator_info
-            .push(ClaimGeneratorInfo::new("ZCAM1"));
-        builder.definition.vendor = Some("Succinct".to_string());
-
-        if let Some(capture) = active_manifest.action("c2pa.capture") {
-            builder.add_action(capture)?;
-        }
-
-        exclusions.sort_by_key(|e| e.start);
-
         let signer = CallbackSigner::new(
             move |_context, data: &[u8]| {
                 sign_with_enclave(&key_tag, data)
@@ -90,14 +72,7 @@ impl ManifestEditor {
             certs,
         );
 
-        let editor = Self {
-            source_file_path: path.to_string(),
-            builder: Arc::new(RwLock::new(builder)),
-            exclusions,
-            signer: Box::new(signer),
-        };
-
-        Ok(editor)
+        Self::from_file_and_manifest_with_signer(path, store, signer)
     }
 
     pub fn add_title(&self, title: &str) -> Result<(), C2paError> {
@@ -171,6 +146,42 @@ impl ManifestEditor {
 }
 
 impl ManifestEditor {
+    pub fn from_file_and_manifest_with_signer<S: AsyncSigner + Send + 'static>(
+        path: &str,
+        store: &ManifestStore,
+        signer: S,
+    ) -> Result<Self, C2paError> {
+        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
+
+        let active_manifest = store.active_manifest()?;
+        //let mut exclusions = active_manifest.data_hash().exclusions.clone();
+
+        let mut builder = Builder::new();
+
+        builder.set_intent(BuilderIntent::Create(DigitalSourceType::DigitalCapture));
+
+        builder
+            .definition
+            .claim_generator_info
+            .push(ClaimGeneratorInfo::new("ZCAM1"));
+        builder.definition.vendor = Some("Succinct".to_string());
+
+        if let Some(capture) = active_manifest.action("c2pa.capture") {
+            builder.add_action(capture)?;
+        }
+
+        //exclusions.sort_by_key(|e| e.start);
+
+        let editor = Self {
+            source_file_path: path.to_string(),
+            builder: Arc::new(RwLock::new(builder)),
+            exclusions: vec![],
+            signer: Box::new(signer),
+        };
+
+        Ok(editor)
+    }
+
     pub fn with_signer<S: AsyncSigner + Send + 'static>(path: &str, signer: S) -> Self {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 

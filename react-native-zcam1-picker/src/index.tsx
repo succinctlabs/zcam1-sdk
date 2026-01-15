@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   TouchableOpacity,
-  View,
   StyleSheet,
   Dimensions,
-  Text,
   Image,
 } from "react-native";
-import { Dirs, FileSystem } from "react-native-file-access";
+import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { createThumbnail } from "react-native-create-thumbnail";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import {
   authenticityStatus,
@@ -57,13 +56,6 @@ export interface ZImagePickerProps {
   refreshToken?: string | number;
 
   /**
-   * Sort order for displaying images. Defaults to "newest-first".
-   * - "newest-first": Most recently modified images appear first (top)
-   * - "oldest-first": Oldest images appear first (top), newest at bottom
-   */
-  sortOrder?: "newest-first" | "oldest-first";
-
-  /**
    * Optional function to render a badge based on the authenticity status of an image.
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
@@ -104,7 +96,7 @@ const ZImageItem = ({
     AuthenticityStatus.Unknown,
     [uri],
   );
-  const [imageLoaded, setImageLoaded] = useRecyclingState(false, [uri]);
+  const [thumbnail, setThumbnail] = useRecyclingState(uri, [uri]);
 
   useEffect(() => {
     let active = true;
@@ -114,10 +106,26 @@ const ZImageItem = ({
         setAuthStatus(result);
       }
     };
+
     check();
     return () => {
       active = false;
     };
+  }, [uri]);
+
+  useEffect(() => {
+    const buildThumbnail = async () => {
+      const ext = Util.extname(uri)?.toLowerCase();
+
+      if (ext === "mov" || ext === "mp4") {
+        const thumbnail = await createThumbnail({
+          url: uri.replace("file://", ""),
+        });
+        setThumbnail(thumbnail.path);
+      }
+    };
+
+    buildThumbnail();
   }, [uri]);
 
   const badge = useMemo(() => {
@@ -129,16 +137,7 @@ const ZImageItem = ({
       style={styles.imageContainer}
       onPress={() => onSelect(uri)}
     >
-      <Image
-        style={[styles.image, { opacity: imageLoaded ? 1 : 0 }]}
-        source={{ uri }}
-        onLoadStart={() => setImageLoaded(false)}
-        onLoadEnd={() => setImageLoaded(true)}
-        onError={(e) => {
-          console.warn("Image failed to load", uri, e.nativeEvent);
-          setImageLoaded(true);
-        }}
-      />
+      <Image style={styles.image} source={{ uri: thumbnail }} />
       {badge}
     </TouchableOpacity>
   );
@@ -183,14 +182,11 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             first: 20,
             groupTypes: "Album",
             groupName: props.source.album,
-            assetType: "Photos",
           });
 
-          result.edges.sort((a, b) => {
-            const diff =
-              b.node.modificationTimestamp - a.node.modificationTimestamp;
-            return props.sortOrder === "oldest-first" ? -diff : diff;
-          });
+          result.edges.sort((a, b) =>
+            a.node.modificationTimestamp - b.node.modificationTimestamp
+          );
 
           const photoUris = result.edges
             .map((photo) => photo.node.image.uri)
@@ -200,10 +196,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         } else if ("path" in props.source) {
           const photoFiles = await FileSystem.statDir(props.source.path);
 
-          photoFiles.sort((a, b) => {
-            const diff = b.lastModified - a.lastModified;
-            return props.sortOrder === "oldest-first" ? -diff : diff;
-          });
+          photoFiles.sort((a, b) => a.lastModified - b.lastModified);
 
           const photoUris = photoFiles
             .filter((f) => f.type === "file")
@@ -247,6 +240,9 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
       renderItem={renderItem}
       numColumns={3}
       keyExtractor={(uri) => uri}
+      maintainVisibleContentPosition={{
+        startRenderingFromBottom: true,
+      }}
     />
   );
 };
@@ -255,7 +251,6 @@ const { width } = Dimensions.get("window");
 const IMAGE_SIZE = width / 3;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,

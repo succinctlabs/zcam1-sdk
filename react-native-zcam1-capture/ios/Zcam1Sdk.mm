@@ -78,6 +78,19 @@
 #endif
 }
 
+- (void)getMinZoom:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    CGFloat minZoom = [[Zcam1CameraService shared] getMinZoom];
+    resolve(@(minZoom));
+    return;
+  }
+#endif
+  resolve(@(1.0));
+}
+
 - (void)getMaxZoom:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
 {
@@ -91,6 +104,19 @@
   resolve(@(1.0));
 }
 
+- (void)getSwitchOverZoomFactors:(RCTPromiseResolveBlock)resolve
+                          reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSArray<NSNumber *> *factors = [[Zcam1CameraService shared] getSwitchOverZoomFactors];
+    resolve(factors);
+    return;
+  }
+#endif
+  resolve(@[]);
+}
+
 - (void)focusAtPoint:(double)x
                    y:(double)y
 {
@@ -99,6 +125,69 @@
     CGPoint point = CGPointMake(x, y);
     [[Zcam1CameraService shared] focusAtPoint:point];
   }
+#endif
+}
+
+- (void)startNativeVideoRecording:(NSString *)position
+                          resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    Zcam1CameraService *service = [Zcam1CameraService shared];
+
+    // If empty strings are passed, let Swift fall back to its defaults
+    NSString *positionString = (position.length > 0) ? position : nil; // "front" or "back"
+
+    [service startVideoRecordingWithPositionString:positionString
+                                       completion:^(NSDictionary *result, NSError *error) {
+      if (error != nil) {
+        NSString *code = @"VIDEO_RECORDING_START_ERROR";
+        NSString *message = error.localizedDescription ?: @"Failed to start video recording";
+        reject(code, message, error);
+      } else if (result != nil) {
+        resolve(result);
+      } else {
+        reject(@"VIDEO_RECORDING_START_ERROR", @"Start recording returned no data", nil);
+      }
+    }];
+    return;
+  }
+
+  // iOS version too old for the Swift camera implementation.
+  reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS 16+ and Swift component", nil);
+#else
+  // Swift-generated header is not available (no Swift camera implementation linked).
+  reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS Swift component", nil);
+#endif
+}
+
+- (void)stopNativeVideoRecording:(RCTPromiseResolveBlock)resolve
+                          reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    Zcam1CameraService *service = [Zcam1CameraService shared];
+
+    [service stopVideoRecordingWithCompletion:^(NSDictionary *result, NSError *error) {
+      if (error != nil) {
+        NSString *code = @"VIDEO_RECORDING_STOP_ERROR";
+        NSString *message = error.localizedDescription ?: @"Failed to stop video recording";
+        reject(code, message, error);
+      } else if (result != nil) {
+        resolve(result);
+      } else {
+        reject(@"VIDEO_RECORDING_STOP_ERROR", @"Stop recording returned no data", nil);
+      }
+    }];
+    return;
+  }
+
+  // iOS version too old for the Swift camera implementation.
+  reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS 16+ and Swift component", nil);
+#else
+  // Swift-generated header is not available (no Swift camera implementation linked).
+  reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS Swift component", nil);
 #endif
 }
 

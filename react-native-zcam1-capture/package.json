@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-capture",
-  "version": "0.1.5-rc.1",
+  "version": "0.1.5",
   "description": "ZCAM1 Capture SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -30,7 +30,7 @@
   "dependencies": {
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@scure/base": "^2.0.0",
-    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.2",
+    "@succinctlabs/react-native-zcam1-c2pa": "^0.1.3",
     "@succinctlabs/react-native-zcam1-common": "^0.1.2",
     "react-native-encrypted-storage": "^4.0.0",
     "react-native-file-access": "^3.2.0"
