@@ -56,6 +56,18 @@ export interface ZImagePickerProps {
   refreshToken?: string | number;
 
   /**
+   * Whether to start rendering images from the bottom of the list.
+   * Defaults to false (renders from top).
+   */
+  renderFromBottom?: boolean;
+
+  /**
+   * Sort order for images.
+   * Defaults to 'oldest-first' (oldest images first in the list).
+   */
+  sortOrder?: 'newest-first' | 'oldest-first';
+
+  /**
    * Optional function to render a badge based on the authenticity status of an image.
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
@@ -184,8 +196,9 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             groupName: props.source.album,
           });
 
+          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
           result.edges.sort((a, b) =>
-            a.node.modificationTimestamp - b.node.modificationTimestamp
+            sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp)
           );
 
           const photoUris = result.edges
@@ -196,7 +209,8 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         } else if ("path" in props.source) {
           const photoFiles = await FileSystem.statDir(props.source.path);
 
-          photoFiles.sort((a, b) => a.lastModified - b.lastModified);
+          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
+          photoFiles.sort((a, b) => sortMultiplier * (a.lastModified - b.lastModified));
 
           const photoUris = photoFiles
             .filter((f) => f.type === "file")
@@ -237,11 +251,12 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
   return (
     <FlashList
       data={photos}
+      contentContainerStyle={{ flexGrow: 1 }}
       renderItem={renderItem}
       numColumns={3}
       keyExtractor={(uri) => uri}
       maintainVisibleContentPosition={{
-        startRenderingFromBottom: true,
+        startRenderingFromBottom: props.renderFromBottom ?? false,
       }}
     />
   );
