@@ -57,13 +57,6 @@ export interface ZImagePickerProps {
   refreshToken?: string | number;
 
   /**
-   * Sort order for displaying images. Defaults to "newest-first".
-   * - "newest-first": Most recently modified images appear first (top)
-   * - "oldest-first": Oldest images appear first (top), newest at bottom
-   */
-  sortOrder?: "newest-first" | "oldest-first";
-
-  /**
    * Optional function to render a badge based on the authenticity status of an image.
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
@@ -176,11 +169,9 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             assetType: "Photos",
           });
 
-          result.edges.sort((a, b) => {
-            const diff =
-              b.node.modificationTimestamp - a.node.modificationTimestamp;
-            return props.sortOrder === "oldest-first" ? -diff : diff;
-          });
+          result.edges.sort((a, b) =>
+            b.node.modificationTimestamp - a.node.modificationTimestamp
+          );
 
           const photoUris = result.edges
             .map((photo) => photo.node.image.uri)
@@ -190,10 +181,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         } else if ("path" in props.source) {
           const photoFiles = await FileSystem.statDir(props.source.path);
 
-          photoFiles.sort((a, b) => {
-            const diff = b.lastModified - a.lastModified;
-            return props.sortOrder === "oldest-first" ? -diff : diff;
-          });
+          photoFiles.sort((a, b) => b.lastModified - a.lastModified);
 
           const photoUris = photoFiles
             .filter((f) => f.type === "file")
@@ -237,6 +225,9 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
       renderItem={renderItem}
       numColumns={3}
       keyExtractor={(uri) => uri}
+      maintainVisibleContentPosition={{
+        startRenderingFromBottom: true,
+      }}
     />
   );
 };
