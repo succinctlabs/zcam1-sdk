@@ -17,7 +17,7 @@ export {
 /**
  * Camera component for capturing photos with secure enclave integration.
  */
-export { ZCamera } from "./camera";
+export { ZCamera, type CameraFilter } from "./camera";
 
 /**
  * Flash mode for photo capture.
