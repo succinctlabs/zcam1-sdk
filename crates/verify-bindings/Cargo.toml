@@ -1,0 +1,17 @@
+[package]
+name = "zcam1-verify-bindings"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zcam1-ios.workspace = true
+base64ct.workspace = true
+serde.workspace = true
+uniffi.workspace = true
+thiserror.workspace = true
+
+sp1-uniffi-verifier = { git = "https://github.com/succinctlabs/example-sp1-wasm-verifier", branch = "aurelien/bump-sp1" }
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_verify_bindings"
