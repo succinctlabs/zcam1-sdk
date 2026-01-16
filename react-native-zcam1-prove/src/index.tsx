@@ -27,7 +27,7 @@ import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
 } from "@succinctlabs/react-native-zcam1-common";
-import { Dirs } from "react-native-file-access";
+import { Dirs, Util } from "react-native-file-access";
 
 export { IosProvingClient, FulfillmentStatus } from "./proving";
 export {
@@ -474,6 +474,7 @@ export class ProvingClient {
     const store = extractManifest(originalPath);
     originalPath = originalPath.replace("file://", "");
     const format = formatFromPath(originalPath);
+    const ext = Util.extname(originalPath);
 
     if (format === undefined) {
       throw new Error(`Unsupported file format: ${originalPath}`);
@@ -501,7 +502,7 @@ export class ProvingClient {
 
     const destinationPath =
       Dirs.CacheDir +
-      `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+      `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
     // Embed the manifest to the photo
     await manifestEditor.embedManifestToFile(destinationPath, format);
