@@ -48,9 +48,7 @@
     "./package.json": "./package.json"
   },
   "types": "./lib/typescript/src/index.d.ts",
-  "scripts": {
-    "prepare": "bob build"
-  },
+  "scripts": {},
   "files": [
     "src",
     "lib",

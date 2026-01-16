@@ -17,6 +17,9 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
   s.private_header_files = "ios/**/*.h"
 
+  # Harbeth: GPU-accelerated image/video/camera filter library.
+  s.dependency "Harbeth", "~> 1.1"
+
   install_modules_dependencies(s)
 
   # Add dependency on ReactCodegen for codegen headers

@@ -30,6 +30,17 @@ export const CERT_KEY_TAG = "CERT_KEY_TAG";
  */
 export type CaptureFormat = "jpeg" | "dng";
 
+/**
+ * Camera filter presets.
+ * - "normal": No filter (default)
+ * - "vivid": Enhanced saturation and contrast
+ * - "mono": Classic black & white
+ * - "noir": High-contrast black & white
+ * - "warm": Warmer color temperature
+ * - "cool": Cooler color temperature
+ */
+export type CameraFilter = "normal" | "vivid" | "mono" | "noir" | "warm" | "cool";
+
 export interface ZCameraProps {
   /** Which camera to use. Defaults to "back". */
   position?: "front" | "back";
@@ -47,6 +58,8 @@ export interface ZCameraProps {
   torch?: boolean;
   /** Exposure compensation in EV units. Defaults to 0. */
   exposure?: number;
+  /** Filter preset to apply to preview and captured photos. Defaults to "normal". */
+  filter?: CameraFilter;
   /** Capture information used to generate C2PA bindings for each photo. */
   captureInfo: CaptureInfo;
   /** Optional certificate chain used to sign the C2PA manifest. */
@@ -81,6 +94,7 @@ type NativeCameraViewProps = {
   zoom?: number;
   torch?: boolean;
   exposure?: number;
+  filter?: CameraFilter;
 };
 
 type PhotoMetadataInfo = {
@@ -315,6 +329,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       zoom = 2.0,
       torch = false,
       exposure = 0,
+      filter = "normal",
       style,
     } = this.props;
 
@@ -328,6 +343,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         zoom={zoom}
         torch={torch}
         exposure={exposure}
+        filter={filter}
       />
     );
   }
