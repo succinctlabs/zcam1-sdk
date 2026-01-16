@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "testing.com.anonymous.zcam1-e2e-example",
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses your camera to capture photos and videos.",
+        "NSCameraUsageDescription": "This app uses your camera to capture photos and videos",
+        "NSMicrophoneUsageDescription": "This app uses your microphone to capture videos",
         "NSPhotoLibraryUsageDescription": "This app need access to the photo gallery"
       }
     },
