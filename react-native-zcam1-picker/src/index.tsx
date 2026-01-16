@@ -209,14 +209,23 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         } else if ("path" in props.source) {
           const photoFiles = await FileSystem.statDir(props.source.path);
 
-          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
-          photoFiles.sort((a, b) => sortMultiplier * (a.lastModified - b.lastModified));
-
-          const photoUris = photoFiles
+          const photosWithTimestamps = photoFiles
             .filter((f) => f.type === "file")
             .filter((f) => !f.filename.startsWith("."))
-            .map((f) => `file://${f.path}`);
+            .map((f) => {
+              const uri = `file://${f.path}`;
+              // Parse timestamp from ZCAM filename: "zcam-1768552335459-random.jpg"
+              const match = f.filename.match(/^zcam-(\d+)-/);
+              const timestamp = match?.[1] ? parseInt(match[1], 10) : f.lastModified;
+              return { uri, timestamp };
+            });
 
+          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
+          photosWithTimestamps.sort((a, b) =>
+            sortMultiplier * (a.timestamp - b.timestamp)
+          );
+
+          const photoUris = photosWithTimestamps.map((p) => p.uri);
           if (!cancelled) setPhotos(photoUris);
         }
       } catch (e) {
