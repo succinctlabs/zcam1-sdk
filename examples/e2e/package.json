@@ -18,7 +18,7 @@
     "@succinctlabs/react-native-zcam1-capture": "^0.1.5",
     "@succinctlabs/react-native-zcam1-picker": "^0.1.6",
     "@succinctlabs/react-native-zcam1-prove": "^0.1.5",
-    "@succinctlabs/react-native-zcam1-verify": "^0.1.4",
+    "@succinctlabs/react-native-zcam1-verify": "^0.1.5",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
     "expo-constants": "~18.0.10",

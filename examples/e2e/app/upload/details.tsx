@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Image,
   Button,
+  Pressable,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -19,13 +20,20 @@ import {
   VerifiableFile,
   type CaptureMetadata,
 } from "@succinctlabs/react-native-zcam1-verify";
+import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
+import { Util } from "react-native-file-access";
 
 export default function Details() {
   const { uri, authStatus } = useLocalSearchParams<{
     uri: string;
     authStatus: string;
   }>();
+
+  const isVideo = useMemo(() => {
+    const ext = Util.extname(uri)?.toLowerCase();
+    return ext === "mov" || ext === "mp4";
+  }, [uri]);
 
   const verifier = useMemo(() => new VerifiableFile(uri), [uri]);
 
@@ -41,17 +49,17 @@ export default function Details() {
 
   switch (authStatus) {
     case AuthenticityStatus.Bindings.toString():
-      actions = <Bindings uri={uri} verifier={verifier} />;
+      actions = <Bindings uri={uri} isVideo={isVideo} verifier={verifier} />;
       break;
     case AuthenticityStatus.Proof.toString():
-      actions = <Proof uri={uri} verifier={verifier} />;
+      actions = <Proof uri={uri} isVideo={isVideo} verifier={verifier} />;
       break;
   }
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Image source={{ uri }} style={styles.image} />
+        <Preview uri={uri} isVideo={isVideo} />
         {metadata && <CaptureInfo metadata={metadata} />}
         <View style={styles.actions}>{actions}</View>
       </SafeAreaView>
@@ -101,14 +109,18 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
           Software: {params.software_version}
         </Text>
       )}
-      <Text style={styles.metadataRow}>Captured: {formatDate(metadata.when)}</Text>
+      <Text style={styles.metadataRow}>
+        Captured: {formatDate(metadata.when)}
+      </Text>
       {params.x_resolution && params.y_resolution && (
         <Text style={styles.metadataRow}>
           Resolution: {params.x_resolution} x {params.y_resolution}
         </Text>
       )}
       {params.orientation && (
-        <Text style={styles.metadataRow}>Orientation: {params.orientation}</Text>
+        <Text style={styles.metadataRow}>
+          Orientation: {params.orientation}
+        </Text>
       )}
       {params.iso && (
         <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
@@ -132,11 +144,32 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
   );
 }
 
+function Preview({ uri, isVideo }: { uri: string; isVideo: boolean }) {
+  const [isPaused, setIsPaused] = useState(true);
+
+  return isVideo ? (
+    <Pressable
+      style={styles.image}
+      onPress={() => setIsPaused((paused) => !paused)}
+    >
+      <Video
+        source={{ uri: uri.replace("file://", "") }}
+        style={styles.image}
+        paused={isPaused}
+      />
+    </Pressable>
+  ) : (
+    <Image source={{ uri }} style={styles.image} />
+  );
+}
+
 function Bindings({
   uri,
+  isVideo,
   verifier,
 }: {
   uri: string;
+  isVideo: boolean;
   verifier: VerifiableFile;
 }) {
   const { provingClient, isInitializing, provingTasks } = useProver();
@@ -200,7 +233,9 @@ function Bindings({
     <View>
       {!isProving && (
         <View>
-          <Text style={styles.title}>This photo has bindings attached</Text>
+          <Text style={styles.title}>
+            This {isVideo ? "video" : "photo"} has bindings attached
+          </Text>
           <Button
             title="Generate a proof"
             onPress={requestProof}
@@ -235,7 +270,15 @@ function Bindings({
   );
 }
 
-function Proof({ uri, verifier }: { uri: string; verifier: VerifiableFile }) {
+function Proof({
+  uri,
+  isVideo,
+  verifier,
+}: {
+  uri: string;
+  isVideo: boolean;
+  verifier: VerifiableFile;
+}) {
   const [isValid, setIsValid] = useState<boolean | undefined>(undefined);
   const [hash, setHash] = useState<string | undefined>(undefined);
 
@@ -253,7 +296,9 @@ function Proof({ uri, verifier }: { uri: string; verifier: VerifiableFile }) {
     <View>
       {isValid === undefined && (
         <View>
-          <Text style={styles.title}>This photo has a proof attached</Text>
+          <Text style={styles.title}>
+            This {isVideo ? "video" : "photo"} has a proof attached
+          </Text>
           <Button title="Verify the proof" onPress={verifyProof} />
         </View>
       )}

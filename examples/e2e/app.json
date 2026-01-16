@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "testing.com.anonymous.zcam1-e2e-example",
+      "bundleIdentifier": "com.anonymous.zcam1-e2e-example",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses your camera to capture photos and videos",
         "NSMicrophoneUsageDescription": "This app uses your microphone to capture videos",
