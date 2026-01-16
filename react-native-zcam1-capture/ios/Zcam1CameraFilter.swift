@@ -12,8 +12,6 @@ import UIKit
 public enum Zcam1CameraFilter: String, CaseIterable {
     case normal
     case vivid
-    case mono
-    case noir
     case warm
     case cool
 
@@ -22,10 +20,6 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         switch string?.lowercased() {
         case "vivid":
             self = .vivid
-        case "mono":
-            self = .mono
-        case "noir":
-            self = .noir
         case "warm":
             self = .warm
         case "cool":
@@ -41,26 +35,24 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         case .normal:
             return []
         case .vivid:
-            // Enhanced saturation and contrast boost (increased for visibility).
+            // Enhanced saturation and vibrance without color shift.
             return [
-                C7Saturation(saturation: 1.8),
-                C7Contrast(contrast: 1.3),
-            ]
-        case .mono:
-            // Classic black & white.
-            return [C7Monochrome()]
-        case .noir:
-            // High-contrast black & white.
-            return [
-                C7Monochrome(),
-                C7Contrast(contrast: 1.6),
+                C7Saturation(saturation: 1.5),
+                C7Contrast(contrast: 1.15),
+                C7Vibrance(vibrance: 0.3),
             ]
         case .warm:
-            // Warmer color temperature (more extreme for visibility).
-            return [C7WhiteBalance(temperature: 4000)]
+            // Warmer tones - higher temperature adds orange/yellow warmth.
+            return [
+                C7WhiteBalance(temperature: 8000),
+                C7Saturation(saturation: 1.1),
+            ]
         case .cool:
-            // Cooler color temperature (more extreme for visibility).
-            return [C7WhiteBalance(temperature: 9000)]
+            // Cooler tones - lower temperature adds blue coolness.
+            return [
+                C7WhiteBalance(temperature: 3500),
+                C7Saturation(saturation: 1.05),
+            ]
         }
     }
 

@@ -33,13 +33,11 @@ export type CaptureFormat = "jpeg" | "dng";
 /**
  * Camera filter presets.
  * - "normal": No filter (default)
- * - "vivid": Enhanced saturation and contrast
- * - "mono": Classic black & white
- * - "noir": High-contrast black & white
- * - "warm": Warmer color temperature
- * - "cool": Cooler color temperature
+ * - "vivid": Enhanced saturation and vibrance
+ * - "warm": Warmer color temperature (orange/yellow tones)
+ * - "cool": Cooler color temperature (blue tones)
  */
-export type CameraFilter = "normal" | "vivid" | "mono" | "noir" | "warm" | "cool";
+export type CameraFilter = "normal" | "vivid" | "warm" | "cool";
 
 export interface ZCameraProps {
   /** Which camera to use. Defaults to "back". */
