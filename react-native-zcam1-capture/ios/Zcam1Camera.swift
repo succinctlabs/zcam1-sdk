@@ -218,6 +218,88 @@ public final class Zcam1CameraService: NSObject {
         return currentFilter.apply(toData: data, compressionQuality: 0.9)
     }
 
+    // MARK: - Video Data Output for Filtered Preview
+
+    /// Configure and add a video data output to the session for filtered preview.
+    /// Must be called to get video frames for applying filters in real-time.
+    /// - Parameters:
+    ///   - delegate: The sample buffer delegate to receive video frames.
+    ///   - callbackQueue: The queue for delegate callbacks.
+    ///   - completion: Called on main thread with the output if successful, nil if failed.
+    public func configureVideoDataOutput(
+        delegate: AVCaptureVideoDataOutputSampleBufferDelegate,
+        callbackQueue: DispatchQueue,
+        completion: @escaping (AVCaptureVideoDataOutput?) -> Void
+    ) {
+        sessionQueue.async { [weak self] in
+            guard let self = self, let session = self.captureSession else {
+                print("[Zcam1CameraService] configureVideoDataOutput: no session")
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+
+            print("[Zcam1CameraService] configureVideoDataOutput: session.isRunning=\(session.isRunning), preset=\(session.sessionPreset.rawValue)")
+
+            // Check if we already have a video data output.
+            for output in session.outputs {
+                if let existingOutput = output as? AVCaptureVideoDataOutput {
+                    print("[Zcam1CameraService] configureVideoDataOutput: already have video data output, updating delegate")
+                    existingOutput.setSampleBufferDelegate(delegate, queue: callbackQueue)
+                    DispatchQueue.main.async { completion(existingOutput) }
+                    return
+                }
+            }
+
+            let output = AVCaptureVideoDataOutput()
+            output.alwaysDiscardsLateVideoFrames = true
+            output.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+            ]
+
+            // Set delegate BEFORE adding to session to not miss any frames.
+            output.setSampleBufferDelegate(delegate, queue: callbackQueue)
+            print("[Zcam1CameraService] configureVideoDataOutput: delegate set on queue \(callbackQueue.label)")
+
+            session.beginConfiguration()
+
+            // Try to add the output.
+            if session.canAddOutput(output) {
+                session.addOutput(output)
+                print("[Zcam1CameraService] configureVideoDataOutput: added output successfully, total outputs=\(session.outputs.count)")
+
+                // Configure the connection.
+                if let connection = output.connection(with: .video) {
+                    connection.isEnabled = true
+                    if connection.isVideoOrientationSupported {
+                        connection.videoOrientation = .portrait
+                    }
+                    print("[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled)")
+                } else {
+                    print("[Zcam1CameraService] configureVideoDataOutput: WARNING - no video connection found!")
+                }
+
+                session.commitConfiguration()
+                print("[Zcam1CameraService] configureVideoDataOutput: committed configuration, session.isRunning=\(session.isRunning)")
+                DispatchQueue.main.async { completion(output) }
+            } else {
+                print("[Zcam1CameraService] configureVideoDataOutput: canAddOutput returned false, preset=\(session.sessionPreset.rawValue)")
+                session.commitConfiguration()
+                DispatchQueue.main.async { completion(nil) }
+            }
+        }
+    }
+
+    /// Remove a video data output from the session.
+    public func removeVideoDataOutput(_ output: AVCaptureVideoDataOutput) {
+        sessionQueue.async { [weak self] in
+            guard let self = self, let session = self.captureSession else { return }
+            session.beginConfiguration()
+            session.removeOutput(output)
+            session.commitConfiguration()
+            print("[Zcam1CameraService] removeVideoDataOutput: removed output, total outputs=\(session.outputs.count)")
+        }
+    }
+
     // MARK: - Permissions
 
     public func ensureCameraAuthorization(completion: @escaping (Bool) -> Void) {
@@ -292,7 +374,9 @@ public final class Zcam1CameraService: NSObject {
             do {
                 let session = self.captureSession ?? AVCaptureSession()
                 session.beginConfiguration()
-                session.sessionPreset = .photo
+                // Use .high preset which supports both photo capture and video data output.
+                // The .photo preset may not deliver continuous frames needed for real-time filtering.
+                session.sessionPreset = .high
 
                 // Remove existing input if position changed
                 if let currentInput = self.videoInput,
@@ -553,8 +637,8 @@ public final class Zcam1CameraService: NSObject {
                 self.audioInput = nil
             }
 
-            if session.canSetSessionPreset(.photo) {
-                session.sessionPreset = .photo
+            if session.canSetSessionPreset(.high) {
+                session.sessionPreset = .high
             }
 
             session.commitConfiguration()
@@ -1036,7 +1120,11 @@ public final class Zcam1CameraService: NSObject {
 
 // MARK: - Camera Preview View
 
-/// UIView subclass that displays the live camera preview using AVCaptureVideoPreviewLayer.
+/// UIView subclass that displays the live camera preview.
+///
+/// NEW ARCHITECTURE: Always uses AVCaptureVideoDataOutput for preview rendering.
+/// This eliminates the complexity of toggling between preview layer and filtered image view.
+/// All frames go through the same pipeline - filter is applied when needed.
 ///
 /// This view is intended to be wrapped by a React Native view manager
 /// and controlled via props such as `isActive` and `position`.
@@ -1055,6 +1143,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// "front" or "back"
     public var position: String = "back" {
         didSet {
+            guard oldValue != position else { return }
             reconfigureSession()
         }
     }
@@ -1086,20 +1175,22 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// Filter preset name ("normal", "vivid", "mono", "noir", "warm", "cool").
     public var filter: String = "normal" {
         didSet {
-            print("[Zcam1CameraView] Filter changed from \(oldValue) to \(filter)")
-            let filterEnum = Zcam1CameraFilter(from: filter)
-            Zcam1CameraService.shared.setFilter(filterEnum)
-            updateFilteredPreview()
+            guard oldValue != filter else { return }
+            print("[Zcam1CameraView] Filter changed: \(oldValue) -> \(filter)")
+            currentFilterEnum = Zcam1CameraFilter(from: filter)
+            Zcam1CameraService.shared.setFilter(currentFilterEnum)
         }
     }
 
-    // Convenience access to the preview layer
-    private var previewLayer: AVCaptureVideoPreviewLayer {
-        return layer as! AVCaptureVideoPreviewLayer
-    }
+    // Preview rendering - single UIImageView for all frames (filtered or not)
+    private let previewImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        return iv
+    }()
 
-    // Filtered preview components
-    private var filteredPreviewImageView: UIImageView?
+    // Video processing
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilterEnum: Zcam1CameraFilter = .normal
@@ -1116,104 +1207,21 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         commonInit()
     }
 
-    public override class var layerClass: AnyClass {
-        return AVCaptureVideoPreviewLayer.self
-    }
-
     private func commonInit() {
         backgroundColor = .black
-        previewLayer.videoGravity = .resizeAspectFill
 
-        // Create filtered preview image view (hidden by default).
-        let imageView = UIImageView(frame: bounds)
-        imageView.contentMode = .scaleAspectFill
-        imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        imageView.isHidden = true
-        addSubview(imageView)
-        filteredPreviewImageView = imageView
+        // Add preview image view as the only preview mechanism.
+        previewImageView.frame = bounds
+        previewImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(previewImageView)
 
-        // Attach the shared session if already configured
-        if let session = Zcam1CameraService.shared.captureSession {
-            previewLayer.session = session
-        }
-
+        // Configure session and start receiving frames.
         reconfigureSession()
     }
 
     public override func layoutSubviews() {
         super.layoutSubviews()
-        previewLayer.frame = bounds
-        filteredPreviewImageView?.frame = bounds
-    }
-
-    // MARK: - Filter Preview
-
-    private func updateFilteredPreview() {
-        currentFilterEnum = Zcam1CameraFilter(from: filter)
-        let needsFiltering = currentFilterEnum != .normal
-        print("[Zcam1CameraView] updateFilteredPreview: filter=\(filter), needsFiltering=\(needsFiltering)")
-
-        if needsFiltering {
-            setupVideoDataOutput()
-            filteredPreviewImageView?.isHidden = false
-            previewLayer.isHidden = true
-            print("[Zcam1CameraView] Showing filtered preview, hiding preview layer")
-        } else {
-            removeVideoDataOutput()
-            filteredPreviewImageView?.isHidden = true
-            previewLayer.isHidden = false
-            print("[Zcam1CameraView] Showing preview layer, hiding filtered preview")
-        }
-    }
-
-    private func setupVideoDataOutput() {
-        guard videoDataOutput == nil else {
-            print("[Zcam1CameraView] setupVideoDataOutput: already setup")
-            return
-        }
-        guard let session = Zcam1CameraService.shared.captureSession else {
-            print("[Zcam1CameraView] setupVideoDataOutput: no session available")
-            return
-        }
-
-        print("[Zcam1CameraView] setupVideoDataOutput: setting up video data output")
-
-        let output = AVCaptureVideoDataOutput()
-        output.setSampleBufferDelegate(self, queue: videoDataQueue)
-        output.alwaysDiscardsLateVideoFrames = true
-        output.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-        ]
-
-        session.beginConfiguration()
-        if session.canAddOutput(output) {
-            session.addOutput(output)
-            videoDataOutput = output
-            print("[Zcam1CameraView] setupVideoDataOutput: added video data output to session")
-
-            // Set orientation to match preview.
-            if let connection = output.connection(with: .video) {
-                if connection.isVideoOrientationSupported {
-                    connection.videoOrientation = .portrait
-                }
-                if connection.isVideoMirroringSupported && position == "front" {
-                    connection.isVideoMirrored = true
-                }
-            }
-        } else {
-            print("[Zcam1CameraView] setupVideoDataOutput: cannot add output to session")
-        }
-        session.commitConfiguration()
-    }
-
-    private func removeVideoDataOutput() {
-        guard let output = videoDataOutput,
-              let session = Zcam1CameraService.shared.captureSession else { return }
-
-        session.beginConfiguration()
-        session.removeOutput(output)
-        session.commitConfiguration()
-        videoDataOutput = nil
+        previewImageView.frame = bounds
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -1224,62 +1232,80 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         from connection: AVCaptureConnection
     ) {
         frameCount += 1
-        if frameCount % 30 == 1 {
-            print("[Zcam1CameraView] captureOutput: frame \(frameCount), filter=\(currentFilterEnum)")
+        if frameCount == 1 {
+            print("[Zcam1CameraView] FIRST FRAME! filter=\(currentFilterEnum)")
+        } else if frameCount % 60 == 0 {
+            print("[Zcam1CameraView] frame \(frameCount), filter=\(currentFilterEnum)")
         }
 
-        guard currentFilterEnum != .normal else { return }
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            print("[Zcam1CameraView] captureOutput: no pixel buffer")
             return
         }
 
-        // Create CIImage from pixel buffer and render to CGImage.
-        // UIImage(ciImage:) doesn't work with Harbeth - need actual CGImage backing.
+        // Convert pixel buffer to UIImage.
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
         guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
-            print("[Zcam1CameraView] captureOutput: failed to create CGImage")
             return
         }
 
-        // Apply Harbeth filters.
-        var uiImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
-        uiImage = currentFilterEnum.apply(to: uiImage)
+        // Create UIImage with correct orientation for display.
+        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
 
-        // Update the filtered preview on main thread.
+        // Apply filter if not normal.
+        if currentFilterEnum != .normal {
+            displayImage = currentFilterEnum.apply(to: displayImage)
+        }
+
+        // Update UI on main thread.
         DispatchQueue.main.async { [weak self] in
-            self?.filteredPreviewImageView?.image = uiImage
+            self?.previewImageView.image = displayImage
         }
     }
 
-    // MARK: - Session Wiring
+    public func captureOutput(
+        _ output: AVCaptureOutput,
+        didDrop sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        // Log dropped frames for debugging.
+        print("[Zcam1CameraView] DROPPED frame")
+    }
+
+    // MARK: - Session Configuration
 
     private func reconfigureSession() {
         let svc = Zcam1CameraService.shared
-        let positionEnum: AVCaptureDevice.Position
-
-        switch position.lowercased() {
-        case "front":
-            positionEnum = .front
-        default:
-            positionEnum = .back
-        }
+        let positionEnum: AVCaptureDevice.Position = position.lowercased() == "front" ? .front : .back
 
         svc.configureSessionIfNeeded(position: positionEnum) { [weak self] error in
+            guard let self = self, error == nil else { return }
+
+            // Apply camera settings.
+            self.applyCurrentSettings()
+
+            // Setup video data output for frame capture.
+            self.setupVideoDataOutput()
+
+            // Start the session.
+            self.updateRunningState()
+        }
+    }
+
+    private func setupVideoDataOutput() {
+        Zcam1CameraService.shared.configureVideoDataOutput(
+            delegate: self,
+            callbackQueue: videoDataQueue
+        ) { [weak self] output in
             guard let self = self else { return }
-            if error == nil, let session = svc.captureSession {
-                self.previewLayer.session = session
-                self.updateRunningState()
-                // Re-apply camera settings after session is configured.
-                self.applyCurrentSettings()
-                // Re-setup filtered preview if needed.
-                self.updateFilteredPreview()
+            if let output = output {
+                self.videoDataOutput = output
+                print("[Zcam1CameraView] Video data output ready")
+            } else {
+                print("[Zcam1CameraView] ERROR: Failed to setup video data output")
             }
         }
     }
 
-    /// Apply current zoom, torch, and exposure settings to the camera.
-    /// Called after session configuration to ensure settings are applied.
     private func applyCurrentSettings() {
         let svc = Zcam1CameraService.shared
         svc.setZoom(zoom)
