@@ -49,13 +49,17 @@ impl Manifest {
     pub fn hash_string(&self) -> Option<String> {
         self.assertion_store.hash.value()
     }
+
+    /// Returns the action with the given label as a JSON string.
+    pub fn action(&self, label: String) -> Option<String> {
+        self.assertion_store
+            .actions
+            .get(&label)
+            .map(|v| v.to_string())
+    }
 }
 
 impl Manifest {
-    pub fn action(&self, label: &str) -> Option<&Value> {
-        self.assertion_store.actions.get(label)
-    }
-
     pub fn hash(&self) -> &AssetHash {
         &self.assertion_store.hash
     }
