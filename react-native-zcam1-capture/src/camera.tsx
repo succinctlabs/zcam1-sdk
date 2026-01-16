@@ -278,7 +278,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
     const when =
       tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
-    const deviceMake = tiff.Model || "Apple";
+    const deviceMake = tiff.Make || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
 
@@ -289,8 +289,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         device_make: deviceMake,
         device_model: deviceModel,
         software_version: softwareVersion,
-        x_resolution: tiff.XResolution,
-        y_resolution: tiff.YResolution,
+        x_resolution: exif.PixelXDimension,
+        y_resolution: exif.PixelYDimension,
         orientation: metadata.Orientation,
         iso: exif.ISOSpeedRatings,
         exposure_time: exif.ExposureTime,

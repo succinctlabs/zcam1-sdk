@@ -6,6 +6,27 @@ import {
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
 
+/**
+ * Capture metadata extracted from the C2PA manifest.
+ * Contains device info and camera settings at capture time.
+ */
+export interface CaptureMetadata {
+  action: string;
+  when: string;
+  parameters: {
+    device_make?: string;
+    device_model?: string;
+    software_version?: string;
+    x_resolution?: number;
+    y_resolution?: number;
+    orientation?: string;
+    iso?: string[];
+    exposure_time?: number;
+    depth_of_field?: number;
+    focal_length?: number;
+  };
+}
+
 export const APPLE_ROOT_CERT =
   "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD";
 
@@ -53,6 +74,17 @@ export class VerifiableFile {
    */
   dataHash(): string | undefined {
     return this.activeManifest.hash();
+  }
+
+  /**
+   * Returns the capture metadata from the C2PA manifest.
+   * Contains device info and camera settings recorded at capture time.
+   * @returns The capture metadata, or null if not present
+   */
+  captureMetadata(): CaptureMetadata | null {
+    const actionJson = this.activeManifest.action("succinct.capture");
+    if (!actionJson) return null;
+    return JSON.parse(actionJson) as CaptureMetadata;
   }
 }
 
