@@ -14,6 +14,7 @@ remove-yalc:
     cd react-native-zcam1-prove && yalc remove --all
     cd react-native-zcam1-verify && yalc remove --all
     cd react-native-zcam1-picker && yalc remove --all
+    cd react-native-zcam1-c2pa && yalc remove --all
     cd examples/capture && yalc remove --all
     cd examples/prove && yalc remove --all
     cd examples/e2e && yalc remove --all

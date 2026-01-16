@@ -166,7 +166,7 @@ impl ManifestEditor {
             .push(ClaimGeneratorInfo::new("ZCAM1"));
         builder.definition.vendor = Some("Succinct".to_string());
 
-        if let Some(capture) = active_manifest.action("c2pa.capture") {
+        if let Some(capture) = active_manifest.action("c2pa.capture".to_string()) {
             builder.add_action(capture)?;
         }
 

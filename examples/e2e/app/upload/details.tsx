@@ -15,7 +15,10 @@ import {
 } from "@succinctlabs/react-native-zcam1-prove";
 import { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-picker";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import {
+  VerifiableFile,
+  type CaptureMetadata,
+} from "@succinctlabs/react-native-zcam1-verify";
 import Toast from "react-native-toast-message";
 
 export default function Details() {
@@ -25,6 +28,14 @@ export default function Details() {
   }>();
 
   const verifier = useMemo(() => new VerifiableFile(uri), [uri]);
+
+  const metadata = useMemo(() => {
+    try {
+      return verifier.captureMetadata();
+    } catch {
+      return null;
+    }
+  }, [verifier]);
 
   let actions = undefined;
 
@@ -41,10 +52,83 @@ export default function Details() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <Image source={{ uri }} style={styles.image} />
+        {metadata && <CaptureInfo metadata={metadata} />}
         <View style={styles.actions}>{actions}</View>
       </SafeAreaView>
       <Toast />
     </SafeAreaProvider>
+  );
+}
+
+function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
+  const params = metadata.parameters;
+
+  // Format capture date - handle various formats
+  const formatDate = (when: string) => {
+    const date = new Date(when);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleString();
+    }
+    // If invalid date, just return the raw value
+    return when;
+  };
+
+  // Format ISO - handle array or single value
+  const formatIso = (iso: string[] | string | number | undefined) => {
+    if (!iso) return null;
+    if (Array.isArray(iso)) {
+      return iso.join(", ");
+    }
+    return String(iso);
+  };
+
+  // Format exposure time to 2 decimal places
+  const formatExposure = (time: number | undefined) => {
+    if (!time) return null;
+    return `${time.toFixed(2)}s`;
+  };
+
+  return (
+    <View style={styles.metadataSection}>
+      <Text style={styles.sectionTitle}>Capture Info</Text>
+      {params.device_make && params.device_model && (
+        <Text style={styles.metadataRow}>
+          Device: {params.device_make} {params.device_model}
+        </Text>
+      )}
+      {params.software_version && (
+        <Text style={styles.metadataRow}>
+          Software: {params.software_version}
+        </Text>
+      )}
+      <Text style={styles.metadataRow}>Captured: {formatDate(metadata.when)}</Text>
+      {params.x_resolution && params.y_resolution && (
+        <Text style={styles.metadataRow}>
+          Resolution: {params.x_resolution} x {params.y_resolution}
+        </Text>
+      )}
+      {params.orientation && (
+        <Text style={styles.metadataRow}>Orientation: {params.orientation}</Text>
+      )}
+      {params.iso && (
+        <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
+      )}
+      {params.exposure_time && (
+        <Text style={styles.metadataRow}>
+          Exposure: {formatExposure(params.exposure_time)}
+        </Text>
+      )}
+      {params.focal_length && (
+        <Text style={styles.metadataRow}>
+          Focal Length: {params.focal_length}mm
+        </Text>
+      )}
+      {params.depth_of_field && (
+        <Text style={styles.metadataRow}>
+          Depth of Field: {params.depth_of_field}
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -214,5 +298,23 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
+  },
+  metadataSection: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 8,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#333",
+  },
+  metadataRow: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 4,
   },
 });
