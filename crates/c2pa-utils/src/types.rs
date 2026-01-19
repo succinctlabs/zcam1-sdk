@@ -4,10 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use c2pa::{
-    assertions::{BmffHash, DataHash},
-    HashRange,
-};
+use c2pa::{assertions::DataHash, HashRange};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -45,11 +42,6 @@ impl Manifest {
         self.assertion_store.proof.clone()
     }
 
-    #[uniffi::method(name = "hash")]
-    pub fn hash_string(&self) -> Option<String> {
-        self.assertion_store.hash.value()
-    }
-
     /// Returns the action with the given label as a JSON string.
     pub fn action(&self, label: String) -> Option<String> {
         self.assertion_store
@@ -60,8 +52,19 @@ impl Manifest {
 }
 
 impl Manifest {
-    pub fn hash(&self) -> &AssetHash {
-        &self.assertion_store.hash
+    pub fn compute_hash_from_stream<R>(&self, stream: &mut R) -> Result<Vec<u8>, C2paError>
+    where
+        R: Read + Seek + ?Sized,
+    {
+        let hash = match &self.assertion_store.hash {
+            Some(data_hash) => data_hash.hash_from_stream(stream)?,
+            None => {
+                // Remove the entire C2PA manifest store from asset
+                todo!()
+            }
+        };
+
+        Ok(hash)
     }
 }
 
@@ -78,8 +81,8 @@ pub struct AssertionStore {
     pub proof: Option<Proof>,
     #[serde(rename = "c2pa.actions.v2")]
     pub actions: Actions,
-    #[serde(alias = "c2pa.hash.bmff.v3", alias = "c2pa.hash.data")]
-    pub hash: AssetHash,
+    #[serde(alias = "c2pa.hash.data")]
+    pub hash: Option<Arc<DataHash>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,30 +120,16 @@ pub struct Proof {
 #[serde(untagged)]
 pub enum AssetHash {
     Data(Arc<DataHash>),
-    Bmff(Arc<BmffHash>),
+    Bmff(String),
 }
 
 impl AssetHash {
     /// Returns the asset hash as a base64 string.
-    pub fn value(&self) -> Option<String> {
+    pub fn value(&self) -> String {
         match self {
-            AssetHash::Data(data_hash) => Some(String::from_utf8(data_hash.hash.clone()).unwrap()),
-            AssetHash::Bmff(bmff_hash) => bmff_hash
-                .hash()
-                .map(|h| String::from_utf8(h.clone()).unwrap()),
+            AssetHash::Data(data_hash) => String::from_utf8(data_hash.hash.clone()).unwrap(),
+            AssetHash::Bmff(bmff_hash) => bmff_hash.clone(),
         }
-    }
-
-    pub fn compute_hash_from_stream<R>(&self, stream: &mut R) -> Result<Vec<u8>, C2paError>
-    where
-        R: Read + Seek + ?Sized,
-    {
-        let hash = match self {
-            AssetHash::Data(data_hash) => data_hash.hash_from_stream(stream)?,
-            AssetHash::Bmff(bmff_hash) => bmff_hash.hash_from_stream(stream)?,
-        };
-
-        Ok(hash)
     }
 }
 
@@ -172,7 +161,7 @@ mod tests {
     use crate::types::AssertionStore;
 
     #[test]
-    fn test_deser_hash() {
+    fn test_deser_data_hash() {
         let json = json!({
             "c2pa.actions.v2": {
                 "actions": []
@@ -220,9 +209,6 @@ mod tests {
 
         let store = serde_json::from_value::<AssertionStore>(json).unwrap();
 
-        assert_eq!(
-            store.hash.value().unwrap(),
-            String::from("VNtDCaAx/XHJUJdTmRaPZfNScgKhXSVwlK0yILwWJkE=")
-        )
+        assert!(store.hash.is_some())
     }
 }

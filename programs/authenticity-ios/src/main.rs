@@ -4,20 +4,22 @@ sp1_zkvm::entrypoint!(main);
 use std::io::Cursor;
 
 use base64ct::{Base64, Encoding};
-use zcam1_c2pa_utils::extract_manifest_from_stream;
+use zcam1_c2pa_utils::{compute_hash_from_stream, extract_manifest_from_stream};
 use zcam1_ios::{validate_assertion, validate_attestation, AuthInputs, APPLE_ROOT_CERT};
 
 pub fn main() {
     let auth_inputs = sp1_zkvm::io::read::<AuthInputs>();
     let mut photo_stream = Cursor::new(&auth_inputs.photo_bytes);
-    let store = extract_manifest_from_stream(&auth_inputs.format, photo_stream.clone()).unwrap();
+    let store = extract_manifest_from_stream(&auth_inputs.format, &mut photo_stream).unwrap();
     let active_manifest = store.active_manifest().unwrap();
     let bindings = active_manifest.bindings().unwrap();
-    let hash = active_manifest.hash();
-    let photo_hash = hash.compute_hash_from_stream(&mut photo_stream).unwrap();
+    let photo_hash = compute_hash_from_stream(
+        &mut photo_stream,
+        auth_inputs.photo_bytes.len(),
+        &auth_inputs.format,
+    )
+    .unwrap();
     let client_data = Base64::encode_string(&photo_hash);
-
-    assert_eq!(hash.value().unwrap(), client_data);
 
     // Skip App Attest validation if we are on a simulator
     if !bindings.attestation.starts_with("SIMULATOR_MOCK_") {

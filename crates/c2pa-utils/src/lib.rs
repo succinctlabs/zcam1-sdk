@@ -1,10 +1,10 @@
 use std::{
     fs::File,
-    io::{Read, Seek},
+    io::{Cursor, Read, Seek},
     thread,
 };
 
-use c2pa::{hash_stream_by_alg, Reader};
+use c2pa::{hash_stream_by_alg, jumbf_io::get_assetio_handler, Reader};
 use futures::channel::oneshot;
 
 use crate::{
@@ -101,8 +101,32 @@ pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
 #[cfg(feature = "io")]
 #[uniffi::export]
 pub fn compute_hash(path: &str) -> Result<Vec<u8>, C2paError> {
-    let mut file = File::open(path.replace("file://", ""))?;
-    let hash = hash_stream_by_alg("sha256", &mut file, None, true)?;
+    let path = path.strip_prefix("file://").unwrap_or(path);
+    let format = format_from_path(path).ok_or_else(|| C2paError::FormatNotSupported)?;
+
+    let mut file = File::open(path)?;
+
+    let file_size = file.metadata()?.len() as usize;
+
+    compute_hash_from_stream(&mut file, file_size, &format)
+}
+
+pub fn compute_hash_from_stream<S: Read + Seek + Send>(
+    mut stream: S,
+    stream_size: usize,
+    format: &str,
+) -> Result<Vec<u8>, C2paError> {
+    let assetio = get_assetio_handler(format).ok_or_else(|| C2paError::FormatNotSupported)?;
+    let writer = assetio
+        .get_writer(format)
+        .ok_or_else(|| C2paError::FormatNotSupported)?;
+
+    let buffer = Vec::with_capacity(stream_size);
+    let mut without_manifest = Cursor::new(buffer);
+
+    writer.remove_cai_store_from_stream(&mut stream, &mut without_manifest)?;
+
+    let hash = hash_stream_by_alg("sha256", &mut without_manifest, None, true)?;
 
     Ok(hash)
 }

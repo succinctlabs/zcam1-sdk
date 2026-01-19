@@ -1,7 +1,5 @@
 use std::{
-    cmp,
-    fs::{self, File},
-    io::Cursor,
+    fs::File,
     sync::{Arc, RwLock},
 };
 
@@ -11,16 +9,11 @@ use c2pa::{
 };
 use serde_json::Value;
 
-use crate::{
-    error::C2paError,
-    signing::sign_with_enclave,
-    types::{Exclusion, ManifestStore},
-};
+use crate::{error::C2paError, signing::sign_with_enclave};
 
 #[derive(uniffi::Object)]
 pub struct ManifestEditor {
     source_file_path: String,
-    exclusions: Vec<Exclusion>,
     builder: Arc<RwLock<Builder>>,
     signer: Box<dyn AsyncSigner + Send>,
 }
@@ -51,18 +44,12 @@ impl ManifestEditor {
         Self {
             builder: Arc::new(RwLock::new(builder)),
             source_file_path: path.to_string(),
-            exclusions: vec![],
             signer: Box::new(signer),
         }
     }
 
     #[uniffi::constructor()]
-    pub fn from_file_and_manifest(
-        path: &str,
-        store: &ManifestStore,
-        key_tag: Vec<u8>,
-        certs: &str,
-    ) -> Result<Self, C2paError> {
+    pub fn from_file(path: &str, key_tag: Vec<u8>, certs: &str) -> Result<Self, C2paError> {
         let signer = CallbackSigner::new(
             move |_context, data: &[u8]| {
                 sign_with_enclave(&key_tag, data)
@@ -72,7 +59,7 @@ impl ManifestEditor {
             certs,
         );
 
-        Self::from_file_and_manifest_with_signer(path, store, signer)
+        Self::from_file_with_signer(path, signer)
     }
 
     pub fn add_title(&self, title: &str) -> Result<(), C2paError> {
@@ -126,8 +113,7 @@ impl ManifestEditor {
             std::mem::take(&mut *guard)
         };
 
-        let input_bytes = self.strip_exclusions_from_source()?;
-        let mut input_stream = Cursor::new(input_bytes);
+        let mut input_stream = File::open(&self.source_file_path)?;
         let destination = destination.replace("file://", "");
         let mut output_file = File::create(destination)?;
 
@@ -146,15 +132,11 @@ impl ManifestEditor {
 }
 
 impl ManifestEditor {
-    pub fn from_file_and_manifest_with_signer<S: AsyncSigner + Send + 'static>(
+    pub fn from_file_with_signer<S: AsyncSigner + Send + 'static>(
         path: &str,
-        store: &ManifestStore,
         signer: S,
     ) -> Result<Self, C2paError> {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
-
-        let active_manifest = store.active_manifest()?;
-        //let mut exclusions = active_manifest.data_hash().exclusions.clone();
 
         let mut builder = Builder::new();
 
@@ -166,16 +148,15 @@ impl ManifestEditor {
             .push(ClaimGeneratorInfo::new("ZCAM1"));
         builder.definition.vendor = Some("Succinct".to_string());
 
-        if let Some(capture) = active_manifest.action("c2pa.capture".to_string()) {
-            builder.add_action(capture)?;
-        }
+        //if let Some(capture) = active_manifest.action("c2pa.capture".to_string()) {
+        //    builder.add_action(capture)?;
+        //}
 
         //exclusions.sort_by_key(|e| e.start);
 
         let editor = Self {
             source_file_path: path.to_string(),
             builder: Arc::new(RwLock::new(builder)),
-            exclusions: vec![],
             signer: Box::new(signer),
         };
 
@@ -196,37 +177,7 @@ impl ManifestEditor {
         Self {
             builder: Arc::new(RwLock::new(builder)),
             source_file_path: path.to_string(),
-            exclusions: vec![],
             signer: Box::new(signer),
         }
-    }
-
-    fn strip_exclusions_from_source(&self) -> Result<Vec<u8>, C2paError> {
-        let source = fs::read(&self.source_file_path)?;
-        let mut dest = Vec::with_capacity(source.len());
-
-        // 'cursor' tracks the index up to which we have processed/skipped in source
-        let mut cursor: usize = 0;
-
-        for ex in &self.exclusions {
-            let ex_start = ex.start as usize;
-            let ex_end = ex_start + ex.length as usize;
-
-            if ex_start >= source.len() {
-                break;
-            }
-
-            if ex_start > cursor {
-                dest.extend_from_slice(&source[cursor..ex_start]);
-            }
-
-            cursor = cmp::max(cursor, ex_end);
-        }
-
-        if cursor < source.len() {
-            dest.extend_from_slice(&source[cursor..]);
-        }
-
-        Ok(dest)
     }
 }

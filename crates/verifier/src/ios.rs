@@ -1,6 +1,6 @@
 use base64ct::{Base64, Encoding};
 use sp1_verifier::GROTH16_VK_BYTES;
-use zcam1_c2pa_utils::extract_manifest;
+use zcam1_c2pa_utils::{compute_hash, extract_manifest};
 
 use crate::error::Error;
 
@@ -23,15 +23,14 @@ const APPLE_ROOT_CERT: &str = "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqh
 /// * `Err(Error)` if the manifest cannot be extracted, the proof is not found, or verification fails
 pub fn verify_proof(path: &str) -> Result<bool, Error> {
     let store = extract_manifest(path)?;
+    let mut hash = compute_hash(path)?;
     let active_manifest = store.active_manifest()?;
     let proof = active_manifest
         .proof()
         .ok_or_else(|| Error::ProofNotFound)?;
     let mut public_inputs = vec![];
 
-    public_inputs.append(&mut Base64::decode_vec(
-        &active_manifest.hash().value().unwrap(),
-    )?);
+    public_inputs.append(&mut hash);
     public_inputs.append(&mut APPLE_ROOT_CERT.as_bytes().to_vec());
 
     sp1_verifier::Groth16Verifier::verify(

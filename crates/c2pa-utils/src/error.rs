@@ -18,6 +18,12 @@ pub enum C2paError {
     #[error("No active manifest")]
     NoActiveManifest,
 
+    #[error("No hash found in manifest")]
+    NoHash,
+
+    #[error("Format not supported")]
+    FormatNotSupported,
+
     #[error("The lock has been poisoned")]
     Poisoned,
 }
