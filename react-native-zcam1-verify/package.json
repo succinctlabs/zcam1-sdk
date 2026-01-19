@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-verify",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "description": "ZCAM1 Verify SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
