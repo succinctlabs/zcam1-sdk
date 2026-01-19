@@ -1,6 +1,7 @@
 import { base64 } from "@scure/base";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import {
+  computeHash,
   extractManifest,
   type ManifestInterface,
 } from "@succinctlabs/react-native-zcam1-c2pa";
@@ -36,6 +37,7 @@ export const APPLE_ROOT_CERT =
 export class VerifiableFile {
   path: string;
   activeManifest: ManifestInterface;
+  hash: ArrayBuffer | undefined;
 
   /**
    * Creates a VerifiableFile instance by extracting the C2PA manifest from the file.
@@ -52,10 +54,13 @@ export class VerifiableFile {
    * Verifies the manifest's bindings (e.g., App Attest).
    */
   verifyBindings(appAttestProduction: boolean): boolean {
-    const photoHash = base64.decode(this.activeManifest.hash()!);
+    if (this.hash === undefined) {
+      this.hash = computeHash(this.path);
+    }
+
     return verifyBindingsFromManifest(
       this.activeManifest.bindings()!,
-      photoHash.buffer as ArrayBuffer,
+      this.hash,
       appAttestProduction,
     );
   }
@@ -65,7 +70,7 @@ export class VerifiableFile {
    * @returns True if the proof is valid, false otherwise
    */
   verifyProof(): boolean {
-    return verifyProofFromManifest(this.activeManifest);
+    return verifyProofFromManifest(this.activeManifest, this.path);
   }
 
   /**
@@ -73,7 +78,11 @@ export class VerifiableFile {
    * @returns The manifest data hash (base64-encoded string)
    */
   dataHash(): string | undefined {
-    return this.activeManifest.hash();
+    if (this.hash === undefined) {
+      this.hash = computeHash(this.path);
+    }
+
+    return base64.encode(new Uint8Array(this.hash));
   }
 
   /**
@@ -88,20 +97,22 @@ export class VerifiableFile {
   }
 }
 
-function verifyProofFromManifest(activeManifest: ManifestInterface): boolean {
+function verifyProofFromManifest(
+  activeManifest: ManifestInterface,
+  path: string,
+): boolean {
   let proof = activeManifest.proof();
 
   if (proof === undefined) {
     throw new Error("The proof was not found in the manifest");
   }
 
-  let dataHashB64 = activeManifest.hash()!;
-  const dataHash = base64.decode(dataHashB64);
+  const hash = new Uint8Array(computeHash(path));
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 
-  let publicInputs = new Uint8Array(dataHash.length + appleRootCert.length);
-  publicInputs.set(dataHash);
-  publicInputs.set(appleRootCert, dataHash.length);
+  let publicInputs = new Uint8Array(hash.length + appleRootCert.length);
+  publicInputs.set(hash);
+  publicInputs.set(appleRootCert, hash.length);
 
   return verifyGroth16(
     base64.decode(proof.data).buffer as ArrayBuffer,

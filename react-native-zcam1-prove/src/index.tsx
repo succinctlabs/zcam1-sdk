@@ -471,7 +471,6 @@ export class ProvingClient {
    * @returns Path to the new file with embedded proof
    */
   async embedProof(originalPath: string, proof: ArrayBuffer): Promise<string> {
-    const store = extractManifest(originalPath);
     originalPath = originalPath.replace("file://", "");
     const format = formatFromPath(originalPath);
     const ext = Util.extname(originalPath);
@@ -480,9 +479,8 @@ export class ProvingClient {
       throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
-    const manifestEditor = ManifestEditor.fromFileAndManifest(
+    const manifestEditor = ManifestEditor.fromFile(
       originalPath,
-      store,
       this.contentKeyId.buffer as ArrayBuffer,
       this.certChainPem,
     );
