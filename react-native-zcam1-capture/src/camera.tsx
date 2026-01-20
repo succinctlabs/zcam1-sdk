@@ -17,6 +17,7 @@ import NativeZcam1Sdk, {
   type FlashMode,
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
+  type DepthData,
 } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 import { Dirs, Util } from "react-native-file-access";
@@ -81,6 +82,8 @@ type NativeCaptureResult = {
   format: CaptureFormat;
   /** Optional metadata (EXIF / TIFF) for C2PA manifest enrichment. */
   metadata?: Record<string, any> | null;
+  /** Optional depth data extracted from the captured photo (if available). */
+  depthData?: DepthData | null;
 };
 
 /** Props passed to the native Swift camera view. */

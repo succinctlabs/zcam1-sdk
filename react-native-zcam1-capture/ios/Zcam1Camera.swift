@@ -113,11 +113,22 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 metadata["{Exif}"] = exifDict
             }
 
-            let result: [String: Any] = [
+            // Extract depth data if available
+            var depthData: [String: Any]? = nil
+            if let extractedDepth = Zcam1DepthDataProcessor.extractDepthData(from: photo) {
+                depthData = extractedDepth
+            }
+
+            var result: [String: Any] = [
                 "filePath": tmpURL.path,
                 "format": format.formatString,
                 "metadata": metadata,
             ]
+
+            // Include depth data in result if available
+            if let depthData = depthData {
+                result["depthData"] = depthData
+            }
 
             DispatchQueue.main.async {
                 self.completion(result as NSDictionary, nil)
@@ -245,12 +256,16 @@ public final class Zcam1CameraService: NSObject {
                 return
             }
 
-            print("[Zcam1CameraService] configureVideoDataOutput: session.isRunning=\(session.isRunning), preset=\(session.sessionPreset.rawValue)")
+            print(
+                "[Zcam1CameraService] configureVideoDataOutput: session.isRunning=\(session.isRunning), preset=\(session.sessionPreset.rawValue)"
+            )
 
             // Check if we already have a video data output.
             for output in session.outputs {
                 if let existingOutput = output as? AVCaptureVideoDataOutput {
-                    print("[Zcam1CameraService] configureVideoDataOutput: already have video data output, updating delegate")
+                    print(
+                        "[Zcam1CameraService] configureVideoDataOutput: already have video data output, updating delegate"
+                    )
                     existingOutput.setSampleBufferDelegate(delegate, queue: callbackQueue)
                     DispatchQueue.main.async { completion(existingOutput) }
                     return
@@ -265,14 +280,18 @@ public final class Zcam1CameraService: NSObject {
 
             // Set delegate BEFORE adding to session to not miss any frames.
             output.setSampleBufferDelegate(delegate, queue: callbackQueue)
-            print("[Zcam1CameraService] configureVideoDataOutput: delegate set on queue \(callbackQueue.label)")
+            print(
+                "[Zcam1CameraService] configureVideoDataOutput: delegate set on queue \(callbackQueue.label)"
+            )
 
             session.beginConfiguration()
 
             // Try to add the output.
             if session.canAddOutput(output) {
                 session.addOutput(output)
-                print("[Zcam1CameraService] configureVideoDataOutput: added output successfully, total outputs=\(session.outputs.count)")
+                print(
+                    "[Zcam1CameraService] configureVideoDataOutput: added output successfully, total outputs=\(session.outputs.count)"
+                )
 
                 // Configure the connection.
                 if let connection = output.connection(with: .video) {
@@ -280,16 +299,24 @@ public final class Zcam1CameraService: NSObject {
                     if connection.isVideoOrientationSupported {
                         connection.videoOrientation = .portrait
                     }
-                    print("[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled)")
+                    print(
+                        "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled)"
+                    )
                 } else {
-                    print("[Zcam1CameraService] configureVideoDataOutput: WARNING - no video connection found!")
+                    print(
+                        "[Zcam1CameraService] configureVideoDataOutput: WARNING - no video connection found!"
+                    )
                 }
 
                 session.commitConfiguration()
-                print("[Zcam1CameraService] configureVideoDataOutput: committed configuration, session.isRunning=\(session.isRunning)")
+                print(
+                    "[Zcam1CameraService] configureVideoDataOutput: committed configuration, session.isRunning=\(session.isRunning)"
+                )
                 DispatchQueue.main.async { completion(output) }
             } else {
-                print("[Zcam1CameraService] configureVideoDataOutput: canAddOutput returned false, preset=\(session.sessionPreset.rawValue)")
+                print(
+                    "[Zcam1CameraService] configureVideoDataOutput: canAddOutput returned false, preset=\(session.sessionPreset.rawValue)"
+                )
                 session.commitConfiguration()
                 DispatchQueue.main.async { completion(nil) }
             }
@@ -303,7 +330,9 @@ public final class Zcam1CameraService: NSObject {
             session.beginConfiguration()
             session.removeOutput(output)
             session.commitConfiguration()
-            print("[Zcam1CameraService] removeVideoDataOutput: removed output, total outputs=\(session.outputs.count)")
+            print(
+                "[Zcam1CameraService] removeVideoDataOutput: removed output, total outputs=\(session.outputs.count)"
+            )
         }
     }
 
@@ -350,10 +379,10 @@ public final class Zcam1CameraService: NSObject {
             // Prefer virtual devices that combine multiple cameras for seamless zoom.
             // Order matters - first available is used.
             let deviceTypes: [AVCaptureDevice.DeviceType] = [
-                .builtInTripleCamera,      // Ultra-wide + Wide + Telephoto
-                .builtInDualWideCamera,    // Ultra-wide + Wide
-                .builtInDualCamera,        // Wide + Telephoto
-                .builtInWideAngleCamera,   // Wide only (fallback)
+                .builtInTripleCamera,  // Ultra-wide + Wide + Telephoto
+                .builtInDualWideCamera,  // Ultra-wide + Wide
+                .builtInDualCamera,  // Wide + Telephoto
+                .builtInWideAngleCamera,  // Wide only (fallback)
             ]
 
             let discoverySession = AVCaptureDevice.DiscoverySession(
@@ -430,6 +459,11 @@ public final class Zcam1CameraService: NSObject {
                             ]
                         )
                     }
+                }
+
+                // Enable depth + calibration delivery on the output (if supported).
+                if self.photoOutput.isDepthDataDeliverySupported {
+                    self.photoOutput.isDepthDataDeliveryEnabled = true
                 }
 
                 session.commitConfiguration()
@@ -900,6 +934,15 @@ public final class Zcam1CameraService: NSObject {
                         }
                     }
 
+                    // Request depth + calibration data for this capture (if supported).
+                    // (Even if the output supports it, some capture formats may still not deliver depth.)
+                    if self.photoOutput.isDepthDataDeliverySupported {
+                        settings.isDepthDataDeliveryEnabled = true
+                    }
+                    if self.photoOutput.isCameraCalibrationDataDeliverySupported {
+                        settings.isCameraCalibrationDataDeliveryEnabled = true
+                    }
+
                     // Create delegate to handle capture and keep it alive until completion
                     let delegate = PhotoCaptureDelegate(
                         format: format,
@@ -1122,6 +1165,45 @@ public final class Zcam1CameraService: NSObject {
         }
     }
 
+    /// Check if the device supports depth data capture and return available formats.
+    public func getDepthSensorInfo(completion: @escaping (NSDictionary?, NSError?) -> Void) {
+        // Check if current device supports depth data capture
+        // Devices with dual/triple cameras typically support depth
+        let deviceTypes: [AVCaptureDevice.DeviceType] = [
+            .builtInTripleCamera,
+            .builtInDualWideCamera,
+            .builtInDualCamera,
+        ]
+
+        let discoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: deviceTypes,
+            mediaType: .video,
+            position: .back
+        )
+
+        let supportsDepth = !discoverySession.devices.isEmpty
+
+        var formats: [String] = []
+        if supportsDepth {
+            // List all potentially available depth formats
+            formats = [
+                "depthFloat32",
+                "depthFloat16",
+                "disparityFloat32",
+                "disparityFloat16",
+            ]
+        }
+
+        let result: [String: Any] = [
+            "available": supportsDepth,
+            "formats": formats,
+        ]
+
+        DispatchQueue.main.async {
+            completion(result as NSDictionary, nil)
+        }
+    }
+
 }
 // Capture delegate implementation moved into the internal PhotoCaptureDelegate helper.
 
@@ -1282,7 +1364,8 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
 
     private func reconfigureSession() {
         let svc = Zcam1CameraService.shared
-        let positionEnum: AVCaptureDevice.Position = position.lowercased() == "front" ? .front : .back
+        let positionEnum: AVCaptureDevice.Position =
+            position.lowercased() == "front" ? .front : .back
 
         svc.configureSessionIfNeeded(position: positionEnum) { [weak self] error in
             guard let self = self, error == nil else { return }

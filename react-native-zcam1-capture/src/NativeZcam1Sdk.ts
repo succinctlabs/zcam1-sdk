@@ -15,6 +15,60 @@ export interface TakeNativePhotoOptions {
   quality?: number;
 }
 
+export interface DepthDataStatistics {
+  /**
+   * Minimum depth value in the depth map.
+   */
+  min: number;
+
+  /**
+   * Maximum depth value in the depth map.
+   */
+  max: number;
+
+  /**
+   * Mean depth value across all valid pixels.
+   */
+  mean: number;
+
+  /**
+   * Standard deviation of depth values.
+   */
+  std_dev: number;
+
+  /**
+   * Number of valid (non-NaN, non-infinite) pixels.
+   */
+  valid_pixels: number;
+}
+
+export interface DepthData {
+  /**
+   * Width of the depth data map in pixels.
+   */
+  width: number;
+
+  /**
+   * Height of the depth data map in pixels.
+   */
+  height: number;
+
+  /**
+   * Pixel format of the depth data (depthFloat32, depthFloat16, disparityFloat32, disparityFloat16).
+   */
+  pixel_format: string;
+
+  /**
+   * Statistics computed from the depth data.
+   */
+  statistics: DepthDataStatistics;
+
+  /**
+   * Accuracy of the depth data: "absolute" or "relative" (iOS 14.1+).
+   */
+  accuracy: string;
+}
+
 export interface TakeNativePhotoResult {
   /**
    * Local filesystem path to the captured image file.
@@ -31,6 +85,12 @@ export interface TakeNativePhotoResult {
    * Optional metadata extracted by the native layer (EXIF, etc).
    */
   metadata?: { [key: string]: unknown } | null;
+
+  /**
+   * Depth data extracted from the captured photo (if available).
+   * Only present on devices with depth camera support (e.g., iPhone 12+, iPad Pro).
+   */
+  depthData?: DepthData | null;
 }
 
 export type NativeVideoRecordingFormat = "mov";

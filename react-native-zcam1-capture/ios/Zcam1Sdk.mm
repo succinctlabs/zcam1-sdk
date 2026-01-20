@@ -191,4 +191,54 @@
 #endif
 }
 
+- (void)getDepthSensorInfo:(RCTPromiseResolveBlock)resolve
+                    reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    // Check if current device supports depth data capture
+    AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInDualCamera
+                                                                     mediaType:AVMediaTypeVideo
+                                                                      position:AVCaptureDevicePositionBack];
+
+    // Also try triple camera and dual wide camera for broader support
+    if (!device) {
+      device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInTripleCamera
+                                                   mediaType:AVMediaTypeVideo
+                                                    position:AVCaptureDevicePositionBack];
+    }
+
+    if (!device) {
+      device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInDualWideCamera
+                                                   mediaType:AVMediaTypeVideo
+                                                    position:AVCaptureDevicePositionBack];
+    }
+
+    BOOL supportsDepth = device != nil;
+
+    NSMutableArray<NSString *> *formats = [NSMutableArray array];
+    if (supportsDepth) {
+      [formats addObject:@"depthFloat32"];
+      [formats addObject:@"depthFloat16"];
+      [formats addObject:@"disparityFloat32"];
+      [formats addObject:@"disparityFloat16"];
+    }
+
+    NSDictionary *result = @{
+      @"available": @(supportsDepth),
+      @"formats": formats,
+    };
+
+    resolve(result);
+    return;
+  }
+
+  // iOS version too old
+  resolve(nil);
+#else
+  // Swift-generated header is not available
+  resolve(nil);
+#endif
+}
+
 @end
