@@ -1,0 +1,123 @@
+# Installation
+
+## Prerequisites
+
+### Rust Toolchain
+
+The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
+
+```bash
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add iOS targets
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+```
+
+### Xcode
+
+Xcode is required for iOS development. Install it from the Mac App Store.
+
+### Development Environment
+
+- Node.js 18+
+- React Native 0.81+
+- Expo SDK 54+ (if using Expo)
+
+## Installing Packages
+
+The ZCAM SDK is divided into standalone packages. Install only what you need:
+
+```bash
+# Full flow (capture, prove, verify)
+npm i react-native-zcam1-capture react-native-zcam1-prove react-native-zcam1-verify
+
+# Install native dependencies
+cd ios && pod install
+```
+
+Individual packages:
+
+| Package | Purpose |
+|---------|---------|
+| `react-native-zcam1-capture` | Take photos with C2PA manifests |
+| `react-native-zcam1-prove` | Generate ZK proofs for photos |
+| `react-native-zcam1-verify` | Verify photo authenticity |
+| `react-native-zcam1-picker` | Image picker with authenticity badges |
+
+:::warning
+The UniFFI bindings are built during `npm install`. This can take several minutes on first install.
+:::
+
+## iOS Configuration
+
+### Bundle Identifier
+
+Configure your app's bundle identifier in your project. For Expo apps, set it in `app.json`:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.yourapp"
+    }
+  }
+}
+```
+
+### App ID for App Attest
+
+You'll need your Apple Team ID combined with your bundle identifier. The format is:
+
+```
+<TEAM_ID>.<BUNDLE_IDENTIFIER>
+```
+
+For example: `NLS5R4YCGX.com.yourcompany.yourapp`
+
+To find your Team ID:
+1. Open Keychain Access on your Mac
+2. Find a certificate named "Apple Development"
+3. The Team ID is the "Organizational Unit" field
+
+### Required Permissions
+
+Add these keys to your `Info.plist` (or `app.json` for Expo):
+
+```json
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses your camera to capture photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to save photos."
+      }
+    }
+  }
+}
+```
+
+## Environment Variables
+
+Create a `.env` file with your configuration:
+
+```bash
+EXPO_PUBLIC_APP_ID=<TEAM_ID>.<BUNDLE_IDENTIFIER>
+EXPO_PUBLIC_BACKEND_URL=https://your-backend-url.com
+```
+
+## Running on Device
+
+App Attest requires a physical iOS device—it does not work in the simulator (the SDK falls back to mock mode for development).
+
+```bash
+# Expo
+npx expo prebuild
+npx expo run:ios --device
+
+# React Native CLI
+npx react-native run-ios --device
+```
+
+On first run, you may need to trust the developer certificate on your device:
+**Settings → General → Device Management → Trust**

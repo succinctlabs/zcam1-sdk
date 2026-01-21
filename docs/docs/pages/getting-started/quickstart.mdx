@@ -1,0 +1,188 @@
+# Quickstart
+
+This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it.
+
+## Setup
+
+Wrap your app with the `ProverProvider` to enable proof generation:
+
+```tsx
+// App.tsx or _layout.tsx
+import { ProverProvider } from "react-native-zcam1-prove";
+
+export default function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      {/* Your app */}
+    </ProverProvider>
+  );
+}
+```
+
+## Step 1: Capture a Photo
+
+Initialize the capture SDK and use the `ZCamera` component:
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { Button, View } from "react-native";
+import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+
+export function CaptureScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+
+  const settings = {
+    appId: process.env.EXPO_PUBLIC_APP_ID!,
+    production: false,
+  };
+
+  useEffect(() => {
+    initCapture(settings).then(setCaptureInfo);
+  }, []);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto();
+    if (photo) {
+      console.log("Captured:", photo.path);
+      // photo.path contains a C2PA-signed image with succinct.bindings
+    }
+  };
+
+  if (!captureInfo) return null;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <Button title="Capture" onPress={handleCapture} />
+    </View>
+  );
+}
+```
+
+## Step 2: Generate a Proof
+
+Use the `useProver` hook to access the proving client:
+
+```tsx
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+
+export function ProvePhoto({ photoUri }: { photoUri: string }) {
+  const { provingClient, isInitializing } = useProver();
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+
+    // Generate proof and embed it in the photo (convenience method)
+    const provenPath = await provingClient.waitAndEmbedProof(photoUri);
+
+    // Save to camera roll
+    await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+    console.log("Proof generated:", provenPath);
+  };
+
+  if (isInitializing) return <Text>Initializing prover...</Text>;
+
+  return <Button title="Generate Proof" onPress={handleProve} />;
+}
+```
+
+## Step 3: Verify a Photo
+
+Use the `VerifiableFile` class to verify authenticity:
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+export function VerifyPhoto({ photoUri }: { photoUri: string }) {
+  const handleVerify = () => {
+    const file = new VerifiableFile(photoUri);
+
+    const hashValid = file.verifyHash();
+    const proofValid = file.verifyProof();
+
+    if (hashValid && proofValid) {
+      console.log("Photo is authentic!");
+    } else {
+      console.log("Verification failed");
+    }
+  };
+
+  return <Button title="Verify" onPress={handleVerify} />;
+}
+```
+
+## Complete Example
+
+Here's a minimal app combining all three steps:
+
+```tsx
+import { useState, useRef, useEffect } from "react";
+import { View, Button, Text } from "react-native";
+import { ProverProvider, useProver } from "react-native-zcam1-prove";
+import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+function MainScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+  const [photoPath, setPhotoPath] = useState<string>();
+  const [provenPath, setProvenPath] = useState<string>();
+  const { provingClient } = useProver();
+
+  const settings = {
+    appId: process.env.EXPO_PUBLIC_APP_ID!,
+    production: false,
+  };
+
+  useEffect(() => {
+    initCapture(settings).then(setCaptureInfo);
+  }, []);
+
+  const capture = async () => {
+    const photo = await camera.current?.takePhoto();
+    if (photo) setPhotoPath(photo.path);
+  };
+
+  const prove = async () => {
+    if (!provingClient || !photoPath) return;
+    const path = await provingClient.waitAndEmbedProof(photoPath);
+    setProvenPath(path);
+  };
+
+  const verify = () => {
+    if (!provenPath) return;
+    const file = new VerifiableFile(provenPath);
+    const isValid = file.verifyHash() && file.verifyProof();
+    alert(isValid ? "Authentic!" : "Invalid");
+  };
+
+  if (!captureInfo) return <Text>Initializing...</Text>;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <Button title="1. Capture" onPress={capture} />
+      <Button title="2. Prove" onPress={prove} disabled={!photoPath} />
+      <Button title="3. Verify" onPress={verify} disabled={!provenPath} />
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      <MainScreen />
+    </ProverProvider>
+  );
+}
+```
+
+## What Happens Under the Hood
+
+1. **Capture**: Takes a photo, generates an App Attest assertion over the photo hash, and embeds a C2PA manifest with `succinct.bindings`.
+
+2. **Prove**: Sends the bindings to the prover backend, which generates an SP1 zero-knowledge proof. The proof is embedded as `succinct.proof` in the C2PA manifest.
+
+3. **Verify**: Recomputes the photo hash, verifies it matches the manifest, and validates the ZK proof against the pinned Apple Root CA.

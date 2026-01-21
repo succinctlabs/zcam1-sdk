@@ -1,0 +1,20 @@
+# ZCAM SDK
+
+## Docs
+
+- [Architecture](/technical-docs/architecture): The ZCAM SDK allows an integrating app to:
+- [FAQs](/technical-docs/faq): *Does ZCAM work on Android?*
+- [Security](/technical-docs/security): A verified zphoto provides the following guarantees:
+- [ZK Proof Details](/technical-docs/zkproof-details): The SP1 program proves the following:
+- [Capture SDK](/sdk/capture): The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+- [Picker SDK](/sdk/picker): The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+- [Prove SDK](/sdk/prove): The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+- [Verify SDK](/sdk/verify): The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+- [ZCAM vs Other Approaches](/overview/comparisons_to_other_approaches): There already exist numerous technologies in the authenticity and verifiability of images space. These solutions, however, solve for slightly different problem spaces and provide varying levels of functionality.
+- [Example Use Cases](/overview/example_usecases): Below are two real-world examples demonstrating how the ZCAM SDK can be integrated to solve different verification challenges. Each example highlights a distinct verification pattern: **end-user verification** (public-facing) versus **internal verification** (backend processing).
+- [How it Works](/overview/how_it_works): ZCAM enables photo authenticity verification through a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
+- [Introduction](/overview/introduction): Today, with the advent of AI generated images, liberal usage of editing software and increasing incentives to deceive and alter public perception, the importance of image integrity is at an all time high.
+- [Installation](/getting-started/installation): The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
+- [Quickstart](/getting-started/quickstart): This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it.
+- [Editing a ZCAM Photo](/c2pa-ecosystem/editing_zcam_photos): All ZCAM photos are C2PA compatible, meaning that any editing software that supports C2PA can be used to edit ZCAM photos while maintaining the original capture manifests.
+- [Hardware Camera Support](/c2pa-ecosystem/hardware_camera_support): We are beginning to see camera companies roll out C2PA-supported cameras. Leica was the first camera company to really lean into C2PA starting in late 2023, with other companies adding support since then.

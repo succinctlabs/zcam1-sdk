@@ -1,0 +1,2100 @@
+# ZCAM SDK
+
+## Architecture
+
+### Overview
+
+The ZCAM SDK allows an integrating app to:
+
+1. Take a picture
+2. Generate and sign a valid C2PA manifest over the photo including bindings of a signature of a photo using an Apple attested key and associated attestation.
+3. Generate a verifiable SP1 proof that the photo signature is valid, was signed using a key bound to the app, and corresponds to the photo, attaching that to a valid C2PA manifest
+
+The core flow uses cryptographic keys stored on the device's Secure Enclave to sign and attest that a photo was taken using the device's camera and has not been tampered with.
+
+:::info
+A verifiable photo is defined as a photo that is guaranteed to have been captured on the iPhone camera, using the SDK, and not tampered before it was signed.
+:::
+
+### Cryptographic Keys
+
+The ZCAM architecture generates and leverages two keys:
+
+| Key             | Purpose                        | Apple Attested |
+| --------------- | ------------------------------ | -------------- |
+| **Device Key**  | Signs over a hash of the photo | Yes            |
+| **Content Key** | Signs the C2PA manifest        | No             |
+
+Both keys live in the Secure Enclave of the iPhone device. Importantly, the device key is specifically attested to have been generated on the Secure Enclave and is scoped to the specific app.
+
+### Photo Lifecycle
+
+A photo progresses through three states to become a verified zphoto:
+
+| State               | C2PA Assertion      | Description                                                                                                                                                                                                             |
+| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Raw**             | None                | Original photo taken by phone, including metadata. No verifiable, attested traits.                                                                                                                                      |
+| **Verifiable**      | `succinct.bindings` | Embeds a C2PA manifest including a signature using an Apple attested key over the photo and a verifiable attestation from Apple of the signing key. These can also be used as inputs to generate a zero knowledge proof |
+| **Proven (zphoto)** | `succinct.proof`    | Embeds a C2PA manifest including a verifiable zero knowledge proof that the photo was signed using a valid Apple attested key.                                                                                          |
+
+```
+Raw Photo → [Capture] → Verifiable Photo → [Prove] → Proven zphoto
+                         (bindings)                    (proof)
+```
+
+### Flow
+
+#### 1. Initialization
+
+The SDK first gets initialized. The main logic here is to generate or load the two necessary keys (device key and content key).
+
+#### 2. Capture
+
+The capture step allows a user to take a photo and output a *provable* photo.
+
+When a user wants to take a zphoto, the SDK opens the camera screen. After the photo is taken, the SDK embeds a valid C2PA manifest by doing the following:
+
+1. The photo is hashed, then signed using the device key. This outputs an Apple Attest assertion including a signature over the hash.
+2. The C2PA manifest is initialized with a *capture* action including metadata: time of photo, OS, device model, software version, etc.
+3. A `succinct.bindings` assertion is added to the manifest including data necessary to prove that the photo was signed using a valid Apple attested key.
+
+![Capture flow diagram](/images/diagram_capture.png)
+
+**Output:** A verifiable photo with a valid C2PA manifest containing metadata and an assertion that the photo was signed with an Apple attested key.
+
+:::info
+Note: A verifiable photo can both be verified on its own by verifying the attestation in the C2PA manifest, and also be used as input to generate a zero knowledge proof to hide the attestation
+:::
+
+#### 3. Prove
+
+The prove step takes the provable photo with C2PA manifest including a `succinct.bindings` assertion and generates a proof verifying its validity. This is done by using the SP1 Prover Network to prove the ZCAM program with the photo (and C2PA manifest) as input.
+
+The SDK receives the proof from the network, then updates the photo and C2PA manifest:
+
+* The `succinct.bindings` assertion is removed
+* A `succinct.proof` assertion is added containing the verifiable proof
+
+![Capture flow diagram](/images/diagram_prove.png)
+
+**Output:** The final zphoto with a valid C2PA manifest including a verifiable proof.
+
+#### 4. Verify
+
+The SDK includes logic for parsing and verifying the proof from the C2PA manifest:
+
+* Extract the manifest from the photo
+* Verify the proof in the manifest
+* Verify the photo hash matches the manifest
+
+
+## FAQs
+
+### Android Support
+
+*Does ZCAM work on Android?*
+
+Not at the moment, but we have a plan for Android implementation. Currently, only two Android phone companies support C2PA: Google with their latest Pixel 10 and Samsung.
+
+Google's Pixel 10 has full C2PA support for photos captured on the camera. The design is quite similar to ZCAM's where they use a key generated in the secure enclave to sign the manifest at capture time.
+
+Samsung's C2PA implementation is less useful. It only supports attaching C2PA manifests to photos that were generated using AI.
+
+On the other hand, Android phones (specifically those that support the Google Play Store) are all equipped with the necessary primitives to support a ZCAM flow. Note that all Androids that support the Google Play Store are required to have some secure enclave support. On the iOS side, ZCAM leverages the Apple App Attest API which provides the following guarantees:
+
+1. A key was generated on the secure enclave and is scoped to the calling app
+2. The calling app itself is non-tampered and the binary is trustworthy
+
+Android separates these functionalities into two independent APIs:
+
+1. **Android Key Attestation**: API to obtain an attestation that a given key used by an app is indeed hardware-backed
+2. **Google Play Integrity API**: API used to ensure a given request is from a valid install of an app
+
+By integrating these two APIs in the Android implementation, we will get the same "coverage" that the Apple App Attest API guarantees. The rest of the ZCAM protocol flows as intended, using C2PA and SP1 as necessary.
+
+### Secure Enclave Guarantees
+
+*Is there a way to mimic the signature from the enclave? Is it 100% impossible or just unlikely? Does it vary by OS?*
+
+With proper use of the App Attest (iOS) and Play Integrity/Key Attestation (Android) APIs, it should be 100% impossible to mimic a signature. This relies on Apple and Google ensuring these APIs work as intended, however.
+
+### Jailbroken Devices
+
+*Have we considered more complicated attack vectors, such as jailbroken devices + running a "virtual app" to exploit the signatures?*
+
+Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible and keep the integration as simple as possible, but there's really no guarantees to be had with jailbroken devices, etc. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps.
+
+### Verification Post-edits
+
+*Does cropping or editing break the photo verification?*
+
+Yes, **both bindings verification and ZK proof verification break when a photo is edited**. This is because:
+
+* The Apple App Attest signature (used in bindings verification) is over the hash of the original image
+* The ZK proof (used in proof verification) also verifies the original photo hash
+* When a photo is edited, the image bytes change, causing the hash to change
+* The signature/proof verification fails because the hash no longer matches
+
+Even though C2PA edit manifests can preserve the original capture manifest and add edit history, the actual signature verification will fail because the signature is over the hash of the original image bytes.
+
+If you remove the metadata entirely or crop in a way that strips the C2PA manifest, the photo will also no longer be verifiable. We're looking into watermarking to insert data which could help with cropping, etc.
+
+See the [Editing ZCAM Photos](/c2pa-ecosystem/editing_zcam_photos) page for more details.
+
+### Cross Device Support
+
+*Does your solution detect fakes if a photo is taken with another device?*
+
+ZCAM verifies that a photo was taken using the specific device and app that generated the signature. If a photo is taken with a different device, it would not have the proper attestation and signatures, so it would fail verification.
+
+### Photo of Photo
+
+*Can it detect a photo of a photo?*
+
+What we can do is provide "contextual" metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo. However, this is not a primary feature of the core ZCAM verification system.
+
+### Bindings vs Proof verification
+
+*What's the difference between bindings verification and ZK proof verification?*
+
+**Bindings verification** directly checks the Apple App Attest signature embedded in the C2PA manifest. It can be generated offline, however the attestation data is visible in the manifest.
+
+**ZK proof verification** generates a zero-knowledge proof that verifies the attestation without revealing sensitive details. It provides enhanced privacy but requires network access for proof generation.
+
+ZK proofs are completely optional. You can use ZCAM with bindings verification alone, which works entirely offline.
+
+Choose ZK proof verification when:
+
+* Privacy is paramount—you want to verify authenticity without revealing attestation details
+* You can tolerate network latency for proof generation
+
+See the [How it Works](/overview/how_it_works) page for a detailed comparison and tradeoffs.
+
+### Metadata Stripping
+
+*Which platforms preserve C2PA metadata when uploading images?*
+
+Short answer, most platforms where a user uploads image files to share strip metadata. Platforms where the service is more to "host files" may keep the metadata. LinkedIn has first class support for C2PA.
+
+<details>
+  <summary>Platform Compatibility Table</summary>
+
+  This table documents how different platforms handle C2PA content credentials when images are uploaded and accessed through various methods:
+
+  | **Platform**  | **Upload Method**                                  | **Read Method**                                          | **Maintains Credential?** | **Notes**                                         |
+  | ------------- | -------------------------------------------------- | -------------------------------------------------------- | ------------------------- | ------------------------------------------------- |
+  | **Notion**    | Upload using `/file`                               | Click on link, hosted on `https://file.notion.so/...`    | ✅                         |                                                   |
+  | **Notion**    | Upload using `/file`                               | Download                                                 | ✅                         |                                                   |
+  | **Twitter**   | Upload using upload file functionality             | Download                                                 | ❌                         |                                                   |
+  | **Twitter**   | Link to image                                      | Click on Link                                            | ✅                         | Doesn't render properly unless hosting has og tag |
+  | **Instagram** | New post (ensure original ratio/ not cropped etc.) | No way to download, can expect src to get uploaded image | ❌                         |                                                   |
+  | **LinkedIn**  | Upload in post                                     | Natively embedded                                        | ✅                         |                                                   |
+  | **LinkedIn**  | Upload in post                                     | Download image                                           | ❌                         |                                                   |
+  | **Discord**   | Upload file                                        | Open hosted link                                         | ❌                         | Strips metadata                                   |
+  | **Discord**   | Upload file                                        | Download file from hosted link                           | ❌                         |                                                   |
+  | **Gmail**     | Attach file to email                               | Click preview                                            | ❌                         |                                                   |
+  | **Gmail**     | Attach file to email                               | Download                                                 | ✅                         |                                                   |
+  | **Gmail**     | Embed file in email                                | Download                                                 | ✅                         |                                                   |
+  | **Gmail**     | Embed file in email                                | Click preview                                            | ❌                         |                                                   |
+
+  Note: Cloudflare Images also supports C2PA.
+</details>
+
+
+## Security
+
+### Security Claims
+
+A verified zphoto provides the following guarantees:
+
+1. **Device Authenticity**: The photo was signed on a genuine Apple device with a Secure Enclave
+2. **App Binding**: The signing key is bound to a specific application via Apple App Attest
+3. **Content Integrity**: The photo has not been modified since the signature was created
+4. **Proof Validity**: The above properties are verified in a zero-knowledge proof that chains to Apple's root certificate
+
+### Trust Assumptions
+
+The security of ZCAM relies on the following assumptions:
+
+| Assumption                                | Rationale                                                     |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| Secure Enclave keys cannot be exfiltrated | Hardware security guarantee from Apple                        |
+| Apple App Attest is honest                | Apple signs attestations only for legitimate device/app pairs |
+| SP1 proof system is sound                 | Groth16 proofs cannot be forged without the witness           |
+| SDK code integrity                        | The SDK code on-device has not been tampered with             |
+
+### Critical Assumption: Capture-to-Sign Integrity
+
+:::warning
+The SDK signs the photo immediately after capture, but there is no cryptographic binding
+between the camera hardware and the signing operation. We assume no malicious code can
+execute between the moment the photo is captured and when it is signed.
+:::
+
+This assumption holds if:
+
+* The SDK code has not been tampered with
+* The host application does not inject code into the capture flow
+* The device is not compromised
+
+This is an **operational security** assumption, not a cryptographic guarantee.
+
+### Open Issues
+
+#### App Trust Model
+
+Currently, the SP1 program verifies that a photo was signed by *an* Apple Attested key,
+but does not restrict *which* apps are trusted. A malicious app could:
+
+1. Integrate the SDK
+2. Feed AI-generated images to the signing flow
+3. Generate valid proofs for inauthentic photos
+
+**Mitigations under consideration:**
+
+* Maintain a allowlist of trusted App IDs verified in the proof
+* Output the App ID as a public value, allowing verifiers to check trust
+* Require app attestation/audit before allowlist inclusion
+
+#### Third-Party SDK Integration
+
+As the SDK scales to third-party apps, we need mechanisms to ensure integrators
+use the SDK as intended. Options include:
+
+* Code signing / integrity checks on the SDK binary
+* Runtime attestation of the SDK version
+* Legal/contractual requirements for integrators
+
+#### SDK Code Integrity
+
+We need to guarantee the SDK code cannot be tampered with:
+
+* **Build pipeline**: CI/CD must produce reproducible, auditable builds
+* **On-device**: The SDK binary should be verified before execution
+* **Updates**: SDK updates must be authenticated
+
+This is not yet fully implemented.
+
+### Inauthentic Photos
+
+Even with cryptographic guarantees that a photo was captured by a genuine device running the SDK, attackers may attempt physical attacks:
+
+* **Screen capture**: Photographing a screen displaying an AI-generated or manipulated image
+* **Printed photo capture**: Photographing a printed image
+* **Projector capture**: Photographing a projected image
+
+These attacks bypass software-level protections because the camera genuinely captures "something" — just not an authentic scene.
+
+Note that the taken photo is still "valid" in that it was taken using the camera app, properly signed etc. But the photo is still "inauthentic" in terms of what it is trying to portray.
+This is a different, much harder problem to solve. In fact, a cryptographic solution is likely impossible. Instead, our strategy is to provide as much contextual data in the metadata for a user to be able to make an informed decision on the authenticity of the photo.
+
+#### Detection Signals
+
+The following metadata fields can help detect physical replay attacks:
+
+| Field                | What It Measures                        | Fraud Indicator                                         |
+| -------------------- | --------------------------------------- | ------------------------------------------------------- |
+| **GPS / Location**   | Location                                | Location inconsistent with claimed scene                |
+| **Timestamp**        | Time                                    | Time inconsistent with lighting conditions              |
+| **Subject Distance** | Distance to focused subject             | Focus distance inconsistent with the subject of picture |
+| **Depth Map**        | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance     |
+| **White Balance**    | Color temperature                       | Screen color temperature differs from natural light     |
+| **Ambient Light**    | Environmental light level               | Unusually uniform lighting could indicate screen glow   |
+
+
+## ZK Proof Details
+
+The SP1 program proves the following:
+
+1. The photo bytes matches the expected bytes in the C2PA manifest
+2. The Apple Attest attestation is valid
+3. The assertion (i.e. signature of the photo hash using the attested key) is valid
+
+The photo bytes are provided as input to the proof.
+
+### Proof Logic
+
+| Step | Operation                                    | Guarantees                                |
+| ---- | -------------------------------------------- | ----------------------------------------- |
+| 1    | Extract manifest from photo bytes            | —                                         |
+| 2    | Extract bindings and data hash from manifest | —                                         |
+| 3    | Compute photo hash                           | —                                         |
+| 4    | Check data hash == photo hash                | Manifest corresponds to this photo        |
+| 5    | Validate attestation                         | The attestation is valid and from Apple   |
+| 6    | Validate assertion                           | Photo hash was signed by the attested key |
+
+### Attestation Validation
+
+Guarantees:
+
+* The device key was generated in a genuine Apple Secure Enclave
+* The key is bound to a specific app (via `app_id` / RP ID)
+* The device is running a legitimate app (AAGUID = `appattest` or `appattestdevelop`)
+
+Validates:
+
+* Certificate chain verifies up to Apple Root CA
+* Nonce matches the challenge
+* Public key hash matches the key ID
+* RP ID == SHA256(app\_id)
+* AAGUID is a valid Apple attestation identifier
+
+### Assertion Validation
+
+Guarantees:
+
+* The photo corresponding to this hash was signed using the ZCAM SDK
+
+Validates:
+
+* ECDSA signature over the photo hash using the public key from attestation
+
+### Public Outputs
+
+* Photo hash (SHA-256)
+* Apple Root CA certificate
+
+These committed values allow verifiers to confirm the proof corresponds to a specific photo and chains to Apple's actual root certificate.
+
+
+## Capture SDK
+
+The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+
+### Installation
+
+```bash
+npm i react-native-zcam1-capture
+cd ios && pod install
+```
+
+### Core Concepts
+
+The Capture SDK:
+
+* Renders a native iOS camera preview via `ZCamera`
+* Generates App Attest assertions over photo hashes
+* Embeds C2PA manifests with `succinct.bindings` assertion
+* Returns signed photos ready for proof generation
+
+### API Reference
+
+#### `initCapture(settings)`
+
+Initializes device keys and attestation. Call once on app startup.
+
+```tsx
+import { initCapture, CaptureInfo, Settings } from "react-native-zcam1-capture";
+
+const settings: Settings = {
+  appId: "TEAM_ID.com.example.app",
+  production: false,
+};
+
+const captureInfo: CaptureInfo = await initCapture(settings);
+```
+
+**Parameters:**
+
+* `settings.appId` - Your Team ID + Bundle ID
+* `settings.production` - `false` for development, `true` for production
+
+**Returns:** `CaptureInfo` containing:
+
+* `appId` - The app identifier
+* `deviceKeyId` - App Attest device key ID
+* `contentPublicKey` - Secure Enclave content key
+* `contentKeyId` - Derived content key identifier
+* `attestation` - App Attest attestation blob
+
+#### `ZCamera`
+
+React component that renders the native camera preview.
+
+```tsx
+import { useRef } from "react";
+import { ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+
+function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
+  const camera = useRef<ZCamera>(null);
+
+  return (
+    <ZCamera
+      ref={camera}
+      captureInfo={captureInfo}
+      position="back"        // "front" | "back"
+      isActive={true}        // Enable/disable camera
+      style={{ flex: 1 }}
+    />
+  );
+}
+```
+
+**Props:**
+
+* `captureInfo` (required) - From `initCapture()`
+* `position` - Camera to use: `"front"` or `"back"` (default: `"back"`)
+* `isActive` - Whether camera is running (default: `true`)
+* `style` - Style for the camera view
+
+#### `ZCamera.takePhoto()`
+
+Captures a photo and returns a signed `ZPhoto`.
+
+```tsx
+const photo = await camera.current?.takePhoto();
+
+console.log(photo.originalPath); // Raw capture path
+console.log(photo.path);         // C2PA-signed photo path
+```
+
+**Returns:** `ZPhoto` with:
+
+* `originalPath` - Path to the raw captured image
+* `path` - Path to the C2PA-signed image with `succinct.bindings`
+
+### Complete Example
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { View, Button, Text, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { FileSystem, Dirs } from "react-native-file-access";
+
+export function CaptureScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+  const [lastPhoto, setLastPhoto] = useState<string>();
+
+  useEffect(() => {
+    const settings = {
+      appId: process.env.EXPO_PUBLIC_APP_ID!,
+      production: false,
+    };
+    initCapture(settings).then(setCaptureInfo);
+  }, []);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto();
+    if (!photo) return;
+
+    // Save to app's document directory
+    const destPath = `${Dirs.DocumentDir}/photos/${Date.now()}.jpg`;
+    await FileSystem.mkdir(`${Dirs.DocumentDir}/photos`);
+    await FileSystem.cp(photo.path, destPath);
+
+    setLastPhoto(destPath);
+  };
+
+  if (!captureInfo) {
+    return (
+      <View style={styles.centered}>
+        <Text>Initializing camera...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={styles.camera} />
+      <View style={styles.controls}>
+        <Button title="Capture" onPress={handleCapture} />
+        {lastPhoto && <Text>Saved: {lastPhoto}</Text>}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  camera: { flex: 1 },
+  controls: { padding: 16 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+});
+```
+
+### Notes
+
+* `initCapture()` generates Secure Enclave keys on first call; subsequent calls load existing keys
+* App Attest only works on physical devices; the SDK uses mock values in simulators
+* The captured photo at `photo.path` contains a C2PA manifest with `succinct.bindings`—this is required for proof generation
+
+
+## Picker SDK
+
+The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+
+### Installation
+
+```bash
+npm i react-native-zcam1-picker
+cd ios && pod install
+```
+
+### Core Concepts
+
+The Picker SDK:
+
+* Displays a grid of images from a private folder or photo gallery
+* Checks each image's C2PA authenticity status
+* Supports custom badge rendering based on status
+* Fires callbacks when images are selected
+
+### API Reference
+
+#### `ZImagePicker`
+
+React component that renders a scrollable image grid.
+
+```tsx
+import { ZImagePicker } from "react-native-zcam1-picker";
+
+<ZImagePicker
+  source={{ path: "/path/to/folder" }}
+  onSelect={(uri) => console.log("Selected:", uri)}
+/>
+```
+
+**Props:**
+
+* `source` - Image source (see below)
+* `onSelect` - Callback when an image is tapped
+* `renderBadge` - (Optional) Custom badge renderer
+
+#### Source Types
+
+**Private folder:**
+
+```tsx
+<ZImagePicker source={{ path: "/path/to/folder" }} />
+```
+
+**Photo gallery (with optional album filter):**
+
+```tsx
+<ZImagePicker source={{ album: "MyAlbum" }} />
+```
+
+#### `privateDirectory()`
+
+Returns the app's private document directory path.
+
+```tsx
+import { privateDirectory } from "react-native-zcam1-picker";
+
+const path = privateDirectory(); // e.g., /var/mobile/.../Documents
+```
+
+#### `AuthenticityStatus`
+
+Enum indicating the C2PA status of an image.
+
+```tsx
+import { AuthenticityStatus } from "react-native-zcam1-picker";
+
+AuthenticityStatus.Unknown        // Unable to determine
+AuthenticityStatus.NoManifest     // No C2PA manifest
+AuthenticityStatus.InvalidManifest // Manifest present but invalid
+AuthenticityStatus.Bindings       // Has succinct.bindings (needs proof)
+AuthenticityStatus.Proof          // Has succinct.proof (verified)
+```
+
+### Basic Usage
+
+```tsx
+import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+
+export function PickerScreen() {
+  const handleSelect = (uri: string) => {
+    console.log("Selected:", uri);
+  };
+
+  return (
+    <ZImagePicker
+      source={{ path: `${privateDirectory()}/photos` }}
+      onSelect={handleSelect}
+    />
+  );
+}
+```
+
+### Rendering Badges
+
+Use `renderBadge` to display authenticity indicators:
+
+```tsx
+import { Image, StyleSheet } from "react-native";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+  },
+});
+
+function renderBadge(status: AuthenticityStatus): React.ReactElement | null {
+  switch (status) {
+    case AuthenticityStatus.Bindings:
+      return (
+        <Image
+          source={require("./assets/pending.png")}
+          style={styles.badge}
+          resizeMode="contain"
+        />
+      );
+    case AuthenticityStatus.Proof:
+      return (
+        <Image
+          source={require("./assets/verified.png")}
+          style={styles.badge}
+          resizeMode="contain"
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+export function PickerScreen() {
+  return (
+    <ZImagePicker
+      source={{ path: privateDirectory() }}
+      renderBadge={renderBadge}
+      onSelect={(uri) => console.log(uri)}
+    />
+  );
+}
+```
+
+### Complete Example with Proving
+
+```tsx
+import { useState } from "react";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+
+export function PickAndProveScreen() {
+  const { provingClient, isInitializing } = useProver();
+  const [isProving, setIsProving] = useState(false);
+
+  const handleSelect = async (uri: string) => {
+    if (!provingClient || isProving) return;
+
+    setIsProving(true);
+    try {
+      const provenPath = await provingClient.embedProof(uri);
+      await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+      alert("Proof generated!");
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsProving(false);
+    }
+  };
+
+  const renderBadge = (status: AuthenticityStatus) => {
+    if (status === AuthenticityStatus.Bindings) {
+      return <Text style={styles.badge}>📝</Text>;
+    }
+    if (status === AuthenticityStatus.Proof) {
+      return <Text style={styles.badge}>✓</Text>;
+    }
+    return null;
+  };
+
+  if (isInitializing) {
+    return <ActivityIndicator style={styles.centered} />;
+  }
+
+  return (
+    <View style={styles.container}>
+      {isProving && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.overlayText}>Generating proof...</Text>
+        </View>
+      )}
+      <ZImagePicker
+        source={{ path: `${privateDirectory()}/captured` }}
+        renderBadge={renderBadge}
+        onSelect={handleSelect}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center" },
+  badge: { position: "absolute", top: 4, right: 4, fontSize: 14 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  overlayText: { color: "white", marginTop: 8 },
+});
+```
+
+### Permissions
+
+#### iOS
+
+Add to `Info.plist` when using photo gallery source:
+
+```xml
+<key>NSPhotoLibraryUsageDescription</key>
+<string>This app needs access to your photos.</string>
+```
+
+#### Android
+
+For Android 13+:
+
+* `android.permission.READ_MEDIA_IMAGES`
+
+For older versions:
+
+* `android.permission.READ_EXTERNAL_STORAGE`
+
+### Limitations
+
+* Photo gallery source loads the first 20 photos (no pagination)
+* Image list is loaded once on mount; source prop changes require remounting
+* Single selection only
+* Photos only (no videos)
+* You must handle runtime permissions before rendering gallery source
+
+
+## Prove SDK
+
+The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+
+### Installation
+
+```bash
+npm i react-native-zcam1-prove
+cd ios && pod install
+```
+
+### Core Concepts
+
+The Prove SDK:
+
+* Reads `succinct.bindings` from a captured photo's C2PA manifest
+* Sends bindings to the prover backend for ZK proof generation
+* Replaces `succinct.bindings` with `succinct.proof` in the manifest
+* Returns a new photo file with the embedded proof
+
+### API Reference
+
+#### `ProverProvider`
+
+React context provider that initializes the proving client. Wrap your app with this component.
+
+```tsx
+import { ProverProvider } from "react-native-zcam1-prove";
+
+function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      {/* Your app */}
+    </ProverProvider>
+  );
+}
+```
+
+**Props:**
+
+* `settings.production` - `false` for development, `true` for production
+* `settings.privateKey` - (Optional) SP1 prover network private key
+* `settings.certChain` - (Optional) Certificate chain for signing. If not provided, a self-signed certificate is generated
+* `onFulfilled` - (Optional) Callback when a proof request is fulfilled: `(requestId, photoPath, proof, provingClient) => void`
+* `onUnfulfillable` - (Optional) Callback when a proof request cannot be fulfilled: `(requestId) => void`
+
+#### `useProver()`
+
+Hook to access the proving client from within `ProverProvider`.
+
+```tsx
+import { useProver } from "react-native-zcam1-prove";
+
+function ProveButton() {
+  const { provingClient, isInitializing, error } = useProver();
+
+  if (isInitializing) return <Text>Loading...</Text>;
+  if (error) return <Text>Error: {error.message}</Text>;
+
+  // Use provingClient...
+}
+```
+
+**Returns:**
+
+* `provingClient` - The `ProvingClient` instance (null while initializing)
+* `isInitializing` - Whether the client is still being set up
+* `error` - Any initialization error
+* `provingTasks` - Record of active proof requests: `Record<string, { photoPath: string, createdAtMs: number }>`
+* `provingTasksCount` - Number of active proof requests
+
+#### `useProofRequestStatus(requestId)`
+
+Hook to poll the status of a specific proof request.
+
+```tsx
+import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProofStatus({ requestId }: { requestId: string }) {
+  const { proof, fulfillementStatus, isInitializing, error } = useProofRequestStatus(requestId);
+
+  if (fulfillementStatus === FulfillmentStatus.Fulfilled) {
+    return <Text>Proof ready!</Text>;
+  }
+  if (fulfillementStatus === FulfillmentStatus.Unfulfillable) {
+    return <Text>Proof generation failed</Text>;
+  }
+  return <Text>Generating proof...</Text>;
+}
+```
+
+**Parameters:**
+
+* `requestId` - The request ID returned from `requestProof()`
+
+**Returns:**
+
+* `proof` - The proof bytes (ArrayBuffer) when fulfilled, `undefined` otherwise
+* `fulfillementStatus` - Current status: `Requested`, `Assigned`, `Fulfilled`, or `Unfulfillable`
+* `isInitializing` - Whether the prover is still initializing
+* `error` - Any error that occurred
+
+#### `ProvingClient.requestProof(uri)`
+
+Initiates proof generation for a photo. Returns a request ID that can be used to poll for status.
+
+```tsx
+const { provingClient } = useProver();
+
+const requestId = await provingClient.requestProof(photoUri);
+```
+
+**Parameters:**
+
+* `uri` - Path or URI to a photo with `succinct.bindings` assertion
+
+**Returns:** Request ID (string) for polling proof status
+
+**Throws:** Error if the input photo doesn't contain `succinct.bindings`
+
+#### `ProvingClient.getProofStatus(requestId)`
+
+Gets the current status of a proof request.
+
+```tsx
+import { FulfillmentStatus } from "react-native-zcam1-prove";
+
+const status = await provingClient.getProofStatus(requestId);
+
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+  // Proof is ready
+  const proof = status.proof; // ArrayBuffer
+}
+```
+
+**Parameters:**
+
+* `requestId` - The request ID from `requestProof()`
+
+**Returns:** `ProofRequestStatus` object with:
+
+* `fulfillmentStatus` - `FulfillmentStatus` enum value
+* `proof` - Proof bytes (ArrayBuffer) if fulfilled, `undefined` otherwise
+
+#### `ProvingClient.embedProof(uri, proof)`
+
+Embeds a proof into a photo's C2PA manifest. Use this after receiving a proof from `getProofStatus()`.
+
+```tsx
+const status = await provingClient.getProofStatus(requestId);
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled && status.proof) {
+  const provenPath = await provingClient.embedProof(photoUri, status.proof);
+}
+```
+
+**Parameters:**
+
+* `uri` - Path or URI to the original photo
+* `proof` - Proof bytes (ArrayBuffer) from `getProofStatus()`
+
+**Returns:** Path to the new photo with `succinct.proof` embedded
+
+**Throws:** Error if the input photo doesn't contain `succinct.bindings`
+
+#### `ProvingClient.waitAndEmbedProof(uri)`
+
+Convenience method that requests a proof, waits for it to be ready, and embeds it automatically. This is the simplest way to generate and embed a proof.
+
+```tsx
+const { provingClient } = useProver();
+
+const provenPath = await provingClient.waitAndEmbedProof(photoUri);
+```
+
+**Parameters:**
+
+* `uri` - Path or URI to a photo with `succinct.bindings` assertion
+
+**Returns:** Path to the new photo with `succinct.proof` embedded
+
+**Throws:**
+
+* Error if the input photo doesn't contain `succinct.bindings`
+* Error if proof generation fails or is unfulfillable
+
+**Note:** This method polls the backend until the proof is ready, which may take several seconds. For better UX, use `requestProof()` + `useProofRequestStatus()` to show progress.
+
+### Complete Example
+
+```tsx
+import { useState } from "react";
+import { View, Button, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { launchImageLibrary } from "react-native-image-picker";
+
+export function ProveScreen() {
+  const { provingClient, isInitializing } = useProver();
+  const [isProving, setIsProving] = useState(false);
+  const [result, setResult] = useState<string>();
+
+  const handlePickAndProve = async () => {
+    // Pick a photo with succinct.bindings
+    const response = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+
+    const asset = response.assets?.[0];
+    if (!asset?.uri || !provingClient) return;
+
+    setIsProving(true);
+    setResult(undefined);
+
+    try {
+      // Generate and embed the proof (convenience method)
+      const provenPath = await provingClient.waitAndEmbedProof(asset.uri);
+
+      // Save to camera roll
+      await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+
+      setResult("Proof generated and saved!");
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    } finally {
+      setIsProving(false);
+    }
+  };
+
+  if (isInitializing) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <Text>Initializing prover...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Button
+        title="Select Photo & Generate Proof"
+        onPress={handlePickAndProve}
+        disabled={isProving}
+      />
+      {isProving && (
+        <View style={styles.status}>
+          <ActivityIndicator />
+          <Text>Generating proof... This may take a few seconds.</Text>
+        </View>
+      )}
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  status: { marginTop: 16, alignItems: "center" },
+  result: { marginTop: 16, textAlign: "center" },
+});
+```
+
+### Using with Picker
+
+Combine with `ZImagePicker` to show which photos need proving:
+
+```tsx
+import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
+import { useProver } from "react-native-zcam1-prove";
+
+function PickerScreen() {
+  const { provingClient } = useProver();
+
+  const handleSelect = async (uri: string) => {
+    // Check if this photo needs a proof
+    const status = await authenticityStatus(uri);
+
+    if (status === AuthenticityStatus.Bindings && provingClient) {
+      const provenPath = await provingClient.waitAndEmbedProof(uri);
+      // Handle proven photo...
+    }
+  };
+
+  return (
+    <ZImagePicker
+      source={{ path: privateDirectory() }}
+      onSelect={handleSelect}
+      renderBadge={(status) => {
+        if (status === AuthenticityStatus.Bindings) return <Text>📝</Text>;
+        if (status === AuthenticityStatus.Proof) return <Text>✓</Text>;
+        return null;
+      }}
+    />
+  );
+}
+```
+
+### Two-Step Proof Generation (Recommended for Better UX)
+
+For better user experience, use the two-step approach to show progress:
+
+```tsx
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProveWithProgress({ photoUri }: { photoUri: string }) {
+  const { provingClient } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+    
+    // Step 1: Request proof
+    const id = await provingClient.requestProof(photoUri);
+    setRequestId(id);
+  };
+
+  useEffect(() => {
+    // Step 2: When proof is ready, embed it
+    if (proof && requestId) {
+      provingClient.embedProof(photoUri, proof).then((provenPath) => {
+        console.log("Proof embedded:", provenPath);
+      });
+    }
+  }, [proof, requestId]);
+
+  return (
+    <View>
+      {!requestId && (
+        <Button title="Generate Proof" onPress={handleProve} />
+      )}
+      {requestId && (
+        <View>
+          <Text>Status: {fulfillementStatus}</Text>
+          {fulfillementStatus === FulfillmentStatus.Fulfilled && (
+            <Text>Proof ready!</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+### Notes
+
+* Proof generation requires network access to the prover backend
+* The input photo must have a `succinct.bindings` assertion (created by the Capture SDK)
+* Proof generation typically takes a few seconds
+* The original photo is not modified; a new file is created with the embedded proof
+* Use `waitAndEmbedProof()` for simplicity, or `requestProof()` + `useProofRequestStatus()` for better UX with progress tracking
+
+
+## Verify SDK
+
+The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+
+### Installation
+
+```bash
+npm i react-native-zcam1-verify
+cd ios && pod install
+```
+
+### Core Concepts
+
+The Verify SDK:
+
+* Extracts C2PA manifests from photos
+* Verifies the photo hash matches the manifest
+* Validates bindings (Apple App Attest signatures) for photos with `succinct.bindings`
+* Validates ZK proofs against a pinned Apple Root CA for photos with `succinct.proof`
+* Extracts capture metadata (device info, camera settings, etc.)
+* Confirms the photo was taken on a genuine iOS device
+
+### API Reference
+
+#### `VerifiableFile`
+
+Class for verifying photo authenticity.
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+const file = new VerifiableFile(photoUri);
+```
+
+**Constructor:**
+
+* `uriOrPath` - File path or URI to the photo
+
+#### `VerifiableFile.verifyHash()`
+
+Checks that the photo's content hash matches the hash recorded in the C2PA manifest.
+
+```tsx
+const isHashValid: boolean = file.verifyHash();
+```
+
+**Returns:** `true` if the file contents haven't been tampered with
+
+#### `VerifiableFile.verifyBindings()`
+
+Verifies the Apple App Attest bindings for photos that have `succinct.bindings` but haven't been proven yet. This is useful for verifying photos before proof generation or when using bindings-only verification.
+
+```tsx
+const isBindingsValid: boolean = file.verifyBindings(appAttestProduction);
+```
+
+**Parameters:**
+
+* `appAttestProduction` - `true` if the photo was captured in production mode, `false` for development
+
+**Returns:** `true` if the bindings are valid
+
+**Note:** This method works for photos with `succinct.bindings`. For photos with `succinct.proof`, use `verifyProof()` instead.
+
+#### `VerifiableFile.verifyProof()`
+
+Validates the embedded ZK proof against the photo hash and Apple Root CA.
+
+```tsx
+const isProofValid: boolean = file.verifyProof();
+```
+
+**Returns:** `true` if the proof is valid
+
+**Throws:** Error if the photo doesn't contain a `succinct.proof` assertion
+
+#### `VerifiableFile.dataHash()`
+
+Returns the file's content hash as recorded in the active C2PA manifest.
+
+```tsx
+const hash: string | undefined = file.dataHash();
+```
+
+**Returns:** The manifest data hash (base64-encoded string), or `undefined` if not available
+
+#### `VerifiableFile.captureMetadata()`
+
+Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
+
+```tsx
+import { CaptureMetadata } from "react-native-zcam1-verify";
+
+const metadata: CaptureMetadata | null = file.captureMetadata();
+```
+
+**Returns:** The capture metadata object, or `null` if not present
+
+**Metadata includes:**
+
+* `action` - The capture action type
+* `when` - Timestamp of capture
+* `parameters` - Device and camera settings:
+  * `device_make`, `device_model`
+  * `software_version`
+  * `x_resolution`, `y_resolution`
+  * `orientation`
+  * `iso`, `exposure_time`
+  * `focal_length`, `depth_of_field`
+
+### Complete Example
+
+```tsx
+import { useState } from "react";
+import { View, Button, Text, StyleSheet } from "react-native";
+import { launchImageLibrary } from "react-native-image-picker";
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+type VerificationResult = {
+  hashValid: boolean;
+  proofValid: boolean;
+  authentic: boolean;
+};
+
+export function VerifyScreen() {
+  const [result, setResult] = useState<VerificationResult>();
+  const [error, setError] = useState<string>();
+
+  const handlePickAndVerify = async () => {
+    setResult(undefined);
+    setError(undefined);
+
+    const response = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+
+    const asset = response.assets?.[0];
+    if (!asset?.uri) return;
+
+    try {
+      const file = new VerifiableFile(asset.uri);
+
+      const hashValid = file.verifyHash();
+      const proofValid = file.verifyProof();
+
+      setResult({
+        hashValid,
+        proofValid,
+        authentic: hashValid && proofValid,
+      });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Select Photo to Verify" onPress={handlePickAndVerify} />
+
+      {result && (
+        <View style={styles.result}>
+          <Text style={styles.title}>
+            {result.authentic ? "✓ Authentic" : "✗ Not Authentic"}
+          </Text>
+          <Text>Hash Valid: {result.hashValid ? "Yes" : "No"}</Text>
+          <Text>Proof Valid: {result.proofValid ? "Yes" : "No"}</Text>
+        </View>
+      )}
+
+      {error && <Text style={styles.error}>Error: {error}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  result: { marginTop: 24, padding: 16, backgroundColor: "#f0f0f0", borderRadius: 8 },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 8 },
+  error: { marginTop: 16, color: "red" },
+});
+```
+
+### Verification Helper
+
+Create a reusable verification function:
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+export type VerificationStatus =
+  | { status: "authentic" }
+  | { status: "invalid_hash" }
+  | { status: "invalid_proof" }
+  | { status: "no_manifest" }
+  | { status: "error"; message: string };
+
+export function verifyPhoto(uri: string): VerificationStatus {
+  try {
+    const file = new VerifiableFile(uri);
+
+    if (!file.verifyHash()) {
+      return { status: "invalid_hash" };
+    }
+
+    if (!file.verifyProof()) {
+      return { status: "invalid_proof" };
+    }
+
+    return { status: "authentic" };
+  } catch (error: any) {
+    if (error.message?.includes("no manifest")) {
+      return { status: "no_manifest" };
+    }
+    return { status: "error", message: error.message };
+  }
+}
+```
+
+### What Verification Checks
+
+| Check              | What It Validates                                                     | Use Case                                                      |
+| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `verifyHash()`     | Photo bytes match the SHA-256 hash in the C2PA manifest               | Always use this first to check file integrity                 |
+| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
+| `verifyProof()`    | ZK proof is valid and chains to the Apple Root CA                     | For photos with `succinct.proof` (after proof generation)     |
+
+**Verification Flow:**
+
+For photos with `succinct.bindings`:
+
+1. Call `verifyHash()` to check file integrity
+2. Call `verifyBindings()` to verify the Apple App Attest signature
+
+For photos with `succinct.proof`:
+
+1. Call `verifyHash()` to check file integrity
+2. Call `verifyProof()` to verify the ZK proof
+
+Both hash and bindings/proof checks must pass for a photo to be considered authentic.
+
+### Notes
+
+* Verification is performed locally—no network required
+* Use `verifyBindings()` for photos with `succinct.bindings` (before proof generation)
+* Use `verifyProof()` for photos with `succinct.proof` (after proof generation)
+* Photos with only `succinct.bindings` will fail `verifyProof()` (they haven't been proven yet)
+* Photos with `succinct.proof` can use either verification method, but `verifyProof()` provides stronger guarantees
+* The Apple Root CA is pinned in the SDK; proofs must chain to this root
+* `captureMetadata()` provides access to device and camera settings recorded at capture time
+
+
+## ZCAM vs Other Approaches
+
+There already exist numerous technologies in the authenticity and verifiability of images space. These solutions, however, solve for slightly different problem spaces and provide varying levels of functionality.
+
+:::info
+ZCAM provides a complete solution for mobile photo authenticity verification. It combines hardware-backed attestation, optional zero-knowledge proofs, embedded verification data, and simple verification output (verified/not verified) into a single integrated system designed specifically for human-taken photos on mobile devices.
+:::
+
+Below is a feature comparison showing what each approach provides. See further sections below for more details on other tools and advantages that ZCAM can provide.
+
+### Comparison Table
+
+| Approach               | Hardware Attestation | ZK Proofs | Embedded Verification | User-friendly Output | Camera Photos | Use Case                                                                            |
+| ---------------------- | -------------------- | --------- | --------------------- | -------------------- | ------------- | ----------------------------------------------------------------------------------- |
+| **ZCAM**               | ✅                    | ✅         | ✅                     | ✅                    | ✅             | Complete mobile photo authenticity solution                                         |
+| **C2PA (generic)**     | ❌                    | ❌         | ✅                     | ❌                    | ✅             | Edit history tracking, content provenance                                           |
+| **Physical Camera**    | ❓                    | ❌         | ✅                     | ❌                    | ✅             | For C2PA-compatible cameras, note only some cameras support hardware-backed signing |
+| **JPEG Trust**         | ❌                    | ❌         | ✅                     | ✅                    | ✅             | Trust evaluation framework (leverages C2PA)                                         |
+| **SynthID**            | ❌                    | ❌         | ✅                     | ❌                    | ❌             | AI watermarking and detection                                                       |
+| **AI Content Marking** | ❌                    | ❌         | ✅                     | ❌                    | ❌             | AI-generated content marking (watermarking or C2PA)                                 |
+
+### Other tooling
+
+#### C2PA
+
+The C2PA content credential standard aims to create a *verifiable history* of a given image.
+
+Note, it is *not* specific to "authentic" images, i.e. it can be applied to both camera-captured pictures, as well as AI-generated images. It creates a specification for attaching contextual metadata as an image evolves over time. For example, an initial image can be captured using a camera or generated using AI. An initial *C2PA Manifest* is attached to the image indicating its origin. Thereafter, as edits are made (using C2PA-compatible editors), new manifests are attached indicating the edits made (e.g. cropping, brightness balancing, etc.). All of these manifests are signed using public key cryptography.
+
+**Key Differences from ZCAM:**
+
+* C2PA doesn't require hardware attestation. any signing key can be used to sign attestations.
+* C2PA focuses on edit history, while ZCAM focuses on capture authenticity
+* ZCAM uses C2PA as the container format but adds hardware-backed guarantees
+* C2PA is a more flexible, generic tooling for attaching historical metadata to an image, ZCAM focuses on proving authenticity of an iamge.
+
+More technical information can be found in the [How it Works](/overview/how_it_works) section under C2PA.
+
+#### JPEG Trust
+
+JPEG Trust provides a framework for evaluating the trustworthiness of an image. It is actually compatible with C2PA, and relies *on* the data encoded in C2PA manifests.
+
+The main value here is the ability to create trust *profiles* and *evaluators* that leverage the bound data, which allows users to conclude the authenticity for a given photo.
+
+**Key Differences from ZCAM:**
+
+* JPEG Trust is an evaluation framework, not a capture/verification system
+* It can work with ZCAM-generated C2PA manifests
+* Focuses on trust scoring rather than cryptographic verification
+
+#### SynthID
+
+SynthID, developed by Google, is an invisible watermark framework that can embed data into an image in a more resilient format. Solutions that use the JUMBF metadata are susceptible to getting the metadata stripped, the photo getting edited/cropped, etc. The actual embedded data is based on an AI model, and can later be read and analyzed by another model that decides whether a photo is AI-generated or not.
+
+**Key Differences from ZCAM:**
+
+* SynthID focuses on AI detection, ZCAM focuses on authenticity verification
+* ZCAM provides cryptographic guarantees, SynthID provides probabilistic detection
+
+#### IPTC Photo Metadata
+
+The IPTC Photo Metadata simply defines standardized nomenclature and labeling for the aforementioned protocols. It's a metadata standard rather than a verification system.
+
+**Key Differences from ZCAM:**
+
+* IPTC is a metadata format, not a verification system
+* Can be used alongside ZCAM for standardized metadata fields
+* No cryptographic guarantees or hardware attestation
+
+#### AI Content Marking
+
+Several companies provide solutions for marking AI-generated content, using different approaches:
+
+* **Meta Watermarking**: Meta adds watermarks specifically to AI-generated content. These watermarks are meant to be durable, handling cropping and edit actions, etc.
+* **OpenAI C2PA**: OpenAI (e.g. ChatGPT) generated images include C2PA manifests indicating they were generated using DALL-E and on ChatGPT. This is also included in Azure's OpenAI service.
+
+**Key Differences from ZCAM:**
+
+* These solutions focus on marking AI-generated content, while ZCAM verifies authentic human-captured photos
+* No hardware attestation in these implementations
+* Different goals: provenance/marking for AI content vs. authenticity verification for human-captured photos
+* Watermark-based (Meta) or C2PA-based (OpenAI) rather than hardware-backed cryptographic verification
+
+### When to Use ZCAM
+
+ZCAM is the right choice when you need:
+
+* **Hardware-backed authenticity**: Guarantees that photos were taken on a specific device
+* **Cryptographic verification**: Strong cryptographic proofs rather than probabilistic detection
+* **Mobile-first**: Designed specifically for iOS (and planned Android) mobile apps
+* **Simple verification**: Easy-to-use API that returns verified/not verified without requiring manifest parsing
+* **Complete solution**: End-to-end flow from capture to verification with optional ZK proof integration
+
+Consider other approaches when:
+
+* You need to mark AI-generated content (use SynthID or AI Content Marking solutions)
+* You want a general-purpose edit history system (use generic C2PA)
+* You need watermarking resilient to heavy editing (use SynthID)
+* You're working with non-mobile platforms (use C2PA or other standards)
+
+
+## Example Use Cases
+
+Below are two real-world examples demonstrating how the ZCAM SDK can be integrated to solve different verification challenges. Each example highlights a distinct verification pattern: **end-user verification** (public-facing) versus **internal verification** (backend processing).
+
+:::info
+**Verification Patterns:** While both use cases rely on verifiable photos, they differ in who performs the verification and where it happens:
+
+* **End-user verification**: Public-facing verification where readers/users verify photos themselves (e.g., news platform readers)
+* **Internal verification**: Backend verification where the company verifies photos as part of their internal processes (e.g., insurance claim processing)
+:::
+
+### Verifiable News Platform
+
+#### Use Case Overview
+
+In today's media landscape, edited and AI-generated photos are a frequent concern for news consumers. A news platform hosting breaking news stories with field reporters may want to ensure their readers that all photos are verifiably authentic and unedited.
+
+**What We're Building:** A complete verifiable journalism system consisting of:
+
+* A mobile camera app for field reporters to capture verifiable photos using ZCAM SDK
+* Integration into the news platform's content management system to store and display verifiable photos
+* Public-facing verification tools on the web platform allowing readers to independently verify photo authenticity
+
+**Value of Verifiable Photos:**
+
+* **Trust & Credibility**: Readers can independently verify that photos haven't been edited or manipulated, building trust in the platform's journalism
+
+#### Integration Architecture
+
+The news platform integrates ZCAM SDK in two places:
+
+1. **Mobile Camera App** (for reporters): A lightweight iOS app that reporters use to capture verifiable photos
+2. **Web Platform** (for readers): Integration of verification functionality so readers can verify photos as authentic
+
+#### Mobile Camera App Integration
+
+The news platform builds a specialized camera app for reporters using the ZCAM SDK:
+
+1. **Installation**: Follow the [Installation guide](/getting-started/installation) to set up the SDK
+2. **Camera Setup**: Use `react-native-zcam1-capture` to initialize the camera:
+   * Call `initCapture()` to initialize device keys and attestation
+   * Use the `<ZCamera>` component to render the camera preview
+   * Call `takePhoto()` to capture a photo with verifiable bindings
+3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to generate zero-knowledge proofs:
+   * Wrap your app with `ProverProvider` and use the `useProver()` hook
+   * Call `waitAndEmbedProof()` to generate and embed the proof, or use `requestProof()` + `useProofRequestStatus()` for progress tracking
+4. **Upload**: Upload the verifiable photo to the news platform's backend for use in articles
+
+#### Web Platform Integration
+
+On the news platform's website, articles display verifiable photos with verification capabilities:
+
+1. **Photo Display**: Photos embedded in articles include C2PA content credentials
+   * Users with C2PA browser extensions can automatically see content credentials
+   * The platform can display verification status badges
+2. **Client-Side Verification**: Integrate `react-native-zcam1-verify` (or web equivalent) to enable verification:
+   * Add a "Verify Photo" button for each photo in articles
+   * Call `verifyHash()` and `verifyProof()` methods to validate authenticity
+   * Display verification results to readers (e.g., "✓ Verified Authentic")
+3. **Metadata Display**: Show readers metadata from the C2PA manifest:
+   * Capture timestamp, device information, app identifier
+   * Allow readers to inspect the full verification chain
+
+### Car Insurance Claim App
+
+#### Use Case Overview
+
+Most car insurance companies allow policyholders to file claims using photos from their mobile app. This has led to an increase in AI editing scams where claimants manipulate photos to file fraudulent claims. The ZCAM SDK ensures that photos uploaded for claims were taken on an iPhone using the insurance company's app, guaranteeing the photo hasn't been edited or altered since capture.
+
+**What We're Building:** An automated fraud detection system integrated into the insurance claim workflow:
+
+* Camera functionality within the existing insurance mobile app using ZCAM SDK for photo capture
+* Backend verification service that automatically validates all submitted claim photos
+* Automated triage system that flags suspicious claims based on verification results and metadata analysis
+
+**Value of Verifiable Photos:**
+
+* **Fraud Prevention**: Automatically detect and reject claims with manipulated or inauthentic photos, preventing fraudulent payouts
+* **Cost Reduction**: Reduce manual review costs by automating verification and flagging only suspicious claims for human review
+
+**Verification Pattern:** Internal verification — the insurance company verifies photos as part of their backend claim processing workflow.
+
+#### Integration Architecture
+
+The insurance company integrates ZCAM SDK in two places:
+
+1. **Mobile App** (for policyholders): Integration into the claim filing flow
+2. **Backend Claim Processing** (for insurance company): Automated verification during claim triage
+
+#### Mobile App Integration
+
+The ZCAM SDK is integrated into the claim filing flow of the insurance app:
+
+1. **Installation**: Follow the [Installation guide](/getting-started/installation) to set up the SDK
+2. **Camera Integration**: Inject the `<ZCamera>` component into the claim flow where users must photograph their vehicle:
+   * The SDK provides camera preview functionality
+   * Call `takePhoto()` to capture a verifiable photo
+3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to attach zero-knowledge proofs:
+   * Use `waitAndEmbedProof()` to generate and embed proofs
+   * This provides additional cryptographic guarantees and privacy
+4. **Claim Submission**: When the user completes the claim flow, attach verifiable photos to the claim filing and upload to the insurance company's backend
+
+#### Backend Claim Processing Integration
+
+On the insurance company's backend, verification is integrated into the automated claim triage process:
+
+1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
+   * Integrate `react-native-zcam1-verify` (or server-side equivalent) into the backend
+   * For each photo, call `verifyHash()` and `verifyProof()` methods
+   * Check that the photo was taken using the insurance company's app
+2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:
+   * Verify location data matches the claim location
+   * Check timestamp aligns with the reported incident time
+   * Validate device and app information
+3. **Claim Decision**: Based on verification results:
+   * **Verification passes**: Proceed with normal claim processing
+   * **Verification fails**: Flag claim for manual review or deny if photos are inauthentic
+
+**Result**: Insurance companies can automatically detect fraudulent claims with manipulated photos, reducing fraud and processing costs while maintaining a smooth experience for legitimate claimants.
+
+
+## How it Works
+
+### Overview
+
+ZCAM enables photo authenticity verification through a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
+
+At a high level, ZCAM enables a user to take a photo, then leverages hardware-backed signing keys to sign the validity of the photo. This attestation is then attached to the photo using C2PA. Finally, the attestation can optionally be replaced with a zero knowledge proof that proves the verification of the attestation.
+
+The system works in three main steps:
+
+1. **Capture**: Take a photo and sign it with a hardware-backed key
+2. **Prove** (optional): Generate a zero-knowledge proof of the signature
+3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification
+
+### Verification Modes
+
+ZCAM supports two verification modes:
+
+* **Bindings verification**: Verifies the Apple App Attest signature directly. This mode is faster and works offline. No zero-knowledge proofs are required.
+* **ZK proof verification** (optional): Generates a zero-knowledge proof for enhanced privacy and verifiability. This provides additional cryptographic guarantees but requires network access for proof generation.
+
+The ZK proof step is **optional**—you can use ZCAM with bindings verification alone, or add ZK proofs for additional privacy guarantees.
+
+### Components
+
+This section describes the building blocks of ZCAM: Zero knowledge proofs generated using the SP1 zk virtual machine, C2PA for attaching metadata to an image and Apple's App attest service and secure enclave used for signing the validity of a photo.
+
+#### Zero-Knowledge Proofs
+
+Zero-knowledge proofs allow one party (the prover) to prove to another party (the verifier) that a statement is true without revealing any information beyond the validity of the statement itself.
+
+#### SP1 Zero-Knowledge Virtual Machine
+
+ZCAM uses [SP1](https://docs.succinct.xyz/docs/sp1/introduction), Succinct's zero-knowledge virtual machine (zkVM). SP1 is a zkVM that proves the correct execution of programs compiled for the RISC-V architecture, meaning it can run and prove programs written in Rust, C++, C, or any language that compiles to RISC-V.
+
+Key benefits of SP1:
+
+* **Maintainability**: Write ZK programs in standard Rust without custom DSLs or complex circuits
+* **Faster Development**: Skip months of low-level ZK engineering
+* **Performance**: State-of-the-art proving speed and efficiency, benchmarked in production
+
+In ZCAM, SP1 generates proofs that verify:
+
+1. The photo was signed using a valid Apple App Attest key
+2. The signature corresponds to the photo hash
+3. The attestation chain is valid
+
+These proofs are small, fast to verify, and don't reveal the underlying attestation data.
+
+:::info
+**ZK Proofs are Optional**: You can use ZCAM with bindings verification alone. ZK proofs add privacy guarantees but require internet access to request proofs from the Succinct Prover Network. There is also higher latency given the time required for the network to prove the verification of an attestation.
+:::
+
+#### C2PA
+
+C2PA is an open source standard that allows parties to attach metadata that is *cryptographically bound* to a specified image. This is done using a *C2PA Manifest* which is tied to a specific image, including details and metadata about said image and also a cryptographic signature over these details.
+
+The manifest can hold any information about the photo including metadata about what device it was taken on, size of the image etc. The key point is that it is signed using some key that attests to the accuracy of the associated information.
+
+The manifest is then embedded directly into the photo file. The manner in which this is done depends. For example, it can be embedded into the metadata section of the JPEG file, or can be embedded as an invisible watermark encoding the manifest data.
+
+ZCAM leverages the C2PA standard to embed verifiable attestation data (and optionally zero-knowledge proofs) that the photo was taken on an iPhone and signed using a secure enclave private key that only the ZCAM SDK can use.
+
+#### Apple App Attest
+
+ZCAM uses Apple's App Attest service to ensure that a ZPhoto was indeed *signed* by the ZCAM SDK.
+
+The *intended* purpose of App Attest is to ensure requests coming from an app to a backend service is actually from the intended app. i.e. It guarantees that a backend service knows that it's only servicing requests from the associated mobile app.
+
+At a high level, this is done by generating a new signing keypair on the device's secure enclave *that only the specific mobile app can access*. There is then a protocol for Apple to *attest* to the keypair as having been generated on said mobile app. This ensures any subsequent signatures using the keypair is guaranteed to be from the app.
+
+![App Attest protocol diagram](/images/diagram_appattest.png)
+
+Specifically, the App Attest protocol provides an attestation from Apple's backend server that is bound to some unique nonce and the public key of the secure enclave keypair. The app can then send this attestation as part of a request, such that the receiving backend service can verify the attestation.
+
+Note, ZCAM leverages Apple App Attest, but uses it in a subtle but different way. There are two key differences:
+
+1. The unique nonce used in the attestation is actually derived on the app itself, instead of receiving it from some backend service.
+2. The attestation can be verified either directly (bindings verification) or in a zero knowledge proof (ZK proof verification) instead of by a backend service.
+
+#### iOS Secure Enclave
+
+The Secure Enclave is a coprocessor found in Apple devices that provides an isolated, secure environment for cryptographic operations. Keys stored in the Secure Enclave:
+
+* Cannot be extracted or copied
+* Are protected even if the device is compromised
+* Can only be used by the specific app that created them
+* Are hardware-backed and tamper-resistant
+
+ZCAM uses the Secure Enclave to store both the device key (used for signing photo hashes) and the content key (used for signing C2PA manifests). This ensures that even if an attacker gains access to the device, they cannot forge signatures or create fake zphotos.
+
+
+## Introduction
+
+Today, with the advent of AI generated images, liberal usage of editing software and increasing incentives to deceive and alter public perception, the importance of image integrity is at an all time high.
+
+Succinct's ZCAM allows users to use their iPhones to create zphotos: These photos can be verified as authentic, unedited and indeed originating from their iPhone's camera. The ZCAM SDK allows any app to integrate this functionality, enabling them to leverage the ability take and verify zphotos in their app.
+
+The core technology of zphotos and ZCAM is built on three components:
+
+* **Apple App Attest**: The App Attest service allows an app to guarantee that a signing keypair is generated and stored on an Iphone's secure enclave, and belongs to a *specific* app on the iPhone.
+* **C2PA**: C2PA is a standard that specifies how to embed verifiable metadata about an image within the actual image file. This includes details about the image, the history of the image etc.
+* **SP1 Zero Knowledge proofs**: Users can optionally choose to use Succinct's SP1 to wrap verification of photos into a zero knowledge proof. SP1 is a zero knowledge virtual machine that can generate proofs that verify that certain code was ran as intended, outputting succinct, small easily verifiable proofs
+
+
+## Installation
+
+### Prerequisites
+
+#### Rust Toolchain
+
+The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
+
+```bash
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add iOS targets
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+```
+
+#### Xcode
+
+Xcode is required for iOS development. Install it from the Mac App Store.
+
+#### Development Environment
+
+* Node.js 18+
+* React Native 0.81+
+* Expo SDK 54+ (if using Expo)
+
+### Installing Packages
+
+The ZCAM SDK is divided into standalone packages. Install only what you need:
+
+```bash
+# Full flow (capture, prove, verify)
+npm i react-native-zcam1-capture react-native-zcam1-prove react-native-zcam1-verify
+
+# Install native dependencies
+cd ios && pod install
+```
+
+Individual packages:
+
+| Package                      | Purpose                               |
+| ---------------------------- | ------------------------------------- |
+| `react-native-zcam1-capture` | Take photos with C2PA manifests       |
+| `react-native-zcam1-prove`   | Generate ZK proofs for photos         |
+| `react-native-zcam1-verify`  | Verify photo authenticity             |
+| `react-native-zcam1-picker`  | Image picker with authenticity badges |
+
+:::warning
+The UniFFI bindings are built during `npm install`. This can take several minutes on first install.
+:::
+
+### iOS Configuration
+
+#### Bundle Identifier
+
+Configure your app's bundle identifier in your project. For Expo apps, set it in `app.json`:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.yourapp"
+    }
+  }
+}
+```
+
+#### App ID for App Attest
+
+You'll need your Apple Team ID combined with your bundle identifier. The format is:
+
+```
+<TEAM_ID>.<BUNDLE_IDENTIFIER>
+```
+
+For example: `NLS5R4YCGX.com.yourcompany.yourapp`
+
+To find your Team ID:
+
+1. Open Keychain Access on your Mac
+2. Find a certificate named "Apple Development"
+3. The Team ID is the "Organizational Unit" field
+
+#### Required Permissions
+
+Add these keys to your `Info.plist` (or `app.json` for Expo):
+
+```json
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses your camera to capture photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to save photos."
+      }
+    }
+  }
+}
+```
+
+### Environment Variables
+
+Create a `.env` file with your configuration:
+
+```bash
+EXPO_PUBLIC_APP_ID=<TEAM_ID>.<BUNDLE_IDENTIFIER>
+EXPO_PUBLIC_BACKEND_URL=https://your-backend-url.com
+```
+
+### Running on Device
+
+App Attest requires a physical iOS device—it does not work in the simulator (the SDK falls back to mock mode for development).
+
+```bash
+# Expo
+npx expo prebuild
+npx expo run:ios --device
+
+# React Native CLI
+npx react-native run-ios --device
+```
+
+On first run, you may need to trust the developer certificate on your device:
+**Settings → General → Device Management → Trust**
+
+
+## Quickstart
+
+This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it.
+
+### Setup
+
+Wrap your app with the `ProverProvider` to enable proof generation:
+
+```tsx
+// App.tsx or _layout.tsx
+import { ProverProvider } from "react-native-zcam1-prove";
+
+export default function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      {/* Your app */}
+    </ProverProvider>
+  );
+}
+```
+
+### Step 1: Capture a Photo
+
+Initialize the capture SDK and use the `ZCamera` component:
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { Button, View } from "react-native";
+import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+
+export function CaptureScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+
+  const settings = {
+    appId: process.env.EXPO_PUBLIC_APP_ID!,
+    production: false,
+  };
+
+  useEffect(() => {
+    initCapture(settings).then(setCaptureInfo);
+  }, []);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto();
+    if (photo) {
+      console.log("Captured:", photo.path);
+      // photo.path contains a C2PA-signed image with succinct.bindings
+    }
+  };
+
+  if (!captureInfo) return null;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <Button title="Capture" onPress={handleCapture} />
+    </View>
+  );
+}
+```
+
+### Step 2: Generate a Proof
+
+Use the `useProver` hook to access the proving client:
+
+```tsx
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+
+export function ProvePhoto({ photoUri }: { photoUri: string }) {
+  const { provingClient, isInitializing } = useProver();
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+
+    // Generate proof and embed it in the photo (convenience method)
+    const provenPath = await provingClient.waitAndEmbedProof(photoUri);
+
+    // Save to camera roll
+    await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+    console.log("Proof generated:", provenPath);
+  };
+
+  if (isInitializing) return <Text>Initializing prover...</Text>;
+
+  return <Button title="Generate Proof" onPress={handleProve} />;
+}
+```
+
+### Step 3: Verify a Photo
+
+Use the `VerifiableFile` class to verify authenticity:
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+export function VerifyPhoto({ photoUri }: { photoUri: string }) {
+  const handleVerify = () => {
+    const file = new VerifiableFile(photoUri);
+
+    const hashValid = file.verifyHash();
+    const proofValid = file.verifyProof();
+
+    if (hashValid && proofValid) {
+      console.log("Photo is authentic!");
+    } else {
+      console.log("Verification failed");
+    }
+  };
+
+  return <Button title="Verify" onPress={handleVerify} />;
+}
+```
+
+### Complete Example
+
+Here's a minimal app combining all three steps:
+
+```tsx
+import { useState, useRef, useEffect } from "react";
+import { View, Button, Text } from "react-native";
+import { ProverProvider, useProver } from "react-native-zcam1-prove";
+import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+function MainScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+  const [photoPath, setPhotoPath] = useState<string>();
+  const [provenPath, setProvenPath] = useState<string>();
+  const { provingClient } = useProver();
+
+  const settings = {
+    appId: process.env.EXPO_PUBLIC_APP_ID!,
+    production: false,
+  };
+
+  useEffect(() => {
+    initCapture(settings).then(setCaptureInfo);
+  }, []);
+
+  const capture = async () => {
+    const photo = await camera.current?.takePhoto();
+    if (photo) setPhotoPath(photo.path);
+  };
+
+  const prove = async () => {
+    if (!provingClient || !photoPath) return;
+    const path = await provingClient.waitAndEmbedProof(photoPath);
+    setProvenPath(path);
+  };
+
+  const verify = () => {
+    if (!provenPath) return;
+    const file = new VerifiableFile(provenPath);
+    const isValid = file.verifyHash() && file.verifyProof();
+    alert(isValid ? "Authentic!" : "Invalid");
+  };
+
+  if (!captureInfo) return <Text>Initializing...</Text>;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <Button title="1. Capture" onPress={capture} />
+      <Button title="2. Prove" onPress={prove} disabled={!photoPath} />
+      <Button title="3. Verify" onPress={verify} disabled={!provenPath} />
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      <MainScreen />
+    </ProverProvider>
+  );
+}
+```
+
+### What Happens Under the Hood
+
+1. **Capture**: Takes a photo, generates an App Attest assertion over the photo hash, and embeds a C2PA manifest with `succinct.bindings`.
+
+2. **Prove**: Sends the bindings to the prover backend, which generates an SP1 zero-knowledge proof. The proof is embedded as `succinct.proof` in the C2PA manifest.
+
+3. **Verify**: Recomputes the photo hash, verifies it matches the manifest, and validates the ZK proof against the pinned Apple Root CA.
+
+
+## Editing a ZCAM Photo
+
+All ZCAM photos are C2PA compatible, meaning that any editing software that supports C2PA can be used to edit ZCAM photos while maintaining the original capture manifests.
+
+The three main editing software options used today are: Capture One, Adobe Lightroom, and PhotoLab.
+
+Currently, Capture One and Adobe Lightroom *support* C2PA, while PhotoLab does *not*. Generally, the flow is to include the content credentials on export.
+
+### Exporting with Content Credentials
+
+When exporting a ZCAM photo from Capture One, you can include the C2PA content credentials in the export settings. This preserves the original capture manifest and adds an edit manifest indicating the changes made.
+
+![Exporting with content credentials in Capture One](/images/screenshot_captureone_c2pa.png)
+
+After export, the resulting image will contain a C2PA manifest that includes both the original capture information and the edit history.
+
+![C2PA manifest showing capture and edit history](/images/screenshot_manifest_captureone.png)
+
+### Verification Limitations After Editing
+
+**Both bindings verification and ZK proof verification break when a photo is edited.** This is because:
+
+* The Apple App Attest signature (used in bindings verification) is over the hash of the original image
+* The ZK proof (used in proof verification) also verifies the original photo hash
+* When a photo is edited, the image bytes change, causing the hash to change
+* The signature/proof verification fails because the hash no longer matches
+
+**Important**: Even though C2PA edit manifests can preserve the original capture manifest and add edit history, the actual signature verification will fail because the signature is over the hash of the original image bytes, which no longer match the edited image.
+
+If you need to edit photos after capture, you must generate a new signature/proof after editing, or accept that verification will fail for edited photos.
+
+#### Future: ZK Proofs for Edit Chains
+
+In theory, zero-knowledge proofs could be extended to verify entire edit chains while maintaining privacy. A ZK proof could verify that:
+
+1. The original photo was captured authentically
+2. Each edit in the chain was legitimate (signed by authorized editors)
+3. The final photo hash matches the edit chain
+
+This would allow privacy-preserving verification even after edits, addressing concerns about maintaining authenticity through editing workflows (such as those used by news organizations like the BBC).
+
+However, this approach requires:
+
+* **Proof generation after each edit**: Each edit would need a new proof, adding computational cost
+* **Maintaining edit history in the proof**: The proof circuit would need to verify the entire edit chain
+* **More complex proof circuits**: The SP1 program would need to verify multiple C2PA manifests and their relationships
+
+For now, users who need to edit photos should:
+
+* Generate a **new signature/proof** after editing (this requires re-capturing or re-signing the edited image)
+* Or accept that verification will fail for edited photos (the original capture manifest and edit history will still be preserved in C2PA, but signature verification will fail)
+
+The current implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited photos.
+
+
+## Hardware Camera Support
+
+We are beginning to see camera companies roll out C2PA-supported cameras. Leica was the first camera company to really lean into C2PA starting in late 2023, with other companies adding support since then.
+
+It's worth noting that different companies have different levels of integration and security. For example, Leica uses a *hardware*-backed signing system to sign the manifests, whereas other camera companies use a software-based solution. Obviously, the hardware-backed solutions will be harder to exploit or generate signatures over non-authentic pictures.
+
+Each camera company only has C2PA support for a *subset* of their camera models. Generally speaking, their flagships seem most likely to have C2PA support.
+
+| **Brand**    | **Supported Models**                                                 |
+| ------------ | -------------------------------------------------------------------- |
+| **Leica**    | M11-P, M11-D, SL3-S                                                  |
+| **Sony**     | Alpha 1, 1 II, 7 IV, 7S III, 9 III (plus video on FX3/FX30/PXW-Z300) |
+| **Canon**    | EOS R1, EOS R5 Mark II                                               |
+| **Fujifilm** | GFX100S II, X-T50                                                    |
+| **Nikon**    | Z6 III (firmware + cloud cert)                                       |
+
+For more information, see: [https://yawnbox.eu/blog/c2pa-camera/](https://yawnbox.eu/blog/c2pa-camera/)
+

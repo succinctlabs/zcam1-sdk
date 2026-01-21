@@ -1,0 +1,342 @@
+# Prove SDK
+
+The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+
+## Installation
+
+```bash
+npm i react-native-zcam1-prove
+cd ios && pod install
+```
+
+## Core Concepts
+
+The Prove SDK:
+- Reads `succinct.bindings` from a captured photo's C2PA manifest
+- Sends bindings to the prover backend for ZK proof generation
+- Replaces `succinct.bindings` with `succinct.proof` in the manifest
+- Returns a new photo file with the embedded proof
+
+## API Reference
+
+### `ProverProvider`
+
+React context provider that initializes the proving client. Wrap your app with this component.
+
+```tsx
+import { ProverProvider } from "react-native-zcam1-prove";
+
+function App() {
+  return (
+    <ProverProvider settings={{ production: false }}>
+      {/* Your app */}
+    </ProverProvider>
+  );
+}
+```
+
+**Props:**
+- `settings.production` - `false` for development, `true` for production
+- `settings.privateKey` - (Optional) SP1 prover network private key
+- `settings.certChain` - (Optional) Certificate chain for signing. If not provided, a self-signed certificate is generated
+- `onFulfilled` - (Optional) Callback when a proof request is fulfilled: `(requestId, photoPath, proof, provingClient) => void`
+- `onUnfulfillable` - (Optional) Callback when a proof request cannot be fulfilled: `(requestId) => void`
+
+### `useProver()`
+
+Hook to access the proving client from within `ProverProvider`.
+
+```tsx
+import { useProver } from "react-native-zcam1-prove";
+
+function ProveButton() {
+  const { provingClient, isInitializing, error } = useProver();
+
+  if (isInitializing) return <Text>Loading...</Text>;
+  if (error) return <Text>Error: {error.message}</Text>;
+
+  // Use provingClient...
+}
+```
+
+**Returns:**
+- `provingClient` - The `ProvingClient` instance (null while initializing)
+- `isInitializing` - Whether the client is still being set up
+- `error` - Any initialization error
+- `provingTasks` - Record of active proof requests: `Record<string, { photoPath: string, createdAtMs: number }>`
+- `provingTasksCount` - Number of active proof requests
+
+### `useProofRequestStatus(requestId)`
+
+Hook to poll the status of a specific proof request.
+
+```tsx
+import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProofStatus({ requestId }: { requestId: string }) {
+  const { proof, fulfillementStatus, isInitializing, error } = useProofRequestStatus(requestId);
+
+  if (fulfillementStatus === FulfillmentStatus.Fulfilled) {
+    return <Text>Proof ready!</Text>;
+  }
+  if (fulfillementStatus === FulfillmentStatus.Unfulfillable) {
+    return <Text>Proof generation failed</Text>;
+  }
+  return <Text>Generating proof...</Text>;
+}
+```
+
+**Parameters:**
+- `requestId` - The request ID returned from `requestProof()`
+
+**Returns:**
+- `proof` - The proof bytes (ArrayBuffer) when fulfilled, `undefined` otherwise
+- `fulfillementStatus` - Current status: `Requested`, `Assigned`, `Fulfilled`, or `Unfulfillable`
+- `isInitializing` - Whether the prover is still initializing
+- `error` - Any error that occurred
+
+### `ProvingClient.requestProof(uri)`
+
+Initiates proof generation for a photo. Returns a request ID that can be used to poll for status.
+
+```tsx
+const { provingClient } = useProver();
+
+const requestId = await provingClient.requestProof(photoUri);
+```
+
+**Parameters:**
+- `uri` - Path or URI to a photo with `succinct.bindings` assertion
+
+**Returns:** Request ID (string) for polling proof status
+
+**Throws:** Error if the input photo doesn't contain `succinct.bindings`
+
+### `ProvingClient.getProofStatus(requestId)`
+
+Gets the current status of a proof request.
+
+```tsx
+import { FulfillmentStatus } from "react-native-zcam1-prove";
+
+const status = await provingClient.getProofStatus(requestId);
+
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+  // Proof is ready
+  const proof = status.proof; // ArrayBuffer
+}
+```
+
+**Parameters:**
+- `requestId` - The request ID from `requestProof()`
+
+**Returns:** `ProofRequestStatus` object with:
+- `fulfillmentStatus` - `FulfillmentStatus` enum value
+- `proof` - Proof bytes (ArrayBuffer) if fulfilled, `undefined` otherwise
+
+### `ProvingClient.embedProof(uri, proof)`
+
+Embeds a proof into a photo's C2PA manifest. Use this after receiving a proof from `getProofStatus()`.
+
+```tsx
+const status = await provingClient.getProofStatus(requestId);
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled && status.proof) {
+  const provenPath = await provingClient.embedProof(photoUri, status.proof);
+}
+```
+
+**Parameters:**
+- `uri` - Path or URI to the original photo
+- `proof` - Proof bytes (ArrayBuffer) from `getProofStatus()`
+
+**Returns:** Path to the new photo with `succinct.proof` embedded
+
+**Throws:** Error if the input photo doesn't contain `succinct.bindings`
+
+### `ProvingClient.waitAndEmbedProof(uri)`
+
+Convenience method that requests a proof, waits for it to be ready, and embeds it automatically. This is the simplest way to generate and embed a proof.
+
+```tsx
+const { provingClient } = useProver();
+
+const provenPath = await provingClient.waitAndEmbedProof(photoUri);
+```
+
+**Parameters:**
+- `uri` - Path or URI to a photo with `succinct.bindings` assertion
+
+**Returns:** Path to the new photo with `succinct.proof` embedded
+
+**Throws:** 
+- Error if the input photo doesn't contain `succinct.bindings`
+- Error if proof generation fails or is unfulfillable
+
+**Note:** This method polls the backend until the proof is ready, which may take several seconds. For better UX, use `requestProof()` + `useProofRequestStatus()` to show progress.
+
+## Complete Example
+
+```tsx
+import { useState } from "react";
+import { View, Button, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { launchImageLibrary } from "react-native-image-picker";
+
+export function ProveScreen() {
+  const { provingClient, isInitializing } = useProver();
+  const [isProving, setIsProving] = useState(false);
+  const [result, setResult] = useState<string>();
+
+  const handlePickAndProve = async () => {
+    // Pick a photo with succinct.bindings
+    const response = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+
+    const asset = response.assets?.[0];
+    if (!asset?.uri || !provingClient) return;
+
+    setIsProving(true);
+    setResult(undefined);
+
+    try {
+      // Generate and embed the proof (convenience method)
+      const provenPath = await provingClient.waitAndEmbedProof(asset.uri);
+
+      // Save to camera roll
+      await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+
+      setResult("Proof generated and saved!");
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    } finally {
+      setIsProving(false);
+    }
+  };
+
+  if (isInitializing) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" />
+        <Text>Initializing prover...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Button
+        title="Select Photo & Generate Proof"
+        onPress={handlePickAndProve}
+        disabled={isProving}
+      />
+      {isProving && (
+        <View style={styles.status}>
+          <ActivityIndicator />
+          <Text>Generating proof... This may take a few seconds.</Text>
+        </View>
+      )}
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  status: { marginTop: 16, alignItems: "center" },
+  result: { marginTop: 16, textAlign: "center" },
+});
+```
+
+## Using with Picker
+
+Combine with `ZImagePicker` to show which photos need proving:
+
+```tsx
+import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
+import { useProver } from "react-native-zcam1-prove";
+
+function PickerScreen() {
+  const { provingClient } = useProver();
+
+  const handleSelect = async (uri: string) => {
+    // Check if this photo needs a proof
+    const status = await authenticityStatus(uri);
+
+    if (status === AuthenticityStatus.Bindings && provingClient) {
+      const provenPath = await provingClient.waitAndEmbedProof(uri);
+      // Handle proven photo...
+    }
+  };
+
+  return (
+    <ZImagePicker
+      source={{ path: privateDirectory() }}
+      onSelect={handleSelect}
+      renderBadge={(status) => {
+        if (status === AuthenticityStatus.Bindings) return <Text>📝</Text>;
+        if (status === AuthenticityStatus.Proof) return <Text>✓</Text>;
+        return null;
+      }}
+    />
+  );
+}
+```
+
+## Two-Step Proof Generation (Recommended for Better UX)
+
+For better user experience, use the two-step approach to show progress:
+
+```tsx
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProveWithProgress({ photoUri }: { photoUri: string }) {
+  const { provingClient } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+    
+    // Step 1: Request proof
+    const id = await provingClient.requestProof(photoUri);
+    setRequestId(id);
+  };
+
+  useEffect(() => {
+    // Step 2: When proof is ready, embed it
+    if (proof && requestId) {
+      provingClient.embedProof(photoUri, proof).then((provenPath) => {
+        console.log("Proof embedded:", provenPath);
+      });
+    }
+  }, [proof, requestId]);
+
+  return (
+    <View>
+      {!requestId && (
+        <Button title="Generate Proof" onPress={handleProve} />
+      )}
+      {requestId && (
+        <View>
+          <Text>Status: {fulfillementStatus}</Text>
+          {fulfillementStatus === FulfillmentStatus.Fulfilled && (
+            <Text>Proof ready!</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Proof generation requires network access to the prover backend
+- The input photo must have a `succinct.bindings` assertion (created by the Capture SDK)
+- Proof generation typically takes a few seconds
+- The original photo is not modified; a new file is created with the embedded proof
+- Use `waitAndEmbedProof()` for simplicity, or `requestProof()` + `useProofRequestStatus()` for better UX with progress tracking
