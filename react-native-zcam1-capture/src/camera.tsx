@@ -7,17 +7,18 @@ import {
 import {
   buildSelfSignedCertificate,
   computeHash,
+  DepthData,
   ExistingCertChain,
   formatFromPath,
   ManifestEditor,
   SelfSignedCertChain,
+  type PhotoMetadataInfo,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk, {
   type FlashMode,
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
-  type DepthData,
 } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
 import { Dirs, Util } from "react-native-file-access";
@@ -74,18 +75,6 @@ export interface TakePhotoOptions {
   flash?: FlashMode;
 }
 
-/** Shape expected from the native Swift capture implementation. */
-type NativeCaptureResult = {
-  /** Local filesystem path to the captured image file. */
-  filePath: string;
-  /** The actual format of the captured file. */
-  format: CaptureFormat;
-  /** Optional metadata (EXIF / TIFF) for C2PA manifest enrichment. */
-  metadata?: Record<string, any> | null;
-  /** Optional depth data extracted from the captured photo (if available). */
-  depthData?: DepthData | null;
-};
-
 /** Props passed to the native Swift camera view. */
 type NativeCameraViewProps = {
   style?: StyleProp<ViewStyle>;
@@ -96,19 +85,6 @@ type NativeCameraViewProps = {
   torch?: boolean;
   exposure?: number;
   filter?: CameraFilter;
-};
-
-type PhotoMetadataInfo = {
-  device_make: string;
-  device_model: string;
-  software_version: string;
-  x_resolution: number;
-  y_resolution: number;
-  orientation: string;
-  iso: string[];
-  exposure_time: number;
-  depth_of_field: number;
-  focal_length: number;
 };
 
 type VideoMetadataInfo = {};
@@ -272,8 +248,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       options.format ?? this.props.captureFormat ?? "jpeg";
     const flash: FlashMode = options.flash ?? "off";
 
-    // Capture using native Swift camera (preview handled by native view).
-    const result: NativeCaptureResult = await NativeZcam1Sdk.takeNativePhoto(
+    const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
       flash,
@@ -286,7 +261,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     }
 
     const originalPath = result.filePath;
-    const metadata = result.metadata ?? {};
+    const metadata = (result.metadata as any) ?? {};
 
     const exif = metadata["{Exif}"] ?? {};
     const tiff = metadata["{TIFF}"] ?? {};
@@ -301,16 +276,17 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       originalPath,
       when,
       {
-        device_make: deviceMake,
-        device_model: deviceModel,
-        software_version: softwareVersion,
-        x_resolution: exif.PixelXDimension,
-        y_resolution: exif.PixelYDimension,
+        deviceMake: deviceMake,
+        deviceModel: deviceModel,
+        softwareVersion: softwareVersion,
+        xResolution: exif.PixelXDimension,
+        yResolution: exif.PixelYDimension,
         orientation: metadata.Orientation,
         iso: exif.ISOSpeedRatings,
-        exposure_time: exif.ExposureTime,
-        depth_of_field: exif.FNumber,
-        focal_length: exif.FocalLength,
+        exposureTime: exif.ExposureTime,
+        depthOfField: exif.FNumber,
+        focalLength: exif.FocalLength,
+        depthData: result.depthData,
       },
       this.props.captureInfo,
       this.certChainPem,

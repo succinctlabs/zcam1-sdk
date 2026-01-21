@@ -56,7 +56,7 @@ public class Zcam1DepthDataProcessor {
         var result: [String: Any] = [
             "width": width,
             "height": height,
-            "pixel_format": pixelFormatString,
+            "pixelFormat": pixelFormatString,
             "statistics": statistics,
             "accuracy": accuracyString,
         ]
@@ -117,8 +117,8 @@ public class Zcam1DepthDataProcessor {
                 "min": NSNull(),
                 "max": NSNull(),
                 "mean": NSNull(),
-                "std_dev": NSNull(),
-                "valid_pixels": 0,
+                "stdDev": NSNull(),
+                "validPixelCount": 0,
             ]
         }
 
@@ -137,8 +137,8 @@ public class Zcam1DepthDataProcessor {
             "min": min,
             "max": max,
             "mean": mean,
-            "std_dev": stdDev,
-            "valid_pixels": depthValues.count,
+            "stdDev": stdDev,
+            "validPixelCount": depthValues.count,
         ]
     }
 

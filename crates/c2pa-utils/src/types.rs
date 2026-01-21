@@ -103,6 +103,39 @@ impl Actions {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct PhotoMetadataInfo {
+    device_make: String,
+    device_model: String,
+    software_version: String,
+    x_resolution: u32,
+    y_resolution: u32,
+    orientation: String,
+    iso: Vec<String>,
+    exposure_time: u32,
+    depth_of_field: u32,
+    focal_length: u32,
+    depth_data: Option<DepthData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct DepthData {
+    width: u32,
+    height: u32,
+    pixel_format: String,
+    statistics: DepthDataStatistics,
+    accuracy: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct DepthDataStatistics {
+    min: u32,
+    max: u32,
+    mean: u32,
+    std_dev: u32,
+    valid_pixel_count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct DeviceBindings {
     pub app_id: String,
     pub device_key_id: String,
