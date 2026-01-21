@@ -1,0 +1,95 @@
+# ZCAM vs Other Approaches
+
+There already exist numerous technologies in the authenticity and verifiability of images space. These solutions, however, solve for slightly different problem spaces and provide varying levels of functionality.
+
+:::info
+ZCAM provides a complete solution for mobile photo authenticity verification. It combines hardware-backed attestation, optional zero-knowledge proofs, embedded verification data, and simple verification output (verified/not verified) into a single integrated system designed specifically for human-taken photos on mobile devices.
+:::
+
+Below is a feature comparison showing what each approach provides. See further sections below for more details on other tools and advantages that ZCAM can provide.
+
+## Comparison Table
+
+| Approach | Hardware Attestation | ZK Proofs | Embedded Verification | User-friendly Output | Camera Photos | Use Case |
+|----------|---------------------|-----------|---------------------|---------------|--------------|----------|
+| **ZCAM** | ✅ | ✅ | ✅ | ✅ | ✅ | Complete mobile photo authenticity solution |
+| **C2PA (generic)** | ❌ | ❌ | ✅ | ❌ | ✅ | Edit history tracking, content provenance |
+| **Physical Camera** | ❓ | ❌ | ✅ | ❌ | ✅ | For C2PA-compatible cameras, note only some cameras support hardware-backed signing |
+| **JPEG Trust** | ❌ | ❌ | ✅ | ✅ | ✅ | Trust evaluation framework (leverages C2PA) |
+| **SynthID** | ❌ | ❌ | ✅ | ❌ | ❌ | AI watermarking and detection |
+| **AI Content Marking** | ❌ | ❌ | ✅ | ❌ | ❌ | AI-generated content marking (watermarking or C2PA) |
+
+## Other tooling
+
+### C2PA
+
+The C2PA content credential standard aims to create a *verifiable history* of a given image. 
+
+Note, it is *not* specific to "authentic" images, i.e. it can be applied to both camera-captured pictures, as well as AI-generated images. It creates a specification for attaching contextual metadata as an image evolves over time. For example, an initial image can be captured using a camera or generated using AI. An initial *C2PA Manifest* is attached to the image indicating its origin. Thereafter, as edits are made (using C2PA-compatible editors), new manifests are attached indicating the edits made (e.g. cropping, brightness balancing, etc.). All of these manifests are signed using public key cryptography.
+
+**Key Differences from ZCAM:**
+- C2PA doesn't require hardware attestation. any signing key can be used to sign attestations.
+- C2PA focuses on edit history, while ZCAM focuses on capture authenticity
+- ZCAM uses C2PA as the container format but adds hardware-backed guarantees
+- C2PA is a more flexible, generic tooling for attaching historical metadata to an image, ZCAM focuses on proving authenticity of an iamge.
+
+More technical information can be found in the [How it Works](/overview/how_it_works) section under C2PA.
+
+### JPEG Trust
+
+JPEG Trust provides a framework for evaluating the trustworthiness of an image. It is actually compatible with C2PA, and relies *on* the data encoded in C2PA manifests. 
+
+The main value here is the ability to create trust *profiles* and *evaluators* that leverage the bound data, which allows users to conclude the authenticity for a given photo.
+
+**Key Differences from ZCAM:**
+- JPEG Trust is an evaluation framework, not a capture/verification system
+- It can work with ZCAM-generated C2PA manifests
+- Focuses on trust scoring rather than cryptographic verification
+
+### SynthID
+
+SynthID, developed by Google, is an invisible watermark framework that can embed data into an image in a more resilient format. Solutions that use the JUMBF metadata are susceptible to getting the metadata stripped, the photo getting edited/cropped, etc. The actual embedded data is based on an AI model, and can later be read and analyzed by another model that decides whether a photo is AI-generated or not.
+
+**Key Differences from ZCAM:**
+- SynthID focuses on AI detection, ZCAM focuses on authenticity verification
+- ZCAM provides cryptographic guarantees, SynthID provides probabilistic detection
+
+### IPTC Photo Metadata
+
+The IPTC Photo Metadata simply defines standardized nomenclature and labeling for the aforementioned protocols. It's a metadata standard rather than a verification system.
+
+**Key Differences from ZCAM:**
+- IPTC is a metadata format, not a verification system
+- Can be used alongside ZCAM for standardized metadata fields
+- No cryptographic guarantees or hardware attestation
+
+### AI Content Marking
+
+Several companies provide solutions for marking AI-generated content, using different approaches:
+
+- **Meta Watermarking**: Meta adds watermarks specifically to AI-generated content. These watermarks are meant to be durable, handling cropping and edit actions, etc.
+- **OpenAI C2PA**: OpenAI (e.g. ChatGPT) generated images include C2PA manifests indicating they were generated using DALL-E and on ChatGPT. This is also included in Azure's OpenAI service.
+
+**Key Differences from ZCAM:**
+- These solutions focus on marking AI-generated content, while ZCAM verifies authentic human-captured photos
+- No hardware attestation in these implementations
+- Different goals: provenance/marking for AI content vs. authenticity verification for human-captured photos
+- Watermark-based (Meta) or C2PA-based (OpenAI) rather than hardware-backed cryptographic verification
+
+## When to Use ZCAM
+
+ZCAM is the right choice when you need:
+
+- **Hardware-backed authenticity**: Guarantees that photos were taken on a specific device
+- **Cryptographic verification**: Strong cryptographic proofs rather than probabilistic detection
+- **Mobile-first**: Designed specifically for iOS (and planned Android) mobile apps
+- **Simple verification**: Easy-to-use API that returns verified/not verified without requiring manifest parsing
+- **Complete solution**: End-to-end flow from capture to verification with optional ZK proof integration
+
+Consider other approaches when:
+
+- You need to mark AI-generated content (use SynthID or AI Content Marking solutions)
+- You want a general-purpose edit history system (use generic C2PA)
+- You need watermarking resilient to heavy editing (use SynthID)
+- You're working with non-mobile platforms (use C2PA or other standards)
+

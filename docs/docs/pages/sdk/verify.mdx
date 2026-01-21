@@ -1,0 +1,244 @@
+# Verify SDK
+
+The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+
+## Installation
+
+```bash
+npm i react-native-zcam1-verify
+cd ios && pod install
+```
+
+## Core Concepts
+
+The Verify SDK:
+- Extracts C2PA manifests from photos
+- Verifies the photo hash matches the manifest
+- Validates bindings (Apple App Attest signatures) for photos with `succinct.bindings`
+- Validates ZK proofs against a pinned Apple Root CA for photos with `succinct.proof`
+- Extracts capture metadata (device info, camera settings, etc.)
+- Confirms the photo was taken on a genuine iOS device
+
+## API Reference
+
+### `VerifiableFile`
+
+Class for verifying photo authenticity.
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+const file = new VerifiableFile(photoUri);
+```
+
+**Constructor:**
+- `uriOrPath` - File path or URI to the photo
+
+### `VerifiableFile.verifyHash()`
+
+Checks that the photo's content hash matches the hash recorded in the C2PA manifest.
+
+```tsx
+const isHashValid: boolean = file.verifyHash();
+```
+
+**Returns:** `true` if the file contents haven't been tampered with
+
+### `VerifiableFile.verifyBindings()`
+
+Verifies the Apple App Attest bindings for photos that have `succinct.bindings` but haven't been proven yet. This is useful for verifying photos before proof generation or when using bindings-only verification.
+
+```tsx
+const isBindingsValid: boolean = file.verifyBindings(appAttestProduction);
+```
+
+**Parameters:**
+- `appAttestProduction` - `true` if the photo was captured in production mode, `false` for development
+
+**Returns:** `true` if the bindings are valid
+
+**Note:** This method works for photos with `succinct.bindings`. For photos with `succinct.proof`, use `verifyProof()` instead.
+
+### `VerifiableFile.verifyProof()`
+
+Validates the embedded ZK proof against the photo hash and Apple Root CA.
+
+```tsx
+const isProofValid: boolean = file.verifyProof();
+```
+
+**Returns:** `true` if the proof is valid
+
+**Throws:** Error if the photo doesn't contain a `succinct.proof` assertion
+
+### `VerifiableFile.dataHash()`
+
+Returns the file's content hash as recorded in the active C2PA manifest.
+
+```tsx
+const hash: string | undefined = file.dataHash();
+```
+
+**Returns:** The manifest data hash (base64-encoded string), or `undefined` if not available
+
+### `VerifiableFile.captureMetadata()`
+
+Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
+
+```tsx
+import { CaptureMetadata } from "react-native-zcam1-verify";
+
+const metadata: CaptureMetadata | null = file.captureMetadata();
+```
+
+**Returns:** The capture metadata object, or `null` if not present
+
+**Metadata includes:**
+- `action` - The capture action type
+- `when` - Timestamp of capture
+- `parameters` - Device and camera settings:
+  - `device_make`, `device_model`
+  - `software_version`
+  - `x_resolution`, `y_resolution`
+  - `orientation`
+  - `iso`, `exposure_time`
+  - `focal_length`, `depth_of_field`
+
+## Complete Example
+
+```tsx
+import { useState } from "react";
+import { View, Button, Text, StyleSheet } from "react-native";
+import { launchImageLibrary } from "react-native-image-picker";
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+type VerificationResult = {
+  hashValid: boolean;
+  proofValid: boolean;
+  authentic: boolean;
+};
+
+export function VerifyScreen() {
+  const [result, setResult] = useState<VerificationResult>();
+  const [error, setError] = useState<string>();
+
+  const handlePickAndVerify = async () => {
+    setResult(undefined);
+    setError(undefined);
+
+    const response = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+
+    const asset = response.assets?.[0];
+    if (!asset?.uri) return;
+
+    try {
+      const file = new VerifiableFile(asset.uri);
+
+      const hashValid = file.verifyHash();
+      const proofValid = file.verifyProof();
+
+      setResult({
+        hashValid,
+        proofValid,
+        authentic: hashValid && proofValid,
+      });
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Select Photo to Verify" onPress={handlePickAndVerify} />
+
+      {result && (
+        <View style={styles.result}>
+          <Text style={styles.title}>
+            {result.authentic ? "✓ Authentic" : "✗ Not Authentic"}
+          </Text>
+          <Text>Hash Valid: {result.hashValid ? "Yes" : "No"}</Text>
+          <Text>Proof Valid: {result.proofValid ? "Yes" : "No"}</Text>
+        </View>
+      )}
+
+      {error && <Text style={styles.error}>Error: {error}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  result: { marginTop: 24, padding: 16, backgroundColor: "#f0f0f0", borderRadius: 8 },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 8 },
+  error: { marginTop: 16, color: "red" },
+});
+```
+
+## Verification Helper
+
+Create a reusable verification function:
+
+```tsx
+import { VerifiableFile } from "react-native-zcam1-verify";
+
+export type VerificationStatus =
+  | { status: "authentic" }
+  | { status: "invalid_hash" }
+  | { status: "invalid_proof" }
+  | { status: "no_manifest" }
+  | { status: "error"; message: string };
+
+export function verifyPhoto(uri: string): VerificationStatus {
+  try {
+    const file = new VerifiableFile(uri);
+
+    if (!file.verifyHash()) {
+      return { status: "invalid_hash" };
+    }
+
+    if (!file.verifyProof()) {
+      return { status: "invalid_proof" };
+    }
+
+    return { status: "authentic" };
+  } catch (error: any) {
+    if (error.message?.includes("no manifest")) {
+      return { status: "no_manifest" };
+    }
+    return { status: "error", message: error.message };
+  }
+}
+```
+
+## What Verification Checks
+
+| Check | What It Validates | Use Case |
+|-------|-------------------|----------|
+| `verifyHash()` | Photo bytes match the SHA-256 hash in the C2PA manifest | Always use this first to check file integrity |
+| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
+| `verifyProof()` | ZK proof is valid and chains to the Apple Root CA | For photos with `succinct.proof` (after proof generation) |
+
+**Verification Flow:**
+
+For photos with `succinct.bindings`:
+1. Call `verifyHash()` to check file integrity
+2. Call `verifyBindings()` to verify the Apple App Attest signature
+
+For photos with `succinct.proof`:
+1. Call `verifyHash()` to check file integrity
+2. Call `verifyProof()` to verify the ZK proof
+
+Both hash and bindings/proof checks must pass for a photo to be considered authentic.
+
+## Notes
+
+- Verification is performed locally—no network required
+- Use `verifyBindings()` for photos with `succinct.bindings` (before proof generation)
+- Use `verifyProof()` for photos with `succinct.proof` (after proof generation)
+- Photos with only `succinct.bindings` will fail `verifyProof()` (they haven't been proven yet)
+- Photos with `succinct.proof` can use either verification method, but `verifyProof()` provides stronger guarantees
+- The Apple Root CA is pinned in the SDK; proofs must chain to this root
+- `captureMetadata()` provides access to device and camera settings recorded at capture time

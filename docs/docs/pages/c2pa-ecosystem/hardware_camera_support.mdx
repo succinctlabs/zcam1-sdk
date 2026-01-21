@@ -1,0 +1,17 @@
+# Hardware Camera Support
+
+We are beginning to see camera companies roll out C2PA-supported cameras. Leica was the first camera company to really lean into C2PA starting in late 2023, with other companies adding support since then.
+
+It's worth noting that different companies have different levels of integration and security. For example, Leica uses a *hardware*-backed signing system to sign the manifests, whereas other camera companies use a software-based solution. Obviously, the hardware-backed solutions will be harder to exploit or generate signatures over non-authentic pictures.
+
+Each camera company only has C2PA support for a *subset* of their camera models. Generally speaking, their flagships seem most likely to have C2PA support.
+
+| **Brand** | **Supported Models** |
+| --- | --- |
+| **Leica** | M11-P, M11-D, SL3-S |
+| **Sony** | Alpha 1, 1 II, 7 IV, 7S III, 9 III (plus video on FX3/FX30/PXW-Z300) |
+| **Canon** | EOS R1, EOS R5 Mark II |
+| **Fujifilm** | GFX100S II, X-T50 |
+| **Nikon** | Z6 III (firmware + cloud cert) |
+
+For more information, see: https://yawnbox.eu/blog/c2pa-camera/

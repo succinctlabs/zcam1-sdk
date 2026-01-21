@@ -1,0 +1,246 @@
+# Picker SDK
+
+The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+
+## Installation
+
+```bash
+npm i react-native-zcam1-picker
+cd ios && pod install
+```
+
+## Core Concepts
+
+The Picker SDK:
+- Displays a grid of images from a private folder or photo gallery
+- Checks each image's C2PA authenticity status
+- Supports custom badge rendering based on status
+- Fires callbacks when images are selected
+
+## API Reference
+
+### `ZImagePicker`
+
+React component that renders a scrollable image grid.
+
+```tsx
+import { ZImagePicker } from "react-native-zcam1-picker";
+
+<ZImagePicker
+  source={{ path: "/path/to/folder" }}
+  onSelect={(uri) => console.log("Selected:", uri)}
+/>
+```
+
+**Props:**
+- `source` - Image source (see below)
+- `onSelect` - Callback when an image is tapped
+- `renderBadge` - (Optional) Custom badge renderer
+
+### Source Types
+
+**Private folder:**
+```tsx
+<ZImagePicker source={{ path: "/path/to/folder" }} />
+```
+
+**Photo gallery (with optional album filter):**
+```tsx
+<ZImagePicker source={{ album: "MyAlbum" }} />
+```
+
+### `privateDirectory()`
+
+Returns the app's private document directory path.
+
+```tsx
+import { privateDirectory } from "react-native-zcam1-picker";
+
+const path = privateDirectory(); // e.g., /var/mobile/.../Documents
+```
+
+### `AuthenticityStatus`
+
+Enum indicating the C2PA status of an image.
+
+```tsx
+import { AuthenticityStatus } from "react-native-zcam1-picker";
+
+AuthenticityStatus.Unknown        // Unable to determine
+AuthenticityStatus.NoManifest     // No C2PA manifest
+AuthenticityStatus.InvalidManifest // Manifest present but invalid
+AuthenticityStatus.Bindings       // Has succinct.bindings (needs proof)
+AuthenticityStatus.Proof          // Has succinct.proof (verified)
+```
+
+## Basic Usage
+
+```tsx
+import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+
+export function PickerScreen() {
+  const handleSelect = (uri: string) => {
+    console.log("Selected:", uri);
+  };
+
+  return (
+    <ZImagePicker
+      source={{ path: `${privateDirectory()}/photos` }}
+      onSelect={handleSelect}
+    />
+  );
+}
+```
+
+## Rendering Badges
+
+Use `renderBadge` to display authenticity indicators:
+
+```tsx
+import { Image, StyleSheet } from "react-native";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+  },
+});
+
+function renderBadge(status: AuthenticityStatus): React.ReactElement | null {
+  switch (status) {
+    case AuthenticityStatus.Bindings:
+      return (
+        <Image
+          source={require("./assets/pending.png")}
+          style={styles.badge}
+          resizeMode="contain"
+        />
+      );
+    case AuthenticityStatus.Proof:
+      return (
+        <Image
+          source={require("./assets/verified.png")}
+          style={styles.badge}
+          resizeMode="contain"
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+export function PickerScreen() {
+  return (
+    <ZImagePicker
+      source={{ path: privateDirectory() }}
+      renderBadge={renderBadge}
+      onSelect={(uri) => console.log(uri)}
+    />
+  );
+}
+```
+
+## Complete Example with Proving
+
+```tsx
+import { useState } from "react";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+import { useProver } from "react-native-zcam1-prove";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+
+export function PickAndProveScreen() {
+  const { provingClient, isInitializing } = useProver();
+  const [isProving, setIsProving] = useState(false);
+
+  const handleSelect = async (uri: string) => {
+    if (!provingClient || isProving) return;
+
+    setIsProving(true);
+    try {
+      const provenPath = await provingClient.embedProof(uri);
+      await CameraRoll.saveAsset(provenPath, { album: "ZCAM" });
+      alert("Proof generated!");
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsProving(false);
+    }
+  };
+
+  const renderBadge = (status: AuthenticityStatus) => {
+    if (status === AuthenticityStatus.Bindings) {
+      return <Text style={styles.badge}>📝</Text>;
+    }
+    if (status === AuthenticityStatus.Proof) {
+      return <Text style={styles.badge}>✓</Text>;
+    }
+    return null;
+  };
+
+  if (isInitializing) {
+    return <ActivityIndicator style={styles.centered} />;
+  }
+
+  return (
+    <View style={styles.container}>
+      {isProving && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.overlayText}>Generating proof...</Text>
+        </View>
+      )}
+      <ZImagePicker
+        source={{ path: `${privateDirectory()}/captured` }}
+        renderBadge={renderBadge}
+        onSelect={handleSelect}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center" },
+  badge: { position: "absolute", top: 4, right: 4, fontSize: 14 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  overlayText: { color: "white", marginTop: 8 },
+});
+```
+
+## Permissions
+
+### iOS
+
+Add to `Info.plist` when using photo gallery source:
+
+```xml
+<key>NSPhotoLibraryUsageDescription</key>
+<string>This app needs access to your photos.</string>
+```
+
+### Android
+
+For Android 13+:
+- `android.permission.READ_MEDIA_IMAGES`
+
+For older versions:
+- `android.permission.READ_EXTERNAL_STORAGE`
+
+## Limitations
+
+- Photo gallery source loads the first 20 photos (no pagination)
+- Image list is loaded once on mount; source prop changes require remounting
+- Single selection only
+- Photos only (no videos)
+- You must handle runtime permissions before rendering gallery source

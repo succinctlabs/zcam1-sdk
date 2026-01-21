@@ -1,0 +1,88 @@
+# How it Works
+
+## Overview
+
+ZCAM enables photo authenticity verification through a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
+
+At a high level, ZCAM enables a user to take a photo, then leverages hardware-backed signing keys to sign the validity of the photo. This attestation is then attached to the photo using C2PA. Finally, the attestation can optionally be replaced with a zero knowledge proof that proves the verification of the attestation.
+
+The system works in three main steps:
+1. **Capture**: Take a photo and sign it with a hardware-backed key
+2. **Prove** (optional): Generate a zero-knowledge proof of the signature
+3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification
+
+## Verification Modes
+
+ZCAM supports two verification modes:
+
+- **Bindings verification**: Verifies the Apple App Attest signature directly. This mode is faster and works offline. No zero-knowledge proofs are required.
+- **ZK proof verification** (optional): Generates a zero-knowledge proof for enhanced privacy and verifiability. This provides additional cryptographic guarantees but requires network access for proof generation.
+
+The ZK proof step is **optional**—you can use ZCAM with bindings verification alone, or add ZK proofs for additional privacy guarantees. 
+
+## Components
+
+This section describes the building blocks of ZCAM: Zero knowledge proofs generated using the SP1 zk virtual machine, C2PA for attaching metadata to an image and Apple's App attest service and secure enclave used for signing the validity of a photo.
+### Zero-Knowledge Proofs
+
+Zero-knowledge proofs allow one party (the prover) to prove to another party (the verifier) that a statement is true without revealing any information beyond the validity of the statement itself.
+
+### SP1 Zero-Knowledge Virtual Machine
+
+ZCAM uses [SP1](https://docs.succinct.xyz/docs/sp1/introduction), Succinct's zero-knowledge virtual machine (zkVM). SP1 is a zkVM that proves the correct execution of programs compiled for the RISC-V architecture, meaning it can run and prove programs written in Rust, C++, C, or any language that compiles to RISC-V.
+
+Key benefits of SP1:
+
+- **Maintainability**: Write ZK programs in standard Rust without custom DSLs or complex circuits
+- **Faster Development**: Skip months of low-level ZK engineering
+- **Performance**: State-of-the-art proving speed and efficiency, benchmarked in production
+
+In ZCAM, SP1 generates proofs that verify:
+1. The photo was signed using a valid Apple App Attest key
+2. The signature corresponds to the photo hash
+3. The attestation chain is valid
+
+These proofs are small, fast to verify, and don't reveal the underlying attestation data.
+
+:::info
+**ZK Proofs are Optional**: You can use ZCAM with bindings verification alone. ZK proofs add privacy guarantees but require internet access to request proofs from the Succinct Prover Network. There is also higher latency given the time required for the network to prove the verification of an attestation.
+:::
+
+### C2PA
+
+C2PA is an open source standard that allows parties to attach metadata that is *cryptographically bound* to a specified image. This is done using a *C2PA Manifest* which is tied to a specific image, including details and metadata about said image and also a cryptographic signature over these details.
+
+The manifest can hold any information about the photo including metadata about what device it was taken on, size of the image etc. The key point is that it is signed using some key that attests to the accuracy of the associated information.
+
+The manifest is then embedded directly into the photo file. The manner in which this is done depends. For example, it can be embedded into the metadata section of the JPEG file, or can be embedded as an invisible watermark encoding the manifest data.
+
+ZCAM leverages the C2PA standard to embed verifiable attestation data (and optionally zero-knowledge proofs) that the photo was taken on an iPhone and signed using a secure enclave private key that only the ZCAM SDK can use.
+
+### Apple App Attest
+
+ZCAM uses Apple's App Attest service to ensure that a ZPhoto was indeed *signed* by the ZCAM SDK.
+
+The *intended* purpose of App Attest is to ensure requests coming from an app to a backend service is actually from the intended app. i.e. It guarantees that a backend service knows that it's only servicing requests from the associated mobile app.
+
+At a high level, this is done by generating a new signing keypair on the device's secure enclave *that only the specific mobile app can access*. There is then a protocol for Apple to *attest* to the keypair as having been generated on said mobile app. This ensures any subsequent signatures using the keypair is guaranteed to be from the app.
+
+![App Attest protocol diagram](/images/diagram_appattest.png)
+
+Specifically, the App Attest protocol provides an attestation from Apple's backend server that is bound to some unique nonce and the public key of the secure enclave keypair. The app can then send this attestation as part of a request, such that the receiving backend service can verify the attestation.
+
+Note, ZCAM leverages Apple App Attest, but uses it in a subtle but different way. There are two key differences:
+
+1. The unique nonce used in the attestation is actually derived on the app itself, instead of receiving it from some backend service.
+2. The attestation can be verified either directly (bindings verification) or in a zero knowledge proof (ZK proof verification) instead of by a backend service.
+
+### iOS Secure Enclave
+
+The Secure Enclave is a coprocessor found in Apple devices that provides an isolated, secure environment for cryptographic operations. Keys stored in the Secure Enclave:
+
+- Cannot be extracted or copied
+- Are protected even if the device is compromised
+- Can only be used by the specific app that created them
+- Are hardware-backed and tamper-resistant
+
+ZCAM uses the Secure Enclave to store both the device key (used for signing photo hashes) and the content key (used for signing C2PA manifests). This ensures that even if an attacker gains access to the device, they cannot forge signatures or create fake zphotos.
+

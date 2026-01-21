@@ -1,0 +1,95 @@
+  # Security
+
+  ## Security Claims
+
+  A verified zphoto provides the following guarantees:
+
+  1. **Device Authenticity**: The photo was signed on a genuine Apple device with a Secure Enclave
+  2. **App Binding**: The signing key is bound to a specific application via Apple App Attest
+  3. **Content Integrity**: The photo has not been modified since the signature was created
+  4. **Proof Validity**: The above properties are verified in a zero-knowledge proof that chains to Apple's root certificate
+
+  ## Trust Assumptions
+
+  The security of ZCAM relies on the following assumptions:
+
+  | Assumption | Rationale |
+  |------------|-----------|
+  | Secure Enclave keys cannot be exfiltrated | Hardware security guarantee from Apple |
+  | Apple App Attest is honest | Apple signs attestations only for legitimate device/app pairs |
+  | SP1 proof system is sound | Groth16 proofs cannot be forged without the witness |
+  | SDK code integrity | The SDK code on-device has not been tampered with |
+
+  ## Critical Assumption: Capture-to-Sign Integrity
+
+  :::warning
+  The SDK signs the photo immediately after capture, but there is no cryptographic binding
+  between the camera hardware and the signing operation. We assume no malicious code can
+  execute between the moment the photo is captured and when it is signed.
+  :::
+
+  This assumption holds if:
+  - The SDK code has not been tampered with
+  - The host application does not inject code into the capture flow
+  - The device is not compromised
+
+  This is an **operational security** assumption, not a cryptographic guarantee.
+
+  ## Open Issues
+
+  ### App Trust Model
+
+  Currently, the SP1 program verifies that a photo was signed by *an* Apple Attested key,
+  but does not restrict *which* apps are trusted. A malicious app could:
+
+  1. Integrate the SDK
+  2. Feed AI-generated images to the signing flow
+  3. Generate valid proofs for inauthentic photos
+
+  **Mitigations under consideration:**
+  - Maintain a allowlist of trusted App IDs verified in the proof
+  - Output the App ID as a public value, allowing verifiers to check trust
+  - Require app attestation/audit before allowlist inclusion
+
+  ### Third-Party SDK Integration
+
+  As the SDK scales to third-party apps, we need mechanisms to ensure integrators
+  use the SDK as intended. Options include:
+  - Code signing / integrity checks on the SDK binary
+  - Runtime attestation of the SDK version
+  - Legal/contractual requirements for integrators
+
+  ### SDK Code Integrity
+
+  We need to guarantee the SDK code cannot be tampered with:
+  - **Build pipeline**: CI/CD must produce reproducible, auditable builds
+  - **On-device**: The SDK binary should be verified before execution
+  - **Updates**: SDK updates must be authenticated
+
+  This is not yet fully implemented.
+
+## Inauthentic Photos
+
+Even with cryptographic guarantees that a photo was captured by a genuine device running the SDK, attackers may attempt physical attacks:
+
+- **Screen capture**: Photographing a screen displaying an AI-generated or manipulated image
+- **Printed photo capture**: Photographing a printed image
+- **Projector capture**: Photographing a projected image
+
+These attacks bypass software-level protections because the camera genuinely captures "something" — just not an authentic scene.
+
+Note that the taken photo is still "valid" in that it was taken using the camera app, properly signed etc. But the photo is still "inauthentic" in terms of what it is trying to portray.
+This is a different, much harder problem to solve. In fact, a cryptographic solution is likely impossible. Instead, our strategy is to provide as much contextual data in the metadata for a user to be able to make an informed decision on the authenticity of the photo.
+
+### Detection Signals
+
+The following metadata fields can help detect physical replay attacks:
+
+| Field | What It Measures | Fraud Indicator |
+|-------|------------------|-----------------|
+| **GPS / Location** | Location | Location inconsistent with claimed scene |
+| **Timestamp** | Time | Time inconsistent with lighting conditions |
+| **Subject Distance** | Distance to focused subject | Focus distance inconsistent with the subject of picture |
+| **Depth Map** | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance |
+| **White Balance** | Color temperature | Screen color temperature differs from natural light |
+| **Ambient Light** | Environmental light level | Unusually uniform lighting could indicate screen glow|
