@@ -65,10 +65,25 @@ public class Zcam1DepthDataProcessor {
     }
 
     /// Extract statistics (min, max, mean, stddev) from depth data.
+    ///
+    /// Computing stats over every pixel can be expensive and can delay photo capture completion,
+    /// especially when depth delivery is enabled. To keep capture responsive, this uses:
+    /// - adaptive sampling (caps work to ~65k pixels)
+    /// - a single-pass (Welford) accumulator (avoids large allocations)
     private static func extractDepthStatistics(from depthDataMap: CVPixelBuffer) -> [String: Any] {
         let width = CVPixelBufferGetWidth(depthDataMap)
         let height = CVPixelBufferGetHeight(depthDataMap)
         let pixelFormatType = CVPixelBufferGetPixelFormatType(depthDataMap)
+
+        // Cap work by sampling at most ~65k pixels.
+        let totalPixels = max(1, width * height)
+        let maxSamples = 65_536
+        let stride: Int = {
+            if totalPixels <= maxSamples { return 1 }
+            // Choose a stride so that (w/stride)*(h/stride) ~= maxSamples.
+            let scale = sqrt(Double(totalPixels) / Double(maxSamples))
+            return max(1, Int(scale.rounded(.up)))
+        }()
 
         CVPixelBufferLockBaseAddress(depthDataMap, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depthDataMap, .readOnly) }
@@ -78,33 +93,54 @@ public class Zcam1DepthDataProcessor {
         }
 
         let bytesPerRow = CVPixelBufferGetBytesPerRow(depthDataMap)
-        var depthValues: [Float] = []
-        depthValues.reserveCapacity(width * height)
 
-        // Extract depth values based on pixel format
+        var count: Int = 0
+        var mean: Double = 0
+        var m2: Double = 0
+        var minValue: Float = .infinity
+        var maxValue: Float = -.infinity
+
+        func accumulate(_ v: Float) {
+            guard v.isFinite else { return }
+            count += 1
+            minValue = min(minValue, v)
+            maxValue = max(maxValue, v)
+
+            let x = Double(v)
+            let delta = x - mean
+            mean += delta / Double(count)
+            let delta2 = x - mean
+            m2 += delta * delta2
+        }
+
+        // Extract depth values based on pixel format (sampled).
         switch pixelFormatType {
         case kCVPixelFormatType_DepthFloat32, kCVPixelFormatType_DisparityFloat32:
             let floatBuffer = baseAddress.assumingMemoryBound(to: Float32.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float32>.stride) + x
-                    let value = floatBuffer[offset]
-                    if !value.isNaN && !value.isInfinite {
-                        depthValues.append(value)
-                    }
+            let rowStride = bytesPerRow / MemoryLayout<Float32>.stride
+            var y = 0
+            while y < height {
+                let rowBase = y * rowStride
+                var x = 0
+                while x < width {
+                    accumulate(floatBuffer[rowBase + x])
+                    x += stride
                 }
+                y += stride
             }
 
         case kCVPixelFormatType_DepthFloat16, kCVPixelFormatType_DisparityFloat16:
             let float16Buffer = baseAddress.assumingMemoryBound(to: Float16.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float16>.stride) + x
-                    let value = float16Buffer[offset]
-                    if !value.isNaN && !value.isInfinite {
-                        depthValues.append(Float(value))
-                    }
+            let rowStride = bytesPerRow / MemoryLayout<Float16>.stride
+            var y = 0
+            while y < height {
+                let rowBase = y * rowStride
+                var x = 0
+                while x < width {
+                    accumulate(Float(float16Buffer[rowBase + x]))
+                    x += stride
                 }
+                y += stride
             }
 
         default:
@@ -112,33 +148,27 @@ public class Zcam1DepthDataProcessor {
         }
 
         // Calculate statistics
-        guard !depthValues.isEmpty else {
+        guard count > 0 else {
             return [
                 "min": NSNull(),
                 "max": NSNull(),
                 "mean": NSNull(),
                 "stdDev": NSNull(),
                 "validPixelCount": 0,
+                "sampleStride": stride,
             ]
         }
 
-        let min = depthValues.min() ?? 0
-        let max = depthValues.max() ?? 0
-        let mean = depthValues.reduce(0, +) / Float(depthValues.count)
-
-        // Calculate standard deviation
-        let variance =
-            depthValues.reduce(0) { sum, value in
-                sum + pow(value - mean, 2)
-            } / Float(depthValues.count)
-        let stdDev = sqrt(variance)
+        let variance = m2 / Double(count)
+        let stdDev = sqrt(max(0, variance))
 
         return [
-            "min": min,
-            "max": max,
-            "mean": mean,
-            "stdDev": stdDev,
-            "validPixelCount": depthValues.count,
+            "min": minValue,
+            "max": maxValue,
+            "mean": Float(mean),
+            "stdDev": Float(stdDev),
+            "validPixelCount": count,
+            "sampleStride": stride,
         ]
     }
 

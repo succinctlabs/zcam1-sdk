@@ -80,7 +80,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             return
         }
 
-        guard var data = photo.fileDataRepresentation(), !data.isEmpty else {
+        guard let photoData = photo.fileDataRepresentation(), !photoData.isEmpty else {
             let err = NSError(
                 domain: "Zcam1CameraService",
                 code: -20,
@@ -93,56 +93,67 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             return
         }
 
-        // Apply filter if set (before C2PA signing).
-        if let filteredData = owner.applyFilterToImageData(data) {
-            data = filteredData
-        }
+        // Copy values we need immediately, then offload expensive work (filtering, file I/O, depth processing)
+        // to avoid blocking AVCapturePhotoOutput's callback queue (which can feel like capture lag).
+        let metadataSnapshot: [String: Any] = photo.metadata
+        let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
 
-        let filename = "zcam1-\(UUID().uuidString).\(format.fileExtension)"
-        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        DispatchQueue.global(qos: .userInitiated).async {
+            var data = photoData
 
-        do {
-            try data.write(to: tmpURL, options: [.atomic])
-
-            var metadata: [String: Any] = photo.metadata
-
-            // Extract TIFF dictionary (device info, resolution)
-            if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
-                metadata["{TIFF}"] = tiffDict
+            // Apply filter if set (before C2PA signing).
+            if let filteredData = self.owner.applyFilterToImageData(data) {
+                data = filteredData
             }
 
-            // Extract EXIF dictionary (ISO, exposure, focal length, aperture)
-            if let exifDict = metadata[kCGImagePropertyExifDictionary as String] as? [String: Any] {
-                metadata["{Exif}"] = exifDict
-            }
+            let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
+            let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
 
-            // Extract depth data only when requested (and when available).
-            var depthData: [String: Any]? = nil
-            if includeDepthData,
-                let extractedDepth = Zcam1DepthDataProcessor.extractDepthData(from: photo)
-            {
-                depthData = extractedDepth
-            }
+            do {
+                try data.write(to: tmpURL, options: [.atomic])
 
-            var result: [String: Any] = [
-                "filePath": tmpURL.path,
-                "format": format.formatString,
-                "metadata": metadata,
-            ]
+                var metadata: [String: Any] = metadataSnapshot
 
-            // Include depth data in result if requested and available.
-            if includeDepthData, let depthData = depthData {
-                result["depthData"] = depthData
-            }
+                // Extract TIFF dictionary (device info, resolution)
+                if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
+                    as? [String: Any]
+                {
+                    metadata["{TIFF}"] = tiffDict
+                }
 
-            DispatchQueue.main.async {
-                self.completion(result as NSDictionary, nil)
-                self.owner.didFinishCapture(delegate: self)
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.completion(nil, error as NSError)
-                self.owner.didFinishCapture(delegate: self)
+                // Extract EXIF dictionary (ISO, exposure, focal length, aperture)
+                if let exifDict = metadata[kCGImagePropertyExifDictionary as String]
+                    as? [String: Any]
+                {
+                    metadata["{Exif}"] = exifDict
+                }
+
+                // Extract depth data only when requested (and when available).
+                var depthData: [String: Any]? = nil
+                if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
+                    depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
+                }
+
+                var result: [String: Any] = [
+                    "filePath": tmpURL.path,
+                    "format": self.format.formatString,
+                    "metadata": metadata,
+                ]
+
+                // Include depth data in result if requested and available.
+                if self.includeDepthData, let depthData = depthData {
+                    result["depthData"] = depthData
+                }
+
+                DispatchQueue.main.async {
+                    self.completion(result as NSDictionary, nil)
+                    self.owner.didFinishCapture(delegate: self)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.completion(nil, error as NSError)
+                    self.owner.didFinishCapture(delegate: self)
+                }
             }
         }
     }
@@ -199,6 +210,10 @@ public final class Zcam1CameraService: NSObject {
     private let photoOutput = AVCapturePhotoOutput()
     private let movieOutput = AVCaptureMovieFileOutput()
 
+    // Depth delivery can incur a noticeable one-time setup cost (first capture).
+    // We prewarm it once per session configuration to avoid first-shot lag.
+    private var didPrewarmDepth: Bool = false
+
     // Serial queue for all session operations
     private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session")
 
@@ -223,6 +238,50 @@ public final class Zcam1CameraService: NSObject {
 
     private override init() {
         super.init()
+    }
+
+    /// Best-effort prewarm for depth capture to avoid first-shot lag.
+    /// This primes the system's depth pipeline (and related ISP work) ahead of the first user capture.
+    private func prewarmDepthPipelineIfNeeded() {
+        // Only prewarm once the session is running; otherwise the work may still be deferred
+        // and the first real capture can pay the cost.
+        guard let session = captureSession, session.isRunning else { return }
+
+        guard !didPrewarmDepth else { return }
+        didPrewarmDepth = true
+
+        guard photoOutput.isDepthDataDeliverySupported else { return }
+
+        // Enable at the output level once so the pipeline is initialized ahead of time.
+        if !photoOutput.isDepthDataDeliveryEnabled {
+            photoOutput.isDepthDataDeliveryEnabled = true
+        }
+
+        let settings: AVCapturePhotoSettings
+        if photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
+            settings = AVCapturePhotoSettings(format: [
+                AVVideoCodecKey: AVVideoCodecType.jpeg
+            ])
+        } else {
+            settings = AVCapturePhotoSettings()
+        }
+
+        settings.isDepthDataDeliveryEnabled = true
+        if photoOutput.isCameraCalibrationDataDeliverySupported {
+            settings.isCameraCalibrationDataDeliveryEnabled = true
+        }
+
+        if #available(iOS 13.0, *) {
+            settings.photoQualityPrioritization = .speed
+        }
+
+        photoOutput.setPreparedPhotoSettingsArray([settings]) { prepared, error in
+            if let error = error {
+                print("[Zcam1CameraService] Depth prewarm failed: \(error)")
+                return
+            }
+            print("[Zcam1CameraService] Depth prewarm prepared=\(prepared)")
+        }
     }
 
     // MARK: - Filter
@@ -439,9 +498,22 @@ public final class Zcam1CameraService: NSObject {
         completion: @escaping (Error?) -> Void
     ) {
         sessionQueue.async {
+            if let session = self.captureSession,
+                let currentInput = self.videoInput,
+                currentInput.device.position == position,
+                session.outputs.contains(self.photoOutput),
+                session.sessionPreset == .high
+            {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
             do {
                 let session = self.captureSession ?? AVCaptureSession()
                 session.beginConfiguration()
+                self.didPrewarmDepth = false
                 // Use .high preset which supports both photo capture and video data output.
                 // The .photo preset may not deliver continuous frames needed for real-time filtering.
                 session.sessionPreset = .high
@@ -494,16 +566,21 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
-                // Depth + calibration delivery are enabled per-capture based on `includeDepthData`.
-                // Keep them disabled by default to avoid unnecessary work.
+                // Depth delivery setup:
+                // - enable at the output level once (avoids first-shot lag when turning it on later)
+                // - prewarm the pipeline via setPreparedPhotoSettingsArray
                 if self.photoOutput.isDepthDataDeliverySupported {
-                    self.photoOutput.isDepthDataDeliveryEnabled = false
+                    self.photoOutput.isDepthDataDeliveryEnabled = true
                 }
+
                 // Camera calibration data delivery is configured per-capture on AVCapturePhotoSettings.
                 // AVCapturePhotoOutput does not expose a calibration delivery toggle on all iOS versions.
 
                 session.commitConfiguration()
                 self.captureSession = session
+
+                // Prewarm depth pipeline (best-effort).
+                self.prewarmDepthPipelineIfNeeded()
 
                 DispatchQueue.main.async {
                     completion(nil)
@@ -520,8 +597,14 @@ public final class Zcam1CameraService: NSObject {
 
     public func startRunning() {
         sessionQueue.async {
-            guard let session = self.captureSession, !session.isRunning else { return }
-            session.startRunning()
+            guard let session = self.captureSession else { return }
+            if !session.isRunning {
+                session.startRunning()
+            }
+
+            // Trigger depth prewarm right after the session is (or becomes) running
+            // to avoid first-shot lag on depth-enabled captures.
+            self.prewarmDepthPipelineIfNeeded()
         }
     }
 
@@ -945,6 +1028,7 @@ public final class Zcam1CameraService: NSObject {
 
                     if !session.isRunning {
                         session.startRunning()
+                        self.prewarmDepthPipelineIfNeeded()
                     }
 
                     // Prepare photo settings
@@ -984,9 +1068,23 @@ public final class Zcam1CameraService: NSObject {
                         }
                     }
 
+                    // Favor responsiveness when depth delivery is enabled (reduces perceived capture lag),
+                    // but clamp to what the current device/output supports.
+                    if #available(iOS 13.0, *) {
+                        let desired: AVCapturePhotoOutput.QualityPrioritization =
+                            includeDepthData ? .speed : .quality
+                        let maxSupported = self.photoOutput.maxPhotoQualityPrioritization
+
+                        if desired == .quality && maxSupported != .quality {
+                            settings.photoQualityPrioritization = maxSupported
+                        } else {
+                            settings.photoQualityPrioritization = desired
+                        }
+                    }
+
                     // Enable/disable depth + calibration delivery at both the output + settings level based on request.
                     if self.photoOutput.isDepthDataDeliverySupported {
-                        self.photoOutput.isDepthDataDeliveryEnabled = includeDepthData
+                        // Output-level enabling is done during session configuration/prewarm to avoid first-shot lag.
                         settings.isDepthDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isDepthDataDeliveryEnabled = false
