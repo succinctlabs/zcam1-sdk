@@ -211,6 +211,7 @@ public final class Zcam1CameraService: NSObject {
     private var currentZoom: CGFloat = 1.0
     private var flashMode: AVCaptureDevice.FlashMode = .off
     private var currentExposureBias: Float = 0.0
+    private var currentPosition: AVCaptureDevice.Position = .back
 
     // Filter state
     private var currentFilter: Zcam1CameraFilter = .normal
@@ -229,6 +230,11 @@ public final class Zcam1CameraService: NSObject {
     /// Get the current filter.
     public func getFilter() -> Zcam1CameraFilter {
         return currentFilter
+    }
+
+    /// Get the current camera position.
+    public func getCurrentPosition() -> AVCaptureDevice.Position {
+        return currentPosition
     }
 
     /// Apply the current filter to image data and return filtered JPEG data.
@@ -264,9 +270,26 @@ public final class Zcam1CameraService: NSObject {
             for output in session.outputs {
                 if let existingOutput = output as? AVCaptureVideoDataOutput {
                     print(
-                        "[Zcam1CameraService] configureVideoDataOutput: already have video data output, updating delegate"
+                        "[Zcam1CameraService] configureVideoDataOutput: already have video data output, updating delegate and connection"
                     )
                     existingOutput.setSampleBufferDelegate(delegate, queue: callbackQueue)
+
+                    // Reconfigure the connection for the current camera position.
+                    if let connection = existingOutput.connection(with: .video) {
+                        session.beginConfiguration()
+                        if connection.isVideoOrientationSupported {
+                            connection.videoOrientation = .portrait
+                        }
+                        // Mirror front camera for natural selfie view.
+                        if connection.isVideoMirroringSupported {
+                            connection.isVideoMirrored = (self.currentPosition == .front)
+                        }
+                        session.commitConfiguration()
+                        print(
+                            "[Zcam1CameraService] configureVideoDataOutput: reconfigured connection for position=\(self.currentPosition == .front ? "front" : "back"), mirrored=\(connection.isVideoMirrored)"
+                        )
+                    }
+
                     DispatchQueue.main.async { completion(existingOutput) }
                     return
                 }
@@ -299,8 +322,12 @@ public final class Zcam1CameraService: NSObject {
                     if connection.isVideoOrientationSupported {
                         connection.videoOrientation = .portrait
                     }
+                    // Mirror front camera for natural selfie view.
+                    if connection.isVideoMirroringSupported {
+                        connection.isVideoMirrored = (self.currentPosition == .front)
+                    }
                     print(
-                        "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled)"
+                        "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled), mirrored=\(connection.isVideoMirrored)"
                     )
                 } else {
                     print(
@@ -435,6 +462,7 @@ public final class Zcam1CameraService: NSObject {
                     if session.canAddInput(input) {
                         session.addInput(input)
                         self.videoInput = input
+                        self.currentPosition = position
                     } else {
                         throw NSError(
                             domain: "Zcam1CameraService",
