@@ -29,6 +29,7 @@
 - (void)takeNativePhoto:(NSString *)format
                position:(NSString *)position
                   flash:(NSString *)flash
+       includeDepthData:(BOOL)includeDepthData
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject
 {
@@ -47,6 +48,7 @@
 
     [service takePhotoWithPositionString:positionString
                             formatString:formatString
+                       includeDepthData:includeDepthData
                               completion:^(NSDictionary *result, NSError *error) {
       if (error != nil) {
         NSString *code = @"CAMERA_CAPTURE_ERROR";

@@ -7,7 +7,6 @@ import {
 import {
   buildSelfSignedCertificate,
   computeHash,
-  DepthData,
   ExistingCertChain,
   formatFromPath,
   ManifestEditor,
@@ -73,6 +72,12 @@ export interface TakePhotoOptions {
   format?: CaptureFormat;
   /** Flash mode for this capture. Defaults to "off". */
   flash?: FlashMode;
+  /**
+   * Whether to include depth data (if available) in the capture results.
+   * - When true: depth data is embedded into the C2PA metadata.
+   * - When false (default): depth data is omitted.
+   */
+  includeDepthData?: boolean;
 }
 
 /** Props passed to the native Swift camera view. */
@@ -247,11 +252,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const format: CaptureFormat =
       options.format ?? this.props.captureFormat ?? "jpeg";
     const flash: FlashMode = options.flash ?? "off";
+    const includeDepthData: boolean = options.includeDepthData ?? false;
 
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
       flash,
+      includeDepthData,
     );
 
     if (!result || !result.filePath) {

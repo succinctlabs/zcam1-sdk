@@ -34,7 +34,10 @@ export interface TakeNativePhotoResult {
 
   /**
    * Depth data extracted from the captured photo (if available).
-   * Only present on devices with depth camera support (e.g., iPhone 12+, iPad Pro).
+   *
+   * This is only returned when the caller requested it via the `includeDepthData`
+   * parameter on `takeNativePhoto(...)`, and only on devices/capture formats that
+   * support depth delivery.
    */
   depthData?: { [key: string]: unknown } | null;
 }
@@ -97,11 +100,16 @@ export interface Spec extends TurboModule {
    * - Handling permissions
    * - Presenting a preview / capture UI as needed
    * - Writing the resulting JPEG or DNG file and returning its path
+   *
+   * @param includeDepthData When true, native should request depth (+ calibration)
+   * data delivery for this capture (if supported). When false, native should avoid
+   * enabling depth delivery and `depthData` will be omitted from the result.
    */
   takeNativePhoto(
     format: TakeNativePhotoFormat,
     position: "front" | "back",
     flash: FlashMode,
+    includeDepthData: boolean,
   ): Promise<TakeNativePhotoResult>;
 
   /**

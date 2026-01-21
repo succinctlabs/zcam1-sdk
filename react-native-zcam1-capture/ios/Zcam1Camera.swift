@@ -51,15 +51,18 @@ import UIKit
 @available(iOS 16.0, *)
 private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let format: Zcam1CaptureFormat
+    private let includeDepthData: Bool
     private let completion: (NSDictionary?, NSError?) -> Void
     private unowned let owner: Zcam1CameraService
 
     init(
         format: Zcam1CaptureFormat,
+        includeDepthData: Bool,
         owner: Zcam1CameraService,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
         self.format = format
+        self.includeDepthData = includeDepthData
         self.owner = owner
         self.completion = completion
     }
@@ -113,9 +116,11 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 metadata["{Exif}"] = exifDict
             }
 
-            // Extract depth data if available
+            // Extract depth data only when requested (and when available).
             var depthData: [String: Any]? = nil
-            if let extractedDepth = Zcam1DepthDataProcessor.extractDepthData(from: photo) {
+            if includeDepthData,
+                let extractedDepth = Zcam1DepthDataProcessor.extractDepthData(from: photo)
+            {
                 depthData = extractedDepth
             }
 
@@ -125,8 +130,8 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 "metadata": metadata,
             ]
 
-            // Include depth data in result if available
-            if let depthData = depthData {
+            // Include depth data in result if requested and available.
+            if includeDepthData, let depthData = depthData {
                 result["depthData"] = depthData
             }
 
@@ -489,10 +494,13 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
-                // Enable depth + calibration delivery on the output (if supported).
+                // Depth + calibration delivery are enabled per-capture based on `includeDepthData`.
+                // Keep them disabled by default to avoid unnecessary work.
                 if self.photoOutput.isDepthDataDeliverySupported {
-                    self.photoOutput.isDepthDataDeliveryEnabled = true
+                    self.photoOutput.isDepthDataDeliveryEnabled = false
                 }
+                // Camera calibration data delivery is configured per-capture on AVCapturePhotoSettings.
+                // AVCapturePhotoOutput does not expose a calibration delivery toggle on all iOS versions.
 
                 session.commitConfiguration()
                 self.captureSession = session
@@ -824,10 +832,24 @@ public final class Zcam1CameraService: NSObject {
     /// - Parameters:
     ///   - positionString: "front" or "back" (defaults to back).
     ///   - formatString: "jpeg" or "dng" (defaults to jpeg).
-    ///   - completion: Called with a dictionary `{ filePath, format, metadata }` or an error.
+    ///   - completion: Called with a dictionary `{ filePath, format, metadata, depthData? }` or an error.
     public func takePhoto(
         positionString: String?,
         formatString: String?,
+        completion: @escaping (NSDictionary?, NSError?) -> Void
+    ) {
+        self.takePhoto(
+            positionString: positionString,
+            formatString: formatString,
+            includeDepthData: true,
+            completion: completion
+        )
+    }
+
+    public func takePhoto(
+        positionString: String?,
+        formatString: String?,
+        includeDepthData: Bool,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
         #if targetEnvironment(simulator)
@@ -962,18 +984,24 @@ public final class Zcam1CameraService: NSObject {
                         }
                     }
 
-                    // Request depth + calibration data for this capture (if supported).
-                    // (Even if the output supports it, some capture formats may still not deliver depth.)
+                    // Enable/disable depth + calibration delivery at both the output + settings level based on request.
                     if self.photoOutput.isDepthDataDeliverySupported {
-                        settings.isDepthDataDeliveryEnabled = true
+                        self.photoOutput.isDepthDataDeliveryEnabled = includeDepthData
+                        settings.isDepthDataDeliveryEnabled = includeDepthData
+                    } else {
+                        settings.isDepthDataDeliveryEnabled = false
                     }
+
                     if self.photoOutput.isCameraCalibrationDataDeliverySupported {
-                        settings.isCameraCalibrationDataDeliveryEnabled = true
+                        settings.isCameraCalibrationDataDeliveryEnabled = includeDepthData
+                    } else {
+                        settings.isCameraCalibrationDataDeliveryEnabled = false
                     }
 
                     // Create delegate to handle capture and keep it alive until completion
                     let delegate = PhotoCaptureDelegate(
                         format: format,
+                        includeDepthData: includeDepthData,
                         owner: self,
                         completion: completion
                     )
