@@ -6,3 +6,5 @@ yalc.lock
 
 # macOS
 .DS_Store
+
+docs/node_modules/
