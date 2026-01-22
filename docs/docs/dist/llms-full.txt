@@ -205,7 +205,7 @@ Short answer, most platforms where a user uploads image files to share strip met
 
 ### Security Claims
 
-A verified zphoto provides the following guarantees:
+A verifiably authentic photo from ZCAM provides the following guarantees:
 
 1. **Device Authenticity**: The photo was signed on a genuine Apple device with a Secure Enclave
 2. **App Binding**: The signing key is bound to a specific application via Apple App Attest
@@ -1382,313 +1382,314 @@ Both hash and bindings/proof checks must pass for a photo to be considered authe
 * `captureMetadata()` provides access to device and camera settings recorded at capture time
 
 
-## ZCAM vs Other Approaches
+## How it Works
 
-Numerous technologies exist for image authenticity and provenance. These solutions address different problem spaces and offer varying trade-offs.
+ZCAM verifies photo authenticity via a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
+
+When a user takes a photo, ZCAM signs it using an Apple attested, secure enclave key. This attestation is embedded into the photo using the C2PA standard. Optionally, the attestation can be wrapped in a zero-knowledge proof for enhanced privacy.
+
+The system works in three steps:
+
+1. **Capture**: Take a photo and sign it with a hardware-backed key, attaching the attestation to the photo.
+2. **Prove** (optional): Generate a zero-knowledge proof of the signature
+3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification
+
+### Verification Modes
+
+* **Bindings verification** verifies the Apple App Attest signature directly. It's faster, works offline, and requires no zero-knowledge proofs.
+* **ZK proof verification** generates a zero-knowledge proof for enhanced privacy, but requires network access for proof generation.
 
 :::info
-ZCAM provides a complete mobile-first solution for photo authenticity: hardware-backed attestation, optional zero-knowledge proofs, embedded verification data, and a simple verified/not-verified output tailored to human-captured zPhotos.
+ZK proofs are **optional**: you can use ZCAM with bindings verification alone, or add ZK proofs when you need additional privacy guarantees.
 :::
 
-Below is a feature comparison showing what each approach provides. See the sections below for more detail.
+### Components
 
-### Comparison Table
+ZCAM is built on three core technologies: Apple's App Attest service and Secure Enclave for hardware-backed signing, C2PA for embedding metadata, and SP1 for zero-knowledge proofs.
 
-| Approach               | Hardware Attestation | ZK Proofs | Embedded Verification | User-friendly Output | Camera Photos | Use Case                                                     |
-| ---------------------- | -------------------- | --------- | --------------------- | -------------------- | ------------- | ------------------------------------------------------------ |
-| **ZCAM**               | ✅                    | ✅         | ✅                     | ✅                    | ✅             | Complete mobile photo authenticity solution                  |
-| **C2PA (generic)**     | ❌                    | ❌         | ✅                     | ❌                    | ✅             | Edit history tracking and provenance                         |
-| **Physical Camera**    | ❓                    | ❌         | ✅                     | ❌                    | ✅             | Some cameras support hardware-backed signing; support varies |
-| **JPEG Trust**         | ❌                    | ❌         | ✅                     | ✅                    | ✅             | Trust evaluation framework (leverages C2PA)                  |
-| **SynthID**            | ❌                    | ❌         | ✅                     | ❌                    | ❌             | AI watermarking and detection                                |
-| **AI Content Marking** | ❌                    | ❌         | ✅                     | ❌                    | ❌             | AI-generated content marking (watermarking or C2PA)          |
+#### Apple App Attest and Secure Enclave
 
-### Other tooling
+ZCAM uses the Secure Enclave to store signing keys and Apple's App Attest service to ensure that a photo was signed by the ZCAM SDK.
+
+**App Attest** is designed to let backend services verify that requests are coming from a legitimate app. It works by generating a signing keypair in the device's secure enclave that only the specific app can access. Apple then attests that the keypair was generated on that app and that the app itself has not been tamepred such that any subsequent signatures are guaranteed to originate from it.
+
+![App Attest protocol diagram](/images/diagram_appattest.png)
+
+The App Attest protocol provides an attestation from Apple's servers, bound to a unique nonce and the public key of the secure enclave keypair. The app attaches this attestation to requests so the receiving service can verify authenticity.
+
+ZCAM uses App Attest differently in two ways:
+
+1. The nonce is unique *per photo* and is derived on the device itself, rather than received from a backend service.
+2. The attestation can be verified directly (bindings verification) or inside a zero-knowledge proof (ZK verification), rather than by a backend service.
+
+The **Secure Enclave** is a coprocessor in Apple devices that provides an isolated environment for cryptographic operations. Keys stored in the Secure Enclave cannot be extracted or copied, are protected even if the device is compromised, and can only be used by the app that created them.
+ZCAM stores both the device key (for signing photo hashes) and the content key (for signing C2PA manifests) in the Secure Enclave. This ensures that even if an attacker gains device access, they cannot forge signatures using the ZCAM signing key.
 
 #### C2PA
 
-C2PA is a content credential standard that creates a *verifiable history* for images.
+C2PA is an open standard for attaching metadata that is cryptographically bound to an image. A C2PA manifest contains details about the photo, such as device, dimensions, history, and a cryptographic signature over those details.
 
-It is not specific to "authentic" photos: C2PA can be applied to camera captures and AI-generated images alike. A C2PA manifest records origin and edit history; each manifest is signed using public-key cryptography.
+The manifest is either embedded directly into the photo file in some metadata section of the file or can be stored separately and referenced using an invisible watermark.
 
-**Key differences from ZCAM:**
+ZCAM uses C2PA to embed attestation data (and optionally zero-knowledge proofs), proving that the photo was taken on an iPhone and signed using a secure enclave key that only the ZCAM SDK can access.
 
-* C2PA doesn't require hardware attestation; any signing key can be used.
-* C2PA focuses on edit history, while ZCAM focuses on capture authenticity.
-* ZCAM uses C2PA as the container format but adds hardware-backed guarantees.
-* C2PA is a general-purpose tool for attaching historical metadata; ZCAM focuses on proving the authenticity of an image.
+#### SP1 Zero-Knowledge Proofs
 
-More technical information is available in the [How it Works](/overview/how_it_works) section under C2PA.
+Zero-knowledge proofs let one party prove to another that a statement is true without revealing anything beyond the statement's validity.
+
+ZCAM uses [SP1](https://docs.succinct.xyz/docs/sp1/introduction), Succinct's zero-knowledge virtual machine (zkVM). SP1 proves the correct execution of programs compiled for the RISC-V architecture, meaning it can run and prove programs written in Rust, C++, C, or any language that compiles to RISC-V.
+
+SP1 offers three key benefits:
+
+* **Maintainability**: Write ZK programs in standard Rust without custom DSLs or complex circuits
+* **Faster Development**: Skip months of low-level ZK engineering
+* **Performance**: State-of-the-art proving speed and efficiency, benchmarked in production
+
+In ZCAM, SP1 generates proofs that verify the photo was signed with a valid Apple App Attest key, the signature matches the photo hash, and the attestation chain is valid. These proofs are small, fast to verify, and don't reveal the underlying attestation data.
+
+As mentioned above, zero knowledge proofs are *optional*. You can use ZCAM with bindings verification alone. ZK proofs add privacy guarantees but require internet access to request proofs from the Succinct Prover Network. There is also higher latency given the time required for the network to prove the verification of an attestation.
+
+
+## Introduction
+
+In an era of AI-generated images and sophisticated editing tools, proving that a photo is real matters more than ever. ZCAM gives developers the tools to build authentic images directly into their apps.
+
+The SDK is built on three core technologies:
+
+* **Apple's App Attest** guarantees that signing keys are generated and stored in the iPhone's secure enclave, tied to a specific app.
+* **C2PA** embeds verifiable provenance metadata, including capture details and edit history, directly into the image file.
+* **SP1 zero-knowledge proofs** optionally wrap verification into succinct, easily verifiable proofs using Succinct's [SP1](https://docs.succinct.xyz/docs/sp1/introduction) zkVM.
+
+Whether you're building for journalism, insurance, identity verification, or any use case where image authenticity matters, these docs will help you get started.
+
+<style>
+  {`
+    .doc-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+    .doc-card {
+      display: block;
+      padding: 1.5rem;
+      border: 1px solid var(--vocs-color_border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+      background-color: var(--vocs-color_background);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .doc-card:hover {
+      border-color: var(--vocs-color_accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .doc-card h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      color: var(--vocs-color_accent);
+    }
+    .doc-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    `}
+</style>
+
+<div className="doc-cards">
+  <a href="/getting-started/installation" className="doc-card">
+    <h3>🚀 Getting Started</h3>
+
+    <p>
+      Install the SDK and get up and running with your first zphoto in minutes.
+    </p>
+  </a>
+
+  <a href="/sdk/capture" className="doc-card">
+    <h3>📱 Using the SDK</h3>
+
+    <p>
+      Learn how to build apps with the ZCAM SDK.
+    </p>
+  </a>
+
+  <a href="/c2pa-ecosystem/editing_zcam_photos" className="doc-card">
+    <h3>🔗 C2PA Compatibility</h3>
+
+    <p>
+      Understand how ZCAM works with C2PA and editing tools in the ecosystem.
+    </p>
+  </a>
+
+  <a href="/technical-docs/architecture" className="doc-card">
+    <h3>🔧 Technical Docs</h3>
+
+    <p>
+      Deep dive into the ZCAM architecture, security, and FAQs.
+    </p>
+  </a>
+</div>
+
+
+## Landscape
+
+Several technologies exist for image authenticity and provenance. Most solve for different problems, such as edit history, AI detection, trust scoring, rather than proving a photo was authentically captured on a real device.
+
+ZCAM is a complete solution for mobile photo authenticity. It combines hardware-backed attestation, optional zero-knowledge proofs, and embedded verification into a single system designed for human-taken photos on mobile devices.
+
+### Comparison
+
+| Approach               | Hardware Attestation | ZK Proofs | Embedded Verification | User-friendly Output | Camera Photos | Use Case                                     |
+| ---------------------- | -------------------- | --------- | --------------------- | -------------------- | ------------- | -------------------------------------------- |
+| **ZCAM**               | ✅                    | ✅         | ✅                     | ✅                    | ✅             | Complete mobile photo authenticity solution  |
+| **C2PA**               | ❌                    | ❌         | ✅                     | ❌                    | ✅             | Edit history and provenance                  |
+| **Physical Cameras**   | ❓                    | ❌         | ✅                     | ❌                    | ✅             | Hardware signed capture with limited support |
+| **JPEG Trust**         | ❌                    | ❌         | ✅                     | ✅                    | ✅             | Trust evaluation framework                   |
+| **SynthID**            | ❌                    | ❌         | ✅                     | ❌                    | ❌             | AI watermarking and detection                |
+| **AI Content Marking** | ❌                    | ❌         | ✅                     | ❌                    | ❌             | Labeling AI-generated content                |
+
+### Other Approaches
+
+#### C2PA
+
+C2PA is a standard for creating a verifiable history of an image. It is not specific to authentic photos and applies equally to camera captures and AI-generated images. As an image evolves (cropping, brightness adjustments, etc.), C2PA-compatible editors attach new signed manifests tracking each change.
+
+ZCAM uses C2PA as its container format but adds hardware-backed guarantees. Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged.
 
 #### JPEG Trust
 
-JPEG Trust provides a framework for evaluating an image's trustworthiness. It leverages C2PA manifests to build trust profiles and evaluators that help determine authenticity.
-
-**Key differences from ZCAM:**
-
-* JPEG Trust is an evaluation framework, not a capture/verification system.
-* It can consume ZCAM-generated C2PA manifests.
-* Focuses on trust scoring rather than raw cryptographic verification.
+JPEG Trust is a framework for evaluating image trustworthiness. It works on top of C2PA, using manifest data to generate trust scores. It is an evaluation layer, not a capture or verification system, and could work alongside ZCAM-generated manifests.
 
 #### SynthID
 
-SynthID (Google) is an invisible watermark framework that embeds resilient data into images. JUMBF metadata can be stripped or altered by edits; SynthID uses ML-based embeddings that a reader model can detect.
-
-**Key differences from ZCAM:**
-
-* SynthID focuses on AI-detection; ZCAM focuses on authenticity verification.
-* ZCAM provides cryptographic guarantees; SynthID provides probabilistic detection.
-
-#### IPTC Photo Metadata
-
-IPTC Photo Metadata defines standardized fields and labels for image metadata. It is a metadata format rather than a verification system.
-
-**Key differences from ZCAM:**
-
-* IPTC is a metadata format, not a verification system.
-* Can be used alongside ZCAM for standardized metadata fields.
-* No cryptographic guarantees or hardware attestation.
+SynthID, developed by Google, embeds invisible watermarks into AI-generated images. Unlike metadata-based approaches, these watermarks survive cropping and editing. A separate model analyzes images to determine whether they're AI-generated.
+SynthID focuses on AI detection with probabilistic results. ZCAM focuses on authenticity with cryptographic guarantees.
 
 #### AI Content Marking
 
-Several companies provide tools for marking AI-generated content:
+Several companies provide solutions for marking AI-generated content, using different approaches:
 
-* **Meta Watermarking**: Durable watermarks for AI-generated content that aim to survive cropping and edits.
-* **OpenAI C2PA**: OpenAI-generated images include C2PA manifests indicating the generation source.
+* **Meta** adds durable watermarks specifically to AI-generated content.
+* **OpenAI** generates C2PA-compatible images with DALL-E and ChatGPT.
 
-**Key differences from ZCAM:**
-
-* These solutions mark AI-generated content; ZCAM verifies authentic human-captured zPhotos.
-* They lack hardware attestation.
-* Different goals: provenance/marking for AI content vs. cryptographic authenticity verification for human-captured zPhotos.
+These solutions label AI content, whereas ZCAM verifies human-captured photos.
 
 ### When to Use ZCAM
 
 ZCAM is the right choice when you need:
 
-* **Hardware-backed authenticity**: Guarantees that zPhotos were taken on a specific device
-* **Cryptographic verification**: Strong cryptographic proofs versus probabilistic detection
-* **Mobile-first**: Designed for iOS (Android support planned)
-* **Simple verification**: Easy API that returns verified/not-verified without requiring manifest parsing
-* **End-to-end solution**: From capture to verification with optional ZK proof integration
+* Hardware-backed proof that a photo was taken on a real device
+* Cryptographic verification rather than probabilistic detection
+* A mobile-first solution
 
-Consider other approaches when:
-
-* You need to mark AI-generated content (use SynthID or AI Content Marking)
-* You want a general-purpose edit history system (use generic C2PA)
-* You need watermarking resilient to heavy editing (use SynthID)
-* You're working with non-mobile platforms (use C2PA or other standards)
+Other approaches may be more optimized for marking AI-generated content (SynthID, AI Content Marking), tracking edit history (C2PA), or non-mobile platforms.
 
 
-## Example Use Cases
+## Use Cases
 
-Below are two real-world examples demonstrating how the ZCAM SDK can be integrated to solve verification challenges. Each example highlights a distinct verification pattern: **end-user verification** (public-facing) versus **internal verification** (backend processing).
+Below are two real-world examples of how the ZCAM SDK can be integrated to solve different verification challenges.
 
-:::info
-**Verification Patterns:** While both use cases rely on verifiable zPhotos, they differ in who performs verification and where it happens:
-
-* **End-user verification**: Public-facing verification where readers verify zPhotos themselves (e.g., news platform readers)
-* **Internal verification**: Backend verification where a company verifies zPhotos as part of internal processes (e.g., insurance claim processing)
-:::
+These examples highlight two distinct patterns: **end-user verification**, where readers or customers verify photos themselves, and **internal verification**, where verification happens in backend processing.
 
 ### Verifiable News Platform
 
-#### Use Case Overview
+Edited and AI-generated photos are a growing concern for news consumers. A news platform can use ZCAM to let readers independently verify that photos are authentic and unedited.
 
-Edited and AI-generated imagery are common concerns for news consumers. A news platform with field reporters may want to ensure readers that photos are verifiably authentic and unedited.
+The system is comprised of:
 
-**What We're Building:** A verifiable journalism system consisting of:
+* A mobile app for field reporters to capture verifiable photos
+* Integration with the platform's CMS to store and display photos
+* Public-facing verification tools so readers can check authenticity themselves
 
-* A mobile camera app for reporters to capture verifiable zPhotos using the ZCAM SDK
-* Integration into the news platform's CMS to store and display verifiable zPhotos
-* Public-facing verification tools allowing readers to independently verify authenticity
+**Why it matters**: Readers can independently verify that photos are authentic, building trust in the platform's journalism.
 
-**Value of Verifiable zPhotos:**
+### Architecture
 
-* **Trust & Credibility**: Readers can independently confirm that zPhotos haven't been edited, building confidence in the reporting
+The news platform integrates ZCAM SDK in two places:
 
-#### Integration Architecture
+1. **Mobile app** A lightweight iOS app for reporters to use to capture verifiable photos
+2. **Web platform**: For readers to verify photo authenticity directly in articles
 
-The news platform integrates the ZCAM SDK in two places:
+#### Mobile App
 
-1. **Mobile Camera App** (for reporters): A lightweight iOS app reporters use to capture verifiable zPhotos
-2. **Web Platform** (for readers): Verification functionality so readers can validate zPhotos
+The news platform builds a specialized camera app for reporters using the ZCAM SDK:
 
-#### Mobile Camera App Integration
-
-Steps for the reporter app:
-
-1. **Installation**: Follow the [Installation guide](/getting-started/installation) to set up the SDK
+1. **Installation**: Setup the SDK using the [installation guide](/getting-started/installation)
 2. **Camera Setup**: Use `react-native-zcam1-capture` to initialize the camera:
    * Call `initCapture()` to initialize device keys and attestation
    * Use the `<ZCamera>` component to render the camera preview
-   * Call `takePhoto()` to capture a zPhoto with verifiable bindings
+   * Call `takePhoto()` to capture a photo with verifiable bindings
 3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to generate zero-knowledge proofs:
    * Wrap your app with `ProverProvider` and use the `useProver()` hook
    * Call `waitAndEmbedProof()` to generate and embed the proof, or use `requestProof()` + `useProofRequestStatus()` for progress tracking
-4. **Upload**: Upload the verifiable zPhoto to the news platform's backend for use in articles
+4. **Upload**: Upload the zphoto to the news platform's backend for use in articles
 
-#### Web Platform Integration
+#### Web Platform
 
-On the news platform's website, articles display verifiable zPhotos with verification controls:
+On the news platform's website, articles display verifiable photos with verification capabilities:
 
-1. **Photo Display**: Embedded zPhotos include C2PA content credentials
-   * Users with C2PA browser extensions can view content credentials
-   * The platform can show verification status badges
-2. **Client-Side Verification**: Integrate `react-native-zcam1-verify` (or web equivalent):
-   * Add a "Verify" button for each zPhoto
-   * Call `verifyHash()` and `verifyProof()` to validate authenticity
-   * Display verification results (e.g., "✓ Verified Authentic")
-3. **Metadata Display**: Surface fields from the C2PA manifest:
+1. **Photo Display**: Photos embedded in articles include C2PA content credentials
+   * Users with C2PA browser extensions can automatically see content credentials
+   * The platform can display verification status badges
+2. **Client-Side Verification**: Integrate `react-native-zcam1-verify` (or web equivalent) to enable verification:
+   * Add a "Verify Photo" button for each photo in articles
+   * Call `verifyHash()` and `verifyProof()` methods to validate authenticity
+   * Display verification results to readers (e.g., "✓ Verified Authentic")
+3. **Metadata Display**: Show readers metadata from the C2PA manifest:
    * Capture timestamp, device information, app identifier
-   * Allow readers to inspect the verification chain
+   * Allow readers to inspect the full verification chain
 
-### Car Insurance Claim App
+### Insurance Claim Verification
 
-#### Use Case Overview
+Insurance companies allow policyholders to file claims using photos from their mobile app. This has led to an increase in fraud where claimants manipulate photos before submission. ZCAM ensures that claim photos were taken on the policyholder's device using the official app, and haven't been edited since capture.
 
-Insurance companies often accept photos submitted via mobile apps. That has increased incentive for AI editing scams where claimants manipulate images to fraudulently file claims. The ZCAM SDK ensures zPhotos uploaded for claims were taken on an iPhone using the insurer's app and have not been altered since capture.
+The system is comprised of:
 
-**What We're Building:** An automated fraud detection system integrated into the claims workflow:
+* Camera functionality within the insurance app using ZCAM for capture
+* Backend verification that automatically validates all submitted photos
+* Automated triage that flags claims with suspicious or unverifiable photos
 
-* Camera functionality inside the insurer's mobile app using the ZCAM SDK
-* A backend verification service that automatically validates submitted zPhotos
-* An automated triage system that flags suspicious claims based on verification and metadata analysis
+**Why it matters**: Automatically detect and reject claims with manipulated photos, reducing fraud and manual review costs.
 
-**Value of Verifiable zPhotos:**
+#### Architecture
 
-* **Fraud Prevention**: Automatically detect and reject claims with manipulated or inauthentic zPhotos
-* **Cost Reduction**: Reduce manual review by automating verification and escalating only suspicious cases
+The insurance app integrates ZCAM SDK in two places:
 
-**Verification Pattern:** Internal verification — the insurer verifies zPhotos as part of backend claim processing.
+1. **Mobile app**: Policyholders capture zphotos during claim filing.
+2. **Backend processing**: The insurance company verifies photos automatically during claim triage.
 
-#### Integration Architecture
+#### Mobile App
 
-The insurer integrates the ZCAM SDK in two places:
+The ZCAM SDK integrates into the claim landing flow:
 
-1. **Mobile App** (for policyholders): Integration into the claim filing flow
-2. **Backend Claim Processing**: Automated verification during claim triage
-
-#### Mobile App Integration
-
-The ZCAM SDK is integrated into the claim filing flow:
-
-1. **Installation**: Follow the [Installation guide](/getting-started/installation)
-2. **Camera Integration**: Inject the `<ZCamera>` component where users photograph their vehicle:
+1. **Installation**: Follow the [Installation guide](/getting-started/installation) to set up the SDK
+2. **Camera Integration**: Inject the `<ZCamera>` component into the claim flow where users must photograph their vehicle:
    * The SDK provides camera preview functionality
-   * Call `takePhoto()` to capture a verifiable zPhoto
+   * Call `takePhoto()` to capture a verifiable photo
 3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to attach zero-knowledge proofs:
    * Use `waitAndEmbedProof()` to generate and embed proofs
-4. **Claim Submission**: Attach verifiable zPhotos to the claim and upload to the backend
+   * This provides additional cryptographic guarantees and privacy
+4. **Claim Submission**: When the user completes the claim flow, attach verifiable photos to the claim filing and upload to the insurance company's backend
 
-#### Backend Claim Processing Integration
+#### Backend Processing
 
-On the backend, verification is part of claim triage:
+On the insurance company's backend, verification is integrated into the automated claim triage process:
 
-1. **Automated Verification**: Automatically verify all attached zPhotos:
-   * Integrate `react-native-zcam1-verify` (or server-side equivalent)
-   * For each zPhoto, call `verifyHash()` and `verifyProof()`
-   * Confirm the zPhoto was taken using the insurer's app
-2. **Metadata Analysis**: Use C2PA fields to validate the claim:
-   * Verify location matches the claim
-   * Check timestamp aligns with the incident time
-   * Validate device and app identifiers
-3. **Claim Decision**: Based on verification:
-   * **Verification passes**: Proceed with normal processing
-   * **Verification fails**: Flag for manual review or deny
-
-**Result**: Insurers can automatically detect fraudulent claims with manipulated zPhotos, reducing fraud and processing costs while preserving a smooth experience for legitimate claimants.
-
-
-## How it Works
-
-ZCAM verifies photos through a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
-
-The system works in three stages:
-
-1. **Capture**: Take a photo and sign it with a hardware-backed key
-2. **Prove** (optional): Generate a zero-knowledge proof of the signature
-3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification
-
-The sections below explain each step in more detail.
-
-### Capture
-
-This stage covers how a zPhoto is captured, signed, and packaged with embedded metadata.
-
-#### Apple App Attest
-
-ZCAM uses Apple App Attest to ensure a zPhoto was created and signed by the ZCAM SDK. App Attest enables the device to generate a signing keypair inside the Secure Enclave that only the app can use. Apple can then attest that the keypair was created on that device and bound to the app.
-
-The App Attest attestation is bound to a nonce and the public key of the Secure Enclave keypair. ZCAM uses App Attest in two notable ways:
-
-1. The attestation nonce is derived on the device rather than being supplied by a backend.
-2. The attestation can be verified directly (bindings verification) or encapsulated inside a zero-knowledge proof.
-
-![App Attest protocol diagram](/images/diagram_appattest.png)
-
-#### iOS Secure Enclave
-
-The Secure Enclave is a coprocessor providing an isolated environment for cryptographic operations. Keys stored there:
-
-* Cannot be extracted or copied
-* Are protected even if the device is compromised
-* Can only be used by the app that created them
-* Are hardware-backed and tamper-resistant
-
-ZCAM stores two key types in the Secure Enclave: the device key (signs photo hashes) and the content key (signs C2PA manifests). This prevents key extraction and makes it infeasible to forge zPhotos.
-
-#### C2PA
-
-C2PA (Content Credentials) is the container format ZCAM uses to bind attestations and metadata to an image. A C2PA manifest can include device information, timestamps, image properties, and edit history; the manifest is cryptographically signed and embedded into the image (for example, via JUMBF or JPEG metadata).
-
-ZCAM embeds capture attestations and optionally proofs into the C2PA manifest so the image itself carries the data needed for later verification.
-
-### Prove
-
-This stage is optional: for stronger privacy and succinct verification, ZCAM can convert attestation verification into a zero-knowledge proof.
-
-#### Zero-Knowledge Proofs
-
-Zero-knowledge proofs let a prover convince a verifier that a statement is true without revealing underlying data. In ZCAM, proofs assert that:
-
-1. The capture was signed with a valid App Attest key
-2. The signature corresponds to the photo hash
-3. The attestation chain is valid
-
-#### SP1 zkVM
-
-ZCAM uses [SP1](https://docs.succinct.xyz/docs/sp1/introduction), Succinct's zkVM, to generate proofs. SP1 proves correct execution of programs compiled for RISC-V, so developers can write verification logic in Rust (or other RISC-V targets) and have SP1 produce succinct proofs.
-
-Key benefits:
-
-* **Maintainability**: Use standard Rust instead of a custom DSL
-* **Faster development**: Avoid low-level ZK circuit engineering
-* **Performance**: Small, fast-to-verify proofs
-
-:::info
-**ZK Proofs are optional**: You can use ZCAM with bindings verification alone. Generating a proof requires network access (to the prover network) and will add latency, but it provides stronger privacy by avoiding disclosure of raw attestations.
-:::
-
-### Verify
-
-Verification validates a zPhoto using either direct bindings verification or proof verification.
-
-* **Bindings verification**: Verify the App Attest signature and C2PA manifest directly. This mode is fast, works offline, and returns a clear verified/not-verified result.
-* **ZK proof verification** (optional): Verify a succinct SP1 proof that attests to the validity of the capture and attestation chain. Proof verification is quick and preserves privacy but requires that a proof be generated first.
-
-
-## Introduction
-
-Today, with the rise of AI-generated imagery, widespread editing tools, and growing incentives to deceive, image integrity is more important than ever.
-
-Succinct's ZCAM lets iPhone users create zPhotos. zPhotos can be verified as authentic, unedited, and originating from the device's camera. The ZCAM SDK enables any app to capture and verify zPhotos.
-
-The core technology behind ZCAM and zPhotos is built on three components:
-
-* **Apple App Attest**: App Attest guarantees that a signing keypair is generated and stored in the iPhone's Secure Enclave and is bound to a specific app.
-* **C2PA**: C2PA defines how to embed cryptographically verifiable metadata (a manifest) inside an image file, including capture details and edit history.
-* **Zero-Knowledge Proofs**: Optionally, the ZCAM SDK can generate zero-knowledge proofs that verify the authenticity of the image without revealing identifying information. Proofs are generated with [SP1](https://docs.succinct.xyz/docs/sp1/introduction), Succinct's zero-knowledge virtual machine that produces succinct, easily verifiable proofs.
+1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
+   * Integrate `react-native-zcam1-verify` (or server-side equivalent) into the backend
+   * For each photo, call `verifyHash()` and `verifyProof()` methods
+   * Check that the photo was taken using the insurance company's app
+2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:
+   * Verify location data matches the claim location
+   * Check timestamp aligns with the reported incident time
+   * Validate device and app information
+3. **Claim Decision**: Based on verification results:
+   * **Verification passes**: Proceed with normal claim processing
+   * **Verification fails**: Flag claim for manual review or deny if photos are inauthentic
 
 
 ## Installation
@@ -1998,7 +1999,7 @@ export default function App() {
 }
 ```
 
-### What Happens Under the Hood
+### Under the Hood
 
 1. **Capture**: Takes a photo, generates an App Attest assertion over the photo hash, and embeds a C2PA manifest with `succinct.bindings`.
 
