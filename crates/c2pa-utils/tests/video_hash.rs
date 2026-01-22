@@ -42,17 +42,6 @@ async fn test_video_hash() {
 
     let orig_hash = compute_hash("./tests/fixtures/video1_no_manifest.mp4").unwrap();
 
-    editor
-        .add_action(
-            &json!({
-              "action": "succinct.capture",
-              "when": "Bla",
-              "parameters": {},
-            })
-            .to_string(),
-        )
-        .unwrap();
-
     // Add an assertion containing all data needed to later generate a  proof
     editor
         .add_assertion(

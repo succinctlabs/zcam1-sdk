@@ -81,7 +81,7 @@ export class VerifiableFile {
    * @returns The capture metadata, or null if not present
    */
   captureMetadata(): CaptureMetadata | null {
-    const actionJson = this.activeManifest.action("succinct.capture");
+    const actionJson = this.activeManifest.captureMetadataAction();
     if (!actionJson) return null;
     return JSON.parse(actionJson) as CaptureMetadata;
   }

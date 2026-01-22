@@ -7,6 +7,7 @@ use std::{
 use c2pa::{assertions::DataHash, HashRange};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde_json_canonicalizer::to_string;
 
 use crate::error::C2paError;
 
@@ -48,6 +49,20 @@ impl Manifest {
             .actions
             .get(&label)
             .map(|v| v.to_string())
+    }
+
+    pub fn capture_metadata_action(&self) -> Result<Option<String>, C2paError> {
+        let action = self.assertion_store.actions.get("succinct.capture");
+
+        let metadata_action = action
+            .map(|a| {
+                let metadata_action =
+                    serde_json::from_value::<Action<PhotoMetadataInfo>>(a.clone())?;
+                to_string(&metadata_action)
+            })
+            .transpose()?;
+
+        Ok(metadata_action)
     }
 }
 
@@ -102,15 +117,33 @@ impl Actions {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Action<P> {
+    action: String,
+    when: String,
+    parameters: P,
+}
+
+impl Action<PhotoMetadataInfo> {
+    pub fn metadata(when: String, parameters: PhotoMetadataInfo) -> Self {
+        Self {
+            action: "succinct.capture".to_string(),
+            when,
+            parameters,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct PhotoMetadataInfo {
     device_make: String,
     device_model: String,
     software_version: String,
     x_resolution: u32,
     y_resolution: u32,
-    orientation: String,
-    iso: Vec<String>,
+    orientation: u32,
+    iso: String,
     exposure_time: u32,
     depth_of_field: u32,
     focal_length: u32,
@@ -118,6 +151,7 @@ pub struct PhotoMetadataInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct DepthData {
     width: u32,
     height: u32,
@@ -127,12 +161,14 @@ pub struct DepthData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct DepthDataStatistics {
-    min: u32,
-    max: u32,
-    mean: u32,
-    std_dev: u32,
+    min: String,
+    max: String,
+    mean: String,
+    std_dev: String,
     valid_pixel_count: u32,
+    sample_stride: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]

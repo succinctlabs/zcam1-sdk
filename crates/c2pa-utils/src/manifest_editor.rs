@@ -8,8 +8,13 @@ use c2pa::{
     DigitalSourceType, SigningAlg,
 };
 use serde_json::Value;
+use serde_json_canonicalizer::to_string;
 
-use crate::{error::C2paError, signing::sign_with_enclave};
+use crate::{
+    error::C2paError,
+    signing::sign_with_enclave,
+    types::{Action, PhotoMetadataInfo},
+};
 
 #[derive(uniffi::Object)]
 pub struct ManifestEditor {
@@ -70,13 +75,17 @@ impl ManifestEditor {
         Ok(())
     }
 
-    pub fn add_action(&self, data: &str) -> Result<(), C2paError> {
+    pub fn add_metadata_action(
+        &self,
+        parameters: PhotoMetadataInfo,
+        when: String,
+    ) -> Result<String, C2paError> {
         let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
-        let data = serde_json::from_str::<Value>(data)?;
+        let metadata_action = Action::metadata(when, parameters);
 
-        builder.add_action(&data)?;
+        builder.add_action(metadata_action.clone())?;
 
-        Ok(())
+        Ok(to_string(&metadata_action)?)
     }
 
     pub fn add_assertion(&self, label: &str, data: &str) -> Result<(), C2paError> {

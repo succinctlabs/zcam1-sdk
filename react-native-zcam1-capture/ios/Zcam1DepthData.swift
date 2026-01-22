@@ -150,10 +150,10 @@ public class Zcam1DepthDataProcessor {
         // Calculate statistics
         guard count > 0 else {
             return [
-                "min": NSNull(),
-                "max": NSNull(),
-                "mean": NSNull(),
-                "stdDev": NSNull(),
+                "min": "",
+                "max": "",
+                "mean": "",
+                "stdDev": "",
                 "validPixelCount": 0,
                 "sampleStride": stride,
             ]
@@ -163,10 +163,12 @@ public class Zcam1DepthDataProcessor {
         let stdDev = sqrt(max(0, variance))
 
         return [
-            "min": minValue,
-            "max": maxValue,
-            "mean": Float(mean),
-            "stdDev": Float(stdDev),
+            "min": String(
+                format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), Double(minValue)),
+            "max": String(
+                format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), Double(maxValue)),
+            "mean": String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), mean),
+            "stdDev": String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), stdDev),
             "validPixelCount": count,
             "sampleStride": stride,
         ]

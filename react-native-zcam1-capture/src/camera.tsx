@@ -4,6 +4,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { Dirs, Util } from "react-native-file-access";
 import {
   buildSelfSignedCertificate,
   computeHash,
@@ -20,7 +21,6 @@ import NativeZcam1Sdk, {
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertionFromPhotoHash } from "./utils";
-import { Dirs, Util } from "react-native-file-access";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -289,7 +289,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         xResolution: exif.PixelXDimension,
         yResolution: exif.PixelYDimension,
         orientation: metadata.Orientation,
-        iso: exif.ISOSpeedRatings,
+        iso: exif.ISOSpeedRatings.toString(),
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
@@ -368,12 +368,9 @@ async function embedBindings(
   );
 
   // Add the "capture" action to the manifest.
-  manifestEditor.addAction(
-    JSON.stringify({
-      action: "succinct.capture",
-      when,
-      parameters: metadata,
-    }),
+  const normalized = manifestEditor.addMetadataAction(
+    metadata as PhotoMetadataInfo,
+    when,
   );
 
   // Add an assertion containing all data needed to later generate a  proof

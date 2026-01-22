@@ -4,16 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-trait = "0.1.89"
 base64ct.workspace = true
 c2pa.workspace = true
-futures = "0.3.31"
-pem = "3.0.6"
-security-framework = { version = "3.5.1", optional = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
+
+async-trait = "0.1.89"
+futures = "0.3.31"
+pem = "3.0.6"
+security-framework = { version = "3.5.1", optional = true }
+serde_json_canonicalizer = "0.3.1"
 
 [dev-dependencies]
 zcam1-c2pa-utils = { path = ".", features = ["io", "editor"] }
