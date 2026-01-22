@@ -52,7 +52,7 @@ export default function Home() {
   }, [setCaptureMode]);
 
   const capture = async () => {
-    const photo = await camera.current?.takePhoto();
+    const photo = await camera.current?.takePhoto({ includeDepthData: true });
     const targetPath = privateDirectory();
     const targetFile = targetPath + "/" + Util.basename(photo?.path!);
 
@@ -89,7 +89,7 @@ export default function Home() {
       });
     } else {
       setIsRecording(true);
-      const result = await camera.current?.startVideoRecording();
+      await camera.current?.startVideoRecording();
     }
   };
 

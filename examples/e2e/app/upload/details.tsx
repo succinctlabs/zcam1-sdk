@@ -97,48 +97,73 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
   };
 
   return (
-    <View style={styles.metadataSection}>
-      <Text style={styles.sectionTitle}>Capture Info</Text>
-      {params.device_make && params.device_model && (
+    <View>
+      <View style={styles.metadataSection}>
+        <Text style={styles.sectionTitle}>Capture Info</Text>
+        {params.deviceMake && params.deviceModel && (
+          <Text style={styles.metadataRow}>
+            Device: {params.deviceMake} {params.deviceModel}
+          </Text>
+        )}
+        {params.softwareVersion && (
+          <Text style={styles.metadataRow}>
+            Software: {params.softwareVersion}
+          </Text>
+        )}
         <Text style={styles.metadataRow}>
-          Device: {params.device_make} {params.device_model}
+          Captured: {formatDate(metadata.when)}
         </Text>
-      )}
-      {params.software_version && (
-        <Text style={styles.metadataRow}>
-          Software: {params.software_version}
-        </Text>
-      )}
-      <Text style={styles.metadataRow}>
-        Captured: {formatDate(metadata.when)}
-      </Text>
-      {params.x_resolution && params.y_resolution && (
-        <Text style={styles.metadataRow}>
-          Resolution: {params.x_resolution} x {params.y_resolution}
-        </Text>
-      )}
-      {params.orientation && (
-        <Text style={styles.metadataRow}>
-          Orientation: {params.orientation}
-        </Text>
-      )}
-      {params.iso && (
-        <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
-      )}
-      {params.exposure_time && (
-        <Text style={styles.metadataRow}>
-          Exposure: {formatExposure(params.exposure_time)}
-        </Text>
-      )}
-      {params.focal_length && (
-        <Text style={styles.metadataRow}>
-          Focal Length: {params.focal_length}mm
-        </Text>
-      )}
-      {params.depth_of_field && (
-        <Text style={styles.metadataRow}>
-          Depth of Field: {params.depth_of_field}
-        </Text>
+        {params.xResolution && params.yResolution && (
+          <Text style={styles.metadataRow}>
+            Resolution: {params.xResolution} x {params.yResolution}
+          </Text>
+        )}
+        {params.orientation && (
+          <Text style={styles.metadataRow}>
+            Orientation: {params.orientation}
+          </Text>
+        )}
+        {!!params.iso && (
+          <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
+        )}
+        {params.exposureTime && (
+          <Text style={styles.metadataRow}>
+            Exposure: {formatExposure(params.exposureTime)}
+          </Text>
+        )}
+        {params.focalLength && (
+          <Text style={styles.metadataRow}>
+            Focal Length: {params.focalLength}mm
+          </Text>
+        )}
+        {params.depthOfField && (
+          <Text style={styles.metadataRow}>
+            Depth of Field: {params.depthOfField}
+          </Text>
+        )}
+      </View>
+      {params.depthData && (
+        <View style={styles.metadataSection}>
+          <Text style={styles.sectionTitle}>Depth data</Text>
+          <Text style={styles.metadataRow}>
+            Min: {params.depthData.statistics.min}
+          </Text>
+          <Text style={styles.metadataRow}>
+            Max: {params.depthData.statistics.max}
+          </Text>
+          <Text style={styles.metadataRow}>
+            Mean: {params.depthData.statistics.mean}
+          </Text>
+          <Text style={styles.metadataRow}>
+            Sdt dev: {params.depthData.statistics.stdDev}
+          </Text>
+          <Text style={styles.metadataRow}>
+            Pixel format: {params.depthData.pixelFormat}
+          </Text>
+          <Text style={styles.metadataRow}>
+            Valid pixel count: {params.depthData.statistics.validPixelCount}
+          </Text>
+        </View>
       )}
     </View>
   );
