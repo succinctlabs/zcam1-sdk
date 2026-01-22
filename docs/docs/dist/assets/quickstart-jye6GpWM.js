@@ -1,4 +1,4 @@
-import{f as e,j as s}from"./index-2BHdsCVf.js";const a={title:"Quickstart",description:"undefined"};function r(l){const i={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",header:"header",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",...e(),...l.components};return s.jsxs(s.Fragment,{children:[s.jsx(i.header,{children:s.jsxs(i.h1,{id:"quickstart",children:["Quickstart",s.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#quickstart",children:s.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
+import{f as e,j as s}from"./index-DS39NnaK.js";const a={title:"Quickstart",description:"undefined"};function r(l){const i={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",header:"header",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",...e(),...l.components};return s.jsxs(s.Fragment,{children:[s.jsx(i.header,{children:s.jsxs(i.h1,{id:"quickstart",children:["Quickstart",s.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#quickstart",children:s.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
 `,s.jsx(i.p,{children:"This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it."}),`
 `,s.jsxs(i.h2,{id:"setup",children:["Setup",s.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#setup",children:s.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,s.jsxs(i.p,{children:["Wrap your app with the ",s.jsx(i.code,{children:"ProverProvider"})," to enable proof generation:"]}),`
@@ -152,7 +152,7 @@ import{f as e,j as s}from"./index-2BHdsCVf.js";const a={title:"Quickstart",descr
 `,s.jsxs(i.span,{className:"line",children:[s.jsx(i.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"    </"}),s.jsx(i.span,{style:{color:"#005CC5","--shiki-dark":"#8DDB8C"},children:"ProverProvider"}),s.jsx(i.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:">"})]}),`
 `,s.jsx(i.span,{className:"line",children:s.jsx(i.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"  );"})}),`
 `,s.jsx(i.span,{className:"line",children:s.jsx(i.span,{style:{color:"#24292E","--shiki-dark":"#ADBAC7"},children:"}"})})]})})}),`
-`,s.jsxs(i.h2,{id:"what-happens-under-the-hood",children:["What Happens Under the Hood",s.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#what-happens-under-the-hood",children:s.jsx(i.div,{"data-autolink-icon":!0})})]}),`
+`,s.jsxs(i.h2,{id:"under-the-hood",children:["Under the Hood",s.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#under-the-hood",children:s.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,s.jsxs(i.ol,{children:[`
 `,s.jsxs(i.li,{children:[`
 `,s.jsxs(i.p,{children:[s.jsx(i.strong,{children:"Capture"}),": Takes a photo, generates an App Attest assertion over the photo hash, and embeds a C2PA manifest with ",s.jsx(i.code,{children:"succinct.bindings"}),"."]}),`
