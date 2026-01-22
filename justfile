@@ -46,3 +46,8 @@ publish $NPM_CONFIG_REGISTRY:
     cd react-native-zcam1-prove && npm publish --access public
     cd react-native-zcam1-verify && npm publish --access public
     cd react-native-zcam1-picker && npm publish --access public
+
+clean:
+    cd react-native-zcam1-c2pa && npm run clean
+    cd react-native-zcam1-prove && npm run clean
+    cd react-native-zcam1-verify && npm run clean

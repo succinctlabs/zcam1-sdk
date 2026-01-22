@@ -51,7 +51,7 @@
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
-    "ubrn:clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/Native* src/index.*ts* src/generated/",
+    "clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/generated/",
     "build": "bob build",
     "prepack": "npm run ubrn:ios -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1C2paFramework.xcframework Zcam1C2paFramework.xcframework.excluded; fi",
     "preyalcpublish": "mv Zcam1C2paFramework.xcframework.excluded Zcam1C2paFramework.xcframework",
