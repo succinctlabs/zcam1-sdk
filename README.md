@@ -38,9 +38,14 @@ When installing the React Native packages with `npm i`, Rust bindings are built.
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
+You' ll also need the Metal Toolchain:
+
+```bash
+xcodebuild -downloadComponent MetalToolchain
+```
+
 > [!CAUTION]
 > The UniFFI binidings are built when the React Native libraries are installed with `npm install`. It's expected to takes a lot of time.
-
 
 ## Running the examples
 
@@ -71,6 +76,17 @@ The examples lives under the `examples` folder in this repo. to run the examples
 We use [Yalc] to iterate on the local React Native/TypeScript packages in this monorepo (especially when running the apps in `examples/*`) without publishing to npm. Each React Native library folder ships `just` recipes that publishes the package to Yalc and adds it to the example apps (for instance `add-yalc-to-e2e`). When you make changes to a library, run `yalc publish --push` in the library folder to refresh what the example app consumes. To go back to the registry versions, remove Yalc overrides with `just remove-yalc` and reinstall dependencies.
 
 [Yalc]: https://github.com/wclr/yalc
+
+### Troubleshooting
+
+If you encounter one of the following errors:
+
+```
+[Error: FFI function uniffi_zcam1_c2pa_utils_checksum_method_manifest_action has a checksum mismatch; this may signify previously undetected incompatible Uniffi versions]
+[TypeError: (0, nativeModule.default)().ubrn(...)method_manifesteditor_add_action is not a function (it is undefined)]
+```
+
+They are likely caused by a cache issue. You can run the following command to clean the cache: `just clean`.
 
 ## `react-native-zcam1-capture`
 
