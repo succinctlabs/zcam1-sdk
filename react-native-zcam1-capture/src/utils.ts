@@ -1,14 +1,25 @@
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { base64 } from "@scure/base";
+import { sha256 } from "@noble/hashes/sha2.js";
 
-export async function generateAppAttestAssertionFromPhotoHash(
+function stringToArray(s: string): Uint8Array {
+  return new TextEncoder().encode(s);
+}
+
+export async function generateAppAttestAssertion(
   dataHash: ArrayBuffer,
+  normalizedMetadata: string,
   deviceKeyId: string,
 ): Promise<string> {
   let assertion: string;
+
+  const metadataBytes = stringToArray(normalizedMetadata);
+
   try {
     assertion = await generateHardwareSignatureWithAssertion(
-      base64.encode(new Uint8Array(dataHash)),
+      base64.encode(new Uint8Array(dataHash)) +
+        "|" +
+        base64.encode(sha256(metadataBytes)),
       deviceKeyId,
     );
   } catch (error: any) {

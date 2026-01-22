@@ -9,6 +9,7 @@ zcam1-ios = { path = "../../crates/ios" }
 zcam1-c2pa-utils = { path = "../../crates/c2pa-utils" }
 
 base64ct = "1.6.0"
+sha2 = "0.10.9"
 sp1-zkvm = "5.2.4"
 
 [patch.crates-io]

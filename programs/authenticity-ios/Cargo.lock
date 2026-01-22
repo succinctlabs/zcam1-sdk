@@ -236,6 +236,7 @@ name = "authenticity-ios"
 version = "0.1.0"
 dependencies = [
  "base64ct",
+ "sha2",
  "sp1-zkvm",
  "zcam1-c2pa-utils",
  "zcam1-ios",

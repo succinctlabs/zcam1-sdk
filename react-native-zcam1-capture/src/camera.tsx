@@ -20,7 +20,8 @@ import NativeZcam1Sdk, {
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
-import { generateAppAttestAssertionFromPhotoHash } from "./utils";
+import { generateAppAttestAssertion } from "./utils";
+import { base64 } from "@scure/base";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -356,11 +357,6 @@ async function embedBindings(
     Dirs.CacheDir +
     `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-  const assertion = await generateAppAttestAssertionFromPhotoHash(
-    dataHash,
-    captureInfo.deviceKeyId,
-  );
-
   const manifestEditor = new ManifestEditor(
     originalPath,
     captureInfo.contentKeyId.buffer as ArrayBuffer,
@@ -368,9 +364,15 @@ async function embedBindings(
   );
 
   // Add the "capture" action to the manifest.
-  const normalized = manifestEditor.addMetadataAction(
+  const normalizedMetadata = manifestEditor.addMetadataAction(
     metadata as PhotoMetadataInfo,
     when,
+  );
+
+  const assertion = await generateAppAttestAssertion(
+    dataHash,
+    normalizedMetadata,
+    captureInfo.deviceKeyId,
   );
 
   // Add an assertion containing all data needed to later generate a  proof
