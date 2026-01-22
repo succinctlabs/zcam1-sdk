@@ -50,6 +50,7 @@ export class VerifiableFile {
 
     return verifyBindingsFromManifest(
       this.activeManifest.bindings()!,
+      this.activeManifest.captureMetadataAction()!,
       this.hash,
       appAttestProduction,
     );

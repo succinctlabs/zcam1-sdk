@@ -9051,6 +9051,7 @@ version = "0.1.0"
 dependencies = [
  "base64ct",
  "serde",
+ "sha2",
  "sp1-uniffi-verifier",
  "thiserror 2.0.17",
  "uniffi",

@@ -1,5 +1,6 @@
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use sp1_uniffi_verifier as _;
 
 use zcam1_ios::{validate_assertion, validate_attestation};
@@ -21,6 +22,7 @@ pub struct DeviceBindings {
 #[uniffi::export]
 pub fn verify_bindings_from_manifest(
     bindings: &DeviceBindings,
+    normalized_metadata: &str,
     photo_hash: Vec<u8>,
     production: bool,
 ) -> Result<bool, VerifyError> {
@@ -28,7 +30,12 @@ pub fn verify_bindings_from_manifest(
         return Ok(true);
     }
 
-    let client_data = Base64::encode_string(&photo_hash);
+    let metadata_hash = Sha256::digest(normalized_metadata.as_bytes());
+    let client_data = format!(
+        "{}|{}",
+        Base64::encode_string(&photo_hash),
+        Base64::encode_string(&metadata_hash)
+    );
 
     let public_key_uncompressed = validate_attestation(
         &bindings.attestation,
