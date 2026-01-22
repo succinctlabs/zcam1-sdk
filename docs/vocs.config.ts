@@ -1,14 +1,25 @@
 import { defineConfig } from 'vocs'
 
 export default defineConfig({
-  title: 'ZCAM SDK',
-  sidebar: [
-    {
+  title: 'ZCAM',
+  theme: {
+    accentColor: {
+      light: '#FE01AC',
+      dark: '#FE01AC',
+    },
+  },
+  font: { 
+    google: 'Inter'
+  }, 
+  iconUrl: 'favicon.svg',
+  logoUrl: 'Succinct_FullLogo_Magenta.svg',
+  sidebar: {'/': [
+     {
       text: 'Overview',
       items: [
         {
-          text: 'Introduction',
-          link: '/overview/introduction',
+          text: 'Home',
+          link: '/',
         },
         {
           text: 'How it Works',
@@ -92,5 +103,5 @@ export default defineConfig({
         },
       ],
     }
-  ],
+  ]},
 })
