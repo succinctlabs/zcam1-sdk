@@ -1,52 +1,44 @@
 # Editing a ZCAM Photo
 
-All ZCAM photos are C2PA compatible, meaning that any editing software that supports C2PA can be used to edit ZCAM photos while maintaining the original capture manifests.
+All zPhotos captured with ZCAM are C2PA-compatible, so any C2PA-aware editor can preserve the original capture manifest while adding an edit manifest.
 
-The three main editing software options used today are: Capture One, Adobe Lightroom, and PhotoLab.
-
-Currently, Capture One and Adobe Lightroom *support* C2PA, while PhotoLab does *not*. Generally, the flow is to include the content credentials on export.
+Common editing tools today include Capture One, Adobe Lightroom, and PhotoLab. Capture One and Adobe Lightroom support C2PA exports; PhotoLab does not. Typically editors include the content credentials on export.
 
 ## Exporting with Content Credentials
 
-When exporting a ZCAM photo from Capture One, you can include the C2PA content credentials in the export settings. This preserves the original capture manifest and adds an edit manifest indicating the changes made.
+When exporting a zPhoto from Capture One, include the C2PA content credentials in the export settings. This preserves the original capture manifest and adds an edit manifest describing the changes.
 
 ![Exporting with content credentials in Capture One](/images/screenshot_captureone_c2pa.png)
 
-After export, the resulting image will contain a C2PA manifest that includes both the original capture information and the edit history.
+After export, the image will contain a C2PA manifest that includes both the original capture information and the edit history.
 
 ![C2PA manifest showing capture and edit history](/images/screenshot_manifest_captureone.png)
 
 ## Verification Limitations After Editing
 
-**Both bindings verification and ZK proof verification break when a photo is edited.** This is because:
+Both bindings verification and ZK proof verification will fail if a zPhoto is edited. This happens because:
 
-- The Apple App Attest signature (used in bindings verification) is over the hash of the original image
-- The ZK proof (used in proof verification) also verifies the original photo hash
-- When a photo is edited, the image bytes change, causing the hash to change
-- The signature/proof verification fails because the hash no longer matches
+- The Apple App Attest signature (used by bindings verification) covers the hash of the original image
+- The ZK proof (used by proof verification) also attests to the original image hash
+- Editing changes the image bytes and therefore the hash
+- As a result, signature and proof verification fail when the hashes no longer match
 
-**Important**: Even though C2PA edit manifests can preserve the original capture manifest and add edit history, the actual signature verification will fail because the signature is over the hash of the original image bytes, which no longer match the edited image.
+**Important**: Although C2PA edit manifests can preserve the original capture and add edit history, the cryptographic signature/proof tied to the original image will not verify against the edited bytes.
 
-If you need to edit photos after capture, you must generate a new signature/proof after editing, or accept that verification will fail for edited photos.
+If you must edit a zPhoto after capture, you need to generate a new signature or proof after editing; otherwise verification will fail.
 
-### Future: ZK Proofs for Edit Chains
+### Future Work: ZK Proofs for Edit Chains
 
-In theory, zero-knowledge proofs could be extended to verify entire edit chains while maintaining privacy. A ZK proof could verify that:
+In principle, zero-knowledge proofs could be extended to verify edit chains while preserving privacy. A ZK proof could assert that:
 
-1. The original photo was captured authentically
-2. Each edit in the chain was legitimate (signed by authorized editors)
-3. The final photo hash matches the edit chain
+1. The original zPhoto was captured authentically
+2. Each edit in the chain was made or authorized by trusted editors
+3. The final image hash corresponds to the verified edit chain
 
-This would allow privacy-preserving verification even after edits, addressing concerns about maintaining authenticity through editing workflows (such as those used by news organizations like the BBC).
+This approach would require:
 
-However, this approach requires:
+- Proof generation after each edit (incurs computation cost)
+- Including edit history in the proof circuit
+- More complex SP1 programs to verify multiple C2PA manifests and their relationships
 
-- **Proof generation after each edit**: Each edit would need a new proof, adding computational cost
-- **Maintaining edit history in the proof**: The proof circuit would need to verify the entire edit chain
-- **More complex proof circuits**: The SP1 program would need to verify multiple C2PA manifests and their relationships
-
-For now, users who need to edit photos should:
-- Generate a **new signature/proof** after editing (this requires re-capturing or re-signing the edited image)
-- Or accept that verification will fail for edited photos (the original capture manifest and edit history will still be preserved in C2PA, but signature verification will fail)
-
-The current implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited photos.
+For now, users who need edits should either generate a new signature/proof after editing or accept that verification of the edited image will fail. The current implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited zPhotos.
