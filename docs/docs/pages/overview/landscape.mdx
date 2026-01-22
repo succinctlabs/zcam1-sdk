@@ -1,0 +1,55 @@
+# Landscape
+
+Several technologies exist for image authenticity and provenance. Most solve for different problems, such as edit history, AI detection, trust scoring, rather than proving a photo was authentically captured on a real device.
+
+ZCAM is a complete solution for mobile photo authenticity. It combines hardware-backed attestation, optional zero-knowledge proofs, and embedded verification into a single system designed for human-taken photos on mobile devices.
+
+## Comparison 
+
+| Approach | Hardware Attestation | ZK Proofs | Embedded Verification | User-friendly Output | Camera Photos | Use Case |
+|----------|---------------------|-----------|---------------------|---------------|--------------|----------|
+| **ZCAM** | ✅ | ✅ | ✅ | ✅ | ✅ | Complete mobile photo authenticity solution |
+| **C2PA** | ❌ | ❌ | ✅ | ❌ | ✅ | Edit history and provenance |
+| **Physical Cameras** | ❓ | ❌ | ✅ | ❌ | ✅ | Hardware signed capture with limited support |
+| **JPEG Trust** | ❌ | ❌ | ✅ | ✅ | ✅ | Trust evaluation framework |
+| **SynthID** | ❌ | ❌ | ✅ | ❌ | ❌ | AI watermarking and detection |
+| **AI Content Marking** | ❌ | ❌ | ✅ | ❌ | ❌ | Labeling AI-generated content |
+
+## Other Approaches
+
+### C2PA
+
+C2PA is a standard for creating a verifiable history of an image. It is not specific to authentic photos and applies equally to camera captures and AI-generated images. As an image evolves (cropping, brightness adjustments, etc.), C2PA-compatible editors attach new signed manifests tracking each change.
+
+ZCAM uses C2PA as its container format but adds hardware-backed guarantees. Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged.
+
+### JPEG Trust
+
+JPEG Trust is a framework for evaluating image trustworthiness. It works on top of C2PA, using manifest data to generate trust scores. It is an evaluation layer, not a capture or verification system, and could work alongside ZCAM-generated manifests.
+
+
+### SynthID
+
+SynthID, developed by Google, embeds invisible watermarks into AI-generated images. Unlike metadata-based approaches, these watermarks survive cropping and editing. A separate model analyzes images to determine whether they're AI-generated.
+SynthID focuses on AI detection with probabilistic results. ZCAM focuses on authenticity with cryptographic guarantees.
+
+
+### AI Content Marking
+
+Several companies provide solutions for marking AI-generated content, using different approaches:
+
+- **Meta** adds durable watermarks specifically to AI-generated content. 
+- **OpenAI** generates C2PA-compatible images with DALL-E and ChatGPT.
+
+These solutions label AI content, whereas ZCAM verifies human-captured photos.
+
+
+## When to Use ZCAM
+
+ZCAM is the right choice when you need:
+
+- Hardware-backed proof that a photo was taken on a real device
+- Cryptographic verification rather than probabilistic detection
+- A mobile-first solution
+
+Other approaches may be more optimized for marking AI-generated content (SynthID, AI Content Marking), tracking edit history (C2PA), or non-mobile platforms.

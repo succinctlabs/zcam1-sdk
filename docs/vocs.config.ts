@@ -15,12 +15,12 @@ export default defineConfig({
           link: '/overview/how_it_works',
         },
         {
-          text: 'ZCAM vs Other Approaches',
-          link: '/overview/comparisons_to_other_approaches',
+          text: 'Landscape',
+          link: '/overview/landscape',
         },
         {
-          text: 'Example Usecases',
-          link: '/overview/example_usecases',
+          text: 'Use Cases',
+          link: '/overview/use_cases',
         }
       ],
     },
@@ -62,7 +62,7 @@ export default defineConfig({
       text: 'C2PA Compatibility',
       items: [
         {
-          text: 'Editing ZCAM Photos',
+          text: 'Editing Photos',
           link: '/c2pa-ecosystem/editing_zcam_photos',
         },
         {
