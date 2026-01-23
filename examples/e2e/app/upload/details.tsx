@@ -92,7 +92,7 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
 
   // Format exposure time to 2 decimal places
   const formatExposure = (time: number | undefined) => {
-    if (!time) return null;
+    if (time === undefined) return null;
     return `${time.toFixed(2)}s`;
   };
 
@@ -126,7 +126,7 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
         {!!params.iso && (
           <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
         )}
-        {params.exposureTime && (
+        {params.exposureTime !== undefined && (
           <Text style={styles.metadataRow}>
             Exposure: {formatExposure(params.exposureTime)}
           </Text>
