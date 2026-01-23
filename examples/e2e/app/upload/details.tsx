@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   View,
   Text,
+  ScrollView,
   StyleSheet,
   Image,
   Button,
@@ -59,9 +60,11 @@ export default function Details() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Preview uri={uri} isVideo={isVideo} />
-        {metadata && <CaptureInfo metadata={metadata} />}
-        <View style={styles.actions}>{actions}</View>
+        <ScrollView>
+          <Preview uri={uri} isVideo={isVideo} />
+          {metadata && <CaptureInfo metadata={metadata} />}
+          <View style={styles.actions}>{actions}</View>
+        </ScrollView>
       </SafeAreaView>
       <Toast />
     </SafeAreaProvider>
@@ -354,6 +357,7 @@ const styles = StyleSheet.create({
   image: {
     flex: 1,
     width: "100%",
+    aspectRatio: 1,
     resizeMode: "contain",
   },
   actions: {
