@@ -3,7 +3,7 @@ import {
   getPublicKeyFixed,
   type PublicKey,
 } from "@pagopa/io-react-native-crypto";
-import { base64urlnopad } from "@scure/base";
+import { base64url } from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
 
 const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
@@ -23,8 +23,8 @@ export async function getContentPublicKey(): Promise<PublicKey> {
 
 export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
   if (publicKey.kty === "EC") {
-    const x = base64urlnopad.decode(publicKey.x);
-    const y = base64urlnopad.decode(publicKey.y);
+    const x = base64url.decode(publicKey.x);
+    const y = base64url.decode(publicKey.y);
 
     const out = new Uint8Array(1 + x.length + y.length);
     out[0] = 0x04; // uncompressed point format
