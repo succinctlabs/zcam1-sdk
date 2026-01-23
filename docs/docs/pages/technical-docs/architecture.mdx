@@ -26,16 +26,16 @@ Both keys live in the Secure Enclave of the iPhone device. Importantly, the devi
 
 ## Photo Lifecycle
 
-A photo progresses through three states to become a verified zphoto:
+A photo progresses through three states to become a verifiable authentic photo:
 
 | State | C2PA Assertion | Description |
 |-------|----------------|-------------|
 | **Raw** | None | Original photo taken by phone, including metadata. No verifiable, attested traits. |
 | **Verifiable** | `succinct.bindings` | Embeds a C2PA manifest including a signature using an Apple attested key over the photo and a verifiable attestation from Apple of the signing key. These can also be used as inputs to generate a zero knowledge proof|
-| **Proven (zphoto)** | `succinct.proof` | Embeds a C2PA manifest including a verifiable zero knowledge proof that the photo was signed using a valid Apple attested key. |
+| **Proven** | `succinct.proof` | Embeds a C2PA manifest including a verifiable zero knowledge proof that the photo was signed using a valid Apple attested key. |
 
 ```
-Raw Photo → [Capture] → Verifiable Photo → [Prove] → Proven zphoto
+Raw Photo → [Capture] → Verifiable Photo → [Prove] → Proven photo
                          (bindings)                    (proof)
 ```
 
@@ -49,7 +49,7 @@ The SDK first gets initialized. The main logic here is to generate or load the t
 
 The capture step allows a user to take a photo and output a *provable* photo.
 
-When a user wants to take a zphoto, the SDK opens the camera screen. After the photo is taken, the SDK embeds a valid C2PA manifest by doing the following:
+When a user wants to take a photo, the SDK opens the camera screen. After the photo is taken, the SDK embeds a valid C2PA manifest by doing the following:
 
 1. The photo is hashed, then signed using the device key. This outputs an Apple Attest assertion including a signature over the hash.
 2. The C2PA manifest is initialized with a *capture* action including metadata: time of photo, OS, device model, software version, etc.
@@ -73,7 +73,7 @@ The SDK receives the proof from the network, then updates the photo and C2PA man
 
 ![Capture flow diagram](/images/diagram_prove.png)
 
-**Output:** The final zphoto with a valid C2PA manifest including a verifiable proof.
+**Output:** The final verifiable photo with a valid C2PA manifest including a verifiable proof.
 
 ### 4. Verify
 
