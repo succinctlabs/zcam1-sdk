@@ -337,7 +337,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 /**
  * Embeds C2PA bindings and capture metadata into a photo, producing a new signed file.
  */
-export async function embedBindings(
+async function embedBindings(
   originalPath: string,
   when: string,
   metadata: PhotoMetadataInfo | VideoMetadataInfo,
