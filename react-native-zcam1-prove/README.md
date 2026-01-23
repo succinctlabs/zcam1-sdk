@@ -1,116 +1,165 @@
 # `react-native-zcam1-prove`
 
-`react-native-zcam1-prove` is the React Native Proving SDK used to take an existing C2PA-signed image (typically produced by `react-native-zcam1-capture`), generate a cryptographic proof for its bindings, and embed that proof back into the C2PA manifest.
+`@succinctlabs/react-native-zcam1-prove` is the React Native Proving SDK used to take an existing C2PA-signed image (typically produced by `@succinctlabs/react-native-zcam1-capture`), generate a cryptographic proof for its bindings, and embed that proof back into the C2PA manifest.
 
 At a high level it provides:
 
-- A `initDevice()` helper to obtain the secure enclave content key ID and certificate chain from your backend.
-- An `embedProof()` function that:
-  - Reads the existing C2PA manifest from an image.
-  - Uses the manifest’s bindings and data hash to generate a proof via your backend.
-  - Rewrites the manifest to:
-    - Add a `succinct.proof` assertion containing the proof and verification key hash.
-    - Remove the original `succinct.bindings` assertion.
-  - Re-signs the image and writes a new JPEG with the updated manifest.
+- A `ProverProvider` + `useProver()` hook that initializes a `ProvingClient` and (optionally) polls in-flight proof requests.
+- A `ProvingClient` class with:
+  - `requestProof(uriOrPath): Promise<string>` → returns a `requestId`
+  - `getProofStatus(requestId): Promise<ProofRequestStatus>` → poll for `FulfillmentStatus` and (when ready) proof bytes
+  - `embedProof(uriOrPath, proof): Promise<string>` → writes a new file with `succinct.proof` embedded
+  - `waitAndEmbedProof(uriOrPath): Promise<string>` → convenience helper that requests, polls, then embeds automatically
+
+Embedding a proof updates the C2PA manifest by adding a `succinct.proof` assertion containing the proof bytes and a verification key hash, then re-signs the asset and writes a new file.
+
+Note: embedding a proof rebuilds the output manifest and does **not** carry forward the original `succinct.bindings` assertion; it adds `succinct.proof` and re-signs the asset.
 
 ## Installation
 
 ```bash
-npm i react-native-zcam1-prove
+npm i @succinctlabs/react-native-zcam1-prove
 cd ios && pod install
 ```
 
-## Backend requirements
+## Proof generation requirements
 
-The proving SDK expects a backend that can:
+Proof generation is performed by the native proving client. This package exposes a JS-friendly API (`ProvingClient`) for requesting proofs, polling status, and embedding proofs back into images.
 
-- Provide a certificate chain for the device content key.
-- Generate cryptographic proofs for device bindings.
+Configuration is provided via `Settings`:
 
-In particular, the `initDevice()` / `embedProof()` flow invokes the following HTTP endpoints on `backendUrl`:
+- `production: boolean` — whether to use production mode for App Attest verification on the proving side
+- `privateKey?: string` — when provided, initializes a real proving client; when omitted, the SDK uses a mock proving client (development/testing only)
+- `certChain?: SelfSignedCertChain | ExistingCertChain` — certificate chain used for re-signing the updated C2PA manifest:
+  - If omitted, a self-signed certificate chain is generated (development/testing).
+  - Provide `{ pem: string }` to use an existing PEM chain.
 
-- `POST {backendUrl}/ios/request-proof` with body:
-  - `attestation`: attestation blob from the C2PA manifest
-  - `assertion`: assertion blob from the bindings
-  - `keyId`: device key identifier
-  - `dataHash`: base64-encoded hash of the image data
-  - `appId`: application identifier
-  - `challenge`: base64-encoded challenge
-  - `appAttestProduction`: boolean flag indicating production mode  
-  Returns a plain text `requestId` for polling.
-  
-- `GET {backendUrl}/ios/proof/{requestId}`  
-  Returns `202 Accepted` while processing, `200 OK` with binary proof data when ready.
-  
-- `GET {backendUrl}/ios/vk`  
-  Returns the verification key hash as plain text.
+If the app that proves photos is also the app that captures them, you typically don’t need a separate “prove-side device init” step: capture-time keys/attestation are already embedded in the photo’s `succinct.bindings`.
 
-Your backend is responsible for validating device bindings, generating ZK proofs, and providing the verification key hash used in the C2PA proof assertion.
+## Provider setup (recommended)
 
-## Device initialization
+Wrap your app with `ProverProvider` once (e.g. near the root). This initializes the proving client and makes it available via `useProver()`.
 
-Before you can embed proofs, you must initialize the device and obtain a `DeviceInfo`:
+```/dev/null/ProverProviderSetup.tsx#L1-40
+import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
 
-- Build a `settings` object that includes:
-  - `backendUrl` (for example from an environment variable like `EXPO_PUBLIC_BACKEND_URL`).
-  - `production` (typically `false` for development, `true` for production).
-- Call `initDevice(settings)` once (e.g. on app startup) and store the result in React state.
-
-A typical flow in React:
-
-```/dev/null/ProveInitUsage.tsx#L1-40
-const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | undefined>(undefined);
-
-const settings = useMemo(
-  () => ({
-    backendUrl: process.env.EXPO_PUBLIC_BACKEND_URL!,
-    production: false,
-  }),
-  [],
-);
-
-useEffect(() => {
-  async function fetchDevice() {
-    const info = await initDevice(settings);
-    setDeviceInfo(info);
-  }
-
-  fetchDevice();
-}, [settings]);
+export function AppRoot() {
+  return (
+    <ProverProvider
+      settings={{
+        production: false,
+        // Optional: enables a real proving client. If omitted, a mock proving client is used (dev/test only).
+        // privateKey: process.env.EXPO_PUBLIC_PROVER_PRIVATE_KEY,
+        // Optional: provide a real signing chain (PEM) instead of using the default self-signed chain.
+        // certChain: { pem: signingCertChainPem },
+      }}
+    >
+      {/* Your app */}
+    </ProverProvider>
+  );
+}
 ```
 
-Only call `embedProof()` once `deviceInfo` is available.
+Inside your screens/components, call `useProver()` to access `provingClient`, `isInitializing`, and `error`.
 
 ## Selecting an image and embedding a proof
 
-`embedProof()` takes the path or URI of an existing image, the `DeviceInfo`, and the same `settings` used at initialization. The flow is:
+You embed proofs by:
+1. Requesting a proof for an existing photo (`requestProof`)
+2. Polling for completion (`getProofStatus` or `useProofRequestStatus`)
+3. Embedding the resulting proof into the photo (`embedProof`), producing a newly signed output file
 
-1. Let the user pick an existing photo (e.g. using `react-native-image-picker`).
-2. Take the selected asset’s URI or file path and pass it to `embedProof(...)`.
-3. Receive a new `destinationPath` for the JPEG with the updated C2PA manifest.
-4. Persist or save this new asset (for example with `@react-native-camera-roll/camera-roll`).
+For convenience, you can also use `waitAndEmbedProof()` to do all three steps.
 
-Minimal usage:
+### Minimal usage (one-shot)
 
-```/dev/null/ProveEmbedUsage.tsx#L1-60
-const pickAndProve = async () => {
-  const result = await launchImageLibrary({
-    mediaType: "photo",
-    selectionLimit: 1,
-  });
+```/dev/null/ProveEmbedUsage.tsx#L1-70
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { launchImageLibrary } from "react-native-image-picker";
+import { useProver } from "@succinctlabs/react-native-zcam1-prove";
 
-  const asset = result.assets?.[0];
-  if (!asset || !asset.uri || !deviceInfo) return;
+export function PickAndProveButton() {
+  const { provingClient, isInitializing } = useProver();
 
-  // Embed the proof into the C2PA manifest of the selected image.
-  const outputPath = await embedProof(asset.uri, deviceInfo, settings);
+  const pickAndProve = async () => {
+    const result = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
 
-  // Optionally save the newly signed image.
-  await CameraRoll.saveAsset(outputPath);
-};
+    const asset = result.assets?.[0];
+    if (!asset?.uri || !provingClient) return;
+
+    // Requests the proof, polls until ready, and embeds it into a new signed file.
+    const outputPath = await provingClient.waitAndEmbedProof(asset.uri);
+
+    // Optionally save the newly signed image.
+    await CameraRoll.saveAsset(outputPath);
+  };
+
+  // Render your UI; disable while initializing if desired.
+  return null;
+}
 ```
 
-Here:
+### Two-step usage (recommended UX)
 
-- `asset.uri` may be a `file://` URI; `embedProof()` normalizes this internally.
-- The input image must already contain a C2PA manifest with a `succinct.bindings` assertion; otherwise `embedProof()` will throw an error indicating no device bindings were found.
+Use `requestProof()` + `useProofRequestStatus()` to show progress, then call `embedProof()` once the proof is ready.
+
+Notes:
+
+- Input `uri` may be a `file://` URI; the SDK normalizes this internally.
+- The input image must already contain a C2PA manifest with `succinct.bindings`; otherwise proof request/embedding will fail.
+
+A concrete two-step flow looks like this:
+
+```/dev/null/ProveTwoStepUsage.tsx#L1-120
+import { useEffect, useState } from "react";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
+import { launchImageLibrary } from "react-native-image-picker";
+import {
+  FulfillmentStatus,
+  useProofRequestStatus,
+  useProver,
+} from "@succinctlabs/react-native-zcam1-prove";
+
+export function PickProveWithProgress() {
+  const { provingClient } = useProver();
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
+
+  const { fulfillementStatus, proof } = useProofRequestStatus(requestId);
+
+  const pick = async () => {
+    const result = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+
+    setPhotoUri(asset.uri);
+    setRequestId(null);
+  };
+
+  const request = async () => {
+    if (!provingClient || !photoUri) return;
+    const id = await provingClient.requestProof(photoUri);
+    setRequestId(id);
+  };
+
+  useEffect(() => {
+    if (!provingClient) return;
+    if (!photoUri) return;
+
+    // When the proof bytes are ready, embed them into a new signed output file.
+    if (fulfillementStatus === FulfillmentStatus.Fulfilled && proof) {
+      provingClient
+        .embedProof(photoUri, proof)
+        .then((outputPath) => CameraRoll.saveAsset(outputPath));
+    }
+  }, [provingClient, photoUri, fulfillementStatus, proof]);
+
+  return null;
+}
+```
