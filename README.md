@@ -79,6 +79,8 @@ We use [Yalc] to iterate on the local React Native/TypeScript packages in this m
 
 ### Troubleshooting
 
+#### Uniffi cache issue
+
 If you encounter one of the following errors:
 
 ```
@@ -87,6 +89,12 @@ If you encounter one of the following errors:
 ```
 
 They are likely caused by a cache issue. You can run the following command to clean the cache: `just clean`.
+
+#### RP ID mismatch
+
+If you encounter the following error: "RP ID mismatch", the root cause is probably an incorrect `appId` parameter in `initCapture()`.
+
+the `appId` is expected to be of the form `<YOUR_TEAM_ID>.<YOUR_BUNDLE_ID>`.
 
 ## `react-native-zcam1-capture`
 
