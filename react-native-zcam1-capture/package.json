@@ -32,7 +32,7 @@
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@scure/base": "^2.0.0",
     "@succinctlabs/react-native-zcam1-c2pa": "^0.1.7",
-    "@succinctlabs/react-native-zcam1-common": "^0.1.4",
+    "@succinctlabs/react-native-zcam1-common": "^0.1.5",
     "react-native-encrypted-storage": "^4.0.0",
     "react-native-file-access": "^3.2.0"
   },
