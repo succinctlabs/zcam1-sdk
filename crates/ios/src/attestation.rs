@@ -103,13 +103,17 @@ pub fn validate_attestation(
 
     // 6. Verify RP ID hash.
     hasher = Sha256::new();
-    hasher.update(app_id);
+    hasher.update(app_id.clone());
     let app_id_hash = hasher.finalize();
     let auth_data =
         decode_auth_data(Base64::decode_vec(&attestation.auth_data.clone().to_string()).unwrap())
             .expect("decoding error");
     if auth_data.rp_id != app_id_hash.to_vec() {
-        return Err(Error::RpIdMismatch);
+        return Err(Error::RpIdMismatch {
+            expected: Base64::encode_string(&auth_data.rp_id),
+            actual: Base64::encode_string(&app_id_hash),
+            actual_app_id: app_id.clone(),
+        });
     }
 
     // 7. Verify counter
