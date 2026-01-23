@@ -479,7 +479,7 @@ export class ProvingClient {
       throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
-    const manifestEditor = ManifestEditor.fromFile(
+    const manifestEditor = ManifestEditor.fromManifest(
       originalPath,
       this.contentKeyId.buffer as ArrayBuffer,
       this.certChainPem,
@@ -495,8 +495,6 @@ export class ProvingClient {
         vk_hash: vkHash,
       }),
     );
-
-    manifestEditor.removeAssertion("succinct.bindings");
 
     const destinationPath =
       Dirs.CacheDir +

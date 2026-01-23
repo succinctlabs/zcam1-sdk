@@ -43,14 +43,6 @@ impl Manifest {
         self.assertion_store.proof.clone()
     }
 
-    /// Returns the action with the given label as a JSON string.
-    pub fn action(&self, label: String) -> Option<String> {
-        self.assertion_store
-            .actions
-            .get(&label)
-            .map(|v| v.to_string())
-    }
-
     pub fn capture_metadata_action(&self) -> Result<Option<String>, C2paError> {
         let action = self.assertion_store.actions.get("succinct.capture");
 
@@ -67,6 +59,11 @@ impl Manifest {
 }
 
 impl Manifest {
+    /// Returns the action with the given label as a JSON `Value`.
+    pub fn action(&self, label: &str) -> Option<&Value> {
+        self.assertion_store.actions.get(label)
+    }
+
     pub fn compute_hash_from_stream<R>(&self, stream: &mut R) -> Result<Vec<u8>, C2paError>
     where
         R: Read + Seek + ?Sized,

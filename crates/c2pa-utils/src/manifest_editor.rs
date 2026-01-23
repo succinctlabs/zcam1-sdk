@@ -4,16 +4,16 @@ use std::{
 };
 
 use c2pa::{
-    settings::Settings, AsyncSigner, Builder, BuilderIntent, CallbackSigner, ClaimGeneratorInfo,
-    DigitalSourceType, SigningAlg,
+    settings::Settings, AsyncSigner, Builder, CallbackSigner, ClaimGeneratorInfo, SigningAlg,
 };
 use serde_json::Value;
 use serde_json_canonicalizer::to_string;
 
 use crate::{
     error::C2paError,
+    extract_manifest,
     signing::sign_with_enclave,
-    types::{Action, PhotoMetadataInfo},
+    types::{Action, Manifest, PhotoMetadataInfo},
 };
 
 #[derive(uniffi::Object)]
@@ -53,8 +53,11 @@ impl ManifestEditor {
         }
     }
 
+    /// Creates a builder from a file that is expected to contain an existing C2PA manifest.
+    ///
+    /// The metadata included in the manifest are kept.
     #[uniffi::constructor()]
-    pub fn from_file(path: &str, key_tag: Vec<u8>, certs: &str) -> Result<Self, C2paError> {
+    pub fn from_manifest(path: &str, key_tag: Vec<u8>, certs: &str) -> Result<Self, C2paError> {
         let signer = CallbackSigner::new(
             move |_context, data: &[u8]| {
                 sign_with_enclave(&key_tag, data)
@@ -64,7 +67,9 @@ impl ManifestEditor {
             certs,
         );
 
-        Self::from_file_with_signer(path, signer)
+        let store = extract_manifest(path)?;
+
+        Self::from_file_and_manifest_with_signer(path, &store.active_manifest()?, signer)
     }
 
     pub fn add_title(&self, title: &str) -> Result<(), C2paError> {
@@ -141,15 +146,14 @@ impl ManifestEditor {
 }
 
 impl ManifestEditor {
-    pub fn from_file_with_signer<S: AsyncSigner + Send + 'static>(
+    pub fn from_file_and_manifest_with_signer<S: AsyncSigner + Send + 'static>(
         path: &str,
+        active_manifest: &Manifest,
         signer: S,
     ) -> Result<Self, C2paError> {
         Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
 
         let mut builder = Builder::new();
-
-        builder.set_intent(BuilderIntent::Create(DigitalSourceType::DigitalCapture));
 
         builder
             .definition
@@ -157,11 +161,9 @@ impl ManifestEditor {
             .push(ClaimGeneratorInfo::new("ZCAM1"));
         builder.definition.vendor = Some("Succinct".to_string());
 
-        //if let Some(capture) = active_manifest.action("c2pa.capture".to_string()) {
-        //    builder.add_action(capture)?;
-        //}
-
-        //exclusions.sort_by_key(|e| e.start);
+        if let Some(capture) = active_manifest.action("succinct.capture") {
+            builder.add_action(capture)?;
+        }
 
         let editor = Self {
             source_file_path: path.to_string(),
