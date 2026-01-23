@@ -1,0 +1,46 @@
+# Verifiable News Platform
+
+Edited and AI-generated photos are a growing concern for news consumers. A news platform can use ZCAM to let readers independently verify that photos are authentic and unedited.
+
+The system is comprised of:
+- A mobile app for field reporters to capture verifiable photos
+- Integration with the platform's CMS to store and display photos
+- Public-facing verification tools so readers can check authenticity themselves
+
+**Why it matters**: Readers can independently verify that photos are authentic, building trust in the platform's journalism.
+
+## Architecture
+
+The news platform integrates ZCAM SDK in two places:
+
+1. **Mobile app** A lightweight iOS app for reporters to use to capture verifiable photos
+2. **Web platform**: For readers to verify photo authenticity directly in articles
+
+### Mobile App
+
+The news platform builds a specialized camera app for reporters using the ZCAM SDK:
+
+1. **Installation**: Setup the SDK using the [installation guide](/getting-started/installation) 
+2. **Camera Setup**: Use `react-native-zcam1-capture` to initialize the camera:
+   - Call `initCapture()` to initialize device keys and attestation
+   - Use the `<ZCamera>` component to render the camera preview
+   - Call `takePhoto()` to capture a photo with verifiable bindings
+3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to generate zero-knowledge proofs:
+   - Wrap your app with `ProverProvider` and use the `useProver()` hook
+   - Call `waitAndEmbedProof()` to generate and embed the proof, or use `requestProof()` + `useProofRequestStatus()` for progress tracking
+4. **Upload**: Upload the photo to the news platform's backend for use in articles
+
+### Web Platform
+
+On the news platform's website, articles display verifiable photos with verification capabilities:
+
+1. **Photo Display**: Photos embedded in articles include C2PA content credentials
+   - Users with C2PA browser extensions can automatically see content credentials
+   - The platform can display verification status badges
+2. **Client-Side Verification**: Integrate `react-native-zcam1-verify` (or web equivalent) to enable verification:
+   - Add a "Verify Photo" button for each photo in articles
+   - Call `verifyHash()` and `verifyProof()` methods to validate authenticity
+   - Display verification results to readers (e.g., "✓ Verified Authentic")
+3. **Metadata Display**: Show readers metadata from the C2PA manifest:
+   - Capture timestamp, device information, app identifier
+   - Allow readers to inspect the full verification chain

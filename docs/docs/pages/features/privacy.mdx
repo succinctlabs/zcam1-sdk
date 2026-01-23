@@ -1,0 +1,33 @@
+# Privacy
+
+## The Traditional Tradeoff
+
+Historically, proving the authenticity of a photo requiires the photographer to step forward and vouch for it. This creates an inherent tension: **to prove a photo is real, someone must attach their reputation and likely their identity to it.**
+
+ZCAM eliminates this tradeoff. A verifiable photo stands on its own. If the cryptographic proof is valid, the photo is authentic. The math speaks for itself.
+
+## Pseudonymous by Design
+
+ZCAM, by design, has no identity platform. There are no accounts, usernames, nor email addresses.
+
+Every photo is signed using a key stored in the device's Secure Enclave. The key is **specific to the app** on that device and does **not** identify the person holding the phone
+
+This is pseudonymous by nature, the key is not used for anything other than Apple app attest. Even the C2PA key is not used for anything beyond signing valid C2PA manifests.
+
+## ZK Proofs for Enhanced Privacy
+
+Wrapping the verification process in a ZK proof provides additional privacy benefits.
+
+Because the proof wraps the logic for attestation, verifying the proof confirms validity without revealing the specific attestation data. This results in less metadata exposed to verifiers and authenticity without exposing the full attestation chain.
+
+The verifier learns only that the photo is authentic, nothing more.
+
+## Future Work: Selective Disclosure
+
+Some contextual metadata can be sensitive, such as location and timestamp of the photo. While this may be metadata useful for contextualizing the authenticity of the photo, certain users may find this data sensitive and prefer not to reveal it to verifiers.
+We are working on mechanisms to be able to hide, selectively disclose and "generalize" the potentially sensitive metadata.
+
+The most naive feature is to allow a user to select which contextual metadata fields to include when generating the verifiable bindings and zk proof.
+However, a user may want to include all possible metadata fields to have the *optionality* of revealing them. Selective disclosure enables a user to
+decide which fields are revealed when they present the photo to some verifier. This can be built using cryptographic primitives like zero knoweldge proofs and short group signatures. 
+These fields can even be "generalized". For example, instead of precise coordinates, the location could be generalized to state or country. 

@@ -3,10 +3,8 @@ import { defineConfig } from 'vocs'
 export default defineConfig({
   title: 'ZCAM',
   theme: {
-    accentColor: {
-      light: '#FE01AC',
-      dark: '#FE01AC',
-    },
+    accentColor: '#FE01AC',
+    colorScheme: 'light',
   },
   font: { 
     google: 'Inter'
@@ -14,13 +12,13 @@ export default defineConfig({
   iconUrl: 'favicon.svg',
   logoUrl: 'Succinct_FullLogo_Magenta.svg',
   sidebar: {'/': [
+    {
+      text: 'Home',
+      link: '/',
+    },
      {
       text: 'Overview',
       items: [
-        {
-          text: 'Home',
-          link: '/',
-        },
         {
           text: 'How it Works',
           link: '/overview/how_it_works',
@@ -30,9 +28,39 @@ export default defineConfig({
           link: '/overview/landscape',
         },
         {
-          text: 'Use Cases',
-          link: '/overview/use_cases',
-        }
+          text: 'C2PA',
+          link: '/overview/c2pa',
+        },
+      ],
+    },
+    {
+      text: 'Features',
+      items: [
+        {
+          text: 'Authenticity',
+          link: '/features/authenticity',
+        },
+        {
+          text: 'Privacy',
+          link: '/features/privacy',
+        },
+        {
+          text: 'Security',
+          link: '/features/security',
+        },
+      ],
+    },
+    {
+      text: 'Usecases',
+      items: [
+        {
+          text: 'Verifiable News Platform',
+          link: '/usecases/verifiable_news_platform',
+        },
+        {
+          text: 'Insurance Claim Verification',
+          link: '/usecases/insurance_claim_verification',
+        },
       ],
     },
     {
@@ -50,6 +78,7 @@ export default defineConfig({
     },
     {
       text: 'Using the SDK',
+      collapsed: true,
       items: [
         {
           text: 'Capture',
@@ -70,19 +99,6 @@ export default defineConfig({
       ],
     },
     {
-      text: 'C2PA Compatibility',
-      items: [
-        {
-          text: 'Editing Photos',
-          link: '/c2pa-ecosystem/editing_zcam_photos',
-        },
-        {
-          text: 'Hardware Camera Support',
-          link: '/c2pa-ecosystem/hardware_camera_support',
-        },
-      ],
-    },
-    {
       text: 'Technical Docs',
       items: [
         {
@@ -92,10 +108,6 @@ export default defineConfig({
         {
           text: 'ZK Proof Details',
           link: '/technical-docs/zkproof-details',
-        },
-        {
-          text: 'Security',
-          link: '/technical-docs/security',
         },
         {
           text: 'FAQs',

@@ -1,0 +1,47 @@
+# Insurance Claim Verification
+
+Insurance companies allow policyholders to file claims using photos from their mobile app. This has led to an increase in fraud where claimants manipulate photos before submission. ZCAM ensures that claim photos were taken on the policyholder's device using the official app, and haven't been edited since capture.
+
+The system is comprised of: 
+- Camera functionality within the insurance app using ZCAM for capture
+- Backend verification that automatically validates all submitted photos
+- Automated triage that flags claims with suspicious or unverifiable photos
+
+**Why it matters**: Automatically detect and reject claims with manipulated photos, reducing fraud and manual review costs.
+
+### Architecture
+
+The insurance app integrates ZCAM SDK in two places:
+
+1. **Mobile app**: Policyholders capture verifiable photos during claim filing. 
+2. **Backend processing**: The insurance company verifies photos automatically during claim triage.
+
+### Mobile App
+
+The ZCAM SDK integrates into the claim landing flow:
+
+1. **Installation**: Follow the [Installation guide](/getting-started/installation) to set up the SDK
+2. **Camera Integration**: Inject the `<ZCamera>` component into the claim flow where users must photograph their vehicle:
+   - The SDK provides camera preview functionality
+   - Call `takePhoto()` to capture a verifiable photo
+3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to attach zero-knowledge proofs:
+   - Use `waitAndEmbedProof()` to generate and embed proofs
+   - This provides additional cryptographic guarantees and privacy
+4. **Claim Submission**: When the user completes the claim flow, attach verifiable photos to the claim filing and upload to the insurance company's backend
+
+### Backend Processing
+
+On the insurance company's backend, verification is integrated into the automated claim triage process:
+
+1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
+   - Integrate `react-native-zcam1-verify` (or server-side equivalent) into the backend
+   - For each photo, call `verifyHash()` and `verifyProof()` methods
+   - Check that the photo was taken using the insurance company's app
+2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:
+   - Verify location data matches the claim location
+   - Check timestamp aligns with the reported incident time
+   - Validate device and app information
+3. **Claim Decision**: Based on verification results:
+   - **Verification passes**: Proceed with normal claim processing
+   - **Verification fails**: Flag claim for manual review or deny if photos are inauthentic
+
