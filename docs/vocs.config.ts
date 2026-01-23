@@ -9,8 +9,8 @@ export default defineConfig({
   font: { 
     google: 'Inter'
   }, 
-  iconUrl: 'favicon.svg',
-  logoUrl: 'Succinct_FullLogo_Magenta.svg',
+  iconUrl: '/favicon.svg',
+  logoUrl: '/Succinct_FullLogo_Magenta.svg',
   sidebar: {'/': [
     {
       text: 'Home',
