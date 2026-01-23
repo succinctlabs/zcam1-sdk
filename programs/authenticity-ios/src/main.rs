@@ -51,5 +51,6 @@ pub fn main() {
     }
 
     sp1_zkvm::io::commit_slice(&photo_hash);
+    sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
     sp1_zkvm::io::commit_slice(APPLE_ROOT_CERT.as_bytes());
 }

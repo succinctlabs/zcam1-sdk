@@ -311,8 +311,9 @@ function Proof({
   const [hash, setHash] = useState<string | undefined>(undefined);
 
   const verifyProof = useCallback(async () => {
+    const appId = process.env.EXPO_PUBLIC_APP_ID!;
     try {
-      setIsValid(verifier.verifyProof());
+      setIsValid(verifier.verifyProof(appId));
       setHash(verifier.dataHash());
     } catch (error) {
       console.error(error);

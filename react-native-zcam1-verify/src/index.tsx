@@ -60,8 +60,8 @@ export class VerifiableFile {
    * Verifies the cryptographic proof embedded in the C2PA manifest.
    * @returns True if the proof is valid, false otherwise
    */
-  verifyProof(): boolean {
-    return verifyProofFromManifest(this.activeManifest, this.path);
+  verifyProof(appId: string): boolean {
+    return verifyProofFromManifest(this.activeManifest, this.path, appId);
   }
 
   /**
@@ -91,6 +91,7 @@ export class VerifiableFile {
 function verifyProofFromManifest(
   activeManifest: ManifestInterface,
   path: string,
+  appId: string,
 ): boolean {
   let proof = activeManifest.proof();
 
@@ -99,11 +100,15 @@ function verifyProofFromManifest(
   }
 
   const hash = new Uint8Array(computeHash(path));
+  const appIdBytes = utf8ToBytes(appId);
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 
-  let publicInputs = new Uint8Array(hash.length + appleRootCert.length);
+  let publicInputs = new Uint8Array(
+    hash.length + appIdBytes.length + appleRootCert.length,
+  );
   publicInputs.set(hash);
-  publicInputs.set(appleRootCert, hash.length);
+  publicInputs.set(appIdBytes, hash.length);
+  publicInputs.set(appleRootCert, hash.length + appIdBytes.length);
 
   return verifyGroth16(
     base64.decode(proof.data).buffer as ArrayBuffer,
