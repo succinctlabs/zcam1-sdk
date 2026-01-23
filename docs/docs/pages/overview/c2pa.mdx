@@ -1,0 +1,88 @@
+# C2PA
+
+## What is C2PA?
+
+The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
+
+C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables any tool—cameras, editors, AI generators—to attach cryptographically signed metadata that travels with the content.
+
+## ZCAM and C2PA
+
+ZCAM uses C2PA as its container format but adds hardware-backed guarantees that C2PA alone cannot provide.
+
+Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged. This transforms C2PA from a provenance system into an authenticity system.
+
+| Aspect | Standard C2PA | ZCAM + C2PA |
+|--------|---------------|-------------|
+| **Signing Key** | Any certificate | Hardware-backed Secure Enclave key |
+| **Key Binding** | To an identity or organization | To a specific device and app |
+| **Guarantees** | "This manifest was signed by X platform" | "This photo was captured on a real iPhone" |
+
+## C2PA Background
+
+### Manifests
+
+A C2PA **manifest** is a signed data structure embedded in or linked to a media file. Each manifest contains:
+
+- **Claims**: Statements about the content (who made it, what tool was used, when it was created)
+- **Assertions**: Specific metadata like thumbnail hashes, ingredient lists, or action history
+- **Signature**: A cryptographic signature binding the claims to the content
+
+A single photo can have multiple manifests creating a manifest chain. Each manifest indicates how the photo changed and what tool was used for said change. Additionally, each manifest is signed by whatever
+party made the edit, creating an auditable chain of history for a given image.
+
+Anyone can then verify a manifest by verifying the signature of the manifest, ensuring the signing key chains to some trusted root certificate, then reading the contents of the actual manifest itself.
+
+### C2PA Provenance
+
+C2PA provides **provenance**. It answers questions like:
+
+- What tool created this content?
+- Who signed the manifest?
+- What edits were made?
+
+However, C2PA alone doesn't guarantee the content is authentic. C2PA is used equally for tagging AI-generated images. Signing infrastructure for tooling can get attacked and signatures could be forged. The standard focuses on the history of a photo.
+
+
+## Editing C2PA Photos
+
+All photos captured with ZCAM are C2PA-compatible, so any editor supporting C2PA can preserve the original capture manifest while adding an edit manifest.
+
+For example, two of the most used editing platforms today, Capture One and Adobe Lightroom, both support C2PA.
+
+When exporting from a C2PA-compatible editor, include the content credentials in the export settings.
+
+<figure style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1.5rem 0'}}>
+  <img src="/images/screenshot_captureone_c2pa.png" alt="Exporting with content credentials in Capture One" style={{maxWidth: '60%', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}} />
+  <figcaption style={{marginTop: '0.5rem', fontSize: '0.875rem', color: '#666'}}>Capture One export with content credentials</figcaption>
+</figure>
+
+This preserves the original capture manifest and adds an edit manifest describing the changes.
+
+<figure style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1.5rem 0'}}>
+  <img src="/images/screenshot_manifest_captureone.png" alt="C2PA manifest showing capture and edit history" style={{maxWidth: '60%', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}} />
+  <figcaption style={{marginTop: '0.5rem', fontSize: '0.875rem', color: '#666'}}>C2PA manifest including CaptureOne edits</figcaption>
+</figure>
+
+
+### Verification After Editing
+
+Both bindings verification and ZK proof verification will fail on edited ZCAM photos. This happens because:
+
+- The Apple App Attest signature covers the hash of the *original* image.
+- The ZK proof attests to the *original* image hash.
+- Editing changes the image bytes and therefore the hash.
+- Signature and proof verification fail when hashes no longer match.
+
+:::warning
+Although C2PA edit manifests preserve the original capture and add edit history, the cryptographic signature/proof tied to the original image will not verify against the edited bytes.
+:::
+
+If you need to edit a ZCAM photo, you must generate a new signature or proof after editing for verification to succeed.
+
+## Future Work: ZK Proofs for Edit Chains
+We are currently investigating how to also guarantee authenticity for edit history. 
+
+Zero-knowledge proofs could be extended to verify edit chains while preserving privacy. A ZK proof could assert that the original photo was taken authentically, and edits were made to the original photo which resulted in the final exported photo. This would require proof generation after each edit and more complex SP1 programs to analyze C2PA manifests along with the "before" and exported photos. 
+
+For now, the implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited photos.

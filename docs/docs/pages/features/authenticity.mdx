@@ -2,7 +2,7 @@
 
 ## What Makes a Photo Authentic?
 
-An authentic photo is one that was genuinely captured by a camera—not generated, not composited, not manipulated. 
+An authentic photo is one that was genuinely captured by a camera.
 
 With ZCAM, authenticity means:
 
@@ -32,7 +32,7 @@ Every ZCAM photo is signed using Apple's **Secure Enclave** and **App Attest**:
 - The key is bound to a specific app on a specific device
 - Apple's attestation chains to their root certificate
 
-This means the signature isn't just "someone claims this is authentic"—it's "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."
+This means the signature isn't just a signing key "vouching" for the authenticity of a photo. Rather, it indicates, "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."
 
 ### Ubiquitous Authentic Capture
 
@@ -45,10 +45,10 @@ Once a photo is captured and signed:
 - **Stripping the metadata** removes the proof (but verifiers will reject unsigned photos)
 - **Re-signing** would require access to the original device's Secure Enclave key
 
-The signature is bound to the exact bytes of the captured image. Change a single pixel, and verification fails.
+The signature is bound to the exact bytes of the captured image. Changing the picture results in the verification failing.
 
 ## What Authenticity Doesn't Guarantee
 
-Authenticity proves the photo came from a real camera—but not that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
+Authenticity proves the photo came from a real camera, but not necessarily that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
 
 ZCAM addresses this with [contextual metadata](/features/security#physical-replay-attacks) that helps detect physical replay attacks: depth maps, ambient light, focus distance, and more.

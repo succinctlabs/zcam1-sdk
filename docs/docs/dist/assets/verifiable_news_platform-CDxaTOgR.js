@@ -1,4 +1,4 @@
-import{u as t,j as e}from"./index-BlODdH4X.js";const a={title:"Verifiable News Platform",description:"undefined"};function r(n){const i={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...t(),...n.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"verifiable-news-platform",children:["Verifiable News Platform",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#verifiable-news-platform",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
+import{u as t,j as e}from"./index-C5NsMn8Q.js";const a={title:"Verifiable News Platform",description:"undefined"};function r(n){const i={a:"a",code:"code",div:"div",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...t(),...n.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"verifiable-news-platform",children:["Verifiable News Platform",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#verifiable-news-platform",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsx(i.p,{children:"Edited and AI-generated photos are a growing concern for news consumers. A news platform can use ZCAM to let readers independently verify that photos are authentic and unedited."}),`
 `,e.jsx(i.p,{children:"The system is comprised of:"}),`
 `,e.jsxs(i.ul,{children:[`
@@ -30,7 +30,7 @@ import{u as t,j as e}from"./index-BlODdH4X.js";const a={title:"Verifiable News P
 `,e.jsxs(i.li,{children:["Call ",e.jsx(i.code,{children:"waitAndEmbedProof()"})," to generate and embed the proof, or use ",e.jsx(i.code,{children:"requestProof()"})," + ",e.jsx(i.code,{children:"useProofRequestStatus()"})," for progress tracking"]}),`
 `]}),`
 `]}),`
-`,e.jsxs(i.li,{children:[e.jsx(i.strong,{children:"Upload"}),": Upload the zphoto to the news platform's backend for use in articles"]}),`
+`,e.jsxs(i.li,{children:[e.jsx(i.strong,{children:"Upload"}),": Upload the photo to the news platform's backend for use in articles"]}),`
 `]}),`
 `,e.jsxs(i.h3,{id:"web-platform",children:["Web Platform",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#web-platform",children:e.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(i.p,{children:"On the news platform's website, articles display verifiable photos with verification capabilities:"}),`

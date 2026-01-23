@@ -16,7 +16,7 @@ The system is comprised of:
 
 The insurance app integrates ZCAM SDK in two places:
 
-1. **Mobile app**: Policyholders capture zphotos during claim filing.
+1. **Mobile app**: Policyholders capture verifiable photos during claim filing.
 2. **Backend processing**: The insurance company verifies photos automatically during claim triage.
 
 #### Mobile App
@@ -80,7 +80,7 @@ The news platform builds a specialized camera app for reporters using the ZCAM S
 3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to generate zero-knowledge proofs:
    * Wrap your app with `ProverProvider` and use the `useProver()` hook
    * Call `waitAndEmbedProof()` to generate and embed the proof, or use `requestProof()` + `useProofRequestStatus()` for progress tracking
-4. **Upload**: Upload the zphoto to the news platform's backend for use in articles
+4. **Upload**: Upload the photo to the news platform's backend for use in articles
 
 #### Web Platform
 
@@ -127,16 +127,16 @@ Both keys live in the Secure Enclave of the iPhone device. Importantly, the devi
 
 ### Photo Lifecycle
 
-A photo progresses through three states to become a verified zphoto:
+A photo progresses through three states to become a verifiable authentic photo:
 
-| State               | C2PA Assertion      | Description                                                                                                                                                                                                             |
-| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Raw**             | None                | Original photo taken by phone, including metadata. No verifiable, attested traits.                                                                                                                                      |
-| **Verifiable**      | `succinct.bindings` | Embeds a C2PA manifest including a signature using an Apple attested key over the photo and a verifiable attestation from Apple of the signing key. These can also be used as inputs to generate a zero knowledge proof |
-| **Proven (zphoto)** | `succinct.proof`    | Embeds a C2PA manifest including a verifiable zero knowledge proof that the photo was signed using a valid Apple attested key.                                                                                          |
+| State          | C2PA Assertion      | Description                                                                                                                                                                                                             |
+| -------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Raw**        | None                | Original photo taken by phone, including metadata. No verifiable, attested traits.                                                                                                                                      |
+| **Verifiable** | `succinct.bindings` | Embeds a C2PA manifest including a signature using an Apple attested key over the photo and a verifiable attestation from Apple of the signing key. These can also be used as inputs to generate a zero knowledge proof |
+| **Proven**     | `succinct.proof`    | Embeds a C2PA manifest including a verifiable zero knowledge proof that the photo was signed using a valid Apple attested key.                                                                                          |
 
 ```
-Raw Photo → [Capture] → Verifiable Photo → [Prove] → Proven zphoto
+Raw Photo → [Capture] → Verifiable Photo → [Prove] → Proven photo
                          (bindings)                    (proof)
 ```
 
@@ -150,7 +150,7 @@ The SDK first gets initialized. The main logic here is to generate or load the t
 
 The capture step allows a user to take a photo and output a *provable* photo.
 
-When a user wants to take a zphoto, the SDK opens the camera screen. After the photo is taken, the SDK embeds a valid C2PA manifest by doing the following:
+When a user wants to take a photo, the SDK opens the camera screen. After the photo is taken, the SDK embeds a valid C2PA manifest by doing the following:
 
 1. The photo is hashed, then signed using the device key. This outputs an Apple Attest assertion including a signature over the hash.
 2. The C2PA manifest is initialized with a *capture* action including metadata: time of photo, OS, device model, software version, etc.
@@ -175,7 +175,7 @@ The SDK receives the proof from the network, then updates the photo and C2PA man
 
 ![Capture flow diagram](/images/diagram_prove.png)
 
-**Output:** The final zphoto with a valid C2PA manifest including a verifiable proof.
+**Output:** The final verifiable photo with a valid C2PA manifest including a verifiable proof.
 
 #### 4. Verify
 
@@ -237,7 +237,7 @@ Even though C2PA edit manifests can preserve the original capture manifest and a
 
 If you remove the metadata entirely or crop in a way that strips the C2PA manifest, the photo will also no longer be verifiable. We're looking into watermarking to insert data which could help with cropping, etc.
 
-See the [Editing ZCAM Photos](/c2pa-ecosystem/editing_zcam_photos) page for more details.
+See the [Editing C2PA Photos](/overview/c2pa#editing-c2pa-photos) section for more details.
 
 ### Cross Device Support
 
@@ -1379,6 +1379,95 @@ Both hash and bindings/proof checks must pass for a photo to be considered authe
 * `captureMetadata()` provides access to device and camera settings recorded at capture time
 
 
+## C2PA
+
+### What is C2PA?
+
+The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
+
+C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables any tool—cameras, editors, AI generators—to attach cryptographically signed metadata that travels with the content.
+
+### ZCAM and C2PA
+
+ZCAM uses C2PA as its container format but adds hardware-backed guarantees that C2PA alone cannot provide.
+
+Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged. This transforms C2PA from a provenance system into an authenticity system.
+
+| Aspect          | Standard C2PA                            | ZCAM + C2PA                                |
+| --------------- | ---------------------------------------- | ------------------------------------------ |
+| **Signing Key** | Any certificate                          | Hardware-backed Secure Enclave key         |
+| **Key Binding** | To an identity or organization           | To a specific device and app               |
+| **Guarantees**  | "This manifest was signed by X platform" | "This photo was captured on a real iPhone" |
+
+### C2PA Background
+
+#### Manifests
+
+A C2PA **manifest** is a signed data structure embedded in or linked to a media file. Each manifest contains:
+
+* **Claims**: Statements about the content (who made it, what tool was used, when it was created)
+* **Assertions**: Specific metadata like thumbnail hashes, ingredient lists, or action history
+* **Signature**: A cryptographic signature binding the claims to the content
+
+A single photo can have multiple manifests creating a manifest chain. Each manifest indicates how the photo changed and what tool was used for said change. Additionally, each manifest is signed by whatever
+party made the edit, creating an auditable chain of history for a given image.
+
+Anyone can then verify a manifest by verifying the signature of the manifest, ensuring the signing key chains to some trusted root certificate, then reading the contents of the actual manifest itself.
+
+#### C2PA Provenance
+
+C2PA provides **provenance**. It answers questions like:
+
+* What tool created this content?
+* Who signed the manifest?
+* What edits were made?
+
+However, C2PA alone doesn't guarantee the content is authentic. C2PA is used equally for tagging AI-generated images. Signing infrastructure for tooling can get attacked and signatures could be forged. The standard focuses on the history of a photo.
+
+### Editing C2PA Photos
+
+All photos captured with ZCAM are C2PA-compatible, so any editor supporting C2PA can preserve the original capture manifest while adding an edit manifest.
+
+For example, two of the most used editing platforms today, Capture One and Adobe Lightroom, both support C2PA.
+
+When exporting from a C2PA-compatible editor, include the content credentials in the export settings.
+
+<figure style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1.5rem 0'}}>
+  <img src="/images/screenshot_captureone_c2pa.png" alt="Exporting with content credentials in Capture One" style={{maxWidth: '60%', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}} />
+
+  <figcaption style={{marginTop: '0.5rem', fontSize: '0.875rem', color: '#666'}}>Capture One export with content credentials</figcaption>
+</figure>
+
+This preserves the original capture manifest and adds an edit manifest describing the changes.
+
+<figure style={{display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1.5rem 0'}}>
+  <img src="/images/screenshot_manifest_captureone.png" alt="C2PA manifest showing capture and edit history" style={{maxWidth: '60%', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}} />
+
+  <figcaption style={{marginTop: '0.5rem', fontSize: '0.875rem', color: '#666'}}>C2PA manifest including CaptureOne edits</figcaption>
+</figure>
+
+#### Verification After Editing
+
+Both bindings verification and ZK proof verification will fail on edited ZCAM photos. This happens because:
+
+* The Apple App Attest signature covers the hash of the *original* image.
+* The ZK proof attests to the *original* image hash.
+* Editing changes the image bytes and therefore the hash.
+* Signature and proof verification fail when hashes no longer match.
+
+:::warning
+Although C2PA edit manifests preserve the original capture and add edit history, the cryptographic signature/proof tied to the original image will not verify against the edited bytes.
+:::
+
+If you need to edit a ZCAM photo, you must generate a new signature or proof after editing for verification to succeed.
+
+### Future Work: ZK Proofs for Edit Chains
+
+We are currently investigating how to also guarantee authenticity for edit history.
+
+Zero-knowledge proofs could be extended to verify edit chains while preserving privacy. A ZK proof could assert that the original photo was taken authentically, and edits were made to the original photo which resulted in the final exported photo. This would require proof generation after each edit and more complex SP1 programs to analyze C2PA manifests along with the "before" and exported photos.
+
+For now, the implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited photos.
 
 
 ## How it Works
@@ -1474,9 +1563,9 @@ ZCAM is a complete solution for mobile photo authenticity. It combines hardware-
 
 #### C2PA
 
-C2PA is a standard for creating a verifiable history of an image. It is not specific to authentic photos and applies equally to camera captures and AI-generated images. As an image evolves (cropping, brightness adjustments, etc.), C2PA-compatible editors attach new signed manifests tracking each change.
+C2PA is an open standard for creating a verifiable history of an image. It tracks provenance—what tool created the content, who signed it, and what edits were made—but doesn't inherently guarantee authenticity.
 
-ZCAM uses C2PA as its container format but adds hardware-backed guarantees. Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged.
+ZCAM uses C2PA as its container format while adding hardware-backed guarantees that transform it from a provenance system into an authenticity system. For a deeper dive into how C2PA works and how ZCAM extends it, see [C2PA](/overview/c2pa).
 
 #### JPEG Trust
 
@@ -1845,7 +1934,7 @@ export default function App() {
 
 ### What Makes a Photo Authentic?
 
-An authentic photo is one that was genuinely captured by a camera—not generated, not composited, not manipulated.
+An authentic photo is one that was genuinely captured by a camera.
 
 With ZCAM, authenticity means:
 
@@ -1876,7 +1965,7 @@ Every ZCAM photo is signed using Apple's **Secure Enclave** and **App Attest**:
 * The key is bound to a specific app on a specific device
 * Apple's attestation chains to their root certificate
 
-This means the signature isn't just "someone claims this is authentic"—it's "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."
+This means the signature isn't just a signing key "vouching" for the authenticity of a photo. Rather, it indicates, "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."
 
 #### Ubiquitous Authentic Capture
 
@@ -1890,15 +1979,48 @@ Once a photo is captured and signed:
 * **Stripping the metadata** removes the proof (but verifiers will reject unsigned photos)
 * **Re-signing** would require access to the original device's Secure Enclave key
 
-The signature is bound to the exact bytes of the captured image. Change a single pixel, and verification fails.
+The signature is bound to the exact bytes of the captured image. Changing the picture results in the verification failing.
 
 ### What Authenticity Doesn't Guarantee
 
-Authenticity proves the photo came from a real camera—but not that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
+Authenticity proves the photo came from a real camera, but not necessarily that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
 
 ZCAM addresses this with [contextual metadata](/features/security#physical-replay-attacks) that helps detect physical replay attacks: depth maps, ambient light, focus distance, and more.
 
 
+## Privacy
+
+### The Traditional Tradeoff
+
+Historically, proving the authenticity of a photo requiires the photographer to step forward and vouch for it. This creates an inherent tension: **to prove a photo is real, someone must attach their reputation and likely their identity to it.**
+
+ZCAM eliminates this tradeoff. A verifiable photo stands on its own. If the cryptographic proof is valid, the photo is authentic. The math speaks for itself.
+
+### Pseudonymous by Design
+
+ZCAM, by design, has no identity platform. There are no accounts, usernames, nor email addresses.
+
+Every photo is signed using a key stored in the device's Secure Enclave. The key is **specific to the app** on that device and does **not** identify the person holding the phone
+
+This is pseudonymous by nature, the key is not used for anything other than Apple app attest. Even the C2PA key is not used for anything beyond signing valid C2PA manifests.
+
+### ZK Proofs for Enhanced Privacy
+
+Wrapping the verification process in a ZK proof provides additional privacy benefits.
+
+Because the proof wraps the logic for attestation, verifying the proof confirms validity without revealing the specific attestation data. This results in less metadata exposed to verifiers and authenticity without exposing the full attestation chain.
+
+The verifier learns only that the photo is authentic, nothing more.
+
+### Future Work: Selective Disclosure
+
+Some contextual metadata can be sensitive, such as location and timestamp of the photo. While this may be metadata useful for contextualizing the authenticity of the photo, certain users may find this data sensitive and prefer not to reveal it to verifiers.
+We are working on mechanisms to be able to hide, selectively disclose and "generalize" the potentially sensitive metadata.
+
+The most naive feature is to allow a user to select which contextual metadata fields to include when generating the verifiable bindings and zk proof.
+However, a user may want to include all possible metadata fields to have the *optionality* of revealing them. Selective disclosure enables a user to
+decide which fields are revealed when they present the photo to some verifier. This can be built using cryptographic primitives like zero knoweldge proofs and short group signatures.
+These fields can even be "generalized". For example, instead of precise coordinates, the location could be generalized to state or country.
 
 
 ## Security
@@ -2000,50 +2122,4 @@ ZCAM embeds rich contextual metadata at capture time, giving verifiers the signa
 | **Depth Map**        | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance     |
 | **White Balance**    | Color temperature                       | Screen color temperature differs from natural light     |
 | **Ambient Light**    | Environmental light level               | Unusually uniform lighting could indicate screen glow   |
-
-
-## Editing a ZCAM Photo
-
-All zPhotos captured with ZCAM are C2PA-compatible, so any C2PA-aware editor can preserve the original capture manifest while adding an edit manifest.
-
-Common editing tools today include Capture One, Adobe Lightroom, and PhotoLab. Capture One and Adobe Lightroom support C2PA exports; PhotoLab does not. Typically editors include the content credentials on export.
-
-### Exporting with Content Credentials
-
-When exporting a zPhoto from Capture One, include the C2PA content credentials in the export settings. This preserves the original capture manifest and adds an edit manifest describing the changes.
-
-![Exporting with content credentials in Capture One](/images/screenshot_captureone_c2pa.png)
-
-After export, the image will contain a C2PA manifest that includes both the original capture information and the edit history.
-
-![C2PA manifest showing capture and edit history](/images/screenshot_manifest_captureone.png)
-
-### Verification Limitations After Editing
-
-Both bindings verification and ZK proof verification will fail if a zPhoto is edited. This happens because:
-
-* The Apple App Attest signature (used by bindings verification) covers the hash of the original image
-* The ZK proof (used by proof verification) also attests to the original image hash
-* Editing changes the image bytes and therefore the hash
-* As a result, signature and proof verification fail when the hashes no longer match
-
-**Important**: Although C2PA edit manifests can preserve the original capture and add edit history, the cryptographic signature/proof tied to the original image will not verify against the edited bytes.
-
-If you must edit a zPhoto after capture, you need to generate a new signature or proof after editing; otherwise verification will fail.
-
-#### Future Work: ZK Proofs for Edit Chains
-
-In principle, zero-knowledge proofs could be extended to verify edit chains while preserving privacy. A ZK proof could assert that:
-
-1. The original zPhoto was captured authentically
-2. Each edit in the chain was made or authorized by trusted editors
-3. The final image hash corresponds to the verified edit chain
-
-This approach would require:
-
-* Proof generation after each edit (incurs computation cost)
-* Including edit history in the proof circuit
-* More complex SP1 programs to verify multiple C2PA manifests and their relationships
-
-For now, users who need edits should either generate a new signature/proof after editing or accept that verification of the edited image will fail. The current implementation focuses on verifying the original capture, which provides the strongest guarantees for unedited zPhotos.
 

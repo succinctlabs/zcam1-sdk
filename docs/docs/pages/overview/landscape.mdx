@@ -19,9 +19,9 @@ ZCAM is a complete solution for mobile photo authenticity. It combines hardware-
 
 ### C2PA
 
-C2PA is a standard for creating a verifiable history of an image. It is not specific to authentic photos and applies equally to camera captures and AI-generated images. As an image evolves (cropping, brightness adjustments, etc.), C2PA-compatible editors attach new signed manifests tracking each change.
+C2PA is an open standard for creating a verifiable history of an image. It tracks provenance—what tool created the content, who signed it, and what edits were made—but doesn't inherently guarantee authenticity.
 
-ZCAM uses C2PA as its container format but adds hardware-backed guarantees. Where C2PA tracks history with any signing key, ZCAM guarantees the photo was captured on a specific device using keys that can't be extracted or forged.
+ZCAM uses C2PA as its container format while adding hardware-backed guarantees that transform it from a provenance system into an authenticity system. For a deeper dive into how C2PA works and how ZCAM extends it, see [C2PA](/overview/c2pa).
 
 ### JPEG Trust
 

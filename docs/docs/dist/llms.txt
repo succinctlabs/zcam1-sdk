@@ -11,10 +11,11 @@
 - [Picker SDK](/sdk/picker): The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
 - [Prove SDK](/sdk/prove): The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
 - [Verify SDK](/sdk/verify): The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+- [C2PA](/overview/c2pa): The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
 - [How it Works](/overview/how_it_works): ZCAM verifies photo authenticity via a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
 - [Landscape](/overview/landscape): Several technologies exist for image authenticity and provenance. Most solve for different problems, such as edit history, AI detection, trust scoring, rather than proving a photo was authentically captured on a real device.
 - [Installation](/getting-started/installation): The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
 - [Quickstart](/getting-started/quickstart): This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it.
-- [Authenticity](/features/authenticity): An authentic photo is one that was genuinely captured by a camera—not generated, not composited, not manipulated.
+- [Authenticity](/features/authenticity): An authentic photo is one that was genuinely captured by a camera.
+- [Privacy](/features/privacy): Historically, proving the authenticity of a photo requiires the photographer to step forward and vouch for it. This creates an inherent tension: **to prove a photo is real, someone must attach their reputation and likely their identity to it.**
 - [Security](/features/security): A verifiably authentic photo from ZCAM provides the following guarantees:
-- [Editing a ZCAM Photo](/c2pa-ecosystem/editing_zcam_photos): All zPhotos captured with ZCAM are C2PA-compatible, so any C2PA-aware editor can preserve the original capture manifest while adding an edit manifest.

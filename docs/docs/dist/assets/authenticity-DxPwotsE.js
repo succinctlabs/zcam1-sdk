@@ -1,6 +1,6 @@
-import{u as a,j as e}from"./index-BlODdH4X.js";const s={title:"Authenticity",description:"undefined"};function n(i){const t={a:"a",div:"div",em:"em",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...a(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(t.header,{children:e.jsxs(t.h1,{id:"authenticity",children:["Authenticity",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#authenticity",children:e.jsx(t.div,{"data-autolink-icon":!0})})]})}),`
+import{u as a,j as e}from"./index-C5NsMn8Q.js";const s={title:"Authenticity",description:"undefined"};function n(i){const t={a:"a",div:"div",em:"em",h1:"h1",h2:"h2",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...a(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(t.header,{children:e.jsxs(t.h1,{id:"authenticity",children:["Authenticity",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#authenticity",children:e.jsx(t.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsxs(t.h2,{id:"what-makes-a-photo-authentic",children:["What Makes a Photo Authentic?",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#what-makes-a-photo-authentic",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
-`,e.jsx(t.p,{children:"An authentic photo is one that was genuinely captured by a camera—not generated, not composited, not manipulated."}),`
+`,e.jsx(t.p,{children:"An authentic photo is one that was genuinely captured by a camera."}),`
 `,e.jsx(t.p,{children:"With ZCAM, authenticity means:"}),`
 `,e.jsxs(t.ol,{children:[`
 `,e.jsxs(t.li,{children:[e.jsx(t.strong,{children:"Captured by the device camera"}),": The image bytes came directly from the iPhone's camera sensor."]}),`
@@ -22,7 +22,7 @@ import{u as a,j as e}from"./index-BlODdH4X.js";const s={title:"Authenticity",des
 `,e.jsx(t.li,{children:"The key is bound to a specific app on a specific device"}),`
 `,e.jsx(t.li,{children:"Apple's attestation chains to their root certificate"}),`
 `]}),`
-`,e.jsx(t.p,{children:`This means the signature isn't just "someone claims this is authentic"—it's "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."`}),`
+`,e.jsx(t.p,{children:`This means the signature isn't just a signing key "vouching" for the authenticity of a photo. Rather, it indicates, "Apple's hardware guarantees this key exists on a genuine iPhone running this specific app."`}),`
 `,e.jsxs(t.h3,{id:"ubiquitous-authentic-capture",children:["Ubiquitous Authentic Capture",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#ubiquitous-authentic-capture",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsxs(t.p,{children:["There are over ",e.jsx(t.strong,{children:"1.5 billion active iPhones"})," worldwide. ZCAM turns every one of them into a verifiable camera, making hardware-attested photography accessible to everyone."]}),`
 `,e.jsxs(t.h2,{id:"immutability-after-capture",children:["Immutability After Capture",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#immutability-after-capture",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
@@ -32,7 +32,7 @@ import{u as a,j as e}from"./index-BlODdH4X.js";const s={title:"Authenticity",des
 `,e.jsxs(t.li,{children:[e.jsx(t.strong,{children:"Stripping the metadata"})," removes the proof (but verifiers will reject unsigned photos)"]}),`
 `,e.jsxs(t.li,{children:[e.jsx(t.strong,{children:"Re-signing"})," would require access to the original device's Secure Enclave key"]}),`
 `]}),`
-`,e.jsx(t.p,{children:"The signature is bound to the exact bytes of the captured image. Change a single pixel, and verification fails."}),`
+`,e.jsx(t.p,{children:"The signature is bound to the exact bytes of the captured image. Changing the picture results in the verification failing."}),`
 `,e.jsxs(t.h2,{id:"what-authenticity-doesnt-guarantee",children:["What Authenticity Doesn't Guarantee",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#what-authenticity-doesnt-guarantee",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
-`,e.jsxs(t.p,{children:["Authenticity proves the photo came from a real camera—but not that the ",e.jsx(t.em,{children:"scene"})," was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading."]}),`
+`,e.jsxs(t.p,{children:["Authenticity proves the photo came from a real camera, but not necessarily that the ",e.jsx(t.em,{children:"scene"})," was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading."]}),`
 `,e.jsxs(t.p,{children:["ZCAM addresses this with ",e.jsx(t.a,{href:"/features/security#physical-replay-attacks",children:"contextual metadata"})," that helps detect physical replay attacks: depth maps, ambient light, focus distance, and more."]})]})}function h(i={}){const{wrapper:t}={...a(),...i.components};return t?e.jsx(t,{...i,children:e.jsx(n,{...i})}):n(i)}export{h as default,s as frontmatter};

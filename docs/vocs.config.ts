@@ -3,10 +3,8 @@ import { defineConfig } from 'vocs'
 export default defineConfig({
   title: 'ZCAM',
   theme: {
-    accentColor: {
-      light: '#FE01AC',
-      dark: '#FE01AC',
-    },
+    accentColor: '#FE01AC',
+    colorScheme: 'light',
   },
   font: { 
     google: 'Inter'
@@ -28,6 +26,10 @@ export default defineConfig({
         {
           text: 'Landscape',
           link: '/overview/landscape',
+        },
+        {
+          text: 'C2PA',
+          link: '/overview/c2pa',
         },
       ],
     },
@@ -76,6 +78,7 @@ export default defineConfig({
     },
     {
       text: 'Using the SDK',
+      collapsed: true,
       items: [
         {
           text: 'Capture',
@@ -92,15 +95,6 @@ export default defineConfig({
         {
           text: 'Picker',
           link: '/sdk/picker',
-        },
-      ],
-    },
-    {
-      text: 'C2PA Compatibility',
-      items: [
-        {
-          text: 'Editing Photos',
-          link: '/c2pa-ecosystem/editing_zcam_photos',
         },
       ],
     },

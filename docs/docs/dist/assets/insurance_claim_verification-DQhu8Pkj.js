@@ -1,4 +1,4 @@
-import{u as t,j as e}from"./index-BlODdH4X.js";const r={title:"Insurance Claim Verification",description:"undefined"};function a(n){const i={a:"a",code:"code",div:"div",h1:"h1",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...t(),...n.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"insurance-claim-verification",children:["Insurance Claim Verification",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#insurance-claim-verification",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
+import{u as t,j as e}from"./index-C5NsMn8Q.js";const r={title:"Insurance Claim Verification",description:"undefined"};function a(n){const i={a:"a",code:"code",div:"div",h1:"h1",h3:"h3",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",ul:"ul",...t(),...n.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"insurance-claim-verification",children:["Insurance Claim Verification",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#insurance-claim-verification",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsx(i.p,{children:"Insurance companies allow policyholders to file claims using photos from their mobile app. This has led to an increase in fraud where claimants manipulate photos before submission. ZCAM ensures that claim photos were taken on the policyholder's device using the official app, and haven't been edited since capture."}),`
 `,e.jsx(i.p,{children:"The system is comprised of:"}),`
 `,e.jsxs(i.ul,{children:[`
@@ -10,7 +10,7 @@ import{u as t,j as e}from"./index-BlODdH4X.js";const r={title:"Insurance Claim V
 `,e.jsxs(i.h3,{id:"architecture",children:["Architecture",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#architecture",children:e.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(i.p,{children:"The insurance app integrates ZCAM SDK in two places:"}),`
 `,e.jsxs(i.ol,{children:[`
-`,e.jsxs(i.li,{children:[e.jsx(i.strong,{children:"Mobile app"}),": Policyholders capture zphotos during claim filing."]}),`
+`,e.jsxs(i.li,{children:[e.jsx(i.strong,{children:"Mobile app"}),": Policyholders capture verifiable photos during claim filing."]}),`
 `,e.jsxs(i.li,{children:[e.jsx(i.strong,{children:"Backend processing"}),": The insurance company verifies photos automatically during claim triage."]}),`
 `]}),`
 `,e.jsxs(i.h3,{id:"mobile-app",children:["Mobile App",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#mobile-app",children:e.jsx(i.div,{"data-autolink-icon":!0})})]}),`
