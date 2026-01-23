@@ -14,13 +14,13 @@ export default defineConfig({
   iconUrl: 'favicon.svg',
   logoUrl: 'Succinct_FullLogo_Magenta.svg',
   sidebar: {'/': [
+    {
+      text: 'Home',
+      link: '/',
+    },
      {
       text: 'Overview',
       items: [
-        {
-          text: 'Home',
-          link: '/',
-        },
         {
           text: 'How it Works',
           link: '/overview/how_it_works',
@@ -29,10 +29,25 @@ export default defineConfig({
           text: 'Landscape',
           link: '/overview/landscape',
         },
+      ],
+    },
+    {
+      text: 'Features',
+      items: [
+
+      ],
+    },
+    {
+      text: 'Usecases',
+      items: [
         {
-          text: 'Use Cases',
-          link: '/overview/use_cases',
-        }
+          text: 'Verifiable News Platform',
+          link: '/usecases/verifiable_news_platform',
+        },
+        {
+          text: 'Insurance Claim Verification',
+          link: '/usecases/insurance_claim_verification',
+        },
       ],
     },
     {
@@ -75,10 +90,6 @@ export default defineConfig({
         {
           text: 'Editing Photos',
           link: '/c2pa-ecosystem/editing_zcam_photos',
-        },
-        {
-          text: 'Hardware Camera Support',
-          link: '/c2pa-ecosystem/hardware_camera_support',
         },
       ],
     },

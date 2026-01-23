@@ -18,72 +18,73 @@
   | Secure Enclave keys cannot be exfiltrated | Hardware security guarantee from Apple |
   | Apple App Attest is honest | Apple signs attestations only for legitimate device/app pairs |
   | SP1 proof system is sound | Groth16 proofs cannot be forged without the witness |
-  | SDK code integrity | The SDK code on-device has not been tampered with |
 
-  ## Critical Assumption: Capture-to-Sign Integrity
+## SDK Trust Model
 
-  :::warning
-  The SDK signs the photo immediately after capture, but there is no cryptographic binding
-  between the camera hardware and the signing operation. We assume no malicious code can
-  execute between the moment the photo is captured and when it is signed.
-  :::
+The ZCAM SDK provides cryptographic guarantees that a photo was signed by a genuine Apple device using App Attest.
 
-  This assumption holds if:
-  - The SDK code has not been tampered with
-  - The host application does not inject code into the capture flow
-  - The device is not compromised
+### What the SDK Guarantees
 
-  This is an **operational security** assumption, not a cryptographic guarantee.
+The SDK's public API **only allows signing photos captured by the device camera**:
+- The `ZCamera.takePhoto()` method captures directly from the native camera and signs immediately
+- There is no public API to sign an arbitrary file or image
+- Photos are signed using Secure Enclave keys bound to the app via Apple App Attest
+- The signature chains to Apple's root certificate, verifiable in a ZK proof
 
-  ## Open Issues
+This means an honest integrator **cannot accidentally sign AI-generated or manipulated images** through normal SDK usage.
 
-  ### App Trust Model
+### What It Takes to Circumvent
 
-  Currently, the SP1 program verifies that a photo was signed by *an* Apple Attested key,
-  but does not restrict *which* apps are trusted. A malicious app could:
+Signing arbitrary images (e.g., AI-generated content) requires **deliberate malicious action**:
 
-  1. Integrate the SDK
-  2. Feed AI-generated images to the signing flow
-  3. Generate valid proofs for inauthentic photos
+| Attack Path | What's Required |
+|-------------|-----------------|
+| **Dependency bypass** | Importing the SDK's underlying packages and replicating the signing logic outside the SDK |
+| **SDK modification** | Forking the SDK source code to expose internal signing functions |
+| **Device compromise** | Jailbreaking the device to hook into the camera pipeline |
 
-  **Mitigations under consideration:**
-  - Maintain a allowlist of trusted App IDs verified in the proof
-  - Output the App ID as a public value, allowing verifiers to check trust
-  - Require app attestation/audit before allowlist inclusion
+None of these are possible through normal SDK integration. An attacker must consciously work to circumvent the SDK's design.
 
-  ### Third-Party SDK Integration
+### Defense in Depth: AppID Verification
 
-  As the SDK scales to third-party apps, we need mechanisms to ensure integrators
-  use the SDK as intended. Options include:
-  - Code signing / integrity checks on the SDK binary
-  - Runtime attestation of the SDK version
-  - Legal/contractual requirements for integrators
+Even if an attacker builds a malicious app using one of the above methods, **AppID verification provides a second layer of defense**:
+- Every signed photo includes the App Attest `appId` that created it
+- Verifiers check this `appId` against a **trusted allowlist**
+- Malicious apps will have a different `appId` that verifiers can identify and reject
 
-  ### SDK Code Integrity
+This shifts the trust question from "was this signed by *a* device?" to "was this signed by *a trusted app*?"
 
-  We need to guarantee the SDK code cannot be tampered with:
-  - **Build pipeline**: CI/CD must produce reproducible, auditable builds
-  - **On-device**: The SDK binary should be verified before execution
-  - **Updates**: SDK updates must be authenticated
+### Jailbroken Device Detection
 
-  This is not yet fully implemented.
+A jailbroken device poses the highest risk, as it can bypass software-level protections by hooking into the camera pipeline or modifying the SDK at runtime.
 
-## Inauthentic Photos
+To mitigate this:
+- **Apple App Attest** itself provides some jailbreak resistance—attestation may fail or return different risk metrics on compromised devices
+- **Jailbreak detection** is being integrated into the SDK to identify compromised devices at capture time
+- Photos captured on detected jailbroken devices can be flagged or rejected by verifiers
 
-Even with cryptographic guarantees that a photo was captured by a genuine device running the SDK, attackers may attempt physical attacks:
+This is an active area of development to strengthen the SDK's guarantees on potentially compromised devices.
 
-- **Screen capture**: Photographing a screen displaying an AI-generated or manipulated image
-- **Printed photo capture**: Photographing a printed image
-- **Projector capture**: Photographing a projected image
+### Integrator Responsibilities
 
-These attacks bypass software-level protections because the camera genuinely captures "something" — just not an authentic scene.
+For the SDK's guarantees to hold, integrating applications must:
+- Use the SDK as documented, without modifying the capture-to-sign flow
+- Ensure their app is not compromised or tampered with
+- Run on non-jailbroken devices
+- Undergo vetting before being added to the trusted AppID allowlist
 
-Note that the taken photo is still "valid" in that it was taken using the camera app, properly signed etc. But the photo is still "inauthentic" in terms of what it is trying to portray.
-This is a different, much harder problem to solve. In fact, a cryptographic solution is likely impossible. Instead, our strategy is to provide as much contextual data in the metadata for a user to be able to make an informed decision on the authenticity of the photo.
+This creates a clear security contract: **ZCAM guarantees the SDK's integrity; integrators guarantee their app environment.**
 
-### Detection Signals
+## Physical Replay Attacks
 
-The following metadata fields can help detect physical replay attacks:
+The SDK guarantees a photo was captured by the device camera. However, someone may photograph a screen displaying an AI-generated image. In this case, the camera genuinely captured something, however the resulting photo is inauthentic.
+
+These **physical replay attacks** include photographing a screen, printed image, or projection. The resulting photo is cryptographically valid but visually misleading.
+
+### Our Solution: Contextual Metadata
+
+ZCAM embeds rich contextual metadata at capture time, giving verifiers the signals needed to detect physical replay attacks. A photo of a screen or printout will have measurably different characteristics than a photo of a real scene:
+
 
 | Field | What It Measures | Fraud Indicator |
 |-------|------------------|-----------------|

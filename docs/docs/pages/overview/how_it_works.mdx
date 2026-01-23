@@ -21,7 +21,11 @@ ZK proofs are **optional**: you can use ZCAM with bindings verification alone, o
 
 ## Components
 
-ZCAM is built on three core technologies: Apple's App Attest service and Secure Enclave for hardware-backed signing, C2PA for embedding metadata, and SP1 for zero-knowledge proofs. 
+The SDK is built on three core technologies:
+
+- **Apple's App Attest** guarantees that signing keys are generated and stored in the iPhone's secure enclave, tied to a specific app.
+- **C2PA** embeds verifiable provenance metadata, including capture details and edit history, directly into the image file.
+- **SP1 zero-knowledge proofs** optionally wrap verification into succinct, easily verifiable proofs using Succinct's [SP1](https://docs.succinct.xyz/docs/sp1/introduction) zkVM.
 
 ### Apple App Attest and Secure Enclave
 
