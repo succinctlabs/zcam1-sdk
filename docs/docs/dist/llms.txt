@@ -2,19 +2,19 @@
 
 ## Docs
 
+- [Insurance Claim Verification](/usecases/insurance_claim_verification): Insurance companies allow policyholders to file claims using photos from their mobile app. This has led to an increase in fraud where claimants manipulate photos before submission. ZCAM ensures that claim photos were taken on the policyholder's device using the official app, and haven't been edited since capture.
+- [Verifiable News Platform](/usecases/verifiable_news_platform): Edited and AI-generated photos are a growing concern for news consumers. A news platform can use ZCAM to let readers independently verify that photos are authentic and unedited.
 - [Architecture](/technical-docs/architecture): The ZCAM SDK allows an integrating app to:
 - [FAQs](/technical-docs/faq): *Does ZCAM work on Android?*
-- [Security](/technical-docs/security): A verifiably authentic photo from ZCAM provides the following guarantees:
 - [ZK Proof Details](/technical-docs/zkproof-details): The SP1 program proves the following:
 - [Capture SDK](/sdk/capture): The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
 - [Picker SDK](/sdk/picker): The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
 - [Prove SDK](/sdk/prove): The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
 - [Verify SDK](/sdk/verify): The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
 - [How it Works](/overview/how_it_works): ZCAM verifies photo authenticity via a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
-- [Introduction](/overview/introduction): In an era of AI-generated images and sophisticated editing tools, proving that a photo is real matters more than ever. ZCAM gives developers the tools to build authentic images directly into their apps.
 - [Landscape](/overview/landscape): Several technologies exist for image authenticity and provenance. Most solve for different problems, such as edit history, AI detection, trust scoring, rather than proving a photo was authentically captured on a real device.
-- [Use Cases](/overview/use_cases): Below are two real-world examples of how the ZCAM SDK can be integrated to solve different verification challenges.
 - [Installation](/getting-started/installation): The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
 - [Quickstart](/getting-started/quickstart): This guide demonstrates a complete flow: capturing a photo, generating a proof, and verifying it.
+- [Authenticity](/features/authenticity): An authentic photo is one that was genuinely captured by a camera—not generated, not composited, not manipulated.
+- [Security](/features/security): A verifiably authentic photo from ZCAM provides the following guarantees:
 - [Editing a ZCAM Photo](/c2pa-ecosystem/editing_zcam_photos): All zPhotos captured with ZCAM are C2PA-compatible, so any C2PA-aware editor can preserve the original capture manifest while adding an edit manifest.
-- [Hardware Camera Support](/c2pa-ecosystem/hardware_camera_support): We are beginning to see camera companies roll out C2PA-supported cameras. Leica was the first camera company to really lean into C2PA starting in late 2023, with other companies adding support since then.

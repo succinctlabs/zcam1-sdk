@@ -1,0 +1,72 @@
+# Privacy
+
+## The Traditional Tradeoff
+
+Historically, proving a photo is authentic required the photographer to step forward and vouch for it. Journalists reveal their identity. Witnesses testify. Experts analyze and argue.
+
+This creates an inherent tension: **to prove a photo is real, someone must attach their reputation—and often their identity—to it.**
+
+ZCAM eliminates this tradeoff. A verifiable photo stands on its own. If the cryptographic proof is valid, the photo is authentic. No photographer needs to come forward. No one needs to argue. The math speaks for itself.
+
+## Pseudonymous by Design
+
+ZCAM doesn't know who you are. There are no accounts, no usernames, no email addresses.
+
+Every photo is signed using a key stored in the device's Secure Enclave:
+- The key is **specific to the app** on that device
+- It proves the photo came from a genuine iPhone running a trusted app
+- It does **not** identify the person holding the phone
+
+This is pseudonymous by nature. The signature says "a real device running this app captured this photo"—not "John Smith took this photo."
+
+### What's Revealed vs. What's Hidden
+
+| Revealed | Hidden |
+|----------|--------|
+| Photo was captured by a genuine iPhone | Who owns the device |
+| Photo was signed by a trusted app | User's name or identity |
+| Photo hasn't been modified | User's account or credentials |
+| AppID of the capturing application | Personal information |
+
+## No Central Registry
+
+ZCAM doesn't maintain a database of photos or users:
+- Photos are stored wherever you choose to put them
+- Verification happens locally—no server call required
+- No one can query "all photos taken by this device"
+
+The system is decentralized by design. We provide the SDK; you control the photos.
+
+## ZK Proofs for Enhanced Privacy
+
+When a photo is converted to use a ZK proof instead of raw bindings, additional privacy benefits emerge:
+
+- **Device details hidden**: The proof attests to validity without revealing the specific attestation data
+- **Smaller fingerprint**: Less metadata exposed to verifiers
+- **Selective verification**: Prove authenticity without exposing the full attestation chain
+
+The verifier learns only that the photo is authentic—nothing more.
+
+## Future Work: Selective Disclosure
+
+Some contextual metadata can be sensitive:
+- **Location**: Where the photo was taken
+- **Timestamp**: When it was captured
+- **Device model**: Which specific iPhone
+
+We're exploring **selective disclosure** mechanisms that would allow photographers to:
+- Prove a photo is authentic without revealing location
+- Show the photo was taken "recently" without exposing the exact timestamp
+- Attest to device authenticity without identifying the specific model
+
+This would enable use cases where authenticity matters but privacy is paramount—such as whistleblowing, sensitive journalism, or personal documentation.
+
+## Privacy Without Sacrificing Trust
+
+ZCAM proves that privacy and verifiability aren't mutually exclusive. You can have:
+- **Authentic photos** that stand on their own merit
+- **Pseudonymous capture** with no identity requirements
+- **Local verification** with no central authority
+- **Selective disclosure** to reveal only what's necessary
+
+The photographer stays private. The photo stays verifiable.

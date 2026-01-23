@@ -34,7 +34,18 @@ export default defineConfig({
     {
       text: 'Features',
       items: [
-
+        {
+          text: 'Authenticity',
+          link: '/features/authenticity',
+        },
+        {
+          text: 'Privacy',
+          link: '/features/privacy',
+        },
+        {
+          text: 'Security',
+          link: '/features/security',
+        },
       ],
     },
     {
@@ -103,10 +114,6 @@ export default defineConfig({
         {
           text: 'ZK Proof Details',
           link: '/technical-docs/zkproof-details',
-        },
-        {
-          text: 'Security',
-          link: '/technical-docs/security',
         },
         {
           text: 'FAQs',
