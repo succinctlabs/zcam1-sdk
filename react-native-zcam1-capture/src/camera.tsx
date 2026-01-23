@@ -343,7 +343,7 @@ export async function embedBindings(
   metadata: PhotoMetadataInfo | VideoMetadataInfo,
   captureInfo: CaptureInfo,
   certChainPem: string,
-) {
+): Promise<string> {
   originalPath = originalPath.replace("file://", "");
   const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
