@@ -53,7 +53,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
     private let format: Zcam1CaptureFormat
     private let includeDepthData: Bool
     private let completion: (NSDictionary?, NSError?) -> Void
-    private unowned let owner: Zcam1CameraService
+    private weak var owner: Zcam1CameraService?
 
     init(
         format: Zcam1CaptureFormat,
@@ -77,7 +77,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             print("[PhotoCaptureDelegate] ERROR: \(error)")
             DispatchQueue.main.async {
                 self.completion(nil, error)
-                self.owner.didFinishCapture(delegate: self)
+                self.owner?.didFinishCapture(delegate: self)
             }
             return
         }
@@ -92,7 +92,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             )
             DispatchQueue.main.async {
                 self.completion(nil, err)
-                self.owner.didFinishCapture(delegate: self)
+                self.owner?.didFinishCapture(delegate: self)
             }
             return
         }
@@ -106,13 +106,17 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
         print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else {
+                print("[PhotoCaptureDelegate] ERROR: self deallocated")
+                return
+            }
             print("[PhotoCaptureDelegate] background queue started")
             var data = photoData
 
             // Apply filter if set (before C2PA signing).
             print("[PhotoCaptureDelegate] applying filter...")
-            if let filteredData = self.owner.applyFilterToImageData(data) {
+            if let owner = self.owner, let filteredData = owner.applyFilterToImageData(data) {
                 data = filteredData
             }
             print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
@@ -166,13 +170,13 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 DispatchQueue.main.async {
                     print("[PhotoCaptureDelegate] completion called with result")
                     self.completion(result as NSDictionary, nil)
-                    self.owner.didFinishCapture(delegate: self)
+                    self.owner?.didFinishCapture(delegate: self)
                 }
             } catch {
                 print("[PhotoCaptureDelegate] ERROR writing file: \(error)")
                 DispatchQueue.main.async {
                     self.completion(nil, error as NSError)
-                    self.owner.didFinishCapture(delegate: self)
+                    self.owner?.didFinishCapture(delegate: self)
                 }
             }
         }
