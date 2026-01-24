@@ -107,20 +107,26 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
 
         DispatchQueue.global(qos: .userInitiated).async {
+            print("[PhotoCaptureDelegate] background queue started")
             var data = photoData
 
             // Apply filter if set (before C2PA signing).
+            print("[PhotoCaptureDelegate] applying filter...")
             if let filteredData = self.owner.applyFilterToImageData(data) {
                 data = filteredData
             }
+            print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
 
             let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
             let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            print("[PhotoCaptureDelegate] writing to: \(tmpURL.path)")
 
             do {
                 try data.write(to: tmpURL, options: [.atomic])
+                print("[PhotoCaptureDelegate] file written successfully")
 
                 var metadata: [String: Any] = metadataSnapshot
+                print("[PhotoCaptureDelegate] processing metadata...")
 
                 // Extract TIFF dictionary (device info, resolution)
                 if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
@@ -135,11 +141,14 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 {
                     metadata["{Exif}"] = exifDict
                 }
+                print("[PhotoCaptureDelegate] metadata processed")
 
                 // Extract depth data only when requested (and when available).
                 var depthData: [String: Any]? = nil
                 if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
+                    print("[PhotoCaptureDelegate] processing depth data...")
                     depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
+                    print("[PhotoCaptureDelegate] depth data processed")
                 }
 
                 var result: [String: Any] = [
@@ -153,11 +162,14 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                     result["depthData"] = depthData
                 }
 
+                print("[PhotoCaptureDelegate] calling completion on main thread...")
                 DispatchQueue.main.async {
+                    print("[PhotoCaptureDelegate] completion called with result")
                     self.completion(result as NSDictionary, nil)
                     self.owner.didFinishCapture(delegate: self)
                 }
             } catch {
+                print("[PhotoCaptureDelegate] ERROR writing file: \(error)")
                 DispatchQueue.main.async {
                     self.completion(nil, error as NSError)
                     self.owner.didFinishCapture(delegate: self)
