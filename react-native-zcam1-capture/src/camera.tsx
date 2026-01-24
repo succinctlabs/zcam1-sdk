@@ -13,6 +13,7 @@ import {
   ManifestEditor,
   SelfSignedCertChain,
   type PhotoMetadataInfo,
+  type VideoMetadataInfo,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk, {
@@ -92,8 +93,6 @@ type NativeCameraViewProps = {
   exposure?: number;
   filter?: CameraFilter;
 };
-
-type VideoMetadataInfo = {};
 
 /**
  * Native Swift-backed camera preview view.
@@ -364,10 +363,18 @@ async function embedBindings(
   );
 
   // Add the "capture" action to the manifest.
-  const normalizedMetadata = manifestEditor.addMetadataAction(
-    metadata as PhotoMetadataInfo,
-    when,
-  );
+  let normalizedMetadata = undefined;
+  if (format.indexOf("video") < 0) {
+    normalizedMetadata = manifestEditor.addPhotoMetadataAction(
+      metadata as PhotoMetadataInfo,
+      when,
+    );
+  } else {
+    normalizedMetadata = manifestEditor.addVideoMetadataAction(
+      metadata as VideoMetadataInfo,
+      when,
+    );
+  }
 
   const assertion = await generateAppAttestAssertion(
     dataHash,

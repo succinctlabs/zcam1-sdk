@@ -48,8 +48,7 @@ impl Manifest {
 
         let metadata_action = action
             .map(|a| {
-                let metadata_action =
-                    serde_json::from_value::<Action<PhotoMetadataInfo>>(a.clone())?;
+                let metadata_action = serde_json::from_value::<Action<MetadataInfo>>(a.clone())?;
                 to_string(&metadata_action)
             })
             .transpose()?;
@@ -122,7 +121,17 @@ pub struct Action<P> {
 }
 
 impl Action<PhotoMetadataInfo> {
-    pub fn metadata(when: String, parameters: PhotoMetadataInfo) -> Self {
+    pub fn photo_metadata(when: String, parameters: PhotoMetadataInfo) -> Self {
+        Self {
+            action: "succinct.capture".to_string(),
+            when,
+            parameters,
+        }
+    }
+}
+
+impl Action<VideoMetadataInfo> {
+    pub fn video_metadata(when: String, parameters: VideoMetadataInfo) -> Self {
         Self {
             action: "succinct.capture".to_string(),
             when,
@@ -145,6 +154,17 @@ pub struct PhotoMetadataInfo {
     depth_of_field: u32,
     focal_length: u32,
     depth_data: Option<DepthData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoMetadataInfo {}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MetadataInfo {
+    Photo(Box<PhotoMetadataInfo>),
+    Video(Box<VideoMetadataInfo>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]

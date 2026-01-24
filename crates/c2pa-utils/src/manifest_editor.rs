@@ -13,7 +13,7 @@ use crate::{
     error::C2paError,
     extract_manifest,
     signing::sign_with_enclave,
-    types::{Action, Manifest, PhotoMetadataInfo},
+    types::{Action, Manifest, PhotoMetadataInfo, VideoMetadataInfo},
 };
 
 #[derive(uniffi::Object)]
@@ -80,13 +80,26 @@ impl ManifestEditor {
         Ok(())
     }
 
-    pub fn add_metadata_action(
+    pub fn add_photo_metadata_action(
         &self,
         parameters: PhotoMetadataInfo,
         when: String,
     ) -> Result<String, C2paError> {
         let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
-        let metadata_action = Action::metadata(when, parameters);
+        let metadata_action = Action::photo_metadata(when, parameters);
+
+        builder.add_action(metadata_action.clone())?;
+
+        Ok(to_string(&metadata_action)?)
+    }
+
+    pub fn add_video_metadata_action(
+        &self,
+        parameters: VideoMetadataInfo,
+        when: String,
+    ) -> Result<String, C2paError> {
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
+        let metadata_action = Action::video_metadata(when, parameters);
 
         builder.add_action(metadata_action.clone())?;
 
