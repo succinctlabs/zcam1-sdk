@@ -1387,6 +1387,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public var position: String = "back" {
         didSet {
             guard oldValue != position else { return }
+            // Set flag first to stop accepting frames, then clear the preview.
+            isReconfiguring = true
+            previewImageView.image = nil
             reconfigureSession()
         }
     }
@@ -1440,6 +1443,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private var frameCount: Int = 0
 
+    // Flag to skip frames during camera reconfiguration to avoid showing incorrectly mirrored frames.
+    private var isReconfiguring: Bool = false
+
     public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
@@ -1474,6 +1480,11 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        // Skip frames during reconfiguration to avoid showing incorrectly mirrored frames.
+        if isReconfiguring {
+            return
+        }
+
         frameCount += 1
         if frameCount == 1 {
             print("[Zcam1CameraView] FIRST FRAME! filter=\(currentFilterEnum)")
@@ -1499,9 +1510,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             displayImage = currentFilterEnum.apply(to: displayImage)
         }
 
-        // Update UI on main thread.
+        // Update UI on main thread, but double-check we're not reconfiguring.
         DispatchQueue.main.async { [weak self] in
-            self?.previewImageView.image = displayImage
+            guard let self = self, !self.isReconfiguring else { return }
+            self.previewImageView.image = displayImage
         }
     }
 
@@ -1543,8 +1555,12 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             guard let self = self else { return }
             if let output = output {
                 self.videoDataOutput = output
-                print("[Zcam1CameraView] Video data output ready")
+                // Clear the reconfiguring flag now that the connection is properly configured.
+                self.isReconfiguring = false
+                print("[Zcam1CameraView] Video data output ready, reconfiguring=false")
             } else {
+                // Clear flag even on error to avoid permanently blocking frames.
+                self.isReconfiguring = false
                 print("[Zcam1CameraView] ERROR: Failed to setup video data output")
             }
         }
