@@ -52,8 +52,11 @@ import UIKit
 private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let format: Zcam1CaptureFormat
     private let includeDepthData: Bool
-    private let completion: (NSDictionary?, NSError?) -> Void
-    private unowned let owner: Zcam1CameraService
+    // Store completion as a mutable optional so we can nil it after calling (prevents double-call).
+    private var completion: ((NSDictionary?, NSError?) -> Void)?
+    private weak var owner: Zcam1CameraService?
+    // Keep a strong self-reference until completion is called to prevent premature deallocation.
+    private var retainedSelf: PhotoCaptureDelegate?
 
     init(
         format: Zcam1CaptureFormat,
@@ -65,6 +68,28 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         self.includeDepthData = includeDepthData
         self.owner = owner
         self.completion = completion
+        super.init()
+        // Retain self until completion is called.
+        self.retainedSelf = self
+    }
+
+    /// Safely call completion exactly once, then release all references.
+    private func callCompletion(result: NSDictionary?, error: NSError?) {
+        // Ensure we only call completion once.
+        guard let completion = self.completion else {
+            print("[PhotoCaptureDelegate] WARNING: completion already called, skipping")
+            return
+        }
+        // Nil out completion before calling to prevent re-entry.
+        self.completion = nil
+
+        print("[PhotoCaptureDelegate] calling completion, result=\(result != nil), error=\(error != nil)")
+        completion(result, error)
+
+        // Clean up owner reference.
+        self.owner?.didFinishCapture(delegate: self)
+        // Release self-reference.
+        self.retainedSelf = nil
     }
 
     func photoOutput(
@@ -72,88 +97,102 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
+        print("[PhotoCaptureDelegate] didFinishProcessingPhoto called")
         if let error = error as NSError? {
-            DispatchQueue.main.async {
-                self.completion(nil, error)
-                self.owner.didFinishCapture(delegate: self)
+            print("[PhotoCaptureDelegate] ERROR: \(error)")
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: error)
             }
             return
         }
 
+        print("[PhotoCaptureDelegate] getting fileDataRepresentation...")
         guard let photoData = photo.fileDataRepresentation(), !photoData.isEmpty else {
+            print("[PhotoCaptureDelegate] ERROR: Empty photo data")
             let err = NSError(
                 domain: "Zcam1CameraService",
                 code: -20,
                 userInfo: [NSLocalizedDescriptionKey: "Empty photo data"]
             )
-            DispatchQueue.main.async {
-                self.completion(nil, err)
-                self.owner.didFinishCapture(delegate: self)
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: err)
             }
             return
         }
+        print("[PhotoCaptureDelegate] photo data size: \(photoData.count) bytes")
 
-        // Copy values we need immediately, then offload expensive work (filtering, file I/O, depth processing)
-        // to avoid blocking AVCapturePhotoOutput's callback queue (which can feel like capture lag).
+        // Copy values we need immediately.
+        print("[PhotoCaptureDelegate] extracting metadata...")
         let metadataSnapshot: [String: Any] = photo.metadata
+        print("[PhotoCaptureDelegate] extracting depthData (includeDepthData=\(includeDepthData))...")
         let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
+        print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            var data = photoData
+        // Process synchronously on the current queue to avoid closure capture issues.
+        // The AVCapturePhotoOutput callback queue can handle this work.
+        print("[PhotoCaptureDelegate] processing photo...")
+        var data = photoData
 
-            // Apply filter if set (before C2PA signing).
-            if let filteredData = self.owner.applyFilterToImageData(data) {
-                data = filteredData
+        // Apply filter if set (before C2PA signing).
+        print("[PhotoCaptureDelegate] applying filter...")
+        if let owner = self.owner, let filteredData = owner.applyFilterToImageData(data) {
+            data = filteredData
+        }
+        print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
+
+        let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        print("[PhotoCaptureDelegate] writing to: \(tmpURL.path)")
+
+        do {
+            try data.write(to: tmpURL, options: [.atomic])
+            print("[PhotoCaptureDelegate] file written successfully")
+
+            var metadata: [String: Any] = metadataSnapshot
+            print("[PhotoCaptureDelegate] processing metadata...")
+
+            // Extract TIFF dictionary (device info, resolution).
+            if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
+                as? [String: Any]
+            {
+                metadata["{TIFF}"] = tiffDict
             }
 
-            let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
-            let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            // Extract EXIF dictionary (ISO, exposure, focal length, aperture).
+            if let exifDict = metadata[kCGImagePropertyExifDictionary as String]
+                as? [String: Any]
+            {
+                metadata["{Exif}"] = exifDict
+            }
+            print("[PhotoCaptureDelegate] metadata processed")
 
-            do {
-                try data.write(to: tmpURL, options: [.atomic])
+            // Extract depth data only when requested (and when available).
+            var depthData: [String: Any]? = nil
+            if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
+                print("[PhotoCaptureDelegate] processing depth data...")
+                depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
+                print("[PhotoCaptureDelegate] depth data processed")
+            }
 
-                var metadata: [String: Any] = metadataSnapshot
+            var result: [String: Any] = [
+                "filePath": tmpURL.path,
+                "format": self.format.formatString,
+                "metadata": metadata,
+            ]
 
-                // Extract TIFF dictionary (device info, resolution)
-                if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
-                    as? [String: Any]
-                {
-                    metadata["{TIFF}"] = tiffDict
-                }
+            // Include depth data in result if requested and available.
+            if self.includeDepthData, let depthData = depthData {
+                result["depthData"] = depthData
+            }
 
-                // Extract EXIF dictionary (ISO, exposure, focal length, aperture)
-                if let exifDict = metadata[kCGImagePropertyExifDictionary as String]
-                    as? [String: Any]
-                {
-                    metadata["{Exif}"] = exifDict
-                }
-
-                // Extract depth data only when requested (and when available).
-                var depthData: [String: Any]? = nil
-                if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
-                    depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
-                }
-
-                var result: [String: Any] = [
-                    "filePath": tmpURL.path,
-                    "format": self.format.formatString,
-                    "metadata": metadata,
-                ]
-
-                // Include depth data in result if requested and available.
-                if self.includeDepthData, let depthData = depthData {
-                    result["depthData"] = depthData
-                }
-
-                DispatchQueue.main.async {
-                    self.completion(result as NSDictionary, nil)
-                    self.owner.didFinishCapture(delegate: self)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.completion(nil, error as NSError)
-                    self.owner.didFinishCapture(delegate: self)
-                }
+            print("[PhotoCaptureDelegate] calling completion on main thread...")
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: result as NSDictionary, error: nil)
+            }
+        } catch {
+            print("[PhotoCaptureDelegate] ERROR writing file: \(error)")
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: error as NSError)
             }
         }
     }
@@ -253,8 +292,11 @@ public final class Zcam1CameraService: NSObject {
         guard photoOutput.isDepthDataDeliverySupported else { return }
 
         // Enable at the output level once so the pipeline is initialized ahead of time.
+        // Must wrap in beginConfiguration/commitConfiguration to avoid crashes.
         if !photoOutput.isDepthDataDeliveryEnabled {
+            session.beginConfiguration()
             photoOutput.isDepthDataDeliveryEnabled = true
+            session.commitConfiguration()
         }
 
         let settings: AVCapturePhotoSettings
@@ -935,6 +977,7 @@ public final class Zcam1CameraService: NSObject {
         includeDepthData: Bool,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
+        print("[Zcam1CameraService] takePhoto START - position=\(positionString ?? "nil"), format=\(formatString ?? "nil"), includeDepthData=\(includeDepthData)")
         #if targetEnvironment(simulator)
             // Simulator mode: create and return a test image.
             let format = Zcam1CaptureFormat(from: formatString)
@@ -986,7 +1029,9 @@ public final class Zcam1CameraService: NSObject {
             }
             return
         #endif
+        print("[Zcam1CameraService] takePhoto: checking camera authorization...")
         ensureCameraAuthorization { authorized in
+            print("[Zcam1CameraService] takePhoto: authorized=\(authorized)")
             guard authorized else {
                 let err = NSError(
                     domain: "Zcam1CameraService",
@@ -1006,14 +1051,17 @@ public final class Zcam1CameraService: NSObject {
             }
 
             let format = Zcam1CaptureFormat(from: formatString)
+            print("[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format)")
 
             self.configureSessionIfNeeded(position: position) { error in
+                print("[Zcam1CameraService] takePhoto: configureSessionIfNeeded completed, error=\(String(describing: error))")
                 if let error = error {
                     completion(nil, error as NSError)
                     return
                 }
 
                 self.sessionQueue.async {
+                    print("[Zcam1CameraService] takePhoto: on sessionQueue, checking captureSession...")
                     guard let session = self.captureSession else {
                         let err = NSError(
                             domain: "Zcam1CameraService",
@@ -1026,16 +1074,22 @@ public final class Zcam1CameraService: NSObject {
                         return
                     }
 
+                    print("[Zcam1CameraService] takePhoto: session.isRunning=\(session.isRunning)")
                     if !session.isRunning {
+                        print("[Zcam1CameraService] takePhoto: starting session...")
                         session.startRunning()
+                        print("[Zcam1CameraService] takePhoto: calling prewarmDepthPipelineIfNeeded...")
                         self.prewarmDepthPipelineIfNeeded()
+                        print("[Zcam1CameraService] takePhoto: prewarm completed")
                     }
 
                     // Prepare photo settings
+                    print("[Zcam1CameraService] takePhoto: preparing photo settings...")
                     let settings: AVCapturePhotoSettings
 
                     switch format {
                     case .jpeg:
+                        print("[Zcam1CameraService] takePhoto: format is JPEG")
                         if self.photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
                             settings = AVCapturePhotoSettings(format: [
                                 AVVideoCodecKey: AVVideoCodecType.jpeg
@@ -1045,6 +1099,7 @@ public final class Zcam1CameraService: NSObject {
                         }
 
                     case .dng:
+                        print("[Zcam1CameraService] takePhoto: format is DNG")
                         if let rawType = self.photoOutput.availableRawPhotoPixelFormatTypes.first {
                             settings = AVCapturePhotoSettings(rawPixelFormatType: rawType)
                             // RAW capture requested; DNG file type selection is handled by the system if supported.
@@ -1060,6 +1115,7 @@ public final class Zcam1CameraService: NSObject {
                         }
 
                     }
+                    print("[Zcam1CameraService] takePhoto: settings created")
 
                     // Configure flash if available.
                     if let device = self.videoInput?.device, device.hasFlash {
@@ -1067,6 +1123,7 @@ public final class Zcam1CameraService: NSObject {
                             settings.flashMode = self.flashMode
                         }
                     }
+                    print("[Zcam1CameraService] takePhoto: flash configured")
 
                     // Favor responsiveness when depth delivery is enabled (reduces perceived capture lag),
                     // but clamp to what the current device/output supports.
@@ -1081,22 +1138,28 @@ public final class Zcam1CameraService: NSObject {
                             settings.photoQualityPrioritization = desired
                         }
                     }
+                    print("[Zcam1CameraService] takePhoto: quality prioritization configured")
 
                     // Enable/disable depth + calibration delivery at both the output + settings level based on request.
+                    print("[Zcam1CameraService] takePhoto: isDepthDataDeliverySupported=\(self.photoOutput.isDepthDataDeliverySupported)")
                     if self.photoOutput.isDepthDataDeliverySupported {
                         // Output-level enabling is done during session configuration/prewarm to avoid first-shot lag.
+                        print("[Zcam1CameraService] takePhoto: setting isDepthDataDeliveryEnabled=\(includeDepthData)")
                         settings.isDepthDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isDepthDataDeliveryEnabled = false
                     }
 
+                    print("[Zcam1CameraService] takePhoto: isCameraCalibrationDataDeliverySupported=\(self.photoOutput.isCameraCalibrationDataDeliverySupported)")
                     if self.photoOutput.isCameraCalibrationDataDeliverySupported {
+                        print("[Zcam1CameraService] takePhoto: setting isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)")
                         settings.isCameraCalibrationDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isCameraCalibrationDataDeliveryEnabled = false
                     }
 
                     // Create delegate to handle capture and keep it alive until completion
+                    print("[Zcam1CameraService] takePhoto: creating PhotoCaptureDelegate...")
                     let delegate = PhotoCaptureDelegate(
                         format: format,
                         includeDepthData: includeDepthData,
@@ -1104,7 +1167,9 @@ public final class Zcam1CameraService: NSObject {
                         completion: completion
                     )
                     self.inFlightDelegates.append(delegate)
+                    print("[Zcam1CameraService] takePhoto: calling capturePhoto...")
                     self.photoOutput.capturePhoto(with: settings, delegate: delegate)
+                    print("[Zcam1CameraService] takePhoto: capturePhoto called successfully")
                 }
             }
         }

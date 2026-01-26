@@ -289,7 +289,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         xResolution: exif.PixelXDimension,
         yResolution: exif.PixelYDimension,
         orientation: metadata.Orientation,
-        iso: exif.ISOSpeedRatings.toString(),
+        iso: exif.ISOSpeedRatings?.toString(),
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,

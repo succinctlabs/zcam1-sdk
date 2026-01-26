@@ -4,16 +4,22 @@
 #if __has_include("Zcam1Sdk-Swift.h")
 #import "Zcam1Sdk-Swift.h"
 #endif
-#import <Security/Security.h>
 #import <React/RCTBridgeModule.h>
-#if __has_include("Zcam1Sdk-Swift.h")
-#import "Zcam1Sdk-Swift.h"
-#endif
 
-@interface Zcam1Sdk ()
-@end
+// Static storage for pending promise callbacks - stored outside the instance to ensure they survive.
+static NSMutableDictionary<NSString *, RCTPromiseResolveBlock> *sPendingResolvers = nil;
+static NSMutableDictionary<NSString *, RCTPromiseRejectBlock> *sPendingRejecters = nil;
+static dispatch_once_t sOnceToken;
+
+static void ensureStaticStorageInitialized(void) {
+    dispatch_once(&sOnceToken, ^{
+        sPendingResolvers = [NSMutableDictionary new];
+        sPendingRejecters = [NSMutableDictionary new];
+    });
+}
 
 @implementation Zcam1Sdk
+
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
 {
@@ -37,27 +43,46 @@
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
-    // If empty strings are passed, let Swift fall back to its defaults
-    NSString *positionString = (position.length > 0) ? position : nil; // "front" or "back"
-    NSString *formatString   = (format.length > 0)   ? format   : nil; // "jpeg" or "dng"
+    // If empty strings are passed, let Swift fall back to its defaults.
+    NSString *positionString = (position.length > 0) ? position : nil;
+    NSString *formatString   = (format.length > 0)   ? format   : nil;
 
     // Set flash mode before capture.
     if (flash.length > 0) {
       [service setFlashMode:flash];
     }
 
+    // Store callbacks in static storage with a unique key.
+    // This ensures they survive regardless of TurboModule instance lifecycle.
+    ensureStaticStorageInitialized();
+    NSString *callbackKey = [[NSUUID UUID] UUIDString];
+    @synchronized (sPendingResolvers) {
+      sPendingResolvers[callbackKey] = [resolve copy];
+      sPendingRejecters[callbackKey] = [reject copy];
+    }
+
     [service takePhotoWithPositionString:positionString
                             formatString:formatString
                        includeDepthData:includeDepthData
                               completion:^(NSDictionary *result, NSError *error) {
+      // Retrieve and remove callbacks from static storage.
+      RCTPromiseResolveBlock storedResolve = nil;
+      RCTPromiseRejectBlock storedReject = nil;
+      @synchronized (sPendingResolvers) {
+        storedResolve = sPendingResolvers[callbackKey];
+        storedReject = sPendingRejecters[callbackKey];
+        [sPendingResolvers removeObjectForKey:callbackKey];
+        [sPendingRejecters removeObjectForKey:callbackKey];
+      }
+
       if (error != nil) {
         NSString *code = @"CAMERA_CAPTURE_ERROR";
         NSString *message = error.localizedDescription ?: @"Failed to capture photo";
-        reject(code, message, error);
+        if (storedReject) storedReject(code, message, error);
       } else if (result != nil) {
-        resolve(result);
+        if (storedResolve) storedResolve(result);
       } else {
-        reject(@"CAMERA_CAPTURE_ERROR", @"Capture returned no data", nil);
+        if (storedReject) storedReject(@"CAMERA_CAPTURE_ERROR", @"Capture returned no data", nil);
       }
     }];
     return;
@@ -138,19 +163,36 @@
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
-    // If empty strings are passed, let Swift fall back to its defaults
-    NSString *positionString = (position.length > 0) ? position : nil; // "front" or "back"
+    // If empty strings are passed, let Swift fall back to its defaults.
+    NSString *positionString = (position.length > 0) ? position : nil;
+
+    // Store callbacks in static storage with a unique key.
+    ensureStaticStorageInitialized();
+    NSString *callbackKey = [[NSUUID UUID] UUIDString];
+    @synchronized (sPendingResolvers) {
+      sPendingResolvers[callbackKey] = [resolve copy];
+      sPendingRejecters[callbackKey] = [reject copy];
+    }
 
     [service startVideoRecordingWithPositionString:positionString
                                        completion:^(NSDictionary *result, NSError *error) {
+      RCTPromiseResolveBlock storedResolve = nil;
+      RCTPromiseRejectBlock storedReject = nil;
+      @synchronized (sPendingResolvers) {
+        storedResolve = sPendingResolvers[callbackKey];
+        storedReject = sPendingRejecters[callbackKey];
+        [sPendingResolvers removeObjectForKey:callbackKey];
+        [sPendingRejecters removeObjectForKey:callbackKey];
+      }
+
       if (error != nil) {
         NSString *code = @"VIDEO_RECORDING_START_ERROR";
         NSString *message = error.localizedDescription ?: @"Failed to start video recording";
-        reject(code, message, error);
+        if (storedReject) storedReject(code, message, error);
       } else if (result != nil) {
-        resolve(result);
+        if (storedResolve) storedResolve(result);
       } else {
-        reject(@"VIDEO_RECORDING_START_ERROR", @"Start recording returned no data", nil);
+        if (storedReject) storedReject(@"VIDEO_RECORDING_START_ERROR", @"Start recording returned no data", nil);
       }
     }];
     return;
@@ -171,15 +213,32 @@
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
+    // Store callbacks in static storage with a unique key.
+    ensureStaticStorageInitialized();
+    NSString *callbackKey = [[NSUUID UUID] UUIDString];
+    @synchronized (sPendingResolvers) {
+      sPendingResolvers[callbackKey] = [resolve copy];
+      sPendingRejecters[callbackKey] = [reject copy];
+    }
+
     [service stopVideoRecordingWithCompletion:^(NSDictionary *result, NSError *error) {
+      RCTPromiseResolveBlock storedResolve = nil;
+      RCTPromiseRejectBlock storedReject = nil;
+      @synchronized (sPendingResolvers) {
+        storedResolve = sPendingResolvers[callbackKey];
+        storedReject = sPendingRejecters[callbackKey];
+        [sPendingResolvers removeObjectForKey:callbackKey];
+        [sPendingRejecters removeObjectForKey:callbackKey];
+      }
+
       if (error != nil) {
         NSString *code = @"VIDEO_RECORDING_STOP_ERROR";
         NSString *message = error.localizedDescription ?: @"Failed to stop video recording";
-        reject(code, message, error);
+        if (storedReject) storedReject(code, message, error);
       } else if (result != nil) {
-        resolve(result);
+        if (storedResolve) storedResolve(result);
       } else {
-        reject(@"VIDEO_RECORDING_STOP_ERROR", @"Stop recording returned no data", nil);
+        if (storedReject) storedReject(@"VIDEO_RECORDING_STOP_ERROR", @"Stop recording returned no data", nil);
       }
     }];
     return;
