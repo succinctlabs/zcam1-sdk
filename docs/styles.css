@@ -1,0 +1,86 @@
+/**
+ * Custom CSS for ZCAM SDK Documentation
+ * Matching Succinct SP1 docs styling
+ */
+
+/* Add font-face declaration at the top */
+@font-face {
+  font-family: 'ABCViaFont';
+  src: url('/fonts/ABCViafont-Regular-Trial.woff2') format('woff2'),
+    url('/fonts/ABCViafont-Regular-Trial.woff') format('woff'),
+    url('/fonts/ABCViafont-Regular-Trial.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABCOracle';
+  src: url('/fonts/ABCOracle-Regular-Trial.woff2') format('woff2'),
+    url('/fonts/ABCOracle-Regular-Trial.woff') format('woff'),
+    url('/fonts/ABCOracle-Regular-Trial.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABCOracle';
+  src: url('/fonts/ABCOracle-RegularItalic-Trial.woff2') format('woff2'),
+    url('/fonts/ABCOracle-RegularItalic-Trial.woff') format('woff'),
+    url('/fonts/ABCOracle-RegularItalic-Trial.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABCOracle';
+  src: url('/fonts/ABCOracle-Regular-Trial.woff2') format('woff2'),
+    url('/fonts/ABCOracle-Regular-Trial.woff') format('woff'),
+    url('/fonts/ABCOracle-Regular-Trial.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Map Vocs font weights (400, 500) to available ABCOracle weights */
+@font-face {
+  font-family: 'ABCOracle';
+  src: url('/fonts/ABCOracle-Regular-Trial.woff2') format('woff2'),
+    url('/fonts/ABCOracle-Regular-Trial.woff') format('woff'),
+    url('/fonts/ABCOracle-Regular-Trial.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ABCOracle';
+  src: url('/fonts/ABCOracle-Regular-Trial.woff2') format('woff2'),
+    url('/fonts/ABCOracle-Regular-Trial.woff') format('woff'),
+    url('/fonts/ABCOracle-Regular-Trial.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Override Vocs CSS variables for fonts */
+:root {
+  --vocs-fontFamily_default: 'ABCOracle', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* DEBUG: Test if CSS is loading - remove after testing */
+body {
+  border: 5px solid red !important;
+}
+
+/* Add monospace font for code blocks and tokens */
+.vocs_Code,
+.vocs_Pre,
+code,
+pre,
+.token {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
+}
+

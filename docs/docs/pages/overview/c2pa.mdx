@@ -4,7 +4,7 @@
 
 The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
 
-C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables any tool—cameras, editors, AI generators—to attach cryptographically signed metadata that travels with the content.
+C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables tools to attach cryptographically signed metadata that travels with the content.
 
 ## ZCAM and C2PA
 
@@ -30,6 +30,8 @@ A C2PA **manifest** is a signed data structure embedded in or linked to a media 
 
 A single photo can have multiple manifests creating a manifest chain. Each manifest indicates how the photo changed and what tool was used for said change. Additionally, each manifest is signed by whatever
 party made the edit, creating an auditable chain of history for a given image.
+
+A C2PA manifest contains details about the photo, such as device, dimensions, history, and a cryptographic signature over those details.
 
 Anyone can then verify a manifest by verifying the signature of the manifest, ensuring the signing key chains to some trusted root certificate, then reading the contents of the actual manifest itself.
 
