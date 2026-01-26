@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/initializeTheme.iife.js"></script><link rel="preload" as="image" href="/Succinct_FullLogo_Magenta.svg"/><title>FAQs – ZCAM</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><meta property="og:type" content="website"/><meta property="og:title" content="FAQs"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/><meta name="twitter:card" content="summary_large_image"/>
-    <script type="module" crossorigin src="/assets/index-B1tnDMKh.js"></script>
+    <script type="module" crossorigin src="/assets/index-BwsPFJ5d.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-CxwytKPm.css">
   </head>
   <body>
@@ -31,7 +31,8 @@
 <p class="vocs_Paragraph">With proper use of the App Attest (iOS) and Play Integrity/Key Attestation (Android) APIs, it should be 100% impossible to mimic a signature. This relies on Apple and Google ensuring these APIs work as intended, however.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="jailbroken-devices" class="vocs_Heading_slugTarget"></div>Jailbroken Devices<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#jailbroken-devices" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>Have we considered more complicated attack vectors, such as jailbroken devices + running a &quot;virtual app&quot; to exploit the signatures?</em></p>
-<p class="vocs_Paragraph">Yes, the main attack vector is being able to feed in photos that weren&#x27;t actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible and keep the integration as simple as possible, but there&#x27;s really no guarantees to be had with jailbroken devices, etc. The third party is also responsible to ensure their integrating app doesn&#x27;t have any glaring security gaps.</p>
+<p class="vocs_Paragraph">Yes, the main attack vector is being able to feed in photos that weren&#x27;t actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible, including jailbreak detection, however this comes with certain drawbacks such as no support for jailbroken devices. The third party is also responsible to ensure their integrating app doesn&#x27;t have any glaring security gaps.</p>
+<p class="vocs_Paragraph">See the <a class="vocs_Anchor vocs_Link vocs_Link_accent" href="/features/security#jailbroken-device-detection" data-discover="true">jailbreak section</a> on the Security page for more information.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="verification-post-edits" class="vocs_Heading_slugTarget"></div>Verification Post-edits<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#verification-post-edits" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>Does cropping or editing break the photo verification?</em></p>
 <p class="vocs_Paragraph">Yes, <strong class="vocs_Strong">both bindings verification and ZK proof verification break when a photo is edited</strong>. This is because:</p>
@@ -46,10 +47,11 @@
 <p class="vocs_Paragraph">See the <a class="vocs_Anchor vocs_Link vocs_Link_accent" href="/overview/c2pa#editing-c2pa-photos" data-discover="true">Editing C2PA Photos</a> section for more details.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="cross-device-support" class="vocs_Heading_slugTarget"></div>Cross Device Support<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#cross-device-support" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>Does your solution detect fakes if a photo is taken with another device?</em></p>
-<p class="vocs_Paragraph">ZCAM verifies that a photo was taken using the specific device and app that generated the signature. If a photo is taken with a different device, it would not have the proper attestation and signatures, so it would fail verification.</p>
+<p class="vocs_Paragraph">A photo taken by ZCAM can be verified on any device. However, one device with the ZCAM SDK installed cannot detect nor attest to a photo from another device. ZCAM is built on using a device&#x27;s camera and secure enclave in tandem to guarantee authenticity.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="photo-of-photo" class="vocs_Heading_slugTarget"></div>Photo of Photo<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#photo-of-photo" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>Can it detect a photo of a photo?</em></p>
-<p class="vocs_Paragraph">What we can do is provide &quot;contextual&quot; metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo. However, this is not a primary feature of the core ZCAM verification system.</p>
+<p class="vocs_Paragraph">No, this is not the intended usecase of ZCAM. What we can do is provide &quot;contextual&quot; metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo.</p>
+<p class="vocs_Paragraph">See the <a class="vocs_Anchor vocs_Link vocs_Link_accent" href="/technical-docs/faq/features/security#physical-replay-attacks" data-discover="true">Physical Replay Attacks</a> section for more details.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="bindings-vs-proof-verification" class="vocs_Heading_slugTarget"></div>Bindings vs Proof verification<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#bindings-vs-proof-verification" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>What&#x27;s the difference between bindings verification and ZK proof verification?</em></p>
 <p class="vocs_Paragraph"><strong class="vocs_Strong">Bindings verification</strong> directly checks the Apple App Attest signature embedded in the C2PA manifest. It can be generated offline, however the attestation data is visible in the manifest.</p>
@@ -60,7 +62,6 @@
 <li class="vocs_ListItem">Privacy is paramount—you want to verify authenticity without revealing attestation details</li>
 <li class="vocs_ListItem">You can tolerate network latency for proof generation</li>
 </ul>
-<p class="vocs_Paragraph">See the <a class="vocs_Anchor vocs_Link vocs_Link_accent" href="/overview/how_it_works" data-discover="true">How it Works</a> page for a detailed comparison and tradeoffs.</p>
 <h2 class="vocs_H2 vocs_Heading"><div id="metadata-stripping" class="vocs_Heading_slugTarget"></div>Metadata Stripping<a class="vocs_Anchor vocs_Autolink" aria-hidden="true" tabindex="-1" href="/technical-docs/faq#metadata-stripping" data-discover="true"><div data-autolink-icon="true" class="vocs_Div vocs_AutolinkIcon" style="--vocs_AutolinkIcon_iconUrl:url(/.vocs/icons/link.svg)"></div></a></h2>
 <p class="vocs_Paragraph"><em>Which platforms preserve C2PA metadata when uploading images?</em></p>
 <p class="vocs_Paragraph">Short answer, most platforms where a user uploads image files to share strip metadata. Platforms where the service is more to &quot;host files&quot; may keep the metadata. LinkedIn has first class support for C2PA.</p>

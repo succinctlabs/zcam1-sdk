@@ -46,9 +46,3 @@ Once a photo is captured and signed:
 - **Re-signing** would require access to the original device's Secure Enclave key
 
 The signature is bound to the exact bytes of the captured image. Changing the picture results in the verification failing.
-
-## What Authenticity Doesn't Guarantee
-
-Authenticity proves the photo came from a real camera, but not necessarily that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
-
-ZCAM addresses this with [contextual metadata](/features/security#physical-replay-attacks) that helps detect physical replay attacks: depth maps, ambient light, focus distance, and more.

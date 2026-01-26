@@ -1,4 +1,4 @@
-import{u as s,j as e}from"./index-B1tnDMKh.js";const d={title:"FAQs",description:"undefined"};function n(i){const t={a:"a",code:"code",div:"div",em:"em",h1:"h1",h2:"h2",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...s(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(t.header,{children:e.jsxs(t.h1,{id:"faqs",children:["FAQs",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#faqs",children:e.jsx(t.div,{"data-autolink-icon":!0})})]})}),`
+import{u as s,j as e}from"./index-BwsPFJ5d.js";const d={title:"FAQs",description:"undefined"};function n(i){const t={a:"a",code:"code",div:"div",em:"em",h1:"h1",h2:"h2",header:"header",li:"li",ol:"ol",p:"p",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...s(),...i.components};return e.jsxs(e.Fragment,{children:[e.jsx(t.header,{children:e.jsxs(t.h1,{id:"faqs",children:["FAQs",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#faqs",children:e.jsx(t.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsxs(t.h2,{id:"android-support",children:["Android Support",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#android-support",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"Does ZCAM work on Android?"})}),`
 `,e.jsx(t.p,{children:"Not at the moment, but we have a plan for Android implementation. Currently, only two Android phone companies support C2PA: Google with their latest Pixel 10 and Samsung."}),`
@@ -20,7 +20,8 @@ import{u as s,j as e}from"./index-B1tnDMKh.js";const d={title:"FAQs",description
 `,e.jsx(t.p,{children:"With proper use of the App Attest (iOS) and Play Integrity/Key Attestation (Android) APIs, it should be 100% impossible to mimic a signature. This relies on Apple and Google ensuring these APIs work as intended, however."}),`
 `,e.jsxs(t.h2,{id:"jailbroken-devices",children:["Jailbroken Devices",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#jailbroken-devices",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:'Have we considered more complicated attack vectors, such as jailbroken devices + running a "virtual app" to exploit the signatures?'})}),`
-`,e.jsx(t.p,{children:"Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible and keep the integration as simple as possible, but there's really no guarantees to be had with jailbroken devices, etc. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps."}),`
+`,e.jsx(t.p,{children:"Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible, including jailbreak detection, however this comes with certain drawbacks such as no support for jailbroken devices. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps."}),`
+`,e.jsxs(t.p,{children:["See the ",e.jsx(t.a,{href:"/features/security#jailbroken-device-detection",children:"jailbreak section"})," on the Security page for more information."]}),`
 `,e.jsxs(t.h2,{id:"verification-post-edits",children:["Verification Post-edits",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#verification-post-edits",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"Does cropping or editing break the photo verification?"})}),`
 `,e.jsxs(t.p,{children:["Yes, ",e.jsx(t.strong,{children:"both bindings verification and ZK proof verification break when a photo is edited"}),". This is because:"]}),`
@@ -35,10 +36,11 @@ import{u as s,j as e}from"./index-B1tnDMKh.js";const d={title:"FAQs",description
 `,e.jsxs(t.p,{children:["See the ",e.jsx(t.a,{href:"/overview/c2pa#editing-c2pa-photos",children:"Editing C2PA Photos"})," section for more details."]}),`
 `,e.jsxs(t.h2,{id:"cross-device-support",children:["Cross Device Support",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#cross-device-support",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"Does your solution detect fakes if a photo is taken with another device?"})}),`
-`,e.jsx(t.p,{children:"ZCAM verifies that a photo was taken using the specific device and app that generated the signature. If a photo is taken with a different device, it would not have the proper attestation and signatures, so it would fail verification."}),`
+`,e.jsx(t.p,{children:"A photo taken by ZCAM can be verified on any device. However, one device with the ZCAM SDK installed cannot detect nor attest to a photo from another device. ZCAM is built on using a device's camera and secure enclave in tandem to guarantee authenticity."}),`
 `,e.jsxs(t.h2,{id:"photo-of-photo",children:["Photo of Photo",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#photo-of-photo",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"Can it detect a photo of a photo?"})}),`
-`,e.jsx(t.p,{children:'What we can do is provide "contextual" metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo. However, this is not a primary feature of the core ZCAM verification system.'}),`
+`,e.jsx(t.p,{children:'No, this is not the intended usecase of ZCAM. What we can do is provide "contextual" metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo.'}),`
+`,e.jsxs(t.p,{children:["See the ",e.jsx(t.a,{href:"features/security#physical-replay-attacks",children:"Physical Replay Attacks"})," section for more details."]}),`
 `,e.jsxs(t.h2,{id:"bindings-vs-proof-verification",children:["Bindings vs Proof verification",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#bindings-vs-proof-verification",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"What's the difference between bindings verification and ZK proof verification?"})}),`
 `,e.jsxs(t.p,{children:[e.jsx(t.strong,{children:"Bindings verification"})," directly checks the Apple App Attest signature embedded in the C2PA manifest. It can be generated offline, however the attestation data is visible in the manifest."]}),`
@@ -49,7 +51,6 @@ import{u as s,j as e}from"./index-B1tnDMKh.js";const d={title:"FAQs",description
 `,e.jsx(t.li,{children:"Privacy is paramount—you want to verify authenticity without revealing attestation details"}),`
 `,e.jsx(t.li,{children:"You can tolerate network latency for proof generation"}),`
 `]}),`
-`,e.jsxs(t.p,{children:["See the ",e.jsx(t.a,{href:"/overview/how_it_works",children:"How it Works"})," page for a detailed comparison and tradeoffs."]}),`
 `,e.jsxs(t.h2,{id:"metadata-stripping",children:["Metadata Stripping",e.jsx(t.a,{"aria-hidden":"true",tabIndex:"-1",href:"#metadata-stripping",children:e.jsx(t.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(t.p,{children:e.jsx(t.em,{children:"Which platforms preserve C2PA metadata when uploading images?"})}),`
 `,e.jsx(t.p,{children:'Short answer, most platforms where a user uploads image files to share strip metadata. Platforms where the service is more to "host files" may keep the metadata. LinkedIn has first class support for C2PA.'}),`
