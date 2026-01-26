@@ -173,7 +173,7 @@ The SDK receives the proof from the network, then updates the photo and C2PA man
 * The `succinct.bindings` assertion is removed
 * A `succinct.proof` assertion is added containing the verifiable proof
 
-![Capture flow diagram](/images/diagram_prove.png)
+![Prove flow diagram](/images/diagram_prove.png)
 
 **Output:** The final verifiable photo with a valid C2PA manifest including a verifiable proof.
 
@@ -1385,7 +1385,7 @@ Both hash and bindings/proof checks must pass for a photo to be considered authe
 
 The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
 
-C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables any tool—cameras, editors, AI generators—to attach cryptographically signed metadata that travels with the content.
+C2PA was developed by a consortium including Adobe, Microsoft, Intel, and the BBC, among others. The standard enables tools to attach cryptographically signed metadata that travels with the content.
 
 ### ZCAM and C2PA
 
@@ -1411,6 +1411,8 @@ A C2PA **manifest** is a signed data structure embedded in or linked to a media 
 
 A single photo can have multiple manifests creating a manifest chain. Each manifest indicates how the photo changed and what tool was used for said change. Additionally, each manifest is signed by whatever
 party made the edit, creating an auditable chain of history for a given image.
+
+A C2PA manifest contains details about the photo, such as device, dimensions, history, and a cryptographic signature over those details.
 
 Anyone can then verify a manifest by verifying the signature of the manifest, ensuring the signing key chains to some trusted root certificate, then reading the contents of the actual manifest itself.
 
@@ -1478,18 +1480,13 @@ When a user takes a photo, ZCAM signs it using an Apple attested, secure enclave
 
 The system works in three steps:
 
-1. **Capture**: Take a photo and sign it with a hardware-backed key, attaching the attestation to the photo.
-2. **Prove** (optional): Generate a zero-knowledge proof of the signature
-3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification
+1. **Capture**: Take a photo and sign it with a hardware-backed key, attaching a verifiable attestation to the photo.
+2. **Prove** (optional): Generate a zero-knowledge proof of the capture attestation.
+3. **Verify**: Validate the photo's authenticity using either bindings or ZK proof verification. Bindings verification verifies the Apple App Attest signature directly. It's faster and can be generated offline. ZK proof verification generates a zero-knowledge proof for enhanced privacy, but requires network access for proof generation.
 
-### Verification Modes
-
-* **Bindings verification** verifies the Apple App Attest signature directly. It's faster, works offline, and requires no zero-knowledge proofs.
-* **ZK proof verification** generates a zero-knowledge proof for enhanced privacy, but requires network access for proof generation.
-
-:::info
-ZK proofs are **optional**: you can use ZCAM with bindings verification alone, or add ZK proofs when you need additional privacy guarantees.
-:::
+   :::info
+   ZK proofs are **optional**: you can use ZCAM with bindings verification alone, or add ZK proofs when you need additional privacy guarantees.
+   :::
 
 ### Components
 
@@ -1519,11 +1516,9 @@ ZCAM stores both the device key (for signing photo hashes) and the content key (
 
 #### C2PA
 
-C2PA is an open standard for attaching metadata that is cryptographically bound to an image. A C2PA manifest contains details about the photo, such as device, dimensions, history, and a cryptographic signature over those details.
-
-The manifest is either embedded directly into the photo file in some metadata section of the file or can be stored separately and referenced using an invisible watermark.
-
 ZCAM uses C2PA to embed attestation data (and optionally zero-knowledge proofs), proving that the photo was taken on an iPhone and signed using a secure enclave key that only the ZCAM SDK can access.
+
+See the [C2PA page](/overview/c2pa) for in-depth information on C2PA and how ZCAM uses C2PA.
 
 #### SP1 Zero-Knowledge Proofs
 
@@ -1563,9 +1558,9 @@ ZCAM is a complete solution for mobile photo authenticity. It combines hardware-
 
 #### C2PA
 
-C2PA is an open standard for creating a verifiable history of an image. It tracks provenance—what tool created the content, who signed it, and what edits were made—but doesn't inherently guarantee authenticity.
+C2PA is an open standard for creating a verifiable history of an image. It tracks provenance but does not necessarily prove authenticity. ZCAM uses C2PA as its container format while adding hardware-backed guarantees that transform it from a provenance system into an authenticity system.
 
-ZCAM uses C2PA as its container format while adding hardware-backed guarantees that transform it from a provenance system into an authenticity system. For a deeper dive into how C2PA works and how ZCAM extends it, see [C2PA](/overview/c2pa).
+For a deeper dive into how C2PA works and how ZCAM extends it, see [C2PA](/overview/c2pa).
 
 #### JPEG Trust
 
@@ -1601,7 +1596,7 @@ Each camera company only has C2PA support for a *subset* of their camera models.
 | **Fujifilm** | GFX100S II, X-T50                                                    |
 | **Nikon**    | Z6 III (firmware + cloud cert)                                       |
 
-For more information, see: [https://yawnbox.eu/blog/c2pa-camera/](https://yawnbox.eu/blog/c2pa-camera/)
+For more information, see: Yawnbox's [blog post](https://yawnbox.eu/blog/c2pa-camera/).
 
 ### When to Use ZCAM
 
