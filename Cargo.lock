@@ -881,6 +881,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-channel"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
+dependencies = [
+ "concurrent-queue",
+ "event-listener 2.5.3",
+ "futures-core",
+]
+
+[[package]]
+name = "async-channel"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "924ed96dd52d1b75e9c1a3e6275715fd320f5f9439fb5a4a11fa51f4221158d2"
+dependencies = [
+ "concurrent-queue",
+ "event-listener-strategy",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-executor"
+version = "1.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "497c00e0fd83a72a79a39fcbd8e3e2f055d6f6c7e025f3b3d91f4f8e76527fb8"
+dependencies = [
+ "async-task",
+ "concurrent-queue",
+ "fastrand",
+ "futures-lite",
+ "pin-project-lite",
+ "slab",
+]
+
+[[package]]
 name = "async-generic"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -889,6 +926,76 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.114",
+]
+
+[[package]]
+name = "async-global-executor"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05b1b633a2115cd122d73b955eadd9916c18c8f510ec9cd1686404c60ad1c29c"
+dependencies = [
+ "async-channel 2.5.0",
+ "async-executor",
+ "async-io",
+ "async-lock",
+ "blocking",
+ "futures-lite",
+ "once_cell",
+]
+
+[[package]]
+name = "async-io"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc"
+dependencies = [
+ "autocfg",
+ "cfg-if",
+ "concurrent-queue",
+ "futures-io",
+ "futures-lite",
+ "parking",
+ "polling",
+ "rustix",
+ "slab",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "async-lock"
+version = "3.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290f7f2596bd5b78a9fec8088ccd89180d7f9f55b94b0576823bbbdc72ee8311"
+dependencies = [
+ "event-listener 5.4.1",
+ "event-listener-strategy",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-std"
+version = "1.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c8e079a4ab67ae52b7403632e4618815d6db36d2a010cfe41b02c1b1578f93b"
+dependencies = [
+ "async-channel 1.9.0",
+ "async-global-executor",
+ "async-io",
+ "async-lock",
+ "crossbeam-utils",
+ "futures-channel",
+ "futures-core",
+ "futures-io",
+ "futures-lite",
+ "gloo-timers",
+ "kv-log-macro",
+ "log",
+ "memchr",
+ "once_cell",
+ "pin-project-lite",
+ "pin-utils",
+ "slab",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -912,6 +1019,12 @@ dependencies = [
  "quote",
  "syn 2.0.114",
 ]
+
+[[package]]
+name = "async-task"
+version = "4.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
@@ -1478,6 +1591,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b62ddb9cb1ec0a098ad4bbf9344d0713fa193ae1a80af55febcff2627b6a00c1"
 dependencies = [
+ "async-std",
  "futures-core",
  "getrandom 0.2.17",
  "instant",
@@ -1687,6 +1801,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdeb9d870516001442e364c5220d3574d2da8dc765554b4a617230d33fa58ef5"
 dependencies = [
  "objc2",
+]
+
+[[package]]
+name = "blocking"
+version = "1.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e83f8d02be6967315521be875afa792a316e28d57b5a2d401897e2a7921b7f21"
+dependencies = [
+ "async-channel 2.5.0",
+ "async-task",
+ "futures-io",
+ "futures-lite",
+ "piper",
 ]
 
 [[package]]
@@ -2149,6 +2276,15 @@ name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
+
+[[package]]
+name = "concurrent-queue"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
+dependencies = [
+ "crossbeam-utils",
+]
 
 [[package]]
 name = "config"
@@ -2962,6 +3098,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "event-listener"
+version = "2.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+
+[[package]]
+name = "event-listener"
+version = "5.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13b66accf52311f30a0db42147dadea9850cb48cd070028831ae5f5d4b856ab"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "event-listener-strategy"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
+dependencies = [
+ "event-listener 5.4.1",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "eventsource-stream"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3221,6 +3384,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
 
 [[package]]
+name = "futures-lite"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f78e10609fe0e0b3f4157ffab1876319b5b0db102a2c60dc4626306dc46b44ad"
+dependencies = [
+ "fastrand",
+ "futures-core",
+ "futures-io",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "futures-macro"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3338,6 +3514,18 @@ name = "glob"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
+
+[[package]]
+name = "gloo-timers"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "js-sys",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "goblin"
@@ -4167,6 +4355,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kv-log-macro"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0de8b303297635ad57c9f5059fd9cee7a47f8e8daa09df0fcd07dd39fb22977f"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4233,6 +4430,9 @@ name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+dependencies = [
+ "value-bag",
+]
 
 [[package]]
 name = "lru"
@@ -4985,6 +5185,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "parking"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
+
+[[package]]
 name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5136,6 +5342,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "piper"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96c8c490f422ef9a4efd2cb5b42b76c8613d7e7dfc1caf667b8a3350a5acc066"
+dependencies = [
+ "atomic-waker",
+ "fastrand",
+ "futures-io",
+]
+
+[[package]]
 name = "pix"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5179,6 +5396,20 @@ dependencies = [
  "pix",
  "simd-adler32",
  "traitful",
+]
+
+[[package]]
+name = "polling"
+version = "3.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d0e4f59085d47d8241c88ead0f274e8a0cb551f3625263c05eb8dd897c34218"
+dependencies = [
+ "cfg-if",
+ "concurrent-queue",
+ "hermit-abi",
+ "pin-project-lite",
+ "rustix",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6747,8 +6978,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sp1-curves",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
- "sp1-stark",
+ "sp1-primitives",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "strum",
  "strum_macros",
  "subenum",
@@ -6799,9 +7030,9 @@ dependencies = [
  "snowbridge-amcl",
  "sp1-core-executor",
  "sp1-curves",
- "sp1-derive",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
- "sp1-stark",
+ "sp1-derive 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "static_assertions",
  "strum",
  "strum_macros",
@@ -6846,9 +7077,19 @@ dependencies = [
  "p3-field",
  "serde",
  "snowbridge-amcl",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
- "sp1-stark",
+ "sp1-primitives",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "typenum",
+]
+
+[[package]]
+name = "sp1-derive"
+version = "5.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83a1ed8d5acbb6cea056401791e79ca3cba7c7d5e17d0d44cd60e117f16b11ca"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -6869,27 +7110,7 @@ dependencies = [
  "bincode",
  "elliptic-curve",
  "serde",
- "sp1-primitives 5.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "sp1-primitives"
-version = "5.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e69a03098f827102c54c31a5e57280eb45b2c085de433b3f702e4f9e3ec1641"
-dependencies = [
- "bincode",
- "blake3",
- "cfg-if",
- "hex",
- "lazy_static",
- "num-bigint 0.4.6",
- "p3-baby-bear",
- "p3-field",
- "p3-poseidon2",
- "p3-symmetric",
- "serde",
- "sha2",
+ "sp1-primitives",
 ]
 
 [[package]]
@@ -6943,12 +7164,12 @@ dependencies = [
  "sha2",
  "sp1-core-executor",
  "sp1-core-machine",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "sp1-recursion-circuit",
  "sp1-recursion-compiler",
  "sp1-recursion-core",
  "sp1-recursion-gnark-ffi",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "sp1-verifier",
  "thiserror 1.0.69",
  "tracing",
@@ -6981,12 +7202,12 @@ dependencies = [
  "serde",
  "sp1-core-executor",
  "sp1-core-machine",
- "sp1-derive",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-derive 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "sp1-recursion-compiler",
  "sp1-recursion-core",
  "sp1-recursion-gnark-ffi",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "tracing",
 ]
 
@@ -7003,10 +7224,10 @@ dependencies = [
  "p3-symmetric",
  "serde",
  "sp1-core-machine",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "sp1-recursion-core",
  "sp1-recursion-derive",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "tracing",
  "vec_map",
 ]
@@ -7043,9 +7264,9 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "sp1-core-machine",
- "sp1-derive",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
- "sp1-stark",
+ "sp1-derive 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "static_assertions",
  "thiserror 1.0.69",
  "tracing",
@@ -7082,7 +7303,7 @@ dependencies = [
  "sha2",
  "sp1-core-machine",
  "sp1-recursion-compiler",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "tempfile",
  "tracing",
 ]
@@ -7125,9 +7346,9 @@ dependencies = [
  "sp1-core-executor",
  "sp1-core-machine",
  "sp1-cuda",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "sp1-prover",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "strum",
  "strum_macros",
  "sysinfo",
@@ -7137,6 +7358,40 @@ dependencies = [
  "tonic",
  "tracing",
  "twirp-rs",
+]
+
+[[package]]
+name = "sp1-stark"
+version = "5.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e99d1cc89ba28fc95736afb1e6ad22b9eb689e95a1dbb29cf0e9d1fa4fc2a5c"
+dependencies = [
+ "arrayref",
+ "hashbrown 0.14.5",
+ "itertools 0.13.0",
+ "num-bigint 0.4.6",
+ "num-traits",
+ "p3-air",
+ "p3-baby-bear",
+ "p3-challenger",
+ "p3-commit",
+ "p3-dft",
+ "p3-field",
+ "p3-fri",
+ "p3-matrix",
+ "p3-maybe-rayon",
+ "p3-merkle-tree",
+ "p3-poseidon2",
+ "p3-symmetric",
+ "p3-uni-stark",
+ "p3-util",
+ "rayon-scan",
+ "serde",
+ "sp1-derive 5.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp1-primitives",
+ "strum",
+ "sysinfo",
+ "tracing",
 ]
 
 [[package]]
@@ -7165,8 +7420,8 @@ dependencies = [
  "p3-util",
  "rayon-scan",
  "serde",
- "sp1-derive",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-derive 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "strum",
  "sysinfo",
  "tracing",
@@ -7197,9 +7452,9 @@ dependencies = [
  "p3-field",
  "p3-symmetric",
  "sha2",
- "sp1-primitives 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
+ "sp1-primitives",
  "sp1-recursion-core",
- "sp1-stark",
+ "sp1-stark 5.2.4 (git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-support)",
  "substrate-bn-succinct",
  "thiserror 2.0.17",
 ]
@@ -7751,6 +8006,7 @@ dependencies = [
  "percent-encoding",
  "pin-project",
  "prost",
+ "rustls-native-certs",
  "rustls-pemfile",
  "socket2 0.5.10",
  "tokio",
@@ -8220,6 +8476,12 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "value-bag"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ba6f5989077681266825251a52748b8c1d8a4ad098cc37e440103d0ea717fc0"
 
 [[package]]
 name = "vec_map"
@@ -8980,7 +9242,7 @@ dependencies = [
  "serde_cbor 0.10.2",
  "serde_json",
  "sha2",
- "sp1-sdk",
+ "sp1-core-machine",
  "thiserror 2.0.17",
  "x509-cert",
  "x509-verify",
@@ -8999,13 +9261,26 @@ name = "zcam1-proving-utils"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "alloy-signer",
+ "alloy-signer-local",
+ "anyhow",
+ "async-trait",
+ "backoff",
  "bincode",
  "lru 0.16.3",
+ "prost",
+ "reqwest",
+ "reqwest-middleware",
+ "rustls 0.23.36",
  "serde",
  "sp1-build",
- "sp1-sdk",
+ "sp1-core-machine",
+ "sp1-primitives",
+ "sp1-prover",
+ "sp1-stark 5.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 2.0.17",
  "tokio",
+ "tonic",
  "uniffi",
  "zcam1-ios",
 ]

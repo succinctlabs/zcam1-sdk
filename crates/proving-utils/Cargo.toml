@@ -6,18 +6,35 @@ edition = "2024"
 [dependencies]
 zcam1-ios = {workspace = true, features = ["proving"] }
 serde.workspace = true
-sp1-sdk.workspace = true
+sp1-build.workspace = true
+sp1-core-machine.workspace = true
+sp1-primitives.workspace = true
+sp1-prover.workspace = true
+sp1-stark.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
 
+anyhow = "1.0.83"
+async-trait = { version = "0.1.81" }
 alloy-primitives = { version = "1.5.2", features = ["getrandom"] }
-tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+alloy-signer = { version = "1.0", default-features = false }
+alloy-signer-local = { version = "1.0", default-features = false }
+backoff = { version = "0.4", features = ["async-std"] }
+reqwest = { version = "0.12.12", default-features = false, features = [
+  "rustls-tls",
+  "trust-dns",
+  "stream",
+  "json",
+] }
+reqwest-middleware = { version = "0.3.2" }
 bincode = {version =  "1.3.3" }
 lru = "0.16.3"
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+
+prost = { version = "0.13" }
+rustls = { version = "0.23.27", features = ["ring"] }
+tonic = { version = "0.12", features = ["tls", "tls-roots"] }
 
 [build-dependencies]
 sp1-build.workspace = true
 bincode = {version =  "1.3.3" }
-
-[dev-dependencies]
-sp1-sdk.workspace = true

@@ -9,9 +9,9 @@ pub struct AuthInputs {
 }
 
 #[cfg(feature = "proving")]
-impl From<AuthInputs> for sp1_sdk::SP1Stdin {
+impl From<AuthInputs> for sp1_core_machine::io::SP1Stdin {
     fn from(inputs: AuthInputs) -> Self {
-        let mut stdin = sp1_sdk::SP1Stdin::new();
+        let mut stdin = sp1_core_machine::io::SP1Stdin::new();
 
         stdin.write(&inputs);
 

@@ -10,18 +10,18 @@ use std::{
 use alloy_primitives::B256;
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{
-    CpuProver, HashableKey, NetworkProver, NetworkSigner, Prover, SP1ProofWithPublicValues,
-    SP1ProvingKey, SP1Stdin, SP1VerifyingKey, include_elf,
-    network::{
-        NetworkMode, get_default_rpc_url_for_mode,
-        proto::types::FulfillmentStatus as Sp1FulfillmentStatus,
-    },
-};
+use sp1_build::include_elf;
+use sp1_core_machine::io::SP1Stdin;
+use sp1_prover::{HashableKey, SP1VerifyingKey};
 use tokio::{runtime::Runtime, sync::oneshot};
 use zcam1_ios::AuthInputs;
 
-use crate::error::Error;
+use crate::{
+    error::Error,
+    network::{
+        NetworkMode, NetworkProver, NetworkSigner, SP1ProofMode, get_default_rpc_url_for_mode,
+    },
+};
 
 pub const IOS_AUTHENCITY_ELF: &[u8] = include_elf!("authenticity-ios");
 pub const IOS_AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/vk.bin");
@@ -71,7 +71,7 @@ impl IosProvingClient {
 }
 
 pub struct ProvingClient<I> {
-    prover: Arc<OnceLock<EitherProver>>,
+    prover_client: Arc<OnceLock<EitherProver>>,
     vk_hash: Arc<OnceLock<String>>,
     phantom: PhantomData<I>,
 }
@@ -81,20 +81,14 @@ where
     I: Into<SP1Stdin>,
 {
     pub fn mock(callback: Option<Box<dyn Initialized>>) -> Self {
-        let prover = Arc::new(OnceLock::new());
+        let prover_client = Arc::new(OnceLock::new());
         let vk_hash = Arc::new(OnceLock::new());
-        let cloned_prover = prover.clone();
-        let cloned_vk_hash = vk_hash.clone();
+        let cloned_prover = prover_client.clone();
 
         thread::spawn(move || {
-            let prover = CpuProver::mock();
-            let (pk, vk) = prover.setup(MOCK_ELF);
             let _ = cloned_prover.set(EitherProver::Mock {
-                prover: Box::new(prover),
-                pk: Box::new(pk),
                 proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
             });
-            let _ = cloned_vk_hash.set(vk.bytes32());
 
             if let Some(callback) = callback {
                 callback.initialized();
@@ -102,19 +96,26 @@ where
         });
 
         Self {
-            prover,
+            prover_client,
             vk_hash,
             phantom: PhantomData,
         }
     }
 
     pub async fn request_proof(&self, inputs: I) -> Result<String, Error> {
-        let prover = self.prover.get().ok_or(Error::ProverNotInitialized)?;
+        let prover = self
+            .prover_client
+            .get()
+            .ok_or(Error::ProverNotInitialized)?;
+
         prover.request_proof(inputs.into()).await
     }
 
     pub async fn get_proof_status(&self, request_id: &str) -> Result<ProofRequestStatus, Error> {
-        let prover = self.prover.get().ok_or(Error::ProverNotInitialized)?;
+        let prover = self
+            .prover_client
+            .get()
+            .ok_or(Error::ProverNotInitialized)?;
         prover.get_proof_status(request_id).await
     }
 
@@ -131,17 +132,17 @@ impl ProvingClient<AuthInputs> {
         let rpc_url = get_default_rpc_url_for_mode(NetworkMode::Reserved);
         let signer = NetworkSigner::local(&private_key).unwrap();
 
-        let prover = Arc::new(OnceLock::new());
+        let prover_client = Arc::new(OnceLock::new());
         let vk_hash = Arc::new(OnceLock::new());
-        let cloned_prover = prover.clone();
+        let cloned_prover = prover_client.clone();
         let cloned_vk_hash = vk_hash.clone();
 
         thread::spawn(move || {
-            let prover = NetworkProver::new(signer, &rpc_url, NetworkMode::Reserved);
+            let prover_client = NetworkProver::new(signer, &rpc_url, NetworkMode::Reserved);
             let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
             let _ = cloned_vk_hash.set(vk.bytes32());
             let _ = cloned_prover.set(EitherProver::Network {
-                prover: Arc::new(prover),
+                prover_client: Arc::new(prover_client),
                 vk: Box::new(vk),
             });
 
@@ -151,7 +152,7 @@ impl ProvingClient<AuthInputs> {
         });
 
         Self {
-            prover,
+            prover_client,
             vk_hash,
             phantom: PhantomData,
         }
@@ -160,52 +161,37 @@ impl ProvingClient<AuthInputs> {
 
 enum EitherProver {
     Network {
-        prover: Arc<NetworkProver>,
+        prover_client: Arc<NetworkProver>,
         vk: Box<SP1VerifyingKey>,
     },
     Mock {
-        prover: Box<CpuProver>,
-        pk: Box<SP1ProvingKey>,
-        proof_requests: Mutex<LruCache<String, (Instant, SP1ProofWithPublicValues)>>,
+        proof_requests: Mutex<LruCache<String, (Instant, Vec<u8>)>>,
     },
 }
 
 impl EitherProver {
     pub async fn request_proof(&self, stdin: SP1Stdin) -> Result<String, Error> {
         match self {
-            EitherProver::Network { prover, vk } => {
-                let prover = prover.clone();
+            EitherProver::Network { prover_client, vk } => {
+                let prover_client = prover_client.clone();
                 let vk = vk.clone();
 
                 run_on_tokio(async move {
-                    prover
-                        .prove_from_vk(&vk, IOS_AUTHENCITY_ELF, &stdin)
-                        .groth16()
-                        .request_async()
+                    prover_client
+                        .request_proof(&vk, IOS_AUTHENCITY_ELF, &stdin, SP1ProofMode::Groth16)
                         .await
                         .map(|id| id.to_string())
                         .map_err(|err| Error::Sp1(format!("{err:#?}")))
                 })
                 .await
             }
-            EitherProver::Mock {
-                prover,
-                pk,
-                proof_requests,
-            } => {
+            EitherProver::Mock { proof_requests } => {
                 let id = B256::random().to_string();
                 let mut proof_requests = proof_requests.lock().unwrap();
 
-                let proof = prover
-                    .prove(pk, &stdin)
-                    .groth16()
-                    .run()
-                    .map_err(|err| Error::Sp1(err.to_string()))?;
+                let fulfilled_instant = Instant::now().checked_add(Duration::from_secs(5)).unwrap();
 
-                let fulfilled_instant =
-                    Instant::now().checked_add(Duration::from_secs(10)).unwrap();
-
-                proof_requests.put(id.clone(), (fulfilled_instant, proof));
+                proof_requests.put(id.clone(), (fulfilled_instant, vec![]));
 
                 Ok(id)
             }
@@ -214,50 +200,44 @@ impl EitherProver {
 
     pub async fn get_proof_status(&self, request_id: &str) -> Result<ProofRequestStatus, Error> {
         match self {
-            EitherProver::Network { prover, vk: _ } => {
-                let prover = prover.clone();
+            EitherProver::Network {
+                prover_client,
+                vk: _,
+            } => {
+                let prover_client = prover_client.clone();
                 let request_id = B256::from_str(request_id)?;
 
                 run_on_tokio(async move {
-                    prover
+                    prover_client
                         .get_proof_status(request_id)
                         .await
                         .map_err(|err| Error::Sp1(err.to_string()))
                         .map(|(status, maybe_proof)| ProofRequestStatus {
-                            fulfillment_status: Sp1FulfillmentStatus::try_from(
-                                status.fulfillment_status(),
-                            )
-                            .unwrap()
-                            .into(),
-                            proof: maybe_proof.map(|p| p.bytes()),
+                            fulfillment_status: status.fulfillment_status().into(),
+                            proof: maybe_proof.map(|p| p.as_bytes()),
                         })
                 })
                 .await
             }
-            EitherProver::Mock {
-                prover: _,
-                pk: _,
-                proof_requests,
-            } => {
+            EitherProver::Mock { proof_requests } => {
                 let proof_requests = proof_requests.lock().unwrap();
 
                 let status = match proof_requests.peek(request_id) {
                     Some((fulfilled_instant, proof)) => {
                         let now = Instant::now();
                         let fulfillment_status = if *fulfilled_instant < now {
-                            Sp1FulfillmentStatus::Fulfilled.into()
+                            FulfillmentStatus::Fulfilled
                         } else {
-                            Sp1FulfillmentStatus::Assigned.into()
+                            FulfillmentStatus::Assigned
                         };
 
                         ProofRequestStatus {
                             fulfillment_status,
-                            proof: Some(proof.bytes()),
+                            proof: Some(proof.clone()),
                         }
                     }
                     None => ProofRequestStatus {
-                        fulfillment_status: Sp1FulfillmentStatus::UnspecifiedFulfillmentStatus
-                            .into(),
+                        fulfillment_status: FulfillmentStatus::UnspecifiedFulfillmentStatus,
                         proof: None,
                     },
                 };
@@ -289,16 +269,14 @@ pub enum FulfillmentStatus {
     Unfulfillable = 4,
 }
 
-impl From<Sp1FulfillmentStatus> for FulfillmentStatus {
-    fn from(fulfillment_status: Sp1FulfillmentStatus) -> Self {
+impl From<i32> for FulfillmentStatus {
+    fn from(fulfillment_status: i32) -> Self {
         match fulfillment_status {
-            Sp1FulfillmentStatus::UnspecifiedFulfillmentStatus => {
-                FulfillmentStatus::UnspecifiedFulfillmentStatus
-            }
-            Sp1FulfillmentStatus::Requested => FulfillmentStatus::Requested,
-            Sp1FulfillmentStatus::Assigned => FulfillmentStatus::Assigned,
-            Sp1FulfillmentStatus::Fulfilled => FulfillmentStatus::Fulfilled,
-            Sp1FulfillmentStatus::Unfulfillable => FulfillmentStatus::Unfulfillable,
+            1 => FulfillmentStatus::Requested,
+            2 => FulfillmentStatus::Assigned,
+            3 => FulfillmentStatus::Fulfilled,
+            4 => FulfillmentStatus::Unfulfillable,
+            _ => FulfillmentStatus::UnspecifiedFulfillmentStatus,
         }
     }
 }
