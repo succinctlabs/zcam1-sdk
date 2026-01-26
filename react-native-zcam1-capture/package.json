@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-capture",
-  "version": "0.1.18",
+  "version": "0.1.22",
   "description": "ZCAM1 Capture SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -50,8 +50,7 @@
   },
   "types": "./lib/typescript/src/index.d.ts",
   "scripts": {
-    "build": "bob build",
-    "prepack": "npm run build"
+    "build": "bob build"
   },
   "files": [
     "src",

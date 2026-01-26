@@ -52,8 +52,11 @@ import UIKit
 private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let format: Zcam1CaptureFormat
     private let includeDepthData: Bool
-    private let completion: (NSDictionary?, NSError?) -> Void
+    // Store completion as a mutable optional so we can nil it after calling (prevents double-call).
+    private var completion: ((NSDictionary?, NSError?) -> Void)?
     private weak var owner: Zcam1CameraService?
+    // Keep a strong self-reference until completion is called to prevent premature deallocation.
+    private var retainedSelf: PhotoCaptureDelegate?
 
     init(
         format: Zcam1CaptureFormat,
@@ -65,6 +68,28 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         self.includeDepthData = includeDepthData
         self.owner = owner
         self.completion = completion
+        super.init()
+        // Retain self until completion is called.
+        self.retainedSelf = self
+    }
+
+    /// Safely call completion exactly once, then release all references.
+    private func callCompletion(result: NSDictionary?, error: NSError?) {
+        // Ensure we only call completion once.
+        guard let completion = self.completion else {
+            print("[PhotoCaptureDelegate] WARNING: completion already called, skipping")
+            return
+        }
+        // Nil out completion before calling to prevent re-entry.
+        self.completion = nil
+
+        print("[PhotoCaptureDelegate] calling completion, result=\(result != nil), error=\(error != nil)")
+        completion(result, error)
+
+        // Clean up owner reference.
+        self.owner?.didFinishCapture(delegate: self)
+        // Release self-reference.
+        self.retainedSelf = nil
     }
 
     func photoOutput(
@@ -75,9 +100,8 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         print("[PhotoCaptureDelegate] didFinishProcessingPhoto called")
         if let error = error as NSError? {
             print("[PhotoCaptureDelegate] ERROR: \(error)")
-            DispatchQueue.main.async {
-                self.completion(nil, error)
-                self.owner?.didFinishCapture(delegate: self)
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: error)
             }
             return
         }
@@ -90,94 +114,85 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
                 code: -20,
                 userInfo: [NSLocalizedDescriptionKey: "Empty photo data"]
             )
-            DispatchQueue.main.async {
-                self.completion(nil, err)
-                self.owner?.didFinishCapture(delegate: self)
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: err)
             }
             return
         }
         print("[PhotoCaptureDelegate] photo data size: \(photoData.count) bytes")
 
-        // Copy values we need immediately, then offload expensive work (filtering, file I/O, depth processing)
-        // to avoid blocking AVCapturePhotoOutput's callback queue (which can feel like capture lag).
+        // Copy values we need immediately.
         print("[PhotoCaptureDelegate] extracting metadata...")
         let metadataSnapshot: [String: Any] = photo.metadata
         print("[PhotoCaptureDelegate] extracting depthData (includeDepthData=\(includeDepthData))...")
         let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
         print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else {
-                print("[PhotoCaptureDelegate] ERROR: self deallocated")
-                return
+        // Process synchronously on the current queue to avoid closure capture issues.
+        // The AVCapturePhotoOutput callback queue can handle this work.
+        print("[PhotoCaptureDelegate] processing photo...")
+        var data = photoData
+
+        // Apply filter if set (before C2PA signing).
+        print("[PhotoCaptureDelegate] applying filter...")
+        if let owner = self.owner, let filteredData = owner.applyFilterToImageData(data) {
+            data = filteredData
+        }
+        print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
+
+        let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
+        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        print("[PhotoCaptureDelegate] writing to: \(tmpURL.path)")
+
+        do {
+            try data.write(to: tmpURL, options: [.atomic])
+            print("[PhotoCaptureDelegate] file written successfully")
+
+            var metadata: [String: Any] = metadataSnapshot
+            print("[PhotoCaptureDelegate] processing metadata...")
+
+            // Extract TIFF dictionary (device info, resolution).
+            if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
+                as? [String: Any]
+            {
+                metadata["{TIFF}"] = tiffDict
             }
-            print("[PhotoCaptureDelegate] background queue started")
-            var data = photoData
 
-            // Apply filter if set (before C2PA signing).
-            print("[PhotoCaptureDelegate] applying filter...")
-            if let owner = self.owner, let filteredData = owner.applyFilterToImageData(data) {
-                data = filteredData
+            // Extract EXIF dictionary (ISO, exposure, focal length, aperture).
+            if let exifDict = metadata[kCGImagePropertyExifDictionary as String]
+                as? [String: Any]
+            {
+                metadata["{Exif}"] = exifDict
             }
-            print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
+            print("[PhotoCaptureDelegate] metadata processed")
 
-            let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
-            let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-            print("[PhotoCaptureDelegate] writing to: \(tmpURL.path)")
+            // Extract depth data only when requested (and when available).
+            var depthData: [String: Any]? = nil
+            if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
+                print("[PhotoCaptureDelegate] processing depth data...")
+                depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
+                print("[PhotoCaptureDelegate] depth data processed")
+            }
 
-            do {
-                try data.write(to: tmpURL, options: [.atomic])
-                print("[PhotoCaptureDelegate] file written successfully")
+            var result: [String: Any] = [
+                "filePath": tmpURL.path,
+                "format": self.format.formatString,
+                "metadata": metadata,
+            ]
 
-                var metadata: [String: Any] = metadataSnapshot
-                print("[PhotoCaptureDelegate] processing metadata...")
+            // Include depth data in result if requested and available.
+            if self.includeDepthData, let depthData = depthData {
+                result["depthData"] = depthData
+            }
 
-                // Extract TIFF dictionary (device info, resolution)
-                if let tiffDict = metadata[kCGImagePropertyTIFFDictionary as String]
-                    as? [String: Any]
-                {
-                    metadata["{TIFF}"] = tiffDict
-                }
-
-                // Extract EXIF dictionary (ISO, exposure, focal length, aperture)
-                if let exifDict = metadata[kCGImagePropertyExifDictionary as String]
-                    as? [String: Any]
-                {
-                    metadata["{Exif}"] = exifDict
-                }
-                print("[PhotoCaptureDelegate] metadata processed")
-
-                // Extract depth data only when requested (and when available).
-                var depthData: [String: Any]? = nil
-                if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
-                    print("[PhotoCaptureDelegate] processing depth data...")
-                    depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
-                    print("[PhotoCaptureDelegate] depth data processed")
-                }
-
-                var result: [String: Any] = [
-                    "filePath": tmpURL.path,
-                    "format": self.format.formatString,
-                    "metadata": metadata,
-                ]
-
-                // Include depth data in result if requested and available.
-                if self.includeDepthData, let depthData = depthData {
-                    result["depthData"] = depthData
-                }
-
-                print("[PhotoCaptureDelegate] calling completion on main thread...")
-                DispatchQueue.main.async {
-                    print("[PhotoCaptureDelegate] completion called with result")
-                    self.completion(result as NSDictionary, nil)
-                    self.owner?.didFinishCapture(delegate: self)
-                }
-            } catch {
-                print("[PhotoCaptureDelegate] ERROR writing file: \(error)")
-                DispatchQueue.main.async {
-                    self.completion(nil, error as NSError)
-                    self.owner?.didFinishCapture(delegate: self)
-                }
+            print("[PhotoCaptureDelegate] calling completion on main thread...")
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: result as NSDictionary, error: nil)
+            }
+        } catch {
+            print("[PhotoCaptureDelegate] ERROR writing file: \(error)")
+            DispatchQueue.main.async { [self] in
+                self.callCompletion(result: nil, error: error as NSError)
             }
         }
     }
