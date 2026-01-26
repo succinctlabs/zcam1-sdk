@@ -50,9 +50,9 @@ export interface ZCameraProps {
   /** Desired capture format. Defaults to "jpeg". */
   captureFormat?: CaptureFormat;
   /**
-   * Zoom factor. For devices with ultra-wide lens, 1.0 = ultra-wide (0.5x user-facing),
+   * Zoom factor. For back camera devices with ultra-wide lens, 1.0 = ultra-wide (0.5x user-facing),
    * 2.0 = wide-angle (1x user-facing). Use getMinZoom/getMaxZoom for valid range.
-   * Defaults to 2.0 (1x user-facing) for devices with ultra-wide, otherwise 1.0.
+   * Defaults to 2.0 (1x user-facing) for back camera, 1.0 for front camera (to avoid digital zoom).
    */
   zoom?: number;
   /** Whether torch (flashlight) is enabled during preview. Defaults to false. */
@@ -308,9 +308,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       isActive = true,
       position = "back",
       captureFormat,
-      // Default to 2.0 (1x user-facing) for devices with ultra-wide.
+      // Default to 2.0 (1x user-facing) for back camera on devices with ultra-wide.
       // On single-camera devices, 2.0 will be clamped to device's max (usually 1.0).
-      zoom = 2.0,
+      // For front camera, default to 1.0 to avoid digital zoom (front cameras are single-lens).
+      zoom = position === "front" ? 1.0 : 2.0,
       torch = false,
       exposure = 0,
       filter = "normal",
