@@ -85,12 +85,11 @@ These **physical replay attacks** include photographing a screen, printed image,
 
 ZCAM embeds rich contextual metadata at capture time, giving verifiers the signals needed to detect physical replay attacks. A photo of a screen or printout will have measurably different characteristics than a photo of a real scene:
 
-
 | Field | What It Measures | Fraud Indicator |
 |-------|------------------|-----------------|
-| **GPS / Location** | Location | Location inconsistent with claimed scene |
-| **Timestamp** | Time | Time inconsistent with lighting conditions |
 | **Subject Distance** | Distance to focused subject | Focus distance inconsistent with the subject of picture |
 | **Depth Map** | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance |
 | **White Balance** | Color temperature | Screen color temperature differs from natural light |
 | **Ambient Light** | Environmental light level | Unusually uniform lighting could indicate screen glow|
+| **GPS** (WIP) | Location | Location inconsistent with claimed scene |
+| **Timestamp** (WIP) | Time | Time inconsistent with lighting conditions |

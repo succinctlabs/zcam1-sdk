@@ -220,7 +220,9 @@ With proper use of the App Attest (iOS) and Play Integrity/Key Attestation (Andr
 
 *Have we considered more complicated attack vectors, such as jailbroken devices + running a "virtual app" to exploit the signatures?*
 
-Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible and keep the integration as simple as possible, but there's really no guarantees to be had with jailbroken devices, etc. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps.
+Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible, including jailbreak detection, however this comes with certain drawbacks such as no support for jailbroken devices. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps.
+
+See the [jailbreak section](/features/security#jailbroken-device-detection) on the Security page for more information.
 
 ### Verification Post-edits
 
@@ -243,13 +245,15 @@ See the [Editing C2PA Photos](/overview/c2pa#editing-c2pa-photos) section for mo
 
 *Does your solution detect fakes if a photo is taken with another device?*
 
-ZCAM verifies that a photo was taken using the specific device and app that generated the signature. If a photo is taken with a different device, it would not have the proper attestation and signatures, so it would fail verification.
+A photo taken by ZCAM can be verified on any device. However, one device with the ZCAM SDK installed cannot detect nor attest to a photo from another device. ZCAM is built on using a device's camera and secure enclave in tandem to guarantee authenticity.
 
 ### Photo of Photo
 
 *Can it detect a photo of a photo?*
 
-What we can do is provide "contextual" metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo. However, this is not a primary feature of the core ZCAM verification system.
+No, this is not the intended usecase of ZCAM. What we can do is provide "contextual" metadata, for example metadata around subject depth, brightness, etc. that would indicate a potential photo of a photo.
+
+See the [Physical Replay Attacks](features/security#physical-replay-attacks) section for more details.
 
 ### Bindings vs Proof verification
 
@@ -265,8 +269,6 @@ Choose ZK proof verification when:
 
 * Privacy is paramount—you want to verify authenticity without revealing attestation details
 * You can tolerate network latency for proof generation
-
-See the [How it Works](/overview/how_it_works) page for a detailed comparison and tradeoffs.
 
 ### Metadata Stripping
 
@@ -1976,12 +1978,6 @@ Once a photo is captured and signed:
 
 The signature is bound to the exact bytes of the captured image. Changing the picture results in the verification failing.
 
-### What Authenticity Doesn't Guarantee
-
-Authenticity proves the photo came from a real camera, but not necessarily that the *scene* was real. Someone could photograph a screen displaying an AI-generated image. The photo would be authentically captured, but the content would be misleading.
-
-ZCAM addresses this with [contextual metadata](/features/security#physical-replay-attacks) that helps detect physical replay attacks: depth maps, ambient light, focus distance, and more.
-
 
 ## Privacy
 
@@ -2111,10 +2107,10 @@ ZCAM embeds rich contextual metadata at capture time, giving verifiers the signa
 
 | Field                | What It Measures                        | Fraud Indicator                                         |
 | -------------------- | --------------------------------------- | ------------------------------------------------------- |
-| **GPS / Location**   | Location                                | Location inconsistent with claimed scene                |
-| **Timestamp**        | Time                                    | Time inconsistent with lighting conditions              |
 | **Subject Distance** | Distance to focused subject             | Focus distance inconsistent with the subject of picture |
 | **Depth Map**        | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance     |
 | **White Balance**    | Color temperature                       | Screen color temperature differs from natural light     |
 | **Ambient Light**    | Environmental light level               | Unusually uniform lighting could indicate screen glow   |
+| **GPS** (WIP)        | Location                                | Location inconsistent with claimed scene                |
+| **Timestamp** (WIP)  | Time                                    | Time inconsistent with lighting conditions              |
 
