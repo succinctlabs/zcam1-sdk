@@ -1,4 +1,4 @@
-import{u as s,j as e}from"./index-DYU0ST6z.js";const r={title:"Architecture",description:"undefined"};function n(t){const i={a:"a",aside:"aside",code:"code",div:"div",em:"em",h1:"h1",h2:"h2",h3:"h3",header:"header",img:"img",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...s(),...t.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"architecture",children:["Architecture",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#architecture",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
+import{u as s,j as e}from"./index-B1tnDMKh.js";const r={title:"Architecture",description:"undefined"};function n(t){const i={a:"a",aside:"aside",code:"code",div:"div",em:"em",h1:"h1",h2:"h2",h3:"h3",header:"header",img:"img",li:"li",ol:"ol",p:"p",pre:"pre",span:"span",strong:"strong",table:"table",tbody:"tbody",td:"td",th:"th",thead:"thead",tr:"tr",ul:"ul",...s(),...t.components};return e.jsxs(e.Fragment,{children:[e.jsx(i.header,{children:e.jsxs(i.h1,{id:"architecture",children:["Architecture",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#architecture",children:e.jsx(i.div,{"data-autolink-icon":!0})})]})}),`
 `,e.jsxs(i.h2,{id:"overview",children:["Overview",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#overview",children:e.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(i.p,{children:"The ZCAM SDK allows an integrating app to:"}),`
 `,e.jsxs(i.ol,{children:[`
@@ -38,7 +38,7 @@ import{u as s,j as e}from"./index-DYU0ST6z.js";const r={title:"Architecture",des
 `,e.jsxs(i.li,{children:["The ",e.jsx(i.code,{children:"succinct.bindings"})," assertion is removed"]}),`
 `,e.jsxs(i.li,{children:["A ",e.jsx(i.code,{children:"succinct.proof"})," assertion is added containing the verifiable proof"]}),`
 `]}),`
-`,e.jsx(i.p,{children:e.jsx(i.img,{src:"/images/diagram_prove.png",alt:"Capture flow diagram"})}),`
+`,e.jsx(i.p,{children:e.jsx(i.img,{src:"/images/diagram_prove.png",alt:"Prove flow diagram"})}),`
 `,e.jsxs(i.p,{children:[e.jsx(i.strong,{children:"Output:"})," The final verifiable photo with a valid C2PA manifest including a verifiable proof."]}),`
 `,e.jsxs(i.h3,{id:"4-verify",children:["4. Verify",e.jsx(i.a,{"aria-hidden":"true",tabIndex:"-1",href:"#4-verify",children:e.jsx(i.div,{"data-autolink-icon":!0})})]}),`
 `,e.jsx(i.p,{children:"The SDK includes logic for parsing and verifying the proof from the C2PA manifest:"}),`
