@@ -1,58 +1,224 @@
-name: Release ZCAM1 SDK
+name: Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version for the release (e.g. 1.0.0)"
-        required: true
-        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  build-and-release:
+  check-changesets:
+    name: Check Changesets
+    runs-on: ubuntu-latest
+    outputs:
+      has_changesets: ${{ steps.check.outputs.has_changesets }}
+      has_major: ${{ steps.check.outputs.has_major }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Check for changesets
+        id: check
+        run: |
+          # Check if any changeset files exist (excluding README)
+          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
+
+          if [ "$CHANGESETS" -gt "0" ]; then
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+
+            # Check for major version bumps
+            if grep -rE '": major$' .changeset/*.md 2>/dev/null; then
+              echo "has_major=true" >> $GITHUB_OUTPUT
+              echo "Found MAJOR changesets - will create release PR"
+            else
+              echo "has_major=false" >> $GITHUB_OUTPUT
+              echo "Found minor/patch changesets - will auto-publish"
+            fi
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+            echo "has_major=false" >> $GITHUB_OUTPUT
+            echo "No changesets found - skipping release"
+          fi
+
+  # Auto-publish for minor/patch changes
+  auto-publish:
+    name: Auto Publish (Minor/Patch)
+    needs: check-changesets
+    if: needs.check-changesets.outputs.has_changesets == 'true' && needs.check-changesets.outputs.has_major == 'false'
     runs-on: macos-15
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Xcode 16.4
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: 16.4
-
-      - name: Verify Xcode version
-        run: xcodebuild -version
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
 
-      - name: Create tag
-        run: |
-          git tag v${{ github.event.inputs.version }}
-          git push origin v${{ github.event.inputs.version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Publish react-native-zcam1-c2pa
+      - name: Configure git
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Version packages
+        run: npx changeset version
+
+      - name: Commit version changes
+        run: |
+          git add .
+          git commit -m "chore: version packages [skip ci]" || echo "No changes to commit"
+          git push
+
+      - name: Configure npm registry
+        run: |
+          echo "registry=http://18.223.109.40:4873/" >> ~/.npmrc
+          echo "//18.223.109.40:4873/:_authToken=${{ secrets.VERDACCIO_TOKEN }}" >> ~/.npmrc
+
+      - name: Build and publish packages
+        env:
+          NPM_CONFIG_REGISTRY: http://18.223.109.40:4873/
+        run: |
+          # Publish in dependency order
+          # Using --ignore-scripts because prepack will build xcframeworks fresh
+
+          # 1. Common (no deps)
+          echo "Publishing react-native-zcam1-common..."
+          cd react-native-zcam1-common
+          npm ci --ignore-scripts
+          npm publish --access public || echo "common: already published or failed"
+          cd ..
+
+          # 2. C2PA (no internal deps, has xcframework)
+          echo "Publishing react-native-zcam1-c2pa..."
           cd react-native-zcam1-c2pa
-          npm ci
-          # npm version ${{ github.event.inputs.version }}
-          # npm publish
-          npm run ubrn:ios
-          zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
+          npm ci --ignore-scripts
+          npm publish --access public || echo "c2pa: already published or failed"
+          cd ..
 
-      - name: Add the framework to the GitHub Release
+          # 3. Capture (depends on common, c2pa)
+          echo "Publishing react-native-zcam1-capture..."
+          cd react-native-zcam1-capture
+          npm ci --ignore-scripts
+          npm publish --access public || echo "capture: already published or failed"
+          cd ..
+
+          # 4. Prove (depends on common, c2pa, has xcframework)
+          echo "Publishing react-native-zcam1-prove..."
+          cd react-native-zcam1-prove
+          npm ci --ignore-scripts
+          npm publish --access public || echo "prove: already published or failed"
+          cd ..
+
+          # 5. Verify (depends on c2pa, has xcframework)
+          echo "Publishing react-native-zcam1-verify..."
+          cd react-native-zcam1-verify
+          npm ci --ignore-scripts
+          npm publish --access public || echo "verify: already published or failed"
+          cd ..
+
+          # 6. Picker (depends on c2pa)
+          echo "Publishing react-native-zcam1-picker..."
+          cd react-native-zcam1-picker
+          npm ci --ignore-scripts
+          npm publish --access public || echo "picker: already published or failed"
+          cd ..
+
+      - name: Get version for tag
+        id: version
+        run: |
+          # Use the c2pa version as the release version
+          VERSION=$(node -p "require('./react-native-zcam1-c2pa/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          draft: true
-          files: |
-            react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
+          tag_name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
 
-      - name: Finalize the GitHub Release
-        uses: softprops/action-gh-release@v1
+  # Create release PR for major (breaking) changes
+  create-release-pr:
+    name: Create Release PR (Major)
+    needs: check-changesets
+    if: needs.check-changesets.outputs.has_changesets == 'true' && needs.check-changesets.outputs.has_major == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: ZCAM1 SDK v${{ github.event.inputs.version }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Create release branch
+        run: git checkout -b release/breaking-changes
+
+      - name: Version packages
+        run: npx changeset version
+
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "chore: version packages for major release"
+
+      - name: Push branch
+        run: git push -u origin release/breaking-changes --force
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: release/breaking-changes
+          base: main
+          title: "🚨 Breaking Changes Release"
+          body: |
+            ## Breaking Changes Release
+
+            This PR contains **major (breaking) changes** that require manual review.
+
+            ### Before merging:
+            - [ ] Breaking changes are documented in CHANGELOGs
+            - [ ] Migration guide provided (if applicable)
+            - [ ] Integrators have been notified
+
+            ### After merging:
+            Run the **Publish Major Release** workflow manually to publish.
+          labels: |
+            release
+            breaking-change
