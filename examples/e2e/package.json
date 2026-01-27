@@ -1,7 +1,7 @@
 {
   "name": "zcam1-e2e-example",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -15,10 +15,10 @@
     "@react-native-camera-roll/camera-roll": "^7.10.2",
     "@react-native-documents/picker": "^11.0.3",
     "@react-navigation/drawer": "^7.7.9",
-    "@succinctlabs/react-native-zcam1-capture": "^0.1.24",
-    "@succinctlabs/react-native-zcam1-picker": "^0.1.14",
-    "@succinctlabs/react-native-zcam1-prove": "^0.1.11",
-    "@succinctlabs/react-native-zcam1-verify": "^0.1.10",
+    "@succinctlabs/react-native-zcam1-capture": "^0.2.0",
+    "@succinctlabs/react-native-zcam1-picker": "^0.2.0",
+    "@succinctlabs/react-native-zcam1-prove": "^0.2.0",
+    "@succinctlabs/react-native-zcam1-verify": "^0.2.0",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
     "expo-constants": "~18.0.10",
