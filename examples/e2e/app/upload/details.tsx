@@ -24,6 +24,10 @@ import {
 import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
 import { Util } from "react-native-file-access";
+import {
+  PhotoMetadataInfo,
+  VideoMetadataInfo,
+} from "@succinctlabs/react-native-zcam1-c2pa";
 
 export default function Details() {
   const { uri, authStatus } = useLocalSearchParams<{
@@ -62,7 +66,7 @@ export default function Details() {
       <SafeAreaView style={styles.container}>
         <ScrollView>
           <Preview uri={uri} isVideo={isVideo} />
-          {metadata && <CaptureInfo metadata={metadata} />}
+          {metadata && <CaptureInfo metadata={metadata} isVideo={isVideo} />}
           <View style={styles.actions}>{actions}</View>
         </ScrollView>
       </SafeAreaView>
@@ -71,34 +75,14 @@ export default function Details() {
   );
 }
 
-function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
+function CaptureInfo({
+  metadata,
+  isVideo,
+}: {
+  metadata: CaptureMetadata;
+  isVideo: boolean;
+}) {
   const params = metadata.parameters;
-
-  // Format capture date - handle various formats
-  const formatDate = (when: string) => {
-    const date = new Date(when);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleString();
-    }
-    // If invalid date, just return the raw value
-    return when;
-  };
-
-  // Format ISO - handle array or single value
-  const formatIso = (iso: string[] | string | number | undefined) => {
-    if (!iso) return null;
-    if (Array.isArray(iso)) {
-      return iso.join(", ");
-    }
-    return String(iso);
-  };
-
-  // Format exposure time to 2 decimal places
-  const formatExposure = (time: number | undefined) => {
-    if (time === undefined) return null;
-    return `${time.toFixed(2)}s`;
-  };
-
   return (
     <View>
       <View style={styles.metadataSection}>
@@ -116,57 +100,124 @@ function CaptureInfo({ metadata }: { metadata: CaptureMetadata }) {
         <Text style={styles.metadataRow}>
           Captured: {formatDate(metadata.when)}
         </Text>
-        {params.xResolution && params.yResolution && (
+        {isVideo ? (
+          <VideoCaptureInfo metadata={params as VideoMetadataInfo} />
+        ) : (
+          <PhotoCaptureInfo metadata={params as PhotoMetadataInfo} />
+        )}
+      </View>
+    </View>
+  );
+}
+
+function PhotoCaptureInfo({ metadata }: { metadata: PhotoMetadataInfo }) {
+  // Format ISO - handle array or single value
+  const formatIso = (iso: string[] | string | number | undefined) => {
+    if (!iso) return null;
+    if (Array.isArray(iso)) {
+      return iso.join(", ");
+    }
+    return String(iso);
+  };
+
+  return (
+    <View>
+      <View>
+        {metadata.xResolution && metadata.yResolution && (
           <Text style={styles.metadataRow}>
-            Resolution: {params.xResolution} x {params.yResolution}
+            Resolution: {metadata.xResolution} x {metadata.yResolution}
           </Text>
         )}
-        {params.orientation && (
+        {metadata.orientation && (
           <Text style={styles.metadataRow}>
-            Orientation: {params.orientation}
+            Orientation: {metadata.orientation}
           </Text>
         )}
-        {!!params.iso && (
-          <Text style={styles.metadataRow}>ISO: {formatIso(params.iso)}</Text>
+        {!!metadata.iso && (
+          <Text style={styles.metadataRow}>ISO: {formatIso(metadata.iso)}</Text>
         )}
-        {params.exposureTime !== undefined && (
+        {metadata.exposureTime !== undefined && (
           <Text style={styles.metadataRow}>
-            Exposure: {formatExposure(params.exposureTime)}
+            Exposure: {formatTime(metadata.exposureTime)}
           </Text>
         )}
-        {params.focalLength && (
+        {metadata.focalLength && (
           <Text style={styles.metadataRow}>
-            Focal Length: {params.focalLength}mm
+            Focal Length: {metadata.focalLength}mm
           </Text>
         )}
-        {params.depthOfField && (
+        {metadata.depthOfField && (
           <Text style={styles.metadataRow}>
-            Depth of Field: {params.depthOfField}
+            Depth of Field: {metadata.depthOfField}
           </Text>
         )}
       </View>
-      {params.depthData && (
+      {metadata.depthData && (
         <View style={styles.metadataSection}>
           <Text style={styles.sectionTitle}>Depth data</Text>
           <Text style={styles.metadataRow}>
-            Min: {params.depthData.statistics.min}
+            Min: {metadata.depthData.statistics.min}
           </Text>
           <Text style={styles.metadataRow}>
-            Max: {params.depthData.statistics.max}
+            Max: {metadata.depthData.statistics.max}
           </Text>
           <Text style={styles.metadataRow}>
-            Mean: {params.depthData.statistics.mean}
+            Mean: {metadata.depthData.statistics.mean}
           </Text>
           <Text style={styles.metadataRow}>
-            Sdt dev: {params.depthData.statistics.stdDev}
+            Sdt dev: {metadata.depthData.statistics.stdDev}
           </Text>
           <Text style={styles.metadataRow}>
-            Pixel format: {params.depthData.pixelFormat}
+            Pixel format: {metadata.depthData.pixelFormat}
           </Text>
           <Text style={styles.metadataRow}>
-            Valid pixel count: {params.depthData.statistics.validPixelCount}
+            Valid pixel count: {metadata.depthData.statistics.validPixelCount}
           </Text>
         </View>
+      )}
+    </View>
+  );
+}
+
+function VideoCaptureInfo({ metadata }: { metadata: VideoMetadataInfo }) {
+  return (
+    <View>
+      <Text style={styles.metadataRow}>Format: {metadata.format}</Text>
+      {metadata.width && metadata.height && (
+        <Text style={styles.metadataRow}>
+          Resolution: {metadata.width} x {metadata.height}
+        </Text>
+      )}
+      <Text style={styles.metadataRow}>
+        Duration: {formatTime(metadata.durationSeconds)}
+      </Text>
+
+      <Text style={styles.metadataRow}>
+        Rotation: {metadata.rotationDegrees}
+      </Text>
+      <Text style={styles.metadataRow}>
+        File size: {formatBytesToMB(metadata.fileSizeBytes)}
+      </Text>
+      <Text style={styles.metadataRow}>Frame rate: {metadata.frameRate}</Text>
+      {metadata.videoCodec && (
+        <Text style={styles.metadataRow}>
+          Video codec: {metadata.videoCodec}
+        </Text>
+      )}
+      {metadata.audioCodec && (
+        <Text style={styles.metadataRow}>
+          Audio codec: {metadata.audioCodec}
+        </Text>
+      )}
+      {metadata.audioSampleRate && (
+        <Text style={styles.metadataRow}>
+          Audio sample rate: {metadata.audioSampleRate}
+        </Text>
+      )}
+      {metadata.audioChannels && (
+        <Text style={styles.metadataRow}>
+          Audio channels: {metadata.audioChannels}
+        </Text>
       )}
     </View>
   );
@@ -351,6 +402,27 @@ function Proof({
     </View>
   );
 }
+
+// Format capture date - handle various formats
+const formatDate = (when: string) => {
+  const date = new Date(when);
+  if (!isNaN(date.getTime())) {
+    return date.toLocaleString();
+  }
+  // If invalid date, just return the raw value
+  return when;
+};
+
+// Format time to 2 decimal places
+const formatTime = (time: number | undefined) => {
+  if (time === undefined) return null;
+  return `${time.toFixed(2)}s`;
+};
+
+const formatBytesToMB = (bytes: number | undefined) => {
+  if (bytes === undefined || !Number.isFinite(bytes)) return "Unknown";
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
 
 const styles = StyleSheet.create({
   container: {
