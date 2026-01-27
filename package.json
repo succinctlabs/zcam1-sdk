@@ -2,7 +2,8 @@
   "name": "zcam1-sdk-tools",
   "private": true,
   "workspaces": [
-    "react-native-zcam1-*"
+    "react-native-zcam1-*",
+    "examples/*"
   ],
   "scripts": {
     "changeset": "changeset",
