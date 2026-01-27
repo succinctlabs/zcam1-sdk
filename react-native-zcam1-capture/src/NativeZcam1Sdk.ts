@@ -91,6 +91,10 @@ export interface StopNativeVideoRecordingResult {
 
 export type FlashMode = "off" | "on" | "auto";
 
+export type AspectRatio = "4:3" | "16:9" | "1:1";
+
+export type Orientation = "auto" | "portrait" | "landscape";
+
 export interface Spec extends TurboModule {
   /**
    * Capture a photo using the native camera stack (Swift/AVFoundation)
@@ -110,6 +114,8 @@ export interface Spec extends TurboModule {
     position: "front" | "back",
     flash: FlashMode,
     includeDepthData: boolean,
+    aspectRatio: AspectRatio,
+    orientation: Orientation,
   ): Promise<TakeNativePhotoResult>;
 
   /**

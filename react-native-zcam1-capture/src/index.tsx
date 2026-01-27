@@ -22,7 +22,7 @@ export { ZCamera, type CameraFilter } from "./camera";
 /**
  * Flash mode for photo capture.
  */
-export { type FlashMode } from "./NativeZcam1Sdk";
+export { type FlashMode, type AspectRatio, type Orientation } from "./NativeZcam1Sdk";
 
 /**
  * Native video recording results.
