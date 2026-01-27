@@ -39,102 +39,102 @@ jobs:
           ~/.sp1/bin/sp1up --version v5.2.4 --token ${{ secrets.GITHUB_TOKEN }}
           ~/.sp1/bin/cargo-prove prove --version
 
-#       - uses: actions/setup-node@v4
-#         with:
-#           node-version: '20'
-# 
-#       - name: Configure npm registry
-#         run: |
-#           echo "registry=http://18.223.109.40:4873/" >> ~/.npmrc
-#           echo "//18.223.109.40:4873/:_authToken=${{ secrets.VERDACCIO_TOKEN }}" >> ~/.npmrc
-# 
-#       - name: Build and publish packages
-#         env:
-#           NPM_CONFIG_REGISTRY: http://18.223.109.40:4873/
-#         run: |
-#           # Publish in dependency order
-#           # Using --ignore-scripts because prepack will build xcframeworks fresh
-# 
-#           # 1. Common (no deps)
-#           echo "Publishing react-native-zcam1-common..."
-#           cd react-native-zcam1-common
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "common: already published or failed"
-#           cd ..
-# 
-#           # 2. C2PA (no internal deps, has xcframework)
-#           echo "Publishing react-native-zcam1-c2pa..."
-#           cd react-native-zcam1-c2pa
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "c2pa: already published or failed"
-#           cd ..
-# 
-#           # 3. Capture (depends on common, c2pa)
-#           echo "Publishing react-native-zcam1-capture..."
-#           cd react-native-zcam1-capture
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "capture: already published or failed"
-#           cd ..
-# 
-#           # 4. Prove (depends on common, c2pa, has xcframework)
-#           echo "Publishing react-native-zcam1-prove..."
-#           cd react-native-zcam1-prove
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "prove: already published or failed"
-#           cd ..
-# 
-#           # 5. Verify (depends on c2pa, has xcframework)
-#           echo "Publishing react-native-zcam1-verify..."
-#           cd react-native-zcam1-verify
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "verify: already published or failed"
-#           cd ..
-# 
-#           # 6. Picker (depends on c2pa)
-#           echo "Publishing react-native-zcam1-picker..."
-#           cd react-native-zcam1-picker
-#           npm ci --ignore-scripts
-#           npm publish --access public || echo "picker: already published or failed"
-#           cd ..
-# 
-#       - name: Build xcframeworks for release
-#         run: |
-#           cd react-native-zcam1-c2pa
-#           npm run ubrn:ios -- --release
-#           zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
-#           cd ..
-# 
-#           cd react-native-zcam1-prove
-#           npm run ubrn:ios -- --release
-#           zip -r Zcam1ProveFramework.xcframework.zip Zcam1ProveFramework.xcframework
-#           cd ..
-# 
-#           cd react-native-zcam1-verify
-#           npm run ubrn:ios -- --release
-#           zip -r Zcam1VerifyFramework.xcframework.zip Zcam1VerifyFramework.xcframework
-#           cd ..
-# 
-#       - name: Get version for tag
-#         id: version
-#         run: |
-#           VERSION=$(node -p "require('./react-native-zcam1-c2pa/package.json').version")
-#           echo "version=$VERSION" >> $GITHUB_OUTPUT
-# 
-#       - name: Create git tag
-#         run: |
-#           git config user.name "github-actions[bot]"
-#           git config user.email "github-actions[bot]@users.noreply.github.com"
-#           git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
-#           git push origin "v${{ steps.version.outputs.version }}"
-# 
-#       - name: Create GitHub Release
-#         uses: softprops/action-gh-release@v1
-#         with:
-#           tag_name: v${{ steps.version.outputs.version }}
-#           name: ZCAM1 SDK v${{ steps.version.outputs.version }} (Breaking Changes)
-#           generate_release_notes: true
-#           files: |
-#             react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
-#             react-native-zcam1-prove/Zcam1ProveFramework.xcframework.zip
-#             react-native-zcam1-verify/Zcam1VerifyFramework.xcframework.zip
-# 
+       - uses: actions/setup-node@v4
+         with:
+           node-version: '20'
+ 
+       - name: Configure npm registry
+         run: |
+           echo "registry=http://18.223.109.40:4873/" >> ~/.npmrc
+           echo "//18.223.109.40:4873/:_authToken=${{ secrets.VERDACCIO_TOKEN }}" >> ~/.npmrc
+ 
+       - name: Build and publish packages
+         env:
+           NPM_CONFIG_REGISTRY: http://18.223.109.40:4873/
+         run: |
+           # Publish in dependency order
+           # Using --ignore-scripts because prepack will build xcframeworks fresh
+ 
+           # 1. Common (no deps)
+           echo "Publishing react-native-zcam1-common..."
+           cd react-native-zcam1-common
+           npm ci --ignore-scripts
+           npm publish --access public || echo "common: already published or failed"
+           cd ..
+ 
+           # 2. C2PA (no internal deps, has xcframework)
+           echo "Publishing react-native-zcam1-c2pa..."
+           cd react-native-zcam1-c2pa
+           npm ci --ignore-scripts
+           npm publish --access public || echo "c2pa: already published or failed"
+           cd ..
+ 
+           # 3. Capture (depends on common, c2pa)
+           echo "Publishing react-native-zcam1-capture..."
+           cd react-native-zcam1-capture
+           npm ci --ignore-scripts
+           npm publish --access public || echo "capture: already published or failed"
+           cd ..
+ 
+           # 4. Prove (depends on common, c2pa, has xcframework)
+           echo "Publishing react-native-zcam1-prove..."
+           cd react-native-zcam1-prove
+           npm ci --ignore-scripts
+           npm publish --access public || echo "prove: already published or failed"
+           cd ..
+ 
+           # 5. Verify (depends on c2pa, has xcframework)
+           echo "Publishing react-native-zcam1-verify..."
+           cd react-native-zcam1-verify
+           npm ci --ignore-scripts
+           npm publish --access public || echo "verify: already published or failed"
+           cd ..
+ 
+           # 6. Picker (depends on c2pa)
+           echo "Publishing react-native-zcam1-picker..."
+           cd react-native-zcam1-picker
+           npm ci --ignore-scripts
+           npm publish --access public || echo "picker: already published or failed"
+           cd ..
+ 
+       - name: Build xcframeworks for release
+         run: |
+           cd react-native-zcam1-c2pa
+           npm run ubrn:ios -- --release
+           zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
+           cd ..
+ 
+           cd react-native-zcam1-prove
+           npm run ubrn:ios -- --release
+           zip -r Zcam1ProveFramework.xcframework.zip Zcam1ProveFramework.xcframework
+           cd ..
+ 
+           cd react-native-zcam1-verify
+           npm run ubrn:ios -- --release
+           zip -r Zcam1VerifyFramework.xcframework.zip Zcam1VerifyFramework.xcframework
+           cd ..
+ 
+       - name: Get version for tag
+         id: version
+         run: |
+           VERSION=$(node -p "require('./react-native-zcam1-c2pa/package.json').version")
+           echo "version=$VERSION" >> $GITHUB_OUTPUT
+ 
+       - name: Create git tag
+         run: |
+           git config user.name "github-actions[bot]"
+           git config user.email "github-actions[bot]@users.noreply.github.com"
+           git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+           git push origin "v${{ steps.version.outputs.version }}"
+ 
+       - name: Create GitHub Release
+         uses: softprops/action-gh-release@v1
+         with:
+           tag_name: v${{ steps.version.outputs.version }}
+           name: ZCAM1 SDK v${{ steps.version.outputs.version }} (Breaking Changes)
+           generate_release_notes: true
+           files: |
+             react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
+             react-native-zcam1-prove/Zcam1ProveFramework.xcframework.zip
+             react-native-zcam1-verify/Zcam1VerifyFramework.xcframework.zip
+ 
