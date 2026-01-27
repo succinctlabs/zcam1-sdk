@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  View,
 } from "react-native";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
@@ -82,6 +83,34 @@ export interface ZImagePickerProps {
    * @param uri - The URI of the selected image.
    */
   onSelect?: (uri: string) => void;
+
+  /**
+   * Enable multi-selection mode.
+   * Defaults to false (single-selection mode).
+   */
+  multiSelect?: boolean;
+
+  /**
+   * Array of currently selected image URIs. Only used when multiSelect is true.
+   */
+  selectedUris?: string[];
+
+  /**
+   * Optional callback function that is called when the selection changes in multi-select mode.
+   * @param uris - Array of currently selected image URIs.
+   */
+  onSelectionChange?: (uris: string[]) => void;
+
+  /**
+   * Optional function to render a selection overlay when an image is selected in multi-select mode.
+   * @param uri - The URI of the image.
+   * @param isSelected - Whether the image is currently selected.
+   * @returns A React element to display as a selection overlay, or null to display nothing.
+   */
+  renderSelectionOverlay?: (
+    uri: string,
+    isSelected: boolean,
+  ) => React.ReactElement | null;
 }
 
 /**
@@ -95,14 +124,23 @@ export function privateDirectory(): string {
 const ZImageItem = ({
   uri,
   renderBadge,
+  renderSelectionOverlay,
   onSelect,
+  multiSelect,
+  isSelected,
 }: {
   uri: string;
   renderBadge?: (
     uri: string,
     status: AuthenticityStatus,
   ) => React.ReactElement | null;
+  renderSelectionOverlay?: (
+    uri: string,
+    isSelected: boolean,
+  ) => React.ReactElement | null;
   onSelect: (uri: string) => void;
+  multiSelect?: boolean;
+  isSelected?: boolean;
 }) => {
   const [authStatus, setAuthStatus] = useRecyclingState(
     AuthenticityStatus.Unknown,
@@ -144,13 +182,35 @@ const ZImageItem = ({
     return renderBadge ? renderBadge(uri, authStatus) : null;
   }, [renderBadge, uri, authStatus]);
 
+  const selectionOverlay = useMemo(() => {
+    return multiSelect && renderSelectionOverlay
+      ? renderSelectionOverlay(uri, isSelected ?? false)
+      : null;
+  }, [multiSelect, renderSelectionOverlay, uri, isSelected]);
+
   return (
     <TouchableOpacity
       style={styles.imageContainer}
       onPress={() => onSelect(uri)}
     >
-      <Image style={styles.image} source={{ uri: thumbnail }} />
+      <Image
+        style={styles.image}
+        source={{ uri: thumbnail }}
+      />
+      {multiSelect && isSelected && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          }}
+        />
+      )}
       {badge}
+      {selectionOverlay}
     </TouchableOpacity>
   );
 };
@@ -242,19 +302,38 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
   }, [sourceKey, props.refreshToken]);
 
   const handleSelect = useCallback(
-    (uri: string) => props.onSelect?.(uri),
-    [props.onSelect],
+    (uri: string) => {
+      if (props.multiSelect) {
+        // Multi-select mode: toggle selection.
+        const currentSelection = props.selectedUris ?? [];
+        const isSelected = currentSelection.includes(uri);
+        const newSelection = isSelected
+          ? currentSelection.filter((u) => u !== uri)
+          : [...currentSelection, uri];
+        props.onSelectionChange?.(newSelection);
+      } else {
+        // Single-select mode: call onSelect callback.
+        props.onSelect?.(uri);
+      }
+    },
+    [props.multiSelect, props.selectedUris, props.onSelectionChange, props.onSelect],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: string }) => (
-      <ZImageItem
-        uri={item}
-        onSelect={handleSelect}
-        renderBadge={props.renderBadge}
-      />
-    ),
-    [handleSelect],
+    ({ item }: { item: string }) => {
+      const isSelected = props.multiSelect && props.selectedUris?.includes(item);
+      return (
+        <ZImageItem
+          uri={item}
+          onSelect={handleSelect}
+          renderBadge={props.renderBadge}
+          renderSelectionOverlay={props.renderSelectionOverlay}
+          multiSelect={props.multiSelect}
+          isSelected={isSelected}
+        />
+      );
+    },
+    [handleSelect, props.renderBadge, props.renderSelectionOverlay, props.multiSelect, props.selectedUris],
   );
 
   return (
