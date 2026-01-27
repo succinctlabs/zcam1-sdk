@@ -100,7 +100,16 @@ static void ensureStaticStorageInitialized(void) {
 {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
-    [[Zcam1CameraService shared] setZoom:factor];
+    [[Zcam1CameraService shared] setZoom:factor animated:NO];
+  }
+#endif
+}
+
+- (void)setZoomAnimated:(double)factor
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    [[Zcam1CameraService shared] setZoom:factor animated:YES];
   }
 #endif
 }
@@ -144,6 +153,19 @@ static void ensureStaticStorageInitialized(void) {
   resolve(@[]);
 }
 
+- (void)hasUltraWideCamera:(RCTPromiseResolveBlock)resolve
+                    reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    BOOL hasUltraWide = [[Zcam1CameraService shared] hasUltraWideCamera];
+    resolve(@(hasUltraWide));
+    return;
+  }
+#endif
+  resolve(@(NO));
+}
+
 - (void)focusAtPoint:(double)x
                    y:(double)y
 {
@@ -153,6 +175,19 @@ static void ensureStaticStorageInitialized(void) {
     [[Zcam1CameraService shared] focusAtPoint:point];
   }
 #endif
+}
+
+- (void)getDeviceDiagnostics:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSDictionary *diagnostics = [[Zcam1CameraService shared] getDeviceDiagnostics];
+    resolve(diagnostics);
+    return;
+  }
+#endif
+  resolve(@{@"error": @"Diagnostics not available"});
 }
 
 - (void)startNativeVideoRecording:(NSString *)position
