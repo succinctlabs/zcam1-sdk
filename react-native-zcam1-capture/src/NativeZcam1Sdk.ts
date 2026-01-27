@@ -39,7 +39,7 @@ export interface TakeNativePhotoResult {
    * parameter on `takeNativePhoto(...)`, and only on devices/capture formats that
    * support depth delivery.
    */
-  depthData?: { [key: string]: unknown } | undefined;
+  depthData?: { [key: string]: unknown } | null;
 }
 
 export type NativeVideoRecordingFormat = "mov";
