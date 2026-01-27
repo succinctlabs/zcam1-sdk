@@ -15,6 +15,7 @@ zcam1-proving-utils = { path = "./crates/proving-utils" }
 # sp1
 sp1-build = "5.2.4"
 sp1-sdk = "5.2.4"
+sp1-core-executor = "5.2.4"
 sp1-core-machine = "5.2.4"
 sp1-primitives = "5.2.4"
 sp1-prover = "5.2.4"
@@ -39,9 +40,11 @@ uniffi = { version = "=0.29.3", features = [ "cli" ] }
 [patch.crates-io]
 sp1-build = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-sdk = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
+sp1-core-executor = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-core-machine = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-primitives = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-prover = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
+sp1-stark = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-verifier = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 
 c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}

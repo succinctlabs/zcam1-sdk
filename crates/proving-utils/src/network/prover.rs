@@ -19,11 +19,13 @@ use crate::network::{
 use crate::network::proto::GetProofRequestParamsResponse;
 
 use alloy_primitives::{Address, B256, U256};
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
+use sp1_core_executor::{Executor, Program};
 use sp1_core_machine::io::SP1Stdin;
 use sp1_prover::SP1_CIRCUIT_VERSION;
 use sp1_prover::SP1VerifyingKey;
 
+use sp1_stark::SP1CoreOpts;
 use tokio::time::sleep;
 
 /// An implementation of [`crate::ProverClient`] that can generate proofs on a remote RPC server.
@@ -582,13 +584,6 @@ impl NetworkProver {
         }
     }
 
-    /// The cycle limit and gas limit are determined according to the following priority:
-    ///
-    /// 1. If either of the limits are explicitly set by the requester, use the specified value.
-    /// 2. If simulation is enabled, calculate the limits by simulating the execution of the
-    ///    program. This is the default behavior.
-    /// 3. Otherwise, use the default limits ([`MAINNET_DEFAULT_CYCLE_LIMIT`] or
-    ///    [`RESERVED_DEFAULT_CYCLE_LIMIT`] and [`DEFAULT_GAS_LIMIT`]).
     fn get_execution_limits(
         &self,
         cycle_limit: Option<u64>,
@@ -597,7 +592,11 @@ impl NetworkProver {
         stdin: &SP1Stdin,
         skip_simulation: bool,
     ) -> Result<(u64, u64, Option<Vec<u8>>)> {
-        Ok((0, 0, None))
+        let program = Program::from(elf).map_err(|err| anyhow!("{err}"))?;
+        let mut runtime = Executor::new(program, SP1CoreOpts::default());
+        runtime.write_vecs(&stdin.buffer);
+        runtime.run_fast()?;
+        Ok((runtime.state.global_clk, 0, None))
     }
 
     /// The proof request parameters for the auction strategy are determined according to the
