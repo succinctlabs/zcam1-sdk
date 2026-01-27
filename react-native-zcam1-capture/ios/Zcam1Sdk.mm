@@ -100,7 +100,7 @@ static void ensureStaticStorageInitialized(void) {
 {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
-    [[Zcam1CameraService shared] setZoom:factor animated:NO];
+    [[Zcam1CameraService shared] setZoom:factor immediate:NO];
   }
 #endif
 }
@@ -110,7 +110,7 @@ static void ensureStaticStorageInitialized(void) {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
     // Use immediate:YES to skip session queue dispatch for lowest latency during pinch gestures.
-    [[Zcam1CameraService shared] setZoom:factor animated:NO immediate:YES];
+    [[Zcam1CameraService shared] setZoom:factor immediate:YES];
   }
 #endif
 }

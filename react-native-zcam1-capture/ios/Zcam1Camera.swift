@@ -700,7 +700,7 @@ public final class Zcam1CameraService: NSObject {
     /// - Parameter factor: Device zoom factor (use getMinZoom/getMaxZoom for valid range)
     /// - Parameter immediate: If true, sets zoom directly on the calling thread (lowest latency for gestures).
     ///   If false, dispatches to the session queue (thread-safe for prop changes).
-    public func setZoom(_ factor: CGFloat, animated: Bool = false, immediate: Bool = false) {
+    public func setZoom(_ factor: CGFloat, immediate: Bool = false) {
         if immediate {
             // Direct assignment on calling thread for lowest latency during pinch gestures.
             self.applyZoomDirect(factor)
@@ -1552,7 +1552,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// For smooth pinch-to-zoom, use setZoomAnimated via the TurboModule instead.
     public var zoom: CGFloat = 1.0 {
         didSet {
-            Zcam1CameraService.shared.setZoom(zoom, animated: false)
+            Zcam1CameraService.shared.setZoom(zoom)
         }
     }
 
