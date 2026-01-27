@@ -710,7 +710,7 @@ public final class Zcam1CameraService: NSObject {
                 self.currentZoom = clampedZoom
 
                 // Log active physical camera for debugging lens switching.
-                if let activeCamera = device.activePrimaryConstituentDevice {
+                if let activeCamera = device.activePrimaryConstituent {
                     print("[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)")
                 }
 
