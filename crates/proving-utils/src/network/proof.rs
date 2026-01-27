@@ -1,3 +1,4 @@
+use alloy_primitives::hex;
 use serde::{Deserialize, Serialize};
 use sp1_primitives::io::SP1PublicValues;
 use sp1_stark::SP1Proof;
@@ -11,7 +12,36 @@ pub struct ProofFromNetwork {
 
 impl ProofFromNetwork {
     pub fn as_bytes(&self) -> Vec<u8> {
-        todo!()
+        match &self.proof {
+            SP1Proof::Plonk(plonk_proof) => {
+                // If the proof is empty, then this is a mock proof. The mock SP1 verifier
+                // expects an empty byte array for verification, so return an empty byte array.
+                if plonk_proof.encoded_proof.is_empty() {
+                    return Vec::new();
+                }
+
+                let proof_bytes =
+                    hex::decode(&plonk_proof.encoded_proof).expect("Invalid Plonk proof");
+
+                [plonk_proof.plonk_vkey_hash[..4].to_vec(), proof_bytes].concat()
+            }
+            SP1Proof::Groth16(groth16_proof) => {
+                // If the proof is empty, then this is a mock proof. The mock SP1 verifier
+                // expects an empty byte array for verification, so return an empty byte array.
+                if groth16_proof.encoded_proof.is_empty() {
+                    return Vec::new();
+                }
+
+                let proof_bytes =
+                    hex::decode(&groth16_proof.encoded_proof).expect("Invalid Groth16 proof");
+
+                [groth16_proof.groth16_vkey_hash[..4].to_vec(), proof_bytes].concat()
+            }
+            proof => panic!(
+                "Proof type {proof} is not supported for onchain verification. \
+                Only Plonk and Groth16 proofs are verifiable onchain"
+            ),
+        }
     }
 }
 
