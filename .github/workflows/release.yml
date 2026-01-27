@@ -89,6 +89,8 @@ jobs:
 
       - name: Version packages
         run: npx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit version changes
         run: |
@@ -192,6 +194,8 @@ jobs:
 
       - name: Version packages
         run: npx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit changes
         run: |
