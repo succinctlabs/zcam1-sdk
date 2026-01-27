@@ -100,7 +100,7 @@ static void ensureStaticStorageInitialized(void) {
 {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
-    [[Zcam1CameraService shared] setZoom:factor animated:NO];
+    [[Zcam1CameraService shared] setZoom:factor];
   }
 #endif
 }
@@ -109,7 +109,8 @@ static void ensureStaticStorageInitialized(void) {
 {
 #if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
-    [[Zcam1CameraService shared] setZoom:factor animated:YES];
+    // Both paths use the same session queue dispatch for reliable lens switching.
+    [[Zcam1CameraService shared] setZoom:factor];
   }
 #endif
 }
