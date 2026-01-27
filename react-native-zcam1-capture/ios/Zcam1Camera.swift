@@ -698,32 +698,26 @@ public final class Zcam1CameraService: NSObject {
     /// For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
     /// 2.0 is wide-angle (1x user-facing), etc.
     /// - Parameter factor: Device zoom factor (use getMinZoom/getMaxZoom for valid range)
-    /// - Parameter immediate: If true, sets zoom directly on the calling thread (lowest latency for gestures).
-    ///   If false, dispatches to the session queue (thread-safe for prop changes).
-    public func setZoom(_ factor: CGFloat, immediate: Bool = false) {
-        if immediate {
-            // Direct assignment on calling thread for lowest latency during pinch gestures.
-            self.applyZoomDirect(factor)
-        } else {
-            sessionQueue.async {
-                self.applyZoomDirect(factor)
-            }
-        }
-    }
+    public func setZoom(_ factor: CGFloat) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            do {
+                try device.lockForConfiguration()
+                let minZoom = device.minAvailableVideoZoomFactor
+                let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
+                let clampedZoom = min(max(factor, minZoom), maxZoom)
+                device.videoZoomFactor = clampedZoom
+                self.currentZoom = clampedZoom
 
-    /// Apply zoom directly to the device. Always uses direct assignment for instant response.
-    private func applyZoomDirect(_ factor: CGFloat) {
-        guard let device = self.videoInput?.device else { return }
-        do {
-            try device.lockForConfiguration()
-            let minZoom = device.minAvailableVideoZoomFactor
-            let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
-            let clampedZoom = min(max(factor, minZoom), maxZoom)
-            device.videoZoomFactor = clampedZoom
-            self.currentZoom = clampedZoom
-            device.unlockForConfiguration()
-        } catch {
-            print("[Zcam1] Failed to set zoom: \(error)")
+                // Log active physical camera for debugging lens switching.
+                if let activeCamera = device.activePrimaryConstituentDevice {
+                    print("[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)")
+                }
+
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to set zoom: \(error)")
+            }
         }
     }
 
