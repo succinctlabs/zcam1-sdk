@@ -337,6 +337,10 @@ function Proof({
           <Text>
             The hash {hash} from the public values match the actual photo hash
           </Text>
+          <Text style={styles.subtitle}> </Text>
+          <Text style={styles.bold}>
+            This photo originates from &quot;ZCAM1 SDK E2E example&quot; app
+          </Text>
         </View>
       )}
       {isValid === false && (
@@ -373,6 +377,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
+  },
+  bold: {
+    fontSize: 14,
+    fontWeight: "bold",
   },
   metadataSection: {
     backgroundColor: "#f5f5f5",
