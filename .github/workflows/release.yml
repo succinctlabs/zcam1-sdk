@@ -85,7 +85,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install root dependencies
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Version packages
         run: npx changeset version
