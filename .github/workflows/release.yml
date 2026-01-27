@@ -24,7 +24,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Check for changesets
         id: check
@@ -82,7 +82,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm install
 
       - name: Version packages
         run: npx changeset version
@@ -181,7 +181,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Create release branch
         run: git checkout -b release/breaking-changes
