@@ -39,7 +39,7 @@ export interface TakeNativePhotoResult {
    * parameter on `takeNativePhoto(...)`, and only on devices/capture formats that
    * support depth delivery.
    */
-  depthData?: { [key: string]: unknown } | null;
+  depthData?: { [key: string]: unknown } | undefined;
 }
 
 export type NativeVideoRecordingFormat = "mov";
@@ -84,9 +84,70 @@ export interface StopNativeVideoRecordingResult {
   hasAudio: boolean;
 
   /**
+   * Device make (if available).
+   */
+  deviceMake: string;
+
+  /**
+   * Device model (if available).
+   */
+  deviceModel: string;
+
+  /**
+   * Software version (if available).
+   */
+  softwareVersion: string;
+
+  /**
    * Duration of the recorded clip in seconds (if available).
    */
-  durationSeconds?: number;
+  durationSeconds: number;
+
+  /**
+   * File size in bytes (if available).
+   */
+  fileSizeBytes: number;
+
+  /**
+   * Video pixel width (rotation-corrected, if available).
+   */
+  width: number;
+
+  /**
+   * Video pixel height (rotation-corrected, if available).
+   */
+  height: number;
+
+  /**
+   * Rotation in degrees derived from the video track transform (if available).
+   * Common values: 0, 90, 180, 270.
+   */
+  rotationDegrees: number;
+
+  /**
+   * Nominal frame rate (fps, if available).
+   */
+  frameRate: number;
+
+  /**
+   * Video codec FourCC (e.g. "avc1", "hvc1") if available.
+   */
+  videoCodec?: string;
+
+  /**
+   * Audio codec FourCC (e.g. "aac ") if available.
+   */
+  audioCodec?: string;
+
+  /**
+   * Audio sample rate in Hz (if available).
+   */
+  audioSampleRate?: number;
+
+  /**
+   * Audio channel count (if available).
+   */
+  audioChannels?: number;
 }
 
 export type FlashMode = "off" | "on" | "auto";
