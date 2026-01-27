@@ -24,7 +24,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Check for changesets
         id: check
@@ -103,46 +103,47 @@ jobs:
           NPM_CONFIG_REGISTRY: http://18.223.109.40:4873/
         run: |
           # Publish in dependency order
+          # Using --ignore-scripts because prepack will build xcframeworks fresh
 
           # 1. Common (no deps)
           echo "Publishing react-native-zcam1-common..."
           cd react-native-zcam1-common
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "common: already published or failed"
           cd ..
 
           # 2. C2PA (no internal deps, has xcframework)
           echo "Publishing react-native-zcam1-c2pa..."
           cd react-native-zcam1-c2pa
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "c2pa: already published or failed"
           cd ..
 
           # 3. Capture (depends on common, c2pa)
           echo "Publishing react-native-zcam1-capture..."
           cd react-native-zcam1-capture
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "capture: already published or failed"
           cd ..
 
           # 4. Prove (depends on common, c2pa, has xcframework)
           echo "Publishing react-native-zcam1-prove..."
           cd react-native-zcam1-prove
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "prove: already published or failed"
           cd ..
 
           # 5. Verify (depends on c2pa, has xcframework)
           echo "Publishing react-native-zcam1-verify..."
           cd react-native-zcam1-verify
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "verify: already published or failed"
           cd ..
 
           # 6. Picker (depends on c2pa)
           echo "Publishing react-native-zcam1-picker..."
           cd react-native-zcam1-picker
-          npm ci
+          npm ci --ignore-scripts
           npm publish --access public || echo "picker: already published or failed"
           cd ..
 
@@ -181,7 +182,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Create release branch
         run: git checkout -b release/breaking-changes
