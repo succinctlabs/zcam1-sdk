@@ -698,38 +698,28 @@ public final class Zcam1CameraService: NSObject {
     /// For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
     /// 2.0 is wide-angle (1x user-facing), etc.
     /// - Parameter factor: Device zoom factor (use getMinZoom/getMaxZoom for valid range)
-    /// - Parameter animated: If true, uses smooth ramping for the zoom transition (better for pinch gestures).
-    public func setZoom(_ factor: CGFloat, animated: Bool = false) {
-        // For animated zoom, run on main thread for lower latency during gestures.
-        // For non-animated zoom, use session queue for thread safety.
-        if animated {
-            // Run directly on current thread for lowest latency during pinch gestures.
-            self.applyZoom(factor, animated: true)
+    /// - Parameter immediate: If true, sets zoom directly on the calling thread (lowest latency for gestures).
+    ///   If false, dispatches to the session queue (thread-safe for prop changes).
+    public func setZoom(_ factor: CGFloat, animated: Bool = false, immediate: Bool = false) {
+        if immediate {
+            // Direct assignment on calling thread for lowest latency during pinch gestures.
+            self.applyZoomDirect(factor)
         } else {
             sessionQueue.async {
-                self.applyZoom(factor, animated: false)
+                self.applyZoomDirect(factor)
             }
         }
     }
 
-    /// Internal method to apply zoom to the device.
-    private func applyZoom(_ factor: CGFloat, animated: Bool) {
+    /// Apply zoom directly to the device. Always uses direct assignment for instant response.
+    private func applyZoomDirect(_ factor: CGFloat) {
         guard let device = self.videoInput?.device else { return }
         do {
             try device.lockForConfiguration()
             let minZoom = device.minAvailableVideoZoomFactor
             let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
             let clampedZoom = min(max(factor, minZoom), maxZoom)
-
-            if animated {
-                // Use ramp for smooth animated zoom during pinch gestures.
-                // Rate of 100 provides fast but smooth transitions.
-                device.ramp(toVideoZoomFactor: clampedZoom, withRate: 100.0)
-            } else {
-                // Direct assignment for instant zoom (button taps).
-                device.videoZoomFactor = clampedZoom
-            }
-
+            device.videoZoomFactor = clampedZoom
             self.currentZoom = clampedZoom
             device.unlockForConfiguration()
         } catch {
@@ -1558,11 +1548,11 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public var captureFormat: String = "jpeg"
 
     /// Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
-    /// Uses animated zoom for smooth transitions during pinch gestures.
+    /// Prop-driven zoom changes are instant (used by slider and button taps).
+    /// For smooth pinch-to-zoom, use setZoomAnimated via the TurboModule instead.
     public var zoom: CGFloat = 1.0 {
         didSet {
-            // Use animated zoom for smooth transitions, especially during pinch gestures.
-            Zcam1CameraService.shared.setZoom(zoom, animated: true)
+            Zcam1CameraService.shared.setZoom(zoom, animated: false)
         }
     }
 
