@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-changeset:
+    name: Validate Changeset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for changeset
+        run: |
+          # Get list of changed files in this PR
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          # Check if any package source files changed
+          PACKAGES_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^react-native-zcam1-[^/]+/src/' || true)
+
+          if [ -n "$PACKAGES_CHANGED" ]; then
+            echo "Package source files changed:"
+            echo "$PACKAGES_CHANGED"
+            echo ""
+
+            # Check if there's a changeset (excluding README.md)
+            CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
+
+            if [ "$CHANGESETS" -eq "0" ]; then
+              echo "::warning::No changeset found. If this PR includes user-facing changes, please run 'npx changeset' to document them."
+              echo ""
+              echo "To add a changeset:"
+              echo "  npx changeset"
+              echo ""
+              echo "If this change doesn't need a changeset (e.g., internal refactoring), you can ignore this warning."
+            else
+              echo "✓ Changeset found"
+            fi
+          else
+            echo "No package source files changed, changeset not required"
+          fi
+
+      - name: Validate changeset format
+        run: npx changeset status || true
+
+      - name: Block manual version bumps
+        run: |
+          # Check if any package.json version field was manually changed
+          CHANGED_PACKAGES=$(git diff --name-only origin/main...HEAD | grep -E '^react-native-zcam1-[^/]+/package\.json$' || true)
+
+          if [ -n "$CHANGED_PACKAGES" ]; then
+            for pkg in $CHANGED_PACKAGES; do
+              # Check if the "version" field specifically changed
+              VERSION_DIFF=$(git diff origin/main...HEAD -- "$pkg" | grep -E '^\+.*"version"' || true)
+
+              if [ -n "$VERSION_DIFF" ]; then
+                echo "::error::Manual version bump detected in $pkg"
+                echo ""
+                echo "Do not edit version fields directly. Use changesets instead:"
+                echo "  npx changeset"
+                echo ""
+                echo "Changesets will automatically bump versions when merged."
+                exit 1
+              fi
+            done
+          fi
+
+          echo "✓ No manual version bumps detected"
