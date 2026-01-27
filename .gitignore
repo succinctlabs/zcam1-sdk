@@ -7,7 +7,4 @@ yalc.lock
 # macOS
 .DS_Store
 
-# Node
-node_modules/
-/package-lock.json
 docs/node_modules/
