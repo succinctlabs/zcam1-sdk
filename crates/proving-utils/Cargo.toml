@@ -22,6 +22,7 @@ alloy-signer-local = { version = "1.0", default-features = false }
 backoff = { version = "0.4", features = ["async-std"] }
 reqwest = { version = "0.12.12", default-features = false, features = [
   "rustls-tls",
+  "rustls-tls-webpki-roots",
   "trust-dns",
   "stream",
   "json",
@@ -33,7 +34,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "time"] }
 
 prost = { version = "0.13" }
 rustls = { version = "0.23.27", features = ["ring"] }
-tonic = { version = "0.12", features = ["tls", "tls-roots"] }
+tonic = { version = "0.12", features = ["tls", "tls-webpki-roots"] }
 
 [build-dependencies]
 sp1-build.workspace = true

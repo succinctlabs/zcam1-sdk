@@ -84,11 +84,14 @@ where
         let prover_client = Arc::new(OnceLock::new());
         let vk_hash = Arc::new(OnceLock::new());
         let cloned_prover = prover_client.clone();
+        let cloned_vk_hash = vk_hash.clone();
 
         thread::spawn(move || {
+            let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
             let _ = cloned_prover.set(EitherProver::Mock {
                 proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
             });
+            let _ = cloned_vk_hash.set(vk.bytes32());
 
             if let Some(callback) = callback {
                 callback.initialized();
