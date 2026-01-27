@@ -12,6 +12,9 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    #[error(transparent)]
+    Tonic(#[from] tonic::transport::Error),
+
     #[error("{0}")]
     Sp1(String),
 }
