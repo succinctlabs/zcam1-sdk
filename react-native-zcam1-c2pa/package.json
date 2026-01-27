@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-c2pa",
-  "version": "0.2.0",
+  "version": "0.1.9",
   "description": "ZCAM1 C2PA SDK",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
