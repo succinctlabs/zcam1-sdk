@@ -1201,7 +1201,6 @@ public final class Zcam1CameraService: NSObject {
                         "ISOSpeedRatings": [],
                         "PixelXDimension": 1920,
                         "PixelYDimension": 1080,
-                        "Orientation": 6,
                         "ExposureTime": 0,
                         "FNumber": 1,
                         "FocalLength": 5,
@@ -1211,6 +1210,7 @@ public final class Zcam1CameraService: NSObject {
                         "Model": "iPhone Simulator",
                         "Software": "iOS Simulator",
                     ],
+                    "Orientation": 6,
                 ]
 
                 let result: [String: Any] = [
