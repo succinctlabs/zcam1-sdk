@@ -266,5 +266,12 @@ export interface Spec extends TurboModule {
     switchingBehavior: number;
     isVirtualDevice: boolean;
   }>;
+
+  /**
+   * Present a native full-screen preview for any file using QLPreviewController.
+   * Supports images, videos, PDFs, and other common file types.
+   * @param filePath Absolute filesystem path to the file.
+   */
+  previewFile(filePath: string): Promise<void>;
 }
 export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");

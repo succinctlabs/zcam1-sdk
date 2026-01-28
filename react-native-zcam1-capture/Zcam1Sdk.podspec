@@ -17,6 +17,8 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
   s.private_header_files = "ios/**/*.h"
 
+  s.frameworks = ["QuickLook"]
+
   # Harbeth: GPU-accelerated image/video/camera filter library.
   s.dependency "Harbeth", "~> 1.1"
 
