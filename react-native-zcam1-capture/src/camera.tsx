@@ -269,6 +269,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       includeDepthData,
       aspectRatio,
       orientation,
+      false, // skipPostProcessing - default to false for normal operation
     );
 
     if (!result || !result.filePath) {

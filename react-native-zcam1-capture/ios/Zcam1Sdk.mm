@@ -38,6 +38,7 @@ static void ensureStaticStorageInitialized(void) {
        includeDepthData:(BOOL)includeDepthData
             aspectRatio:(NSString *)aspectRatio
             orientation:(NSString *)orientation
+     skipPostProcessing:(BOOL)skipPostProcessing
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject
 {
@@ -68,6 +69,7 @@ static void ensureStaticStorageInitialized(void) {
                         includeDepthData:includeDepthData
                              aspectRatio:aspectRatio
                              orientation:orientation
+                      skipPostProcessing:skipPostProcessing
                               completion:^(NSDictionary *result, NSError *error) {
       // Retrieve and remove callbacks from static storage.
       RCTPromiseResolveBlock storedResolve = nil;
