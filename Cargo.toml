@@ -11,6 +11,7 @@ zcam1-ios = { path = "./crates/ios" }
 zcam1-c2pa-utils = { path = "./crates/c2pa-utils" }
 zcam1-certs-utils = { path = "./crates/certs-utils" }
 zcam1-proving-utils = { path = "./crates/proving-utils" }
+zcam1-verifier = { path = "./crates/verifier" }
 
 # sp1
 sp1-build = "5.2.4"

@@ -1,10 +1,11 @@
-#import "Zcam1Sdk.h"
+#import "Zcam1Capture.h"
 #import <Security/Security.h>
 #import <AVFoundation/AVFoundation.h>
 #import <QuickLook/QuickLook.h>
 #if __has_include("Zcam1Sdk-Swift.h")
 #import "Zcam1Sdk-Swift.h"
 #endif
+#import "ReactNativeZcam1-Swift.h"
 #import <React/RCTBridgeModule.h>
 
 // Static storage for pending promise callbacks - stored outside the instance to ensure they survive.
@@ -57,17 +58,17 @@ static void ensureStaticStorageInitialized(void) {
 }
 @end
 
-@implementation Zcam1Sdk
+@implementation Zcam1Capture
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
 {
-    return std::make_shared<facebook::react::NativeZcam1SdkSpecJSI>(params);
+    return std::make_shared<facebook::react::NativeZcam1CaptureSpecJSI>(params);
 }
 
 + (NSString *)moduleName
 {
-  return @"Zcam1Sdk";
+  return @"Zcam1Capture";
 }
 
 
@@ -81,7 +82,7 @@ static void ensureStaticStorageInitialized(void) {
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
@@ -143,7 +144,7 @@ static void ensureStaticStorageInitialized(void) {
 
 - (void)setZoom:(double)factor
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     [[Zcam1CameraService shared] setZoom:factor];
   }
@@ -152,7 +153,7 @@ static void ensureStaticStorageInitialized(void) {
 
 - (void)setZoomAnimated:(double)factor
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     // Both paths use the same session queue dispatch for reliable lens switching.
     [[Zcam1CameraService shared] setZoom:factor];
@@ -163,7 +164,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)getMinZoom:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     CGFloat minZoom = [[Zcam1CameraService shared] getMinZoom];
     resolve(@(minZoom));
@@ -176,7 +177,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)getMaxZoom:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     CGFloat maxZoom = [[Zcam1CameraService shared] getMaxZoom];
     resolve(@(maxZoom));
@@ -189,7 +190,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)getSwitchOverZoomFactors:(RCTPromiseResolveBlock)resolve
                           reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     NSArray<NSNumber *> *factors = [[Zcam1CameraService shared] getSwitchOverZoomFactors];
     resolve(factors);
@@ -202,7 +203,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)hasUltraWideCamera:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     BOOL hasUltraWide = [[Zcam1CameraService shared] hasUltraWideCamera];
     resolve(@(hasUltraWide));
@@ -215,7 +216,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)focusAtPoint:(double)x
                    y:(double)y
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     CGPoint point = CGPointMake(x, y);
     [[Zcam1CameraService shared] focusAtPoint:point];
@@ -226,7 +227,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)getDeviceDiagnostics:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     NSDictionary *diagnostics = [[Zcam1CameraService shared] getDeviceDiagnostics];
     resolve(diagnostics);
@@ -240,7 +241,7 @@ static void ensureStaticStorageInitialized(void) {
                           resolve:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
@@ -290,7 +291,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)stopNativeVideoRecording:(RCTPromiseResolveBlock)resolve
                           reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     Zcam1CameraService *service = [Zcam1CameraService shared];
 
@@ -389,7 +390,7 @@ static void ensureStaticStorageInitialized(void) {
 - (void)getDepthSensorInfo:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject
 {
-#if __has_include("Zcam1Sdk-Swift.h")
+#if __has_include("ReactNativeZcam1-Swift.h")
   if (@available(iOS 16.0, *)) {
     // Check if current device supports depth data capture
     AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInDualCamera

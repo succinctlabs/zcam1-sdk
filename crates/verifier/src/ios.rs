@@ -2,7 +2,7 @@ use base64ct::{Base64, Encoding};
 use sp1_verifier::GROTH16_VK_BYTES;
 use zcam1_c2pa_utils::{compute_hash, extract_manifest};
 
-use crate::error::Error;
+use crate::error::VerifyError;
 
 const APPLE_ROOT_CERT: &str = "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD";
 
@@ -21,13 +21,13 @@ const APPLE_ROOT_CERT: &str = "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqh
 ///
 /// * `Ok(true)` if the proof verification succeeds
 /// * `Err(Error)` if the manifest cannot be extracted, the proof is not found, or verification fails
-pub fn verify_proof(path: &str, app_id: String) -> Result<bool, Error> {
+pub fn verify_proof(path: &str, app_id: String) -> Result<bool, VerifyError> {
     let store = extract_manifest(path)?;
     let mut hash = compute_hash(path)?;
     let active_manifest = store.active_manifest()?;
     let proof = active_manifest
         .proof()
-        .ok_or_else(|| Error::ProofNotFound)?;
+        .ok_or_else(|| VerifyError::ProofNotFound)?;
     let mut public_inputs = vec![];
 
     public_inputs.append(&mut hash);

@@ -2,10 +2,14 @@ use std::io;
 
 use thiserror::Error;
 
-#[derive(Debug, Error)]
-pub enum Error {
+#[derive(Debug, Error, uniffi::Error)]
+#[uniffi(flat_error)]
+pub enum VerifyError {
     #[error(transparent)]
     C2pa(#[from] zcam1_c2pa_utils::error::C2paError),
+
+    #[error(transparent)]
+    AppAttest(#[from] zcam1_ios::Error),
 
     #[error(transparent)]
     Base64(#[from] base64ct::Error),

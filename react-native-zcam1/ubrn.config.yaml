@@ -1,0 +1,9 @@
+rust:
+  directory: ./..
+  manifestPath: crates/bindings/Cargo.toml
+turboModule:
+  entrypoint: src/bindings.tsx
+ios:
+  frameworkName: Zcam1Framework
+noOverwrite:
+  - "ReactNativeZcam1.podspec"

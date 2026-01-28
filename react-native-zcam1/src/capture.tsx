@@ -7,19 +7,7 @@ import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
   type ECKey,
-} from "@succinctlabs/react-native-zcam1-common";
-
-export {
-  buildSelfSignedCertificate,
-  SelfSignedCertChain,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-
-/**
- * Camera component for capturing photos with secure enclave integration.
- */
-export { ZCamera, type CameraFilter } from "./camera";
-
-import NativeZcam1Sdk from "./NativeZcam1Sdk";
+} from "./common";
 
 /**
  * Present a native full-screen preview for any file using iOS QLPreviewController.
@@ -29,19 +17,6 @@ import NativeZcam1Sdk from "./NativeZcam1Sdk";
 export async function previewFile(filePath: string): Promise<void> {
   return NativeZcam1Sdk.previewFile(filePath);
 }
-
-/**
- * Flash mode for photo capture.
- */
-export { type FlashMode, type AspectRatio, type Orientation } from "./NativeZcam1Sdk";
-
-/**
- * Native video recording results.
- */
-export type {
-  StartNativeVideoRecordingResult,
-  StopNativeVideoRecordingResult,
-} from "./NativeZcam1Sdk";
 
 /**
  * Device registration information including keys, certificate chain, and attestation.

@@ -3,9 +3,7 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-#if __has_include("Zcam1Sdk-Swift.h")
-#import "Zcam1Sdk-Swift.h"
-#endif
+#import "ReactNativeZcam1-Swift.h"
 
 @interface Zcam1CameraViewManager : RCTViewManager
 @end
@@ -18,12 +16,10 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 
 - (UIView *)view
 {
-#if __has_include("Zcam1Sdk-Swift.h")
   if (@available(iOS 16.0, *)) {
     // Zcam1CameraView is the Swift UIView subclass defined in Zcam1Camera.swift
     return [Zcam1CameraView new];
   }
-#endif
 
   // Fallback dummy view if the Swift implementation is not available
   UIView *fallback = [UIView new];

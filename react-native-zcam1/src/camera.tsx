@@ -5,26 +5,27 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
-import {
-  buildSelfSignedCertificate,
-  computeHash,
-  ExistingCertChain,
-  formatFromPath,
-  ManifestEditor,
-  SelfSignedCertChain,
-  type PhotoMetadataInfo,
-  type VideoMetadataInfo,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk, {
   type FlashMode,
   type AspectRatio,
   type Orientation,
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
-} from "./NativeZcam1Sdk";
+} from "./NativeZcam1Capture";
 import { generateAppAttestAssertion } from "./utils";
 import { base64 } from "@scure/base";
+
+import {
+  buildSelfSignedCertificate,
+  type ExistingCertChain,
+  type SelfSignedCertChain,
+  type PhotoMetadataInfo,
+  type VideoMetadataInfo,
+  ManifestEditor,
+  computeHash,
+  formatFromPath,
+} from "./bindings";
+import { ZPhoto, type CaptureInfo } from "./capture";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -411,6 +412,7 @@ async function embedBindings(
   captureInfo: CaptureInfo,
   certChainPem: string,
 ): Promise<string> {
+  console.log("Metadata", metadata);
   originalPath = originalPath.replace("file://", "");
   const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
