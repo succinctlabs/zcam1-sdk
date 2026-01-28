@@ -4,6 +4,7 @@ import {
   computeHash,
   extractManifest,
   PhotoMetadataInfo,
+  VideoMetadataInfo,
   type ManifestInterface,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
@@ -15,7 +16,7 @@ import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
 export interface CaptureMetadata {
   action: string;
   when: string;
-  parameters: PhotoMetadataInfo;
+  parameters: PhotoMetadataInfo | VideoMetadataInfo;
 }
 
 export const APPLE_ROOT_CERT =

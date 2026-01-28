@@ -264,7 +264,23 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       result.filePath = await embedBindings(
         result.filePath,
         when,
-        {},
+        {
+          deviceMake: result.deviceMake,
+          deviceModel: result.deviceModel,
+          softwareVersion: result.softwareVersion,
+          format: result.format,
+          hasAudio: result.hasAudio,
+          durationSeconds: result.durationSeconds,
+          fileSizeBytes: result.fileSizeBytes,
+          width: result.width,
+          height: result.height,
+          rotationDegrees: result.rotationDegrees,
+          frameRate: result.frameRate,
+          videoCodec: result.videoCodec,
+          audioCodec: result.audioCodec,
+          audioSampleRate: result.audioSampleRate,
+          audioChannels: result.audioChannels,
+        },
         this.props.captureInfo,
         this.certChainPem,
       );
@@ -333,7 +349,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
-        depthData: result.depthData,
+        depthData: result.depthData as any,
       },
       this.props.captureInfo,
       this.certChainPem,
@@ -411,6 +427,7 @@ async function embedBindings(
       when,
     );
   } else {
+    console.log("Metadata", metadata);
     normalizedMetadata = manifestEditor.addVideoMetadataAction(
       metadata as VideoMetadataInfo,
       when,
