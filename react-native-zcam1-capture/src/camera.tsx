@@ -18,6 +18,8 @@ import {
 import { type CaptureInfo, ZPhoto } from ".";
 import NativeZcam1Sdk, {
   type FlashMode,
+  type AspectRatio,
+  type Orientation,
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
@@ -80,6 +82,10 @@ export interface TakePhotoOptions {
    * - When false (default): depth data is omitted.
    */
   includeDepthData?: boolean;
+  /** Aspect ratio for the captured photo. Defaults to "4:3". */
+  aspectRatio?: AspectRatio;
+  /** Orientation for the crop. Defaults to "auto". */
+  orientation?: Orientation;
 }
 
 /** Props passed to the native Swift camera view. */
@@ -309,12 +315,17 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       options.format ?? this.props.captureFormat ?? "jpeg";
     const flash: FlashMode = options.flash ?? "off";
     const includeDepthData: boolean = options.includeDepthData ?? false;
+    const aspectRatio: AspectRatio = options.aspectRatio ?? "4:3";
+    const orientation: Orientation = options.orientation ?? "auto";
 
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
       flash,
       includeDepthData,
+      aspectRatio,
+      orientation,
+      false, // skipPostProcessing - default to false for normal operation
     );
 
     if (!result || !result.filePath) {

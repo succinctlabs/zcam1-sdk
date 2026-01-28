@@ -6,9 +6,65 @@
 //
 
 import AVFoundation
+import CoreMotion
 import Foundation
 import Harbeth
+import ImageIO
+import MobileCoreServices
 import UIKit
+
+// MARK: - Motion Manager (Singleton for orientation detection)
+
+/// Singleton motion manager that provides non-blocking orientation detection.
+/// Uses accelerometer data to determine portrait/landscape for preview.
+@available(iOS 16.0, *)
+final class Zcam1MotionManager {
+    static let shared = Zcam1MotionManager()
+
+    private let motionManager = CMMotionManager()
+    private let queue = OperationQueue()
+    private var cachedOrientation: Zcam1Orientation = .portrait
+    private let lock = NSLock()
+
+    private init() {
+        queue.name = "com.zcam1.motion"
+        queue.maxConcurrentOperationCount = 1
+    }
+
+    /// Start accelerometer updates. Call when camera becomes active.
+    func startUpdates() {
+        guard motionManager.isAccelerometerAvailable else { return }
+        guard !motionManager.isAccelerometerActive else { return }
+
+        motionManager.accelerometerUpdateInterval = 0.1 // 10 Hz is sufficient
+        motionManager.startAccelerometerUpdates(to: queue) { [weak self] data, _ in
+            guard let self = self, let data = data else { return }
+
+            let x = data.acceleration.x
+            let y = data.acceleration.y
+
+            // Track simple portrait/landscape for preview
+            let orientation: Zcam1Orientation = abs(x) > abs(y) ? .landscape : .portrait
+
+            self.lock.lock()
+            self.cachedOrientation = orientation
+            self.lock.unlock()
+        }
+    }
+
+    /// Stop accelerometer updates. Call when camera becomes inactive.
+    func stopUpdates() {
+        motionManager.stopAccelerometerUpdates()
+    }
+
+    /// Get the current orientation (non-blocking, returns cached value).
+    func currentOrientation() -> Zcam1Orientation {
+        lock.lock()
+        let orientation = cachedOrientation
+        lock.unlock()
+        return orientation
+    }
+}
 
 // MARK: - Capture Format
 
@@ -44,6 +100,66 @@ import UIKit
     }
 }
 
+// MARK: - Aspect Ratio
+
+@objc public enum Zcam1AspectRatio: Int {
+    case ratio4_3 = 0
+    case ratio16_9 = 1
+    case ratio1_1 = 2
+
+    init(from string: String?) {
+        switch string {
+        case "16:9": self = .ratio16_9
+        case "1:1": self = .ratio1_1
+        default: self = .ratio4_3
+        }
+    }
+
+    /// Returns the aspect ratio as width/height (portrait orientation)
+    var value: CGFloat {
+        switch self {
+        case .ratio4_3: return 3.0 / 4.0   // Portrait: taller than wide
+        case .ratio16_9: return 9.0 / 16.0 // Portrait: taller than wide
+        case .ratio1_1: return 1.0
+        }
+    }
+
+    var formatString: String {
+        switch self {
+        case .ratio4_3: return "4:3"
+        case .ratio16_9: return "16:9"
+        case .ratio1_1: return "1:1"
+        }
+    }
+}
+
+// MARK: - Orientation
+
+@objc public enum Zcam1Orientation: Int {
+    case auto = 0
+    case portrait = 1
+    case landscape = 2
+
+    init(from string: String?) {
+        switch string?.lowercased() {
+        case "portrait": self = .portrait
+        case "landscape": self = .landscape
+        default: self = .auto
+        }
+    }
+
+    /// Resolve auto orientation using accelerometer data (works with orientation lock).
+    /// Uses the singleton motion manager for non-blocking access.
+    @available(iOS 16.0, *)
+    func resolve() -> Zcam1Orientation {
+        if self != .auto { return self }
+
+        // Use the motion manager's cached orientation (non-blocking).
+        // The motion manager should be started when the camera becomes active.
+        return Zcam1MotionManager.shared.currentOrientation()
+    }
+}
+
 // MARK: - Camera Delegate
 
 /// Internal helper that acts as the AVCapturePhotoCaptureDelegate.
@@ -51,7 +167,10 @@ import UIKit
 @available(iOS 16.0, *)
 private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let format: Zcam1CaptureFormat
+    private let aspectRatio: Zcam1AspectRatio
+    private let orientation: Zcam1Orientation
     private let includeDepthData: Bool
+    private let skipPostProcessing: Bool
     // Store completion as a mutable optional so we can nil it after calling (prevents double-call).
     private var completion: ((NSDictionary?, NSError?) -> Void)?
     private weak var owner: Zcam1CameraService?
@@ -60,12 +179,18 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
 
     init(
         format: Zcam1CaptureFormat,
+        aspectRatio: Zcam1AspectRatio,
+        orientation: Zcam1Orientation,
         includeDepthData: Bool,
+        skipPostProcessing: Bool = false,
         owner: Zcam1CameraService,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
         self.format = format
+        self.aspectRatio = aspectRatio
+        self.orientation = orientation
         self.includeDepthData = includeDepthData
+        self.skipPostProcessing = skipPostProcessing
         self.owner = owner
         self.completion = completion
         super.init()
@@ -123,6 +248,14 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         }
         print("[PhotoCaptureDelegate] photo data size: \(photoData.count) bytes")
 
+        // Log actual captured dimensions for debugging resolution issues.
+        if let cgImageSource = CGImageSourceCreateWithData(photoData as CFData, nil),
+           let properties = CGImageSourceCopyPropertiesAtIndex(cgImageSource, 0, nil) as? [String: Any] {
+            let width = properties[kCGImagePropertyPixelWidth as String] ?? "?"
+            let height = properties[kCGImagePropertyPixelHeight as String] ?? "?"
+            print("[PhotoCaptureDelegate] captured photo dimensions: \(width)x\(height)")
+        }
+
         // Copy values we need immediately.
         print("[PhotoCaptureDelegate] extracting metadata...")
         let metadataSnapshot: [String: Any] = photo.metadata
@@ -136,12 +269,30 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         print("[PhotoCaptureDelegate] processing photo...")
         var data = photoData
 
-        // Apply filter if set (before C2PA signing).
-        print("[PhotoCaptureDelegate] applying filter...")
-        if let owner = self.owner, let filteredData = owner.applyFilterToImageData(data) {
-            data = filteredData
+        // Apply crop + filter in a single pass (avoids double JPEG compression, preserves EXIF).
+        // Skip post-processing if requested (returns raw sensor output).
+        if skipPostProcessing {
+            print("[PhotoCaptureDelegate] skipPostProcessing=true, returning raw JPEG data")
+        } else {
+            print("[PhotoCaptureDelegate] applying crop and filter...")
+            if let owner = self.owner,
+               let processedData = owner.processImage(
+                   data,
+                   metadata: metadataSnapshot,
+                   aspectRatio: self.aspectRatio
+               ) {
+                data = processedData
+            }
         }
-        print("[PhotoCaptureDelegate] filter applied, data size: \(data.count)")
+        print("[PhotoCaptureDelegate] processing complete, data size: \(data.count)")
+
+        // Re-extract metadata from processed data to get accurate dimensions.
+        var finalMetadata: [String: Any] = metadataSnapshot
+        if let cgImageSource = CGImageSourceCreateWithData(data as CFData, nil),
+           let properties = CGImageSourceCopyPropertiesAtIndex(cgImageSource, 0, nil) as? [String: Any] {
+            finalMetadata = properties
+            print("[PhotoCaptureDelegate] re-extracted metadata, dimensions: \(properties[kCGImagePropertyPixelWidth as String] ?? "?")x\(properties[kCGImagePropertyPixelHeight as String] ?? "?")")
+        }
 
         let filename = "zcam1-\(UUID().uuidString).\(self.format.fileExtension)"
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
@@ -151,7 +302,7 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             try data.write(to: tmpURL, options: [.atomic])
             print("[PhotoCaptureDelegate] file written successfully")
 
-            var metadata: [String: Any] = metadataSnapshot
+            var metadata: [String: Any] = finalMetadata
             print("[PhotoCaptureDelegate] processing metadata...")
 
             // Extract TIFF dictionary (device info, resolution).
@@ -346,9 +497,134 @@ public final class Zcam1CameraService: NSObject {
         return currentPosition
     }
 
-    /// Apply the current filter to image data and return filtered JPEG data.
-    public func applyFilterToImageData(_ data: Data) -> Data? {
-        return currentFilter.apply(toData: data, compressionQuality: 0.9)
+    /// Process image data with crop and filter. iOS handles orientation via EXIF metadata.
+    /// - Parameters:
+    ///   - data: The original JPEG image data
+    ///   - metadata: The original photo metadata (EXIF, TIFF, GPS, etc.)
+    ///   - aspectRatio: The target aspect ratio
+    ///   - compressionQuality: JPEG compression quality (0.0-1.0, default 0.95)
+    /// - Returns: Processed JPEG data with metadata, or the original data if no processing needed
+    func processImage(
+        _ data: Data,
+        metadata: [String: Any],
+        aspectRatio: Zcam1AspectRatio,
+        compressionQuality: CGFloat = 0.95
+    ) -> Data? {
+        let needsFilter = currentFilter != .normal
+
+        guard let image = UIImage(data: data),
+              let cgImage = image.cgImage else { return data }
+
+        // Check if EXIF orientation will rotate the image 90° (swapping width/height for display)
+        let willSwapDimensions = image.imageOrientation == .left ||
+                                  image.imageOrientation == .right ||
+                                  image.imageOrientation == .leftMirrored ||
+                                  image.imageOrientation == .rightMirrored
+
+        // Calculate if cropping is needed, accounting for EXIF rotation
+        let pixelWidth = CGFloat(cgImage.width)
+        let pixelHeight = CGFloat(cgImage.height)
+        let sourceRatio = pixelWidth / pixelHeight
+        // If dimensions will be swapped on display, we need to invert our target ratio for cropping
+        let targetRatio = willSwapDimensions ? (1.0 / aspectRatio.value) : aspectRatio.value
+        let needsCrop = abs(sourceRatio - targetRatio) > 0.01
+
+        // If no processing needed, return original
+        guard needsCrop || needsFilter else { return data }
+
+        var processedCGImage: CGImage = cgImage
+
+        // Apply crop if needed (simple center crop)
+        if needsCrop {
+            if let croppedImage = cropCGImage(cgImage, targetRatio: targetRatio) {
+                processedCGImage = croppedImage
+            }
+        }
+
+        // Apply filter if needed, preserving original orientation
+        var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: image.imageOrientation)
+        if needsFilter {
+            finalImage = currentFilter.apply(to: finalImage)
+        }
+
+        return encodeJPEGWithMetadata(finalImage, metadata: metadata, compressionQuality: compressionQuality)
+    }
+
+    /// Crop a CGImage to the specified aspect ratio using center crop.
+    /// - Parameters:
+    ///   - cgImage: The source image to crop
+    ///   - targetRatio: The target width/height ratio (already adjusted for EXIF orientation)
+    private func cropCGImage(_ cgImage: CGImage, targetRatio: CGFloat) -> CGImage? {
+        let pixelW = CGFloat(cgImage.width)
+        let pixelH = CGFloat(cgImage.height)
+        let currentRatio = pixelW / pixelH
+
+        var cropRect: CGRect
+        if currentRatio > targetRatio {
+            let newWidth = pixelH * targetRatio
+            let xOffset = (pixelW - newWidth) / 2
+            cropRect = CGRect(x: xOffset, y: 0, width: newWidth, height: pixelH)
+        } else {
+            let newHeight = pixelW / targetRatio
+            let yOffset = (pixelH - newHeight) / 2
+            cropRect = CGRect(x: 0, y: yOffset, width: pixelW, height: newHeight)
+        }
+
+        return cgImage.cropping(to: cropRect)
+    }
+
+    /// Encode a UIImage to JPEG data with metadata preservation using ImageIO.
+    private func encodeJPEGWithMetadata(
+        _ image: UIImage,
+        metadata: [String: Any],
+        compressionQuality: CGFloat
+    ) -> Data? {
+        guard let cgImage = image.cgImage else { return nil }
+
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            data as CFMutableData,
+            kUTTypeJPEG,
+            1,
+            nil
+        ) else { return nil }
+
+        // Prepare metadata with updated dimensions and orientation.
+        var updatedMetadata = metadata
+
+        // Update EXIF dimensions to match the processed image.
+        if var exifDict = updatedMetadata[kCGImagePropertyExifDictionary as String] as? [String: Any] {
+            exifDict[kCGImagePropertyExifPixelXDimension as String] = cgImage.width
+            exifDict[kCGImagePropertyExifPixelYDimension as String] = cgImage.height
+            updatedMetadata[kCGImagePropertyExifDictionary as String] = exifDict
+        }
+
+        // Set the image orientation in metadata.
+        updatedMetadata[kCGImagePropertyOrientation as String] = cgImageOrientationFromUIImageOrientation(image.imageOrientation)
+
+        // Set compression quality.
+        updatedMetadata[kCGImageDestinationLossyCompressionQuality as String] = compressionQuality
+
+        CGImageDestinationAddImage(destination, cgImage, updatedMetadata as CFDictionary)
+
+        guard CGImageDestinationFinalize(destination) else { return nil }
+
+        return data as Data
+    }
+
+    /// Convert UIImage.Orientation to CGImagePropertyOrientation value.
+    private func cgImageOrientationFromUIImageOrientation(_ orientation: UIImage.Orientation) -> Int {
+        switch orientation {
+        case .up: return 1
+        case .upMirrored: return 2
+        case .down: return 3
+        case .downMirrored: return 4
+        case .leftMirrored: return 5
+        case .right: return 6
+        case .rightMirrored: return 7
+        case .left: return 8
+        @unknown default: return 1
+        }
     }
 
     // MARK: - Video Data Output for Filtered Preview
@@ -582,7 +858,7 @@ public final class Zcam1CameraService: NSObject {
                 let currentInput = self.videoInput,
                 currentInput.device.position == position,
                 session.outputs.contains(self.photoOutput),
-                session.sessionPreset == .high
+                session.sessionPreset == .photo
             {
                 DispatchQueue.main.async {
                     completion(nil)
@@ -594,9 +870,8 @@ public final class Zcam1CameraService: NSObject {
                 let session = self.captureSession ?? AVCaptureSession()
                 session.beginConfiguration()
                 self.didPrewarmDepth = false
-                // Use .high preset which supports both photo capture and video data output.
-                // The .photo preset may not deliver continuous frames needed for real-time filtering.
-                session.sessionPreset = .high
+                // Use .photo preset for native 4:3 sensor capture with maximum quality.
+                session.sessionPreset = .photo
 
                 // Remove existing input if position changed
                 if let currentInput = self.videoInput,
@@ -651,6 +926,20 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
+                // Configure photo output for maximum resolution.
+                // This is critical because we use .high session preset for video preview,
+                // but still want full-resolution photos (12MP instead of 2MP).
+                if let device = self.videoInput?.device {
+                    // Find the highest resolution format available for photos.
+                    let maxDimensions = device.activeFormat.supportedMaxPhotoDimensions
+                        .max { ($0.width * $0.height) < ($1.width * $1.height) }
+
+                    if let maxDim = maxDimensions {
+                        self.photoOutput.maxPhotoDimensions = maxDim
+                        print("[Zcam1CameraService] Photo output configured for max dimensions: \(maxDim.width)x\(maxDim.height)")
+                    }
+                }
+
                 // Depth delivery setup:
                 // - enable at the output level once (avoids first-shot lag when turning it on later)
                 // - prewarm the pipeline via setPreparedPhotoSettingsArray
@@ -681,6 +970,9 @@ public final class Zcam1CameraService: NSObject {
     // MARK: - Session Control
 
     public func startRunning() {
+        // Start motion manager for orientation detection (non-blocking).
+        Zcam1MotionManager.shared.startUpdates()
+
         sessionQueue.async {
             guard let session = self.captureSession else { return }
             if !session.isRunning {
@@ -694,6 +986,9 @@ public final class Zcam1CameraService: NSObject {
     }
 
     public func stopRunning() {
+        // Stop motion manager when camera is inactive.
+        Zcam1MotionManager.shared.stopUpdates()
+
         sessionQueue.async {
             guard let session = self.captureSession, session.isRunning else { return }
             session.stopRunning()
@@ -930,8 +1225,8 @@ public final class Zcam1CameraService: NSObject {
                 self.audioInput = nil
             }
 
-            if session.canSetSessionPreset(.high) {
-                session.sessionPreset = .high
+            if session.canSetSessionPreset(.photo) {
+                session.sessionPreset = .photo
             }
 
             session.commitConfiguration()
@@ -1156,6 +1451,8 @@ public final class Zcam1CameraService: NSObject {
             positionString: positionString,
             formatString: formatString,
             includeDepthData: true,
+            aspectRatio: nil,
+            orientation: nil,
             completion: completion
         )
     }
@@ -1164,11 +1461,14 @@ public final class Zcam1CameraService: NSObject {
         positionString: String?,
         formatString: String?,
         includeDepthData: Bool,
+        aspectRatio: String?,
+        orientation: String?,
+        skipPostProcessing: Bool = false,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
-        print(
-            "[Zcam1CameraService] takePhoto START - position=\(positionString ?? "nil"), format=\(formatString ?? "nil"), includeDepthData=\(includeDepthData)"
-        )
+        let aspectRatioEnum = Zcam1AspectRatio(from: aspectRatio)
+        let orientationEnum = Zcam1Orientation(from: orientation)
+        print("[Zcam1CameraService] takePhoto START - position=\(positionString ?? "nil"), format=\(formatString ?? "nil"), includeDepthData=\(includeDepthData), skipPostProcessing=\(skipPostProcessing)")
         #if targetEnvironment(simulator)
             // Simulator mode: create and return a test image.
             let format = Zcam1CaptureFormat(from: formatString)
@@ -1325,6 +1625,15 @@ public final class Zcam1CameraService: NSObject {
                     }
                     print("[Zcam1CameraService] takePhoto: settings created")
 
+                    // Request maximum resolution photo capture.
+                    // This is critical because we use .high session preset for video preview,
+                    // but still want full-resolution photos (12MP instead of 2MP).
+                    let maxDimensions = self.photoOutput.maxPhotoDimensions
+                    if maxDimensions.width > 0 && maxDimensions.height > 0 {
+                        settings.maxPhotoDimensions = maxDimensions
+                        print("[Zcam1CameraService] takePhoto: requesting max dimensions \(maxDimensions.width)x\(maxDimensions.height)")
+                    }
+
                     // Configure flash if available.
                     if let device = self.videoInput?.device, device.hasFlash {
                         if self.photoOutput.supportedFlashModes.contains(self.flashMode) {
@@ -1374,11 +1683,14 @@ public final class Zcam1CameraService: NSObject {
                         settings.isCameraCalibrationDataDeliveryEnabled = false
                     }
 
-                    // Create delegate to handle capture and keep it alive until completion
+                    // Create delegate to handle capture and keep it alive until completion.
                     print("[Zcam1CameraService] takePhoto: creating PhotoCaptureDelegate...")
                     let delegate = PhotoCaptureDelegate(
                         format: format,
+                        aspectRatio: aspectRatioEnum,
+                        orientation: orientationEnum,
                         includeDepthData: includeDepthData,
+                        skipPostProcessing: skipPostProcessing,
                         owner: self,
                         completion: completion
                     )

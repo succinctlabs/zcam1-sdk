@@ -152,6 +152,10 @@ export interface StopNativeVideoRecordingResult {
 
 export type FlashMode = "off" | "on" | "auto";
 
+export type AspectRatio = "4:3" | "16:9" | "1:1";
+
+export type Orientation = "auto" | "portrait" | "landscape";
+
 export interface Spec extends TurboModule {
   /**
    * Capture a photo using the native camera stack (Swift/AVFoundation)
@@ -165,12 +169,17 @@ export interface Spec extends TurboModule {
    * @param includeDepthData When true, native should request depth (+ calibration)
    * data delivery for this capture (if supported). When false, native should avoid
    * enabling depth delivery and `depthData` will be omitted from the result.
+   * @param skipPostProcessing When true, returns raw sensor output without cropping
+   * or rotation. Useful for developers who want to handle their own post-processing.
    */
   takeNativePhoto(
     format: TakeNativePhotoFormat,
     position: "front" | "back",
     flash: FlashMode,
     includeDepthData: boolean,
+    aspectRatio: AspectRatio,
+    orientation: Orientation,
+    skipPostProcessing: boolean,
   ): Promise<TakeNativePhotoResult>;
 
   /**
