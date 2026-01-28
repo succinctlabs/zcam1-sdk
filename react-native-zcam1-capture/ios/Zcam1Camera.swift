@@ -208,7 +208,9 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         // Nil out completion before calling to prevent re-entry.
         self.completion = nil
 
-        print("[PhotoCaptureDelegate] calling completion, result=\(result != nil), error=\(error != nil)")
+        print(
+            "[PhotoCaptureDelegate] calling completion, result=\(result != nil), error=\(error != nil)"
+        )
         completion(result, error)
 
         // Clean up owner reference.
@@ -257,7 +259,8 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         // Copy values we need immediately.
         print("[PhotoCaptureDelegate] extracting metadata...")
         let metadataSnapshot: [String: Any] = photo.metadata
-        print("[PhotoCaptureDelegate] extracting depthData (includeDepthData=\(includeDepthData))...")
+        print(
+            "[PhotoCaptureDelegate] extracting depthData (includeDepthData=\(includeDepthData))...")
         let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
         print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
 
@@ -815,12 +818,14 @@ public final class Zcam1CameraService: NSObject {
     private func configureVirtualDeviceSwitching(_ device: AVCaptureDevice) {
         // Only configure for virtual devices that support lens switching.
         let deviceType = device.deviceType
-        let isVirtualDevice = deviceType == .builtInTripleCamera ||
-                              deviceType == .builtInDualWideCamera ||
-                              deviceType == .builtInDualCamera
+        let isVirtualDevice =
+            deviceType == .builtInTripleCamera || deviceType == .builtInDualWideCamera
+            || deviceType == .builtInDualCamera
 
         guard isVirtualDevice else {
-            print("[Zcam1CameraService] Device is not a virtual device, skipping switching configuration")
+            print(
+                "[Zcam1CameraService] Device is not a virtual device, skipping switching configuration"
+            )
             return
         }
 
@@ -830,9 +835,12 @@ public final class Zcam1CameraService: NSObject {
             // Enable automatic lens switching for smooth zoom transitions.
             // .auto allows the device to automatically switch between constituent cameras
             // based on zoom factor, providing seamless transitions.
-            device.setPrimaryConstituentDeviceSwitchingBehavior(.auto, restrictedSwitchingBehaviorConditions: [])
+            device.setPrimaryConstituentDeviceSwitchingBehavior(
+                .auto, restrictedSwitchingBehaviorConditions: [])
 
-            print("[Zcam1CameraService] Configured virtual device switching: \(deviceType.rawValue), behavior: auto")
+            print(
+                "[Zcam1CameraService] Configured virtual device switching: \(deviceType.rawValue), behavior: auto"
+            )
 
             device.unlockForConfiguration()
         } catch {
@@ -1006,7 +1014,9 @@ public final class Zcam1CameraService: NSObject {
 
                 // Log active physical camera for debugging lens switching.
                 if let activeCamera = device.activePrimaryConstituent {
-                    print("[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)")
+                    print(
+                        "[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)"
+                    )
                 }
 
                 device.unlockForConfiguration()
@@ -1063,7 +1073,9 @@ public final class Zcam1CameraService: NSObject {
         let deviceType = device.deviceType.rawValue
         let minZoom = device.minAvailableVideoZoomFactor
         let maxZoom = device.maxAvailableVideoZoomFactor
-        let switchOverFactors = device.virtualDeviceSwitchOverVideoZoomFactors.map { $0.doubleValue }
+        let switchOverFactors = device.virtualDeviceSwitchOverVideoZoomFactors.map {
+            $0.doubleValue
+        }
         let currentZoom = device.videoZoomFactor
         let switchingBehavior = device.activePrimaryConstituentDeviceSwitchingBehavior.rawValue
 
@@ -1074,7 +1086,7 @@ public final class Zcam1CameraService: NSObject {
             "currentZoom": currentZoom,
             "switchOverFactors": switchOverFactors,
             "switchingBehavior": switchingBehavior,
-            "isVirtualDevice": !switchOverFactors.isEmpty
+            "isVirtualDevice": !switchOverFactors.isEmpty,
         ]
     }
 
@@ -1243,12 +1255,110 @@ public final class Zcam1CameraService: NSObject {
             "filePath": outputFileURL.path,
             "format": "mov",
             "hasAudio": self.activeVideoHasAudio,
+
+            // Device/software info (best-effort).
+            "deviceMake": "Apple",
+            "deviceModel": UIDevice.current.model,
+            "softwareVersion": "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)",
         ]
 
+        // File-level metadata (size + timestamps).
+        do {
+            let attrs = try FileManager.default.attributesOfItem(atPath: outputFileURL.path)
+
+            if let sizeNumber = attrs[.size] as? NSNumber {
+                result["fileSizeBytes"] = sizeNumber
+            } else if let sizeInt = attrs[.size] as? Int {
+                result["fileSizeBytes"] = NSNumber(value: sizeInt)
+            } else if let sizeInt64 = attrs[.size] as? Int64 {
+                result["fileSizeBytes"] = NSNumber(value: sizeInt64)
+            } else if let sizeUInt64 = attrs[.size] as? UInt64 {
+                result["fileSizeBytes"] = NSNumber(value: sizeUInt64)
+            }
+        } catch {
+            // Best-effort: ignore file attribute failures.
+        }
+
         let asset = AVURLAsset(url: outputFileURL)
+
+        // Container/asset duration.
         let seconds = CMTimeGetSeconds(asset.duration)
         if seconds.isFinite && !seconds.isNaN && seconds >= 0 {
             result["durationSeconds"] = seconds
+        }
+
+        // Track-level metadata (dimensions, codec, bitrate, etc.).
+        func fourCCString(_ code: FourCharCode) -> String {
+            let be = code.bigEndian
+            let bytes: [UInt8] = [
+                UInt8((be >> 24) & 0xff),
+                UInt8((be >> 16) & 0xff),
+                UInt8((be >> 8) & 0xff),
+                UInt8(be & 0xff),
+            ]
+            if let s = String(bytes: bytes, encoding: .macOSRoman) {
+                return s.trimmingCharacters(in: .controlCharacters)
+            }
+            return "\(code)"
+        }
+
+        if let videoTrack = asset.tracks(withMediaType: .video).first {
+            // Width/height corrected for rotation.
+            let transformed = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
+            let width = abs(transformed.width)
+            let height = abs(transformed.height)
+            if width.isFinite && !width.isNaN && height.isFinite && !height.isNaN {
+                result["width"] = Int(width.rounded())
+                result["height"] = Int(height.rounded())
+            }
+
+            // Rotation information derived from preferredTransform.
+            let t = videoTrack.preferredTransform
+            let epsilon: CGFloat = 0.001
+            func approx(_ x: CGFloat, _ y: CGFloat) -> Bool { abs(x - y) < epsilon }
+
+            var rotationDegrees: Int? = nil
+            if approx(t.a, 0), approx(t.b, 1), approx(t.c, -1), approx(t.d, 0) {
+                rotationDegrees = 90
+            } else if approx(t.a, 0), approx(t.b, -1), approx(t.c, 1), approx(t.d, 0) {
+                rotationDegrees = 270
+            } else if approx(t.a, -1), approx(t.b, 0), approx(t.c, 0), approx(t.d, -1) {
+                rotationDegrees = 180
+            } else if approx(t.a, 1), approx(t.b, 0), approx(t.c, 0), approx(t.d, 1) {
+                rotationDegrees = 0
+            }
+
+            if let rotationDegrees = rotationDegrees {
+                result["rotationDegrees"] = rotationDegrees
+            }
+
+            let fps = Double(videoTrack.nominalFrameRate)
+            if fps.isFinite && !fps.isNaN && fps > 0 {
+                result["frameRate"] = fps
+            }
+
+            if let formatDescAny = videoTrack.formatDescriptions.first {
+                let formatDesc = formatDescAny as! CMFormatDescription
+                result["videoCodec"] = fourCCString(CMFormatDescriptionGetMediaSubType(formatDesc))
+            }
+        }
+
+        if let audioTrack = asset.tracks(withMediaType: .audio).first {
+            if let formatDescAny = audioTrack.formatDescriptions.first {
+                let formatDesc = formatDescAny as! CMAudioFormatDescription
+                let audioCodec = fourCCString(CMFormatDescriptionGetMediaSubType(formatDesc))
+                result["audioCodec"] = audioCodec.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                if let asbdPtr = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc) {
+                    let asbd = asbdPtr.pointee
+                    if asbd.mSampleRate > 0 {
+                        result["audioSampleRate"] = asbd.mSampleRate
+                    }
+                    if asbd.mChannelsPerFrame > 0 {
+                        result["audioChannels"] = Int(asbd.mChannelsPerFrame)
+                    }
+                }
+            }
         }
 
         let stopCompletion = pendingVideoStopCompletion
@@ -1387,11 +1497,20 @@ public final class Zcam1CameraService: NSObject {
                 let dateString = dateFormatter.string(from: now)
 
                 let metadata: [String: Any] = [
+                    "{Exif}": [
+                        "ISOSpeedRatings": [],
+                        "PixelXDimension": 1920,
+                        "PixelYDimension": 1080,
+                        "ExposureTime": 0,
+                        "FNumber": 1,
+                        "FocalLength": 5,
+                    ],
                     "{TIFF}": [
                         "DateTime": dateString,
                         "Model": "iPhone Simulator",
                         "Software": "iOS Simulator",
-                    ]
+                    ],
+                    "Orientation": 6,
                 ]
 
                 let result: [String: Any] = [
@@ -1432,17 +1551,23 @@ public final class Zcam1CameraService: NSObject {
             }
 
             let format = Zcam1CaptureFormat(from: formatString)
-            print("[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format)")
+            print(
+                "[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format)"
+            )
 
             self.configureSessionIfNeeded(position: position) { error in
-                print("[Zcam1CameraService] takePhoto: configureSessionIfNeeded completed, error=\(String(describing: error))")
+                print(
+                    "[Zcam1CameraService] takePhoto: configureSessionIfNeeded completed, error=\(String(describing: error))"
+                )
                 if let error = error {
                     completion(nil, error as NSError)
                     return
                 }
 
                 self.sessionQueue.async {
-                    print("[Zcam1CameraService] takePhoto: on sessionQueue, checking captureSession...")
+                    print(
+                        "[Zcam1CameraService] takePhoto: on sessionQueue, checking captureSession..."
+                    )
                     guard let session = self.captureSession else {
                         let err = NSError(
                             domain: "Zcam1CameraService",
@@ -1459,7 +1584,9 @@ public final class Zcam1CameraService: NSObject {
                     if !session.isRunning {
                         print("[Zcam1CameraService] takePhoto: starting session...")
                         session.startRunning()
-                        print("[Zcam1CameraService] takePhoto: calling prewarmDepthPipelineIfNeeded...")
+                        print(
+                            "[Zcam1CameraService] takePhoto: calling prewarmDepthPipelineIfNeeded..."
+                        )
                         self.prewarmDepthPipelineIfNeeded()
                         print("[Zcam1CameraService] takePhoto: prewarm completed")
                     }
@@ -1531,18 +1658,26 @@ public final class Zcam1CameraService: NSObject {
                     print("[Zcam1CameraService] takePhoto: quality prioritization configured")
 
                     // Enable/disable depth + calibration delivery at both the output + settings level based on request.
-                    print("[Zcam1CameraService] takePhoto: isDepthDataDeliverySupported=\(self.photoOutput.isDepthDataDeliverySupported)")
+                    print(
+                        "[Zcam1CameraService] takePhoto: isDepthDataDeliverySupported=\(self.photoOutput.isDepthDataDeliverySupported)"
+                    )
                     if self.photoOutput.isDepthDataDeliverySupported {
                         // Output-level enabling is done during session configuration/prewarm to avoid first-shot lag.
-                        print("[Zcam1CameraService] takePhoto: setting isDepthDataDeliveryEnabled=\(includeDepthData)")
+                        print(
+                            "[Zcam1CameraService] takePhoto: setting isDepthDataDeliveryEnabled=\(includeDepthData)"
+                        )
                         settings.isDepthDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isDepthDataDeliveryEnabled = false
                     }
 
-                    print("[Zcam1CameraService] takePhoto: isCameraCalibrationDataDeliverySupported=\(self.photoOutput.isCameraCalibrationDataDeliverySupported)")
+                    print(
+                        "[Zcam1CameraService] takePhoto: isCameraCalibrationDataDeliverySupported=\(self.photoOutput.isCameraCalibrationDataDeliverySupported)"
+                    )
                     if self.photoOutput.isCameraCalibrationDataDeliverySupported {
-                        print("[Zcam1CameraService] takePhoto: setting isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)")
+                        print(
+                            "[Zcam1CameraService] takePhoto: setting isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)"
+                        )
                         settings.isCameraCalibrationDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isCameraCalibrationDataDeliveryEnabled = false
