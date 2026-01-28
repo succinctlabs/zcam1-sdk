@@ -9,3 +9,8 @@ add-yalc-to-capture-lib:
 add-yalc-to-prove-lib:
     yalc publish
     cd ../react-native-zcam1-prove && yalc add @succinctlabs/react-native-zcam1-common
+
+publish $NPM_CONFIG_REGISTRY:
+    npm publish --access public
+    cd ../react-native-zcam1-capture && npm i @succinctlabs/react-native-zcam1-common
+    cd ../react-native-zcam1-prove && npm i @succinctlabs/react-native-zcam1-common
