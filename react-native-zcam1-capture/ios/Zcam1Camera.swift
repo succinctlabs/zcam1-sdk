@@ -810,6 +810,36 @@ public final class Zcam1CameraService: NSObject {
         #endif
     }
 
+    /// Configure virtual device lens switching for smooth zoom transitions.
+    /// This enables seamless switching between ultra-wide, wide, and telephoto lenses.
+    private func configureVirtualDeviceSwitching(_ device: AVCaptureDevice) {
+        // Only configure for virtual devices that support lens switching.
+        let deviceType = device.deviceType
+        let isVirtualDevice = deviceType == .builtInTripleCamera ||
+                              deviceType == .builtInDualWideCamera ||
+                              deviceType == .builtInDualCamera
+
+        guard isVirtualDevice else {
+            print("[Zcam1CameraService] Device is not a virtual device, skipping switching configuration")
+            return
+        }
+
+        do {
+            try device.lockForConfiguration()
+
+            // Enable automatic lens switching for smooth zoom transitions.
+            // .auto allows the device to automatically switch between constituent cameras
+            // based on zoom factor, providing seamless transitions.
+            device.setPrimaryConstituentDeviceSwitchingBehavior(.auto, restrictedSwitchingBehaviorConditions: [])
+
+            print("[Zcam1CameraService] Configured virtual device switching: \(deviceType.rawValue), behavior: auto")
+
+            device.unlockForConfiguration()
+        } catch {
+            print("[Zcam1CameraService] Failed to configure virtual device switching: \(error)")
+        }
+    }
+
     /// Configure the capture session if needed (or reconfigure if the position changed).
     @nonobjc public func configureSessionIfNeeded(
         position: AVCaptureDevice.Position,
@@ -852,6 +882,11 @@ public final class Zcam1CameraService: NSObject {
                             userInfo: [NSLocalizedDescriptionKey: "No suitable camera device found"]
                         )
                     }
+
+                    // Configure smooth lens switching for virtual devices (dual/triple camera).
+                    // This enables seamless zoom transitions between ultra-wide, wide, and telephoto lenses.
+                    self.configureVirtualDeviceSwitching(device)
+
                     let input = try AVCaptureDeviceInput(device: device)
                     if session.canAddInput(input) {
                         session.addInput(input)
@@ -968,6 +1003,12 @@ public final class Zcam1CameraService: NSObject {
                 let clampedZoom = min(max(factor, minZoom), maxZoom)
                 device.videoZoomFactor = clampedZoom
                 self.currentZoom = clampedZoom
+
+                // Log active physical camera for debugging lens switching.
+                if let activeCamera = device.activePrimaryConstituent {
+                    print("[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)")
+                }
+
                 device.unlockForConfiguration()
             } catch {
                 print("[Zcam1] Failed to set zoom: \(error)")
@@ -997,6 +1038,44 @@ public final class Zcam1CameraService: NSObject {
     public func getSwitchOverZoomFactors() -> [NSNumber] {
         guard let device = videoInput?.device else { return [] }
         return device.virtualDeviceSwitchOverVideoZoomFactors.map { $0 }
+    }
+
+    /// Check if the current device has an ultra-wide camera.
+    /// This is true for builtInTripleCamera and builtInDualWideCamera.
+    /// This is false for builtInDualCamera (Wide + Telephoto) and builtInWideAngleCamera.
+    public func hasUltraWideCamera() -> Bool {
+        guard let device = videoInput?.device else { return false }
+        let deviceType = device.deviceType
+        // builtInTripleCamera = Ultra-wide + Wide + Telephoto
+        // builtInDualWideCamera = Ultra-wide + Wide
+        // builtInDualCamera = Wide + Telephoto (NO ultra-wide)
+        // builtInWideAngleCamera = Wide only (NO ultra-wide)
+        return deviceType == .builtInTripleCamera || deviceType == .builtInDualWideCamera
+    }
+
+    /// Get diagnostic info about the current camera device for debugging.
+    /// Returns a dictionary with device type, supported zoom range, and switching behavior.
+    public func getDeviceDiagnostics() -> [String: Any] {
+        guard let device = videoInput?.device else {
+            return ["error": "No device configured"]
+        }
+
+        let deviceType = device.deviceType.rawValue
+        let minZoom = device.minAvailableVideoZoomFactor
+        let maxZoom = device.maxAvailableVideoZoomFactor
+        let switchOverFactors = device.virtualDeviceSwitchOverVideoZoomFactors.map { $0.doubleValue }
+        let currentZoom = device.videoZoomFactor
+        let switchingBehavior = device.activePrimaryConstituentDeviceSwitchingBehavior.rawValue
+
+        return [
+            "deviceType": deviceType,
+            "minZoom": minZoom,
+            "maxZoom": maxZoom,
+            "currentZoom": currentZoom,
+            "switchOverFactors": switchOverFactors,
+            "switchingBehavior": switchingBehavior,
+            "isVirtualDevice": !switchOverFactors.isEmpty
+        ]
     }
 
     /// Set torch mode (continuous flashlight during preview).
@@ -1777,6 +1856,8 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public var captureFormat: String = "jpeg"
 
     /// Zoom factor (1.0 = no zoom, 2.0 = 2x, etc.)
+    /// Prop-driven zoom changes are instant (used by slider and button taps).
+    /// For smooth pinch-to-zoom, use setZoomAnimated via the TurboModule instead.
     public var zoom: CGFloat = 1.0 {
         didSet {
             Zcam1CameraService.shared.setZoom(zoom)

@@ -1,5 +1,11 @@
 # @succinctlabs/react-native-zcam1-prove
 
+## 0.2.1
+
+### Patch Changes
+
+- [#40](https://github.com/succinctlabs/zcam1-sdk/pull/40) [`860465c`](https://github.com/succinctlabs/zcam1-sdk/commit/860465c9f101087e564f7f84315a1c3e10d989d1) Thanks [@friedlaketrout](https://github.com/friedlaketrout)! - Fix CI build: ensure artifacts directory exists in proving-utils build script
+
 ## 0.2.0
 
 ### Minor Changes

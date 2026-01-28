@@ -137,12 +137,19 @@ export interface Spec extends TurboModule {
   stopNativeVideoRecording(): Promise<StopNativeVideoRecordingResult>;
 
   /**
-   * Set zoom factor programmatically.
+   * Set zoom factor programmatically (instant, no animation).
    * For virtual devices with ultra-wide, 1.0 is ultra-wide (0.5x user-facing),
    * 2.0 is wide-angle (1x user-facing), etc.
    * @param factor Device zoom factor (use getMinZoom/getMaxZoom for valid range)
    */
   setZoom(factor: number): void;
+
+  /**
+   * Set zoom factor with smooth animation (recommended for pinch-to-zoom gestures).
+   * Uses native AVFoundation ramp for smooth transitions across lens switchover boundaries.
+   * @param factor Device zoom factor (use getMinZoom/getMaxZoom for valid range)
+   */
+  setZoomAnimated(factor: number): void;
 
   /**
    * Get the minimum supported zoom factor.
@@ -166,11 +173,37 @@ export interface Spec extends TurboModule {
   getSwitchOverZoomFactors(): Promise<number[]>;
 
   /**
+   * Check if the current device has an ultra-wide camera.
+   * This is true for builtInTripleCamera and builtInDualWideCamera (iPhone 11+, Pro models).
+   * This is false for builtInDualCamera (Wide + Telephoto, e.g., iPhone X/XS) and single-lens devices.
+   *
+   * Use this to correctly interpret zoom factors:
+   * - If hasUltraWide: minZoom (1.0) = 0.5x user-facing, switchOverFactors[0] (2.0) = 1x user-facing
+   * - If !hasUltraWide: minZoom (1.0) = 1x user-facing, switchOverFactors[0] (2.0) = 2x user-facing (telephoto)
+   */
+  hasUltraWideCamera(): Promise<boolean>;
+
+  /**
    * Focus at a normalized point in the preview.
    * Also adjusts exposure point if supported.
    * @param x Normalized x coordinate (0-1, left to right)
    * @param y Normalized y coordinate (0-1, top to bottom)
    */
   focusAtPoint(x: number, y: number): void;
+
+  /**
+   * Get diagnostic info about the current camera device for debugging.
+   * Returns device type, supported zoom range, switching behavior, and more.
+   * Useful for debugging zoom issues on different device configurations.
+   */
+  getDeviceDiagnostics(): Promise<{
+    deviceType: string;
+    minZoom: number;
+    maxZoom: number;
+    currentZoom: number;
+    switchOverFactors: number[];
+    switchingBehavior: number;
+    isVirtualDevice: boolean;
+  }>;
 }
 export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");

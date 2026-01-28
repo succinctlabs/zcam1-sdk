@@ -176,12 +176,52 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
+   * Check if the current device has an ultra-wide camera.
+   * This is true for builtInTripleCamera and builtInDualWideCamera (iPhone 11+, Pro models).
+   * This is false for builtInDualCamera (Wide + Telephoto, e.g., iPhone X/XS) and single-lens devices.
+   *
+   * Use this to correctly interpret zoom factors:
+   * - If hasUltraWide: minZoom (1.0) = 0.5x user-facing, switchOverFactors[0] (2.0) = 1x user-facing
+   * - If !hasUltraWide: minZoom (1.0) = 1x user-facing, switchOverFactors[0] (2.0) = 2x user-facing (telephoto)
+   */
+  async hasUltraWideCamera(): Promise<boolean> {
+    return NativeZcam1Sdk.hasUltraWideCamera();
+  }
+
+  /**
    * Focus at a point in the preview. Also adjusts exposure point if supported.
    * @param x Normalized x coordinate (0-1, left to right)
    * @param y Normalized y coordinate (0-1, top to bottom)
    */
   focusAtPoint(x: number, y: number): void {
     NativeZcam1Sdk.focusAtPoint(x, y);
+  }
+
+  /**
+   * Set zoom with smooth animation. Recommended for pinch-to-zoom gestures.
+   * Uses native AVFoundation ramp for smooth transitions across lens switchover boundaries.
+   * This method bypasses React re-renders for lowest latency during continuous gestures.
+   * @param factor Device zoom factor (use getMinZoom/getMaxZoom for valid range)
+   */
+  setZoomAnimated(factor: number): void {
+    NativeZcam1Sdk.setZoomAnimated(factor);
+  }
+
+  /**
+   * Get diagnostic info about the current camera device for debugging.
+   * Returns device type, supported zoom range, switching behavior, and more.
+   * Useful for debugging zoom issues on different device configurations.
+   */
+  async getDeviceDiagnostics(): Promise<{
+    deviceType: string;
+    minZoom: number;
+    maxZoom: number;
+    currentZoom: number;
+    switchOverFactors: number[];
+    switchingBehavior: number;
+    isVirtualDevice: boolean;
+  }> {
+    return NativeZcam1Sdk.getDeviceDiagnostics();
   }
 
   /**
