@@ -19,6 +19,17 @@ export {
  */
 export { ZCamera, type CameraFilter } from "./camera";
 
+import NativeZcam1Sdk from "./NativeZcam1Sdk";
+
+/**
+ * Present a native full-screen preview for any file using iOS QLPreviewController.
+ * Supports images, videos, PDFs, and other common file types with native playback controls.
+ * @param filePath Absolute filesystem path to the file.
+ */
+export async function previewFile(filePath: string): Promise<void> {
+  return NativeZcam1Sdk.previewFile(filePath);
+}
+
 /**
  * Flash mode for photo capture.
  */

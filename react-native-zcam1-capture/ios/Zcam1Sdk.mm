@@ -1,6 +1,7 @@
 #import "Zcam1Sdk.h"
 #import <Security/Security.h>
 #import <AVFoundation/AVFoundation.h>
+#import <QuickLook/QuickLook.h>
 #if __has_include("Zcam1Sdk-Swift.h")
 #import "Zcam1Sdk-Swift.h"
 #endif
@@ -17,6 +18,44 @@ static void ensureStaticStorageInitialized(void) {
         sPendingRejecters = [NSMutableDictionary new];
     });
 }
+
+// MARK: - QLPreviewController helpers
+
+@interface Zcam1PreviewItem : NSObject <QLPreviewItem>
+@property (nonatomic, strong) NSURL *previewItemURL;
+- (instancetype)initWithURL:(NSURL *)url;
+@end
+
+@implementation Zcam1PreviewItem
+- (instancetype)initWithURL:(NSURL *)url {
+  self = [super init];
+  if (self) {
+    _previewItemURL = url;
+  }
+  return self;
+}
+@end
+
+@interface Zcam1PreviewDataSource : NSObject <QLPreviewControllerDataSource>
+@property (nonatomic, strong) Zcam1PreviewItem *item;
+- (instancetype)initWithItem:(Zcam1PreviewItem *)item;
+@end
+
+@implementation Zcam1PreviewDataSource
+- (instancetype)initWithItem:(Zcam1PreviewItem *)item {
+  self = [super init];
+  if (self) {
+    _item = item;
+  }
+  return self;
+}
+- (NSInteger)numberOfPreviewItemsInPreviewController:(QLPreviewController *)controller {
+  return 1;
+}
+- (id<QLPreviewItem>)previewController:(QLPreviewController *)controller previewItemAtIndex:(NSInteger)index {
+  return self.item;
+}
+@end
 
 @implementation Zcam1Sdk
 
@@ -286,6 +325,59 @@ static void ensureStaticStorageInitialized(void) {
   // Swift-generated header is not available (no Swift camera implementation linked).
   reject(@"CAMERA_UNAVAILABLE", @"Native camera requires iOS Swift component", nil);
 #endif
+}
+
+- (void)previewFile:(NSString *)filePath
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject
+{
+  NSURL *fileURL = [NSURL fileURLWithPath:filePath];
+
+  if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+    reject(@"FILE_NOT_FOUND", [NSString stringWithFormat:@"File not found: %@", filePath], nil);
+    return;
+  }
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    Zcam1PreviewItem *item = [[Zcam1PreviewItem alloc] initWithURL:fileURL];
+    Zcam1PreviewDataSource *dataSource = [[Zcam1PreviewDataSource alloc] initWithItem:item];
+
+    // Store data source so it isn't deallocated.
+    static Zcam1PreviewDataSource *currentDataSource = nil;
+    currentDataSource = dataSource;
+
+    QLPreviewController *previewController = [[QLPreviewController alloc] init];
+    previewController.dataSource = dataSource;
+
+    // Find the key window using modern scene-based API (iOS 13+).
+    UIWindow *keyWindow = nil;
+    for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+      if (scene.activationState == UISceneActivationStateForegroundActive) {
+        for (UIWindow *window in scene.windows) {
+          if (window.isKeyWindow) {
+            keyWindow = window;
+            break;
+          }
+        }
+        if (keyWindow) break;
+      }
+    }
+
+    UIViewController *rootVC = keyWindow.rootViewController;
+    // Walk to the topmost presented controller.
+    while (rootVC.presentedViewController) {
+      rootVC = rootVC.presentedViewController;
+    }
+
+    if (!rootVC) {
+      reject(@"NO_VIEW_CONTROLLER", @"Could not find a view controller to present from", nil);
+      return;
+    }
+
+    [rootVC presentViewController:previewController animated:YES completion:^{
+      resolve(nil);
+    }];
+  });
 }
 
 - (void)getDepthSensorInfo:(RCTPromiseResolveBlock)resolve
