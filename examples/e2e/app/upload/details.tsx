@@ -128,7 +128,7 @@ function PhotoCaptureInfo({ metadata }: { metadata: PhotoMetadataInfo }) {
             Resolution: {metadata.xResolution} x {metadata.yResolution}
           </Text>
         )}
-        {metadata.orientation && (
+        {metadata.orientation !== undefined && (
           <Text style={styles.metadataRow}>
             Orientation: {metadata.orientation}
           </Text>
@@ -141,12 +141,12 @@ function PhotoCaptureInfo({ metadata }: { metadata: PhotoMetadataInfo }) {
             Exposure: {formatTime(metadata.exposureTime)}
           </Text>
         )}
-        {metadata.focalLength && (
+        {metadata.focalLength !== undefined && (
           <Text style={styles.metadataRow}>
             Focal Length: {metadata.focalLength}mm
           </Text>
         )}
-        {metadata.depthOfField && (
+        {metadata.depthOfField !== undefined && (
           <Text style={styles.metadataRow}>
             Depth of Field: {metadata.depthOfField}
           </Text>

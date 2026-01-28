@@ -542,12 +542,14 @@ public final class Zcam1CameraService: NSObject {
     private func configureVirtualDeviceSwitching(_ device: AVCaptureDevice) {
         // Only configure for virtual devices that support lens switching.
         let deviceType = device.deviceType
-        let isVirtualDevice = deviceType == .builtInTripleCamera ||
-                              deviceType == .builtInDualWideCamera ||
-                              deviceType == .builtInDualCamera
+        let isVirtualDevice =
+            deviceType == .builtInTripleCamera || deviceType == .builtInDualWideCamera
+            || deviceType == .builtInDualCamera
 
         guard isVirtualDevice else {
-            print("[Zcam1CameraService] Device is not a virtual device, skipping switching configuration")
+            print(
+                "[Zcam1CameraService] Device is not a virtual device, skipping switching configuration"
+            )
             return
         }
 
@@ -557,9 +559,12 @@ public final class Zcam1CameraService: NSObject {
             // Enable automatic lens switching for smooth zoom transitions.
             // .auto allows the device to automatically switch between constituent cameras
             // based on zoom factor, providing seamless transitions.
-            device.setPrimaryConstituentDeviceSwitchingBehavior(.auto, restrictedSwitchingBehaviorConditions: [])
+            device.setPrimaryConstituentDeviceSwitchingBehavior(
+                .auto, restrictedSwitchingBehaviorConditions: [])
 
-            print("[Zcam1CameraService] Configured virtual device switching: \(deviceType.rawValue), behavior: auto")
+            print(
+                "[Zcam1CameraService] Configured virtual device switching: \(deviceType.rawValue), behavior: auto"
+            )
 
             device.unlockForConfiguration()
         } catch {
@@ -714,7 +719,9 @@ public final class Zcam1CameraService: NSObject {
 
                 // Log active physical camera for debugging lens switching.
                 if let activeCamera = device.activePrimaryConstituent {
-                    print("[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)")
+                    print(
+                        "[Zcam1] Zoom: \(clampedZoom), active lens: \(activeCamera.deviceType.rawValue)"
+                    )
                 }
 
                 device.unlockForConfiguration()
@@ -771,7 +778,9 @@ public final class Zcam1CameraService: NSObject {
         let deviceType = device.deviceType.rawValue
         let minZoom = device.minAvailableVideoZoomFactor
         let maxZoom = device.maxAvailableVideoZoomFactor
-        let switchOverFactors = device.virtualDeviceSwitchOverVideoZoomFactors.map { $0.doubleValue }
+        let switchOverFactors = device.virtualDeviceSwitchOverVideoZoomFactors.map {
+            $0.doubleValue
+        }
         let currentZoom = device.videoZoomFactor
         let switchingBehavior = device.activePrimaryConstituentDeviceSwitchingBehavior.rawValue
 
@@ -782,7 +791,7 @@ public final class Zcam1CameraService: NSObject {
             "currentZoom": currentZoom,
             "switchOverFactors": switchOverFactors,
             "switchingBehavior": switchingBehavior,
-            "isVirtualDevice": !switchOverFactors.isEmpty
+            "isVirtualDevice": !switchOverFactors.isEmpty,
         ]
     }
 
@@ -1188,11 +1197,20 @@ public final class Zcam1CameraService: NSObject {
                 let dateString = dateFormatter.string(from: now)
 
                 let metadata: [String: Any] = [
+                    "{Exif}": [
+                        "ISOSpeedRatings": [],
+                        "PixelXDimension": 1920,
+                        "PixelYDimension": 1080,
+                        "Orientation": 6,
+                        "ExposureTime": 0,
+                        "FNumber": 1,
+                        "FocalLength": 5,
+                    ],
                     "{TIFF}": [
                         "DateTime": dateString,
                         "Model": "iPhone Simulator",
                         "Software": "iOS Simulator",
-                    ]
+                    ],
                 ]
 
                 let result: [String: Any] = [
