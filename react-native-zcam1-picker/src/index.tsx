@@ -5,6 +5,7 @@ import {
   Dimensions,
   Image,
   View,
+  Text,
 } from "react-native";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
@@ -14,6 +15,16 @@ import {
   authenticityStatus,
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1-c2pa";
+import { getVideoInfo } from "@succinctlabs/react-native-zcam1-capture";
+
+/**
+ * Format duration in seconds to "M:SS" format.
+ */
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 
 export {
   authenticityStatus,
@@ -147,6 +158,16 @@ const ZImageItem = ({
     [uri],
   );
   const [thumbnail, setThumbnail] = useRecyclingState(uri, [uri]);
+  const [videoDuration, setVideoDuration] = useRecyclingState<number | null>(
+    null,
+    [uri],
+  );
+
+  // Check if this is a video file.
+  const isVideo = useMemo(() => {
+    const ext = Util.extname(uri)?.toLowerCase();
+    return ext === "mov" || ext === "mp4";
+  }, [uri]);
 
   useEffect(() => {
     let active = true;
@@ -164,19 +185,35 @@ const ZImageItem = ({
   }, [uri]);
 
   useEffect(() => {
-    const buildThumbnail = async () => {
-      const ext = Util.extname(uri)?.toLowerCase();
+    if (!isVideo) return;
 
-      if (ext === "mov" || ext === "mp4") {
-        const thumbnail = await createThumbnail({
+    let active = true;
+    const buildThumbnailAndGetDuration = async () => {
+      try {
+        // Generate thumbnail.
+        const thumbResult = await createThumbnail({
           url: uri.replace("file://", ""),
         });
-        setThumbnail(thumbnail.path);
+        if (active) {
+          setThumbnail(thumbResult.path);
+        }
+
+        // Get video duration.
+        const videoPath = uri.replace("file://", "");
+        const videoInfo = await getVideoInfo(videoPath);
+        if (active && videoInfo.durationSeconds > 0) {
+          setVideoDuration(videoInfo.durationSeconds);
+        }
+      } catch (err) {
+        console.warn("[ZImagePicker] Failed to process video:", err);
       }
     };
 
-    buildThumbnail();
-  }, [uri]);
+    buildThumbnailAndGetDuration();
+    return () => {
+      active = false;
+    };
+  }, [uri, isVideo]);
 
   const badge = useMemo(() => {
     return renderBadge ? renderBadge(uri, authStatus) : null;
@@ -208,6 +245,14 @@ const ZImageItem = ({
             backgroundColor: "rgba(0, 0, 0, 0.5)",
           }}
         />
+      )}
+      {/* Video duration badge in bottom-left. */}
+      {isVideo && videoDuration !== null && (
+        <View style={styles.durationBadge}>
+          <Text style={styles.durationText}>
+            {formatDuration(videoDuration)}
+          </Text>
+        </View>
       )}
       {badge}
       {selectionOverlay}
@@ -361,5 +406,19 @@ const styles = StyleSheet.create({
   },
   image: {
     flex: 1,
+  },
+  durationBadge: {
+    position: "absolute",
+    bottom: 6,
+    left: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  durationText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "600",
   },
 });

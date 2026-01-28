@@ -1366,6 +1366,10 @@ public final class Zcam1CameraService: NSObject {
         activeMovieOutputURL = nil
         activeVideoHasAudio = false
 
+        // Debug: log the result dictionary before sending to JS
+        print("[Zcam1Camera] stopVideoRecording result keys: \(result.keys.sorted())")
+        print("[Zcam1Camera] stopVideoRecording result: \(result)")
+
         DispatchQueue.main.async {
             stopCompletion?(result as NSDictionary, nil)
         }

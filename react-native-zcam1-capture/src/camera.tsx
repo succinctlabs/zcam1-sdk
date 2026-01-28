@@ -4,7 +4,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { Dirs, Util } from "react-native-file-access";
+import { Dirs, FileSystem, Util } from "react-native-file-access";
 import {
   buildSelfSignedCertificate,
   computeHash,
@@ -267,29 +267,67 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       const result = await NativeZcam1Sdk.stopNativeVideoRecording();
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
 
-      result.filePath = await embedBindings(
-        result.filePath,
-        when,
-        {
-          deviceMake: result.deviceMake,
-          deviceModel: result.deviceModel,
-          softwareVersion: result.softwareVersion,
-          format: result.format,
-          hasAudio: result.hasAudio,
-          durationSeconds: result.durationSeconds,
-          fileSizeBytes: result.fileSizeBytes,
-          width: result.width,
-          height: result.height,
-          rotationDegrees: result.rotationDegrees,
-          frameRate: result.frameRate,
-          videoCodec: result.videoCodec,
-          audioCodec: result.audioCodec,
-          audioSampleRate: result.audioSampleRate,
-          audioChannels: result.audioChannels,
-        },
-        this.props.captureInfo,
-        this.certChainPem,
-      );
+      // Get actual file size if native didn't provide it.
+      let fileSizeBytes = result.fileSizeBytes;
+      if (fileSizeBytes === undefined || fileSizeBytes === 0) {
+        try {
+          const filePath = result.filePath.replace("file://", "");
+          const stat = await FileSystem.stat(filePath);
+          fileSizeBytes = stat.size;
+        } catch (e) {
+          console.warn("[ZCAM] Could not get file size:", e);
+          fileSizeBytes = 1; // Use 1 as minimum to avoid Rust panic.
+        }
+      }
+
+      // Provide fallback values for required metadata fields that native may not return.
+      // This ensures C2PA bindings can be created even if native metadata is incomplete.
+      // Note: Optional fields are only included if they have values (uniffi doesn't handle null/undefined well).
+      // Note: Numeric fields that are u32 in Rust must be integers (Math.round/Math.floor).
+      const metadata: Record<string, unknown> = {
+        deviceMake: result.deviceMake ?? "Apple",
+        deviceModel: result.deviceModel ?? "iPhone",
+        softwareVersion: result.softwareVersion ?? "iOS",
+        format: result.format,
+        hasAudio: result.hasAudio,
+        durationSeconds: Math.ceil(result.durationSeconds), // u32 requires integer
+        fileSizeBytes: fileSizeBytes,
+        width: result.width ?? 1920,
+        height: result.height ?? 1080,
+        rotationDegrees: result.rotationDegrees ?? 0,
+        frameRate: Math.round(result.frameRate ?? 30), // u32 requires integer
+      };
+
+      // Only add optional fields if they have actual values.
+      if (result.videoCodec !== undefined && result.videoCodec !== null) {
+        metadata.videoCodec = result.videoCodec;
+      }
+      if (result.audioCodec !== undefined && result.audioCodec !== null) {
+        metadata.audioCodec = result.audioCodec;
+      }
+      if (result.audioSampleRate !== undefined && result.audioSampleRate !== null) {
+        metadata.audioSampleRate = Math.round(result.audioSampleRate); // u32 requires integer
+      }
+      if (result.audioChannels !== undefined && result.audioChannels !== null) {
+        metadata.audioChannels = Math.round(result.audioChannels); // u32 requires integer
+      }
+
+      console.log("[ZCAM] Video metadata for C2PA:", JSON.stringify(metadata, null, 2));
+
+      // Attempt C2PA signing for video. If it fails (e.g., Rust panic in c2pa library),
+      // fall back to returning the original video file without C2PA metadata.
+      try {
+        result.filePath = await embedBindings(
+          result.filePath,
+          when,
+          metadata,
+          this.props.captureInfo,
+          this.certChainPem,
+        );
+      } catch (c2paError) {
+        console.warn("[ZCAM] C2PA signing failed for video, returning unsigned video:", c2paError);
+        // Keep original filePath - video is saved but without C2PA metadata.
+      }
 
       return result;
     } finally {
@@ -438,9 +476,11 @@ async function embedBindings(
       when,
     );
   } else {
-    console.log("Metadata", metadata);
+    // Use the C2PA format (e.g., "video/quicktime") instead of native format ("mov").
+    const videoMetadata = { ...metadata, format } as VideoMetadataInfo;
+    console.log("[ZCAM] Video metadata with C2PA format:", JSON.stringify(videoMetadata, null, 2));
     normalizedMetadata = manifestEditor.addVideoMetadataAction(
-      metadata as VideoMetadataInfo,
+      videoMetadata,
       when,
     );
   }

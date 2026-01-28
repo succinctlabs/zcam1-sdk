@@ -21,6 +21,8 @@ export { ZCamera, type CameraFilter } from "./camera";
 
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 
+import type { VideoInfo } from "./NativeZcam1Sdk";
+
 /**
  * Present a native full-screen preview for any file using iOS QLPreviewController.
  * Supports images, videos, PDFs, and other common file types with native playback controls.
@@ -31,9 +33,22 @@ export async function previewFile(filePath: string): Promise<void> {
 }
 
 /**
+ * Get metadata info for a video file (duration, dimensions, size).
+ * @param filePath Absolute filesystem path to the video file.
+ */
+export async function getVideoInfo(filePath: string): Promise<VideoInfo> {
+  return NativeZcam1Sdk.getVideoInfo(filePath);
+}
+
+/**
  * Flash mode for photo capture.
  */
-export { type FlashMode, type AspectRatio, type Orientation } from "./NativeZcam1Sdk";
+export {
+  type FlashMode,
+  type AspectRatio,
+  type Orientation,
+  type VideoInfo,
+} from "./NativeZcam1Sdk";
 
 /**
  * Native video recording results.

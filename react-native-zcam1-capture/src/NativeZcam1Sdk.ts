@@ -150,6 +150,28 @@ export interface StopNativeVideoRecordingResult {
   audioChannels?: number;
 }
 
+export interface VideoInfo {
+  /**
+   * Duration of the video in seconds.
+   */
+  durationSeconds: number;
+
+  /**
+   * Video pixel width (rotation-corrected).
+   */
+  width: number;
+
+  /**
+   * Video pixel height (rotation-corrected).
+   */
+  height: number;
+
+  /**
+   * File size in bytes.
+   */
+  fileSizeBytes: number;
+}
+
 export type FlashMode = "off" | "on" | "auto";
 
 export type AspectRatio = "4:3" | "16:9" | "1:1";
@@ -273,5 +295,11 @@ export interface Spec extends TurboModule {
    * @param filePath Absolute filesystem path to the file.
    */
   previewFile(filePath: string): Promise<void>;
+
+  /**
+   * Get metadata info for a video file.
+   * @param filePath Absolute filesystem path to the video file.
+   */
+  getVideoInfo(filePath: string): Promise<VideoInfo>;
 }
 export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");

@@ -386,6 +386,54 @@ static void ensureStaticStorageInitialized(void) {
   });
 }
 
+- (void)getVideoInfo:(NSString *)filePath
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject
+{
+  if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+    reject(@"FILE_NOT_FOUND", [NSString stringWithFormat:@"File not found: %@", filePath], nil);
+    return;
+  }
+
+  NSURL *fileURL = [NSURL fileURLWithPath:filePath];
+  AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
+
+  // Get duration.
+  CMTime duration = asset.duration;
+  double durationSeconds = CMTimeGetSeconds(duration);
+  if (!isfinite(durationSeconds) || isnan(durationSeconds) || durationSeconds < 0) {
+    durationSeconds = 0;
+  }
+
+  // Get dimensions from video track.
+  NSInteger width = 0;
+  NSInteger height = 0;
+  NSArray<AVAssetTrack *> *videoTracks = [asset tracksWithMediaType:AVMediaTypeVideo];
+  if (videoTracks.count > 0) {
+    AVAssetTrack *videoTrack = videoTracks.firstObject;
+    CGSize naturalSize = videoTrack.naturalSize;
+    CGAffineTransform transform = videoTrack.preferredTransform;
+
+    // Apply transform to get rotation-corrected dimensions.
+    CGSize transformedSize = CGSizeApplyAffineTransform(naturalSize, transform);
+    width = (NSInteger)fabs(transformedSize.width);
+    height = (NSInteger)fabs(transformedSize.height);
+  }
+
+  // Get file size.
+  NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
+  unsigned long long fileSizeBytes = [attrs fileSize];
+
+  NSDictionary *result = @{
+    @"durationSeconds": @(durationSeconds),
+    @"width": @(width),
+    @"height": @(height),
+    @"fileSizeBytes": @(fileSizeBytes),
+  };
+
+  resolve(result);
+}
+
 - (void)getDepthSensorInfo:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject
 {
