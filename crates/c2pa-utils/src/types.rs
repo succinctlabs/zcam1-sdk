@@ -159,21 +159,17 @@ pub struct PhotoMetadataInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoMetadataInfo {
-    pub device_make: String,
-    pub device_model: String,
-    pub software_version: String,
-    pub format: String,
-    pub has_audio: bool,
-    pub duration_seconds: u32,
-    pub file_size_bytes: u32,
-    pub width: u32,
-    pub height: u32,
-    pub rotation_degrees: u32,
-    pub frame_rate: u32,
-    pub video_codec: Option<String>,
-    pub audio_codec: Option<String>,
-    pub audio_sample_rate: Option<u32>,
-    pub audio_channels: Option<u32>,
+    device_make: String,
+    device_model: String,
+    software_version: String,
+    format: String,
+    has_audio: bool,
+    duration_seconds: u32,
+    file_size_bytes: u32,
+    width: u32,
+    height: u32,
+    rotation_degrees: u32,
+    frame_rate: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

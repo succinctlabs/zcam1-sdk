@@ -98,20 +98,12 @@ impl ManifestEditor {
         parameters: VideoMetadataInfo,
         when: String,
     ) -> Result<String, C2paError> {
-        eprintln!("[ZCAM RUST] add_video_metadata_action called");
-        eprintln!("[ZCAM RUST] parameters: {:?}", parameters);
-        eprintln!("[ZCAM RUST] when: {}", when);
+        let mut builder = self.builder.write().map_err(|_| C2paError::Poisoned)?;
+        let metadata_action = Action::video_metadata(when, parameters);
 
-        // TEMPORARY: Return dummy result to test if FFI works
-        // If this succeeds, the panic is in the c2pa code
-        // If this panics, the panic is in the FFI layer
+        builder.add_action(metadata_action.clone())?;
 
-        let dummy_result = format!(
-            "{{\"action\":\"test\",\"when\":\"{}\",\"device_make\":\"{}\"}}",
-            when, parameters.device_make
-        );
-        eprintln!("[ZCAM RUST] returning dummy result: {}", dummy_result);
-        Ok(dummy_result)
+        Ok(to_string(&metadata_action)?)
     }
 
     pub fn add_assertion(&self, label: &str, data: &str) -> Result<(), C2paError> {
