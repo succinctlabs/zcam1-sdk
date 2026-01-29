@@ -314,20 +314,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
 
       console.log("[ZCAM] Video metadata for C2PA:", JSON.stringify(metadata, null, 2));
 
-      // Attempt C2PA signing for video. If it fails (e.g., Rust panic in c2pa library),
-      // fall back to returning the original video file without C2PA metadata.
-      try {
-        result.filePath = await embedBindings(
-          result.filePath,
-          when,
-          metadata,
-          this.props.captureInfo,
-          this.certChainPem,
-        );
-      } catch (c2paError) {
-        console.warn("[ZCAM] C2PA signing failed for video, returning unsigned video:", c2paError);
-        // Keep original filePath - video is saved but without C2PA metadata.
-      }
+      result.filePath = await embedBindings(
+        result.filePath,
+        when,
+        metadata,
+        this.props.captureInfo,
+        this.certChainPem,
+      );
 
       return result;
     } finally {
