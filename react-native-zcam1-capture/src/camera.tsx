@@ -1,9 +1,6 @@
 import React from "react";
-import {
-  requireNativeComponent,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import type { StyleProp, ViewStyle } from "react-native";
+import codegenNativeComponent from "react-native/Libraries/Utilities/codegenNativeComponent";
 import { Dirs, Util } from "react-native-file-access";
 import {
   buildSelfSignedCertificate,
@@ -102,10 +99,16 @@ type NativeCameraViewProps = {
 
 /**
  * Native Swift-backed camera preview view.
- * You must implement a matching iOS view manager named "Zcam1CameraView".
+ * Uses codegenNativeComponent with interfaceOnly to enable Fabric interop
+ * for the legacy RCTViewManager-based implementation.
  */
-const Zcam1CameraView =
-  requireNativeComponent<NativeCameraViewProps>("Zcam1CameraView");
+const Zcam1CameraView = codegenNativeComponent<NativeCameraViewProps>(
+  "Zcam1CameraView",
+  {
+    interfaceOnly: true,
+    paperComponentName: "Zcam1CameraView",
+  },
+);
 
 /**
  * React wrapper around the native Swift camera.
