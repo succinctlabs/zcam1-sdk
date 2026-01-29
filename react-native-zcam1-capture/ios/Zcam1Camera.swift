@@ -926,6 +926,41 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
+                // Pre-add movie output for video recording (avoids exposure reset when recording starts).
+                if !session.outputs.contains(self.movieOutput) {
+                    if session.canAddOutput(self.movieOutput) {
+                        session.addOutput(self.movieOutput)
+                        // Single, finalized file (no fragments).
+                        self.movieOutput.movieFragmentInterval = .invalid
+
+                        // Basic recording configuration (orientation + stabilization).
+                        if let connection = self.movieOutput.connection(with: .video) {
+                            if connection.isVideoOrientationSupported {
+                                connection.videoOrientation = .portrait
+                            }
+                            if connection.isVideoStabilizationSupported {
+                                connection.preferredVideoStabilizationMode = .auto
+                            }
+                        }
+                        print("[Zcam1CameraService] Movie output pre-added to session")
+                    }
+                    // Note: Not throwing error if movie output can't be added - video recording is optional.
+                }
+
+                // Pre-add audio input if microphone permission is already granted.
+                // This avoids session reconfiguration when starting first video recording.
+                if self.audioInput == nil {
+                    let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+                    if micStatus == .authorized, let audioDevice = AVCaptureDevice.default(for: .audio) {
+                        if let audioInput = try? AVCaptureDeviceInput(device: audioDevice),
+                           session.canAddInput(audioInput) {
+                            session.addInput(audioInput)
+                            self.audioInput = audioInput
+                            print("[Zcam1CameraService] Audio input pre-added to session")
+                        }
+                    }
+                }
+
                 // Configure photo output for maximum resolution.
                 // This is critical because we use .high session preset for video preview,
                 // but still want full-resolution photos (12MP instead of 2MP).
@@ -1780,75 +1815,57 @@ public final class Zcam1CameraService: NSObject {
                             return
                         }
 
-                        // Switch session into a video-capable configuration.
-                        do {
-                            session.beginConfiguration()
-
-                            if session.canSetSessionPreset(.high) {
-                                session.sessionPreset = .high
+                        // Movie output is pre-added during session setup to avoid exposure reset.
+                        // Only reconfigure if absolutely necessary (audio input changes).
+                        guard session.outputs.contains(self.movieOutput) else {
+                            let err = NSError(
+                                domain: "Zcam1CameraService",
+                                code: -43,
+                                userInfo: [
+                                    NSLocalizedDescriptionKey:
+                                        "Movie output not available - session not properly configured"
+                                ]
+                            )
+                            DispatchQueue.main.async {
+                                completion(nil, err)
                             }
+                            return
+                        }
 
-                            if !session.outputs.contains(self.movieOutput) {
-                                if session.canAddOutput(self.movieOutput) {
-                                    session.addOutput(self.movieOutput)
-                                    // Single, finalized file (no fragments).
-                                    self.movieOutput.movieFragmentInterval = .invalid
+                        // Track whether we actually have an audio input attached (not just permission).
+                        self.activeVideoHasAudio = false
 
-                                    // Basic recording configuration (orientation + stabilization).
-                                    if let connection = self.movieOutput.connection(with: .video) {
-                                        if connection.isVideoOrientationSupported {
-                                            connection.videoOrientation = .portrait
-                                        }
-                                        if connection.isVideoStabilizationSupported {
-                                            connection.preferredVideoStabilizationMode = .auto
-                                        }
-                                    }
-                                } else {
-                                    throw NSError(
-                                        domain: "Zcam1CameraService",
-                                        code: -43,
-                                        userInfo: [
-                                            NSLocalizedDescriptionKey:
-                                                "Cannot add movie output to session"
-                                        ]
-                                    )
-                                }
-                            }
+                        // Check if we need to add/remove audio input (requires reconfiguration).
+                        let needsAudioAdd = micAuthorized && self.audioInput == nil
+                        let needsAudioRemove = !micAuthorized && self.audioInput != nil
+                        let hasExistingAudio = self.audioInput != nil && session.inputs.contains(where: { $0 === self.audioInput })
 
-                            // Track whether we actually have an audio input attached (not just permission).
-                            self.activeVideoHasAudio = false
+                        if hasExistingAudio && micAuthorized {
+                            // Audio already set up, no reconfiguration needed.
+                            self.activeVideoHasAudio = true
+                        } else if needsAudioAdd || needsAudioRemove {
+                            // Need to add or remove audio - minimal reconfiguration.
+                            do {
+                                session.beginConfiguration()
 
-                            if micAuthorized {
-                                if let existingAudioInput = self.audioInput,
-                                    session.inputs.contains(where: { $0 === existingAudioInput })
-                                {
-                                    self.activeVideoHasAudio = true
-                                } else if self.audioInput == nil,
-                                    let audioDevice = AVCaptureDevice.default(for: .audio)
-                                {
+                                if needsAudioAdd, let audioDevice = AVCaptureDevice.default(for: .audio) {
                                     let audioInput = try AVCaptureDeviceInput(device: audioDevice)
                                     if session.canAddInput(audioInput) {
                                         session.addInput(audioInput)
                                         self.audioInput = audioInput
                                         self.activeVideoHasAudio = true
-                                    } else {
-                                        self.audioInput = nil
-                                        self.activeVideoHasAudio = false
                                     }
+                                } else if needsAudioRemove, let audioInput = self.audioInput {
+                                    session.removeInput(audioInput)
+                                    self.audioInput = nil
                                 }
-                            } else if let audioInput = self.audioInput {
-                                session.removeInput(audioInput)
-                                self.audioInput = nil
-                                self.activeVideoHasAudio = false
-                            }
 
-                            session.commitConfiguration()
-                        } catch {
-                            session.commitConfiguration()
-                            DispatchQueue.main.async {
-                                completion(nil, error as NSError)
+                                session.commitConfiguration()
+                            } catch {
+                                session.commitConfiguration()
+                                // Continue without audio rather than failing entirely.
+                                print("[Zcam1CameraService] Failed to configure audio: \(error)")
                             }
-                            return
                         }
 
                         if !session.isRunning {
