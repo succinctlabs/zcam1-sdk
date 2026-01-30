@@ -6,9 +6,9 @@ import {
   CaptureInfo,
   initCapture,
   ZCamera,
-} from "@succinctlabs/react-native-zcam1-capture";
+  privateDirectory,
+} from "@succinctlabs/react-native-zcam1";
 import Toast from "react-native-toast-message";
-import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 enum CaptureMode {
   Photo = "photo",

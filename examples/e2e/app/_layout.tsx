@@ -5,12 +5,12 @@ import { Drawer } from "expo-router/drawer";
 import {
   ProverProvider,
   ProvingClient,
-} from "@succinctlabs/react-native-zcam1-prove";
+  privateDirectory,
+} from "@succinctlabs/react-native-zcam1";
 import { pickDirectory } from "@react-native-documents/picker";
 import { Pressable } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import Entypo from "@expo/vector-icons/Entypo";
-import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 import { FileSystem, Util } from "react-native-file-access";
 
 export default function Layout() {

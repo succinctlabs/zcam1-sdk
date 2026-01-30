@@ -11,16 +11,14 @@ import {
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
+  AuthenticityStatus,
   useProofRequestStatus,
   useProver,
   FulfillmentStatus,
-} from "@succinctlabs/react-native-zcam1-prove";
-import { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-picker";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
   VerifiableFile,
   type CaptureMetadata,
-} from "@succinctlabs/react-native-zcam1-verify";
+} from "@succinctlabs/react-native-zcam1";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
 import { Util } from "react-native-file-access";
