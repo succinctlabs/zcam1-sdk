@@ -1,4 +1,4 @@
-use std::fs::{self, File}; 
+use std::fs::{self, File};
 
 use sp1_build::{build_program, verifying_key};
 

@@ -48,7 +48,7 @@ sp1-prover = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/i
 sp1-stark = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 sp1-verifier = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-support" }
 
-c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}
+c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes", default-features = false }
 
 # sp1-build = { path = "../sp1/crates/build" }
 # sp1-sdk = { path = "../sp1/crates/sdk" }
