@@ -662,9 +662,6 @@ public final class Zcam1CameraService: NSObject {
                     // Reconfigure the connection for the current camera position.
                     if let connection = existingOutput.connection(with: .video) {
                         session.beginConfiguration()
-                        if connection.isVideoOrientationSupported {
-                            connection.videoOrientation = .portrait
-                        }
                         // Mirror front camera for natural selfie view.
                         if connection.isVideoMirroringSupported {
                             connection.isVideoMirrored = (self.currentPosition == .front)
@@ -704,9 +701,6 @@ public final class Zcam1CameraService: NSObject {
                 // Configure the connection.
                 if let connection = output.connection(with: .video) {
                     connection.isEnabled = true
-                    if connection.isVideoOrientationSupported {
-                        connection.videoOrientation = .portrait
-                    }
                     // Mirror front camera for natural selfie view.
                     if connection.isVideoMirroringSupported {
                         connection.isVideoMirrored = (self.currentPosition == .front)
@@ -2093,7 +2087,12 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
 
         // Create UIImage with correct orientation for display.
-        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
+        // Camera sensor buffers arrive in landscape orientation (native sensor orientation).
+        // Back camera sensor: landscape-right → use .right (rotate 90° CW for portrait)
+        // Front camera sensor: landscape-left → use .left (rotate 90° CCW for portrait)
+        // Note: Mirroring for front camera is handled via connection.isVideoMirrored.
+        let orientation: UIImage.Orientation = (position.lowercased() == "front") ? .left : .right
+        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
 
         // Apply filter if not normal.
         if currentFilterEnum != .normal {
