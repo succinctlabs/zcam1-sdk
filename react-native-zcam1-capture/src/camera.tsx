@@ -98,6 +98,8 @@ type NativeCameraViewProps = {
   torch?: boolean;
   exposure?: number;
   filter?: CameraFilter;
+  /** Called when hardware capture button is pressed (volume up/down, Camera Control, etc.) */
+  onHardwareButtonPress?: () => void;
 };
 
 /**
@@ -396,6 +398,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         torch={torch}
         exposure={exposure}
         filter={filter}
+        onHardwareButtonPress={() => {
+          // Trigger photo capture when hardware button (volume up/down) is pressed
+          this.takePhoto().catch((error) => {
+            console.error("[ZCamera] Hardware button capture failed:", error);
+          });
+        }}
       />
     );
   }

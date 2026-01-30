@@ -61,4 +61,8 @@ RCT_CUSTOM_VIEW_PROPERTY(filter, NSString, Zcam1CameraView)
   view.filter = filterValue;
 }
 
+// Events:
+// Called when user presses a hardware capture button (volume up/down, Camera Control, Action button)
+RCT_EXPORT_VIEW_PROPERTY(onHardwareButtonPress, RCTDirectEventBlock);
+
 @end

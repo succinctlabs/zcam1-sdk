@@ -19,6 +19,11 @@ Pod::Spec.new do |s|
 
   s.frameworks = ["QuickLook"]
 
+  # Swift module configuration
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES'
+  }
+
   # Harbeth: GPU-accelerated image/video/camera filter library.
   s.dependency "Harbeth", "~> 1.1"
 

@@ -6,11 +6,13 @@
 //
 
 import AVFoundation
+import AVKit
 import CoreMotion
 import Foundation
 import Harbeth
 import ImageIO
 import MobileCoreServices
+import React
 import UIKit
 
 // MARK: - Motion Manager (Singleton for orientation detection)
@@ -2017,6 +2019,11 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
+    /// Event callback for hardware button presses (volume buttons, Camera Control, etc.)
+    /// This is set by React Native and called when user presses a hardware capture button.
+    /// RCTDirectEventBlock is made available via the bridging header (Zcam1Sdk-Bridging-Header.h)
+    @objc var onHardwareButtonPress: RCTDirectEventBlock?
+
     // Preview rendering - single UIImageView for all frames (filtered or not)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
@@ -2024,6 +2031,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         iv.clipsToBounds = true
         return iv
     }()
+
+    // Hardware button capture support (iOS 17.2+)
+    private var captureEventInteraction: Any? // Use Any to avoid @available on property
 
     // Video processing
     private var videoDataOutput: AVCaptureVideoDataOutput?
@@ -2060,6 +2070,64 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public override func layoutSubviews() {
         super.layoutSubviews()
         previewImageView.frame = bounds
+    }
+
+    public override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil {
+            // View was added to window hierarchy - set up hardware button capture
+            setupCaptureEventInteraction()
+        } else {
+            // View was removed from window hierarchy - clean up
+            removeCaptureEventInteraction()
+        }
+    }
+
+    // MARK: - Hardware Button Capture (iOS 17.2+)
+
+    private func setupCaptureEventInteraction() {
+        guard #available(iOS 17.2, *) else {
+            print("[Zcam1CameraView] AVCaptureEventInteraction requires iOS 17.2+")
+            return
+        }
+
+        // Remove existing interaction if any
+        removeCaptureEventInteraction()
+
+        print("[Zcam1CameraView] Setting up AVCaptureEventInteraction...")
+
+        // Create interaction that handles volume buttons, Camera Control, Action button, etc.
+        let interaction = AVCaptureEventInteraction { [weak self] event in
+            print("[Zcam1CameraView] Hardware button event received - phase: \(event.phase.rawValue)")
+
+            // Only capture on button release (.ended phase)
+            if event.phase == .ended {
+                print("[Zcam1CameraView] Hardware button pressed - triggering capture")
+                self?.onHardwareButtonPress?([:])
+            }
+        }
+
+        // Enable the interaction (may not be enabled by default)
+        interaction.isEnabled = true
+        print("[Zcam1CameraView] Interaction isEnabled: \(interaction.isEnabled)")
+
+        // Add interaction to view
+        addInteraction(interaction)
+        captureEventInteraction = interaction
+
+        // Verify camera session is running
+        let sessionRunning = Zcam1CameraService.shared.captureSession?.isRunning ?? false
+        print("[Zcam1CameraView] Hardware button capture enabled. Camera session running: \(sessionRunning)")
+    }
+
+    private func removeCaptureEventInteraction() {
+        guard #available(iOS 17.2, *) else { return }
+
+        if let interaction = captureEventInteraction as? AVCaptureEventInteraction {
+            removeInteraction(interaction)
+            captureEventInteraction = nil
+            print("[Zcam1CameraView] Hardware button capture disabled")
+        }
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
