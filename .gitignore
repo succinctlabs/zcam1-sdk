@@ -8,3 +8,5 @@ yalc.lock
 .DS_Store
 
 docs/node_modules/
+
+.claude/
