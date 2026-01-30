@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { launchImageLibrary } from "react-native-image-picker";
-import { useProver } from "@succinctlabs/react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1";
 
 export default function Index() {
   const { provingClient, isInitializing, error } = useProver();

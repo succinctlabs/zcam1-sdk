@@ -9,33 +9,19 @@ import React, {
 } from "react";
 import {
   buildSelfSignedCertificate,
-  extractManifest,
   formatFromPath,
   ManifestEditor,
   SelfSignedCertChain,
   ExistingCertChain,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-import {
   FulfillmentStatus,
   type Initialized,
   IosProvingClient,
   type IosProvingClientInterface,
   ProofRequestStatus,
-} from "./proving";
+} from "./bindings";
 import { base64 } from "@scure/base";
-import {
-  getContentPublicKey,
-  getSecureEnclaveKeyId,
-} from "@succinctlabs/react-native-zcam1-common";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "./common";
 import { Dirs, Util } from "react-native-file-access";
-
-export { IosProvingClient, FulfillmentStatus } from "./proving";
-export {
-  buildSelfSignedCertificate,
-  authenticityStatus,
-  SelfSignedCertChain,
-  AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Configuration settings for backend communication.
