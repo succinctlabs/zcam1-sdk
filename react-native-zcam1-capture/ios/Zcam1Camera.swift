@@ -858,7 +858,8 @@ public final class Zcam1CameraService: NSObject {
                 let currentInput = self.videoInput,
                 currentInput.device.position == position,
                 session.outputs.contains(self.photoOutput),
-                session.sessionPreset == .photo
+                session.outputs.contains(self.movieOutput),
+                session.sessionPreset == .high
             {
                 DispatchQueue.main.async {
                     completion(nil)
@@ -870,8 +871,10 @@ public final class Zcam1CameraService: NSObject {
                 let session = self.captureSession ?? AVCaptureSession()
                 session.beginConfiguration()
                 self.didPrewarmDepth = false
-                // Use .photo preset for native 4:3 sensor capture with maximum quality.
-                session.sessionPreset = .photo
+                // Use .high preset to support both photo and video capture.
+                // This avoids session reconfiguration when starting video recording,
+                // which would cause dark initial frames while ISP adjusts.
+                session.sessionPreset = .high
 
                 // Remove existing input if position changed
                 if let currentInput = self.videoInput,
@@ -911,7 +914,7 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
-                // Add photo output if needed
+                // Add photo output if needed.
                 if !session.outputs.contains(self.photoOutput) {
                     if session.canAddOutput(self.photoOutput) {
                         session.addOutput(self.photoOutput)
@@ -921,6 +924,34 @@ public final class Zcam1CameraService: NSObject {
                             code: -3,
                             userInfo: [
                                 NSLocalizedDescriptionKey: "Cannot add photo output to session"
+                            ]
+                        )
+                    }
+                }
+
+                // Add movie output at startup so video recording can start instantly
+                // without session reconfiguration (which causes dark initial frames).
+                if !session.outputs.contains(self.movieOutput) {
+                    if session.canAddOutput(self.movieOutput) {
+                        session.addOutput(self.movieOutput)
+                        // Single, finalized file (no fragments).
+                        self.movieOutput.movieFragmentInterval = .invalid
+
+                        // Basic recording configuration (orientation + stabilization).
+                        if let connection = self.movieOutput.connection(with: .video) {
+                            if connection.isVideoOrientationSupported {
+                                connection.videoOrientation = .portrait
+                            }
+                            if connection.isVideoStabilizationSupported {
+                                connection.preferredVideoStabilizationMode = .auto
+                            }
+                        }
+                    } else {
+                        throw NSError(
+                            domain: "Zcam1CameraService",
+                            code: -4,
+                            userInfo: [
+                                NSLocalizedDescriptionKey: "Cannot add movie output to session"
                             ]
                         )
                     }
@@ -1212,21 +1243,15 @@ public final class Zcam1CameraService: NSObject {
 
     // NOTE: Must be called on `sessionQueue`.
     fileprivate func videoRecordingDidFinish(outputFileURL: URL, error: Error?) {
-        // Restore session for still capture.
+        // Only remove audio input after recording stops.
+        // Keep movieOutput attached and session preset unchanged to avoid
+        // ISP reconfiguration on future recordings.
         if let session = self.captureSession {
             session.beginConfiguration()
-
-            if session.outputs.contains(self.movieOutput) {
-                session.removeOutput(self.movieOutput)
-            }
 
             if let audioInput = self.audioInput {
                 session.removeInput(audioInput)
                 self.audioInput = nil
-            }
-
-            if session.canSetSessionPreset(.photo) {
-                session.sessionPreset = .photo
             }
 
             session.commitConfiguration()
@@ -1780,40 +1805,10 @@ public final class Zcam1CameraService: NSObject {
                             return
                         }
 
-                        // Switch session into a video-capable configuration.
+                        // Session is already configured with movieOutput during initial setup.
+                        // Only configure audio input here to avoid ISP reconfiguration that causes dark frames.
                         do {
                             session.beginConfiguration()
-
-                            if session.canSetSessionPreset(.high) {
-                                session.sessionPreset = .high
-                            }
-
-                            if !session.outputs.contains(self.movieOutput) {
-                                if session.canAddOutput(self.movieOutput) {
-                                    session.addOutput(self.movieOutput)
-                                    // Single, finalized file (no fragments).
-                                    self.movieOutput.movieFragmentInterval = .invalid
-
-                                    // Basic recording configuration (orientation + stabilization).
-                                    if let connection = self.movieOutput.connection(with: .video) {
-                                        if connection.isVideoOrientationSupported {
-                                            connection.videoOrientation = .portrait
-                                        }
-                                        if connection.isVideoStabilizationSupported {
-                                            connection.preferredVideoStabilizationMode = .auto
-                                        }
-                                    }
-                                } else {
-                                    throw NSError(
-                                        domain: "Zcam1CameraService",
-                                        code: -43,
-                                        userInfo: [
-                                            NSLocalizedDescriptionKey:
-                                                "Cannot add movie output to session"
-                                        ]
-                                    )
-                                }
-                            }
 
                             // Track whether we actually have an audio input attached (not just permission).
                             self.activeVideoHasAudio = false
