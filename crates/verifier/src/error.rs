@@ -20,6 +20,12 @@ pub enum VerifyError {
     #[error(transparent)]
     Groth16(#[from] sp1_verifier::Groth16Error),
 
+    #[error(transparent)]
+    Plonk(#[from] sp1_verifier::PlonkError),
+
+    #[error(transparent)]
+    Compressed(#[from] sp1_verifier::CompressedError),
+
     #[error("Proof not found in the manifest")]
     ProofNotFound,
 }

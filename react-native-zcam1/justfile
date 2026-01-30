@@ -10,5 +10,9 @@ add-yalc-to-prove:
     yalc publish
     cd ../examples/prove && yalc add @succinctlabs/react-native-zcam1
 
+add-yalc-to-verify:
+    yalc publish
+    cd ../examples/verify && yalc add @succinctlabs/react-native-zcam1
+
 publish $NPM_CONFIG_REGISTRY:
     npm publish --access public

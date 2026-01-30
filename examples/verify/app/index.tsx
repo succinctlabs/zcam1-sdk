@@ -1,7 +1,7 @@
 import { StyleSheet, Button, View } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { launchImageLibrary } from "react-native-image-picker";
-import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export default function Index() {
   const pick = async () => {
@@ -13,8 +13,11 @@ export default function Index() {
     console.log("File", result.assets![0].uri);
 
     const verifier = new VerifiableFile(result.assets![0].uri!);
+    
+    // The App ID must be the one of the app where the photo were captured
+    const appId = "NLS5R4YCGX.com.anonymous.zcam1-capture-example";
 
-    console.log("Is proof valid", verifier.verifyProof());
+    console.log("Is proof valid", verifier.verifyProof(appId));
   };
 
   return (

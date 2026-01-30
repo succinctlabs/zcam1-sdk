@@ -16,6 +16,8 @@ export { initCapture, type CaptureInfo } from "./capture";
 
 export { ProverProvider, useProver } from "./prove";
 
+export { VerifiableFile } from "./verify";
+
 /**
  * Flash mode for photo capture.
  */

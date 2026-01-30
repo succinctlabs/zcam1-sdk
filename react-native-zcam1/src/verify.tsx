@@ -5,9 +5,10 @@ import {
   extractManifest,
   PhotoMetadataInfo,
   VideoMetadataInfo,
+  verifyGroth16,
+  verifyBindingsFromManifest,
   type ManifestInterface,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
+} from "./bindings";
 
 /**
  * Capture metadata extracted from the C2PA manifest.
