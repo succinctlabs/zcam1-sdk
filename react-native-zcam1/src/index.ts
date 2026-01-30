@@ -12,11 +12,18 @@ export {
  */
 export { ZCamera, type CameraFilter } from "./camera";
 
+export { privateDirectory, ZImagePicker } from "./picker";
+
 export { initCapture, type CaptureInfo } from "./capture";
 
-export { ProverProvider, useProver } from "./prove";
+export {
+  ProverProvider,
+  ProvingClient,
+  useProver,
+  useProofRequestStatus,
+} from "./prove";
 
-export { VerifiableFile } from "./verify";
+export { VerifiableFile, type CaptureMetadata } from "./verify";
 
 /**
  * Flash mode for photo capture.

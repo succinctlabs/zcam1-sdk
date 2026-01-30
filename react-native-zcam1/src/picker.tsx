@@ -10,15 +10,7 @@ import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { createThumbnail } from "react-native-create-thumbnail";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
-import {
-  authenticityStatus,
-  AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-
-export {
-  authenticityStatus,
-  AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+import { authenticityStatus, AuthenticityStatus } from "./bindings";
 
 /**
  * Configuration for loading images from a private folder.
@@ -66,7 +58,7 @@ export interface ZImagePickerProps {
    * Sort order for images.
    * Defaults to 'oldest-first' (oldest images first in the list).
    */
-  sortOrder?: 'newest-first' | 'oldest-first';
+  sortOrder?: "newest-first" | "oldest-first";
 
   /**
    * Optional function to render a badge based on the authenticity status of an image.
@@ -193,10 +185,7 @@ const ZImageItem = ({
       style={styles.imageContainer}
       onPress={() => onSelect(uri)}
     >
-      <Image
-        style={styles.image}
-        source={{ uri: thumbnail }}
-      />
+      <Image style={styles.image} source={{ uri: thumbnail }} />
       {multiSelect && isSelected && (
         <View
           style={{
@@ -256,9 +245,11 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             groupName: props.source.album,
           });
 
-          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
-          result.edges.sort((a, b) =>
-            sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp)
+          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          result.edges.sort(
+            (a, b) =>
+              sortMultiplier *
+              (a.node.modificationTimestamp - b.node.modificationTimestamp),
           );
 
           const photoUris = result.edges
@@ -276,13 +267,15 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
               const uri = `file://${f.path}`;
               // Parse timestamp from ZCAM filename: "zcam-1768552335459-random.jpg"
               const match = f.filename.match(/^zcam-(\d+)-/);
-              const timestamp = match?.[1] ? parseInt(match[1], 10) : f.lastModified;
+              const timestamp = match?.[1]
+                ? parseInt(match[1], 10)
+                : f.lastModified;
               return { uri, timestamp };
             });
 
-          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
-          photosWithTimestamps.sort((a, b) =>
-            sortMultiplier * (a.timestamp - b.timestamp)
+          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          photosWithTimestamps.sort(
+            (a, b) => sortMultiplier * (a.timestamp - b.timestamp),
           );
 
           const photoUris = photosWithTimestamps.map((p) => p.uri);
@@ -316,12 +309,18 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         props.onSelect?.(uri);
       }
     },
-    [props.multiSelect, props.selectedUris, props.onSelectionChange, props.onSelect],
+    [
+      props.multiSelect,
+      props.selectedUris,
+      props.onSelectionChange,
+      props.onSelect,
+    ],
   );
 
   const renderItem = useCallback(
     ({ item }: { item: string }) => {
-      const isSelected = props.multiSelect && props.selectedUris?.includes(item);
+      const isSelected =
+        props.multiSelect && props.selectedUris?.includes(item);
       return (
         <ZImageItem
           uri={item}
@@ -333,7 +332,13 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         />
       );
     },
-    [handleSelect, props.renderBadge, props.renderSelectionOverlay, props.multiSelect, props.selectedUris],
+    [
+      handleSelect,
+      props.renderBadge,
+      props.renderSelectionOverlay,
+      props.multiSelect,
+      props.selectedUris,
+    ],
   );
 
   return (
