@@ -13,8 +13,6 @@ import NativeZcam1Sdk, {
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Capture";
 import { generateAppAttestAssertion } from "./utils";
-import { base64 } from "@scure/base";
-
 import {
   buildSelfSignedCertificate,
   type ExistingCertChain,
@@ -412,7 +410,6 @@ async function embedBindings(
   captureInfo: CaptureInfo,
   certChainPem: string,
 ): Promise<string> {
-  console.log("Metadata", metadata);
   originalPath = originalPath.replace("file://", "");
   const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
@@ -440,7 +437,6 @@ async function embedBindings(
       when,
     );
   } else {
-    console.log("Metadata", metadata);
     normalizedMetadata = manifestEditor.addVideoMetadataAction(
       metadata as VideoMetadataInfo,
       when,

@@ -3,6 +3,7 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
+import NativeZcam1Sdk from "./NativeZcam1Capture";
 import {
   getContentPublicKey,
   getSecureEnclaveKeyId,

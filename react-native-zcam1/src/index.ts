@@ -5,6 +5,8 @@ export {
   AuthenticityStatus,
   IosProvingClient,
   FulfillmentStatus,
+  PhotoMetadataInfo,
+  VideoMetadataInfo,
 } from "./bindings";
 
 /**

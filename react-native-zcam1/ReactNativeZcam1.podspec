@@ -22,6 +22,7 @@ Pod::Spec.new do |s|
   # Keep everything that contains C/C++ out of Swift's importer.
   s.private_header_files = "ios/generated/**/*.h", "cpp/**/*.h", "cpp/**/*.hpp"
 
+  s.frameworks = ["QuickLook"]
   s.vendored_frameworks = "Zcam1Framework.xcframework"
   s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
 
