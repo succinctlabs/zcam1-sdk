@@ -352,33 +352,28 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
     }
 }
 
-/// Internal helper that acts as the AVCaptureFileOutputRecordingDelegate.
-/// This keeps AVFoundation protocol types out of the @objc-visible service API.
+// MARK: - Asset Writer Recording State
+
+/// Holds state for AVAssetWriter-based video recording.
+/// Using AVAssetWriter instead of AVCaptureMovieFileOutput eliminates preview flash
+/// when starting/stopping recording, since we manually write frames without session reconfiguration.
 @available(iOS 16.0, *)
-private final class MovieCaptureDelegate: NSObject, AVCaptureFileOutputRecordingDelegate {
-    private unowned let owner: Zcam1CameraService
+final class AssetWriterRecordingState {
+    let assetWriter: AVAssetWriter
+    let videoInput: AVAssetWriterInput
+    let audioInput: AVAssetWriterInput?
+    let outputURL: URL
+    var isRecording: Bool = false
+    var hasStartedSession: Bool = false
+    var startTime: CMTime = .invalid
+    var videoFrameCount: Int = 0
+    var audioSampleCount: Int = 0
 
-    init(owner: Zcam1CameraService) {
-        self.owner = owner
-        super.init()
-    }
-
-    func fileOutput(
-        _ output: AVCaptureFileOutput,
-        didStartRecordingTo fileURL: URL,
-        from connections: [AVCaptureConnection]
-    ) {
-        owner.enqueueVideoRecordingDidStart(outputFileURL: fileURL)
-    }
-
-    func fileOutput(
-        _ output: AVCaptureFileOutput,
-        didFinishRecordingTo outputFileURL: URL,
-        from connections: [AVCaptureConnection],
-        error: Error?
-    ) {
-        owner.enqueueVideoRecordingDidFinish(outputFileURL: outputFileURL, error: error)
-        owner.enqueueDidFinishVideoCapture(delegate: self)
+    init(assetWriter: AVAssetWriter, videoInput: AVAssetWriterInput, audioInput: AVAssetWriterInput?, outputURL: URL) {
+        self.assetWriter = assetWriter
+        self.videoInput = videoInput
+        self.audioInput = audioInput
+        self.outputURL = outputURL
     }
 }
 
@@ -390,7 +385,7 @@ private final class MovieCaptureDelegate: NSObject, AVCaptureFileOutputRecording
 /// `takeNativePhoto`, and from a native preview view (see `Zcam1CameraView`).
 @available(iOS 16.0, *)
 @objcMembers
-public final class Zcam1CameraService: NSObject {
+public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     // Singleton instance (easy to access from ObjC / Swift bridge)
     public static let shared = Zcam1CameraService()
@@ -401,7 +396,18 @@ public final class Zcam1CameraService: NSObject {
     private var audioInput: AVCaptureDeviceInput?
 
     private let photoOutput = AVCapturePhotoOutput()
-    private let movieOutput = AVCaptureMovieFileOutput()
+
+    // Video data output for preview frames (shared with recording).
+    private let videoDataOutput = AVCaptureVideoDataOutput()
+    private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodataoutput", qos: .userInteractive)
+
+    // Audio data output for recording (adds no overhead when not recording).
+    private let audioDataOutput = AVCaptureAudioDataOutput()
+    private let audioDataQueue = DispatchQueue(label: "com.zcam1.audiodataoutput", qos: .userInteractive)
+
+    // Weak reference to the view that handles preview rendering.
+    // The view registers itself as the sample buffer delegate for preview.
+    weak var previewDelegate: AVCaptureVideoDataOutputSampleBufferDelegate?
 
     // Depth delivery can incur a noticeable one-time setup cost (first capture).
     // We prewarm it once per session configuration to avoid first-shot lag.
@@ -412,10 +418,12 @@ public final class Zcam1CameraService: NSObject {
 
     // Keep strong references to in-flight delegates so they live until completion
     private var inFlightDelegates: [PhotoCaptureDelegate] = []
-    private var inFlightMovieDelegates: [MovieCaptureDelegate] = []
 
-    // Video recording state (single in-flight recording)
-    private var activeMovieOutputURL: URL?
+    // AVAssetWriter-based video recording state.
+    // Using AVAssetWriter eliminates preview flash since we manually write frames
+    // without any AVCaptureSession reconfiguration.
+    private var recordingState: AssetWriterRecordingState?
+    private let recordingLock = NSLock()
     private var activeVideoHasAudio: Bool = false
     private var pendingVideoStartCompletion: ((NSDictionary?, NSError?) -> Void)?
     private var pendingVideoStopCompletion: ((NSDictionary?, NSError?) -> Void)?
@@ -852,13 +860,27 @@ public final class Zcam1CameraService: NSObject {
                 let currentInput = self.videoInput,
                 currentInput.device.position == position,
                 session.outputs.contains(self.photoOutput),
-                session.outputs.contains(self.movieOutput),
+                session.outputs.contains(self.audioDataOutput),
                 session.sessionPreset == .high
             {
+                print("[Zcam1CameraService] configureSessionIfNeeded: EARLY RETURN - session already configured correctly")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
                 return
+            }
+
+            // Debug: Log why early return didn't happen
+            print("[Zcam1CameraService] configureSessionIfNeeded: FULL RECONFIGURATION needed")
+            print("  - captureSession exists: \(self.captureSession != nil)")
+            print("  - videoInput exists: \(self.videoInput != nil)")
+            if let input = self.videoInput {
+                print("  - videoInput position matches: \(input.device.position == position) (current: \(input.device.position.rawValue), requested: \(position.rawValue))")
+            }
+            if let session = self.captureSession {
+                print("  - has photoOutput: \(session.outputs.contains(self.photoOutput))")
+                print("  - has audioDataOutput: \(session.outputs.contains(self.audioDataOutput))")
+                print("  - sessionPreset is .high: \(session.sessionPreset == .high) (current: \(session.sessionPreset.rawValue))")
             }
 
             do {
@@ -923,31 +945,31 @@ public final class Zcam1CameraService: NSObject {
                     }
                 }
 
-                // Add movie output at startup so video recording can start instantly
-                // without session reconfiguration (which causes dark initial frames).
-                if !session.outputs.contains(self.movieOutput) {
-                    if session.canAddOutput(self.movieOutput) {
-                        session.addOutput(self.movieOutput)
-                        // Single, finalized file (no fragments).
-                        self.movieOutput.movieFragmentInterval = .invalid
-
-                        // Basic recording configuration (orientation + stabilization).
-                        if let connection = self.movieOutput.connection(with: .video) {
-                            if connection.isVideoOrientationSupported {
-                                connection.videoOrientation = .portrait
+                // Add audio input at startup so it's ready for recording.
+                // Audio input is kept attached throughout the session lifecycle.
+                if self.audioInput == nil {
+                    if let audioDevice = AVCaptureDevice.default(for: .audio) {
+                        do {
+                            let audioInput = try AVCaptureDeviceInput(device: audioDevice)
+                            if session.canAddInput(audioInput) {
+                                session.addInput(audioInput)
+                                self.audioInput = audioInput
+                                print("[Zcam1CameraService] Audio input added during session initialization")
                             }
-                            if connection.isVideoStabilizationSupported {
-                                connection.preferredVideoStabilizationMode = .auto
-                            }
+                        } catch {
+                            // Audio input failed - video will record without audio.
+                            print("[Zcam1CameraService] Failed to add audio input during init: \(error)")
                         }
-                    } else {
-                        throw NSError(
-                            domain: "Zcam1CameraService",
-                            code: -4,
-                            userInfo: [
-                                NSLocalizedDescriptionKey: "Cannot add movie output to session"
-                            ]
-                        )
+                    }
+                }
+
+                // Add audio data output for recording. This output is always attached
+                // but only writes samples when recording is active.
+                if !session.outputs.contains(self.audioDataOutput) {
+                    if session.canAddOutput(self.audioDataOutput) {
+                        session.addOutput(self.audioDataOutput)
+                        self.audioDataOutput.setSampleBufferDelegate(self, queue: self.audioDataQueue)
+                        print("[Zcam1CameraService] Audio data output added")
                     }
                 }
 
@@ -1192,201 +1214,6 @@ public final class Zcam1CameraService: NSObject {
     fileprivate func didFinishCapture(delegate: PhotoCaptureDelegate) {
         if let index = inFlightDelegates.firstIndex(where: { $0 === delegate }) {
             inFlightDelegates.remove(at: index)
-        }
-    }
-
-    // Delegate callbacks can arrive on arbitrary threads. Route all state mutations through `sessionQueue`.
-    fileprivate func enqueueVideoRecordingDidStart(outputFileURL: URL) {
-        sessionQueue.async {
-            self.videoRecordingDidStart(outputFileURL: outputFileURL)
-        }
-    }
-
-    fileprivate func enqueueVideoRecordingDidFinish(outputFileURL: URL, error: Error?) {
-        sessionQueue.async {
-            self.videoRecordingDidFinish(outputFileURL: outputFileURL, error: error)
-        }
-    }
-
-    fileprivate func enqueueDidFinishVideoCapture(delegate: MovieCaptureDelegate) {
-        sessionQueue.async {
-            self.didFinishVideoCapture(delegate: delegate)
-        }
-    }
-
-    fileprivate func didFinishVideoCapture(delegate: MovieCaptureDelegate) {
-        if let index = inFlightMovieDelegates.firstIndex(where: { $0 === delegate }) {
-            inFlightMovieDelegates.remove(at: index)
-        }
-    }
-
-    // NOTE: Must be called on `sessionQueue`.
-    fileprivate func videoRecordingDidStart(outputFileURL: URL) {
-        let result: [String: Any] = [
-            "status": "recording",
-            "filePath": outputFileURL.path,
-            "format": "mov",
-            "hasAudio": self.activeVideoHasAudio,
-        ]
-        let startCompletion = pendingVideoStartCompletion
-        pendingVideoStartCompletion = nil
-        DispatchQueue.main.async {
-            startCompletion?(result as NSDictionary, nil)
-        }
-    }
-
-    // NOTE: Must be called on `sessionQueue`.
-    fileprivate func videoRecordingDidFinish(outputFileURL: URL, error: Error?) {
-        // Only remove audio input after recording stops.
-        // Keep movieOutput attached and session preset unchanged to avoid
-        // ISP reconfiguration on future recordings.
-        if let session = self.captureSession {
-            session.beginConfiguration()
-
-            if let audioInput = self.audioInput {
-                session.removeInput(audioInput)
-                self.audioInput = nil
-            }
-
-            session.commitConfiguration()
-        }
-
-        if let error = error as NSError? {
-            // Prefer resolving stop completion if present; otherwise resolve start completion (e.g. start failed).
-            let stopCompletion = pendingVideoStopCompletion
-            let startCompletion = pendingVideoStartCompletion
-            pendingVideoStopCompletion = nil
-            pendingVideoStartCompletion = nil
-            activeMovieOutputURL = nil
-            activeVideoHasAudio = false
-
-            DispatchQueue.main.async {
-                if let stopCompletion = stopCompletion {
-                    stopCompletion(nil, error)
-                } else {
-                    startCompletion?(nil, error)
-                }
-            }
-            return
-        }
-
-        var result: [String: Any] = [
-            "filePath": outputFileURL.path,
-            "format": "mov",
-            "hasAudio": self.activeVideoHasAudio,
-
-            // Device/software info (best-effort).
-            "deviceMake": "Apple",
-            "deviceModel": UIDevice.current.model,
-            "softwareVersion": "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)",
-        ]
-
-        // File-level metadata (size + timestamps).
-        do {
-            let attrs = try FileManager.default.attributesOfItem(atPath: outputFileURL.path)
-
-            if let sizeNumber = attrs[.size] as? NSNumber {
-                result["fileSizeBytes"] = sizeNumber
-            } else if let sizeInt = attrs[.size] as? Int {
-                result["fileSizeBytes"] = NSNumber(value: sizeInt)
-            } else if let sizeInt64 = attrs[.size] as? Int64 {
-                result["fileSizeBytes"] = NSNumber(value: sizeInt64)
-            } else if let sizeUInt64 = attrs[.size] as? UInt64 {
-                result["fileSizeBytes"] = NSNumber(value: sizeUInt64)
-            }
-        } catch {
-            // Best-effort: ignore file attribute failures.
-        }
-
-        let asset = AVURLAsset(url: outputFileURL)
-
-        // Container/asset duration.
-        let seconds = CMTimeGetSeconds(asset.duration)
-        if seconds.isFinite && !seconds.isNaN && seconds >= 0 {
-            result["durationSeconds"] = seconds
-        }
-
-        // Track-level metadata (dimensions, codec, bitrate, etc.).
-        func fourCCString(_ code: FourCharCode) -> String {
-            let be = code.bigEndian
-            let bytes: [UInt8] = [
-                UInt8((be >> 24) & 0xff),
-                UInt8((be >> 16) & 0xff),
-                UInt8((be >> 8) & 0xff),
-                UInt8(be & 0xff),
-            ]
-            if let s = String(bytes: bytes, encoding: .macOSRoman) {
-                return s.trimmingCharacters(in: .controlCharacters)
-            }
-            return "\(code)"
-        }
-
-        if let videoTrack = asset.tracks(withMediaType: .video).first {
-            // Width/height corrected for rotation.
-            let transformed = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
-            let width = abs(transformed.width)
-            let height = abs(transformed.height)
-            if width.isFinite && !width.isNaN && height.isFinite && !height.isNaN {
-                result["width"] = Int(width.rounded())
-                result["height"] = Int(height.rounded())
-            }
-
-            // Rotation information derived from preferredTransform.
-            let t = videoTrack.preferredTransform
-            let epsilon: CGFloat = 0.001
-            func approx(_ x: CGFloat, _ y: CGFloat) -> Bool { abs(x - y) < epsilon }
-
-            var rotationDegrees: Int? = nil
-            if approx(t.a, 0), approx(t.b, 1), approx(t.c, -1), approx(t.d, 0) {
-                rotationDegrees = 90
-            } else if approx(t.a, 0), approx(t.b, -1), approx(t.c, 1), approx(t.d, 0) {
-                rotationDegrees = 270
-            } else if approx(t.a, -1), approx(t.b, 0), approx(t.c, 0), approx(t.d, -1) {
-                rotationDegrees = 180
-            } else if approx(t.a, 1), approx(t.b, 0), approx(t.c, 0), approx(t.d, 1) {
-                rotationDegrees = 0
-            }
-
-            if let rotationDegrees = rotationDegrees {
-                result["rotationDegrees"] = rotationDegrees
-            }
-
-            let fps = Double(videoTrack.nominalFrameRate)
-            if fps.isFinite && !fps.isNaN && fps > 0 {
-                result["frameRate"] = fps
-            }
-
-            if let formatDescAny = videoTrack.formatDescriptions.first {
-                let formatDesc = formatDescAny as! CMFormatDescription
-                result["videoCodec"] = fourCCString(CMFormatDescriptionGetMediaSubType(formatDesc))
-            }
-        }
-
-        if let audioTrack = asset.tracks(withMediaType: .audio).first {
-            if let formatDescAny = audioTrack.formatDescriptions.first {
-                let formatDesc = formatDescAny as! CMAudioFormatDescription
-                let audioCodec = fourCCString(CMFormatDescriptionGetMediaSubType(formatDesc))
-                result["audioCodec"] = audioCodec.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                if let asbdPtr = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc) {
-                    let asbd = asbdPtr.pointee
-                    if asbd.mSampleRate > 0 {
-                        result["audioSampleRate"] = asbd.mSampleRate
-                    }
-                    if asbd.mChannelsPerFrame > 0 {
-                        result["audioChannels"] = Int(asbd.mChannelsPerFrame)
-                    }
-                }
-            }
-        }
-
-        let stopCompletion = pendingVideoStopCompletion
-        pendingVideoStopCompletion = nil
-        activeMovieOutputURL = nil
-        activeVideoHasAudio = false
-
-        DispatchQueue.main.async {
-            stopCompletion?(result as NSDictionary, nil)
         }
     }
 
@@ -1724,7 +1551,8 @@ public final class Zcam1CameraService: NSObject {
 
     // MARK: - Video Capture API (Objective-C-friendly)
 
-    /// Starts video recording to a temporary `.mov` file.
+    /// Starts video recording to a temporary `.mov` file using AVAssetWriter.
+    /// This approach eliminates preview flash since no session reconfiguration is needed.
     /// Call `stopVideoRecording` to finish and receive the final file path.
     public func startVideoRecording(
         positionString: String?,
@@ -1770,7 +1598,7 @@ public final class Zcam1CameraService: NSObject {
                     }
 
                     self.sessionQueue.async {
-                        guard let session = self.captureSession else {
+                        guard self.captureSession != nil else {
                             let err = NSError(
                                 domain: "Zcam1CameraService",
                                 code: -11,
@@ -1784,7 +1612,10 @@ public final class Zcam1CameraService: NSObject {
                             return
                         }
 
-                        guard !self.movieOutput.isRecording else {
+                        // Check if recording is already in progress
+                        self.recordingLock.lock()
+                        if self.recordingState != nil {
+                            self.recordingLock.unlock()
                             let err = NSError(
                                 domain: "Zcam1CameraService",
                                 code: -42,
@@ -1798,69 +1629,120 @@ public final class Zcam1CameraService: NSObject {
                             }
                             return
                         }
+                        self.recordingLock.unlock()
 
-                        // Session is already configured with movieOutput during initial setup.
-                        // Only configure audio input here to avoid ISP reconfiguration that causes dark frames.
-                        do {
-                            session.beginConfiguration()
+                        // Determine if audio is available
+                        let hasAudio = micAuthorized && self.audioInput != nil
+                        self.activeVideoHasAudio = hasAudio
 
-                            // Track whether we actually have an audio input attached (not just permission).
-                            self.activeVideoHasAudio = false
-
-                            if micAuthorized {
-                                if let existingAudioInput = self.audioInput,
-                                    session.inputs.contains(where: { $0 === existingAudioInput })
-                                {
-                                    self.activeVideoHasAudio = true
-                                } else if self.audioInput == nil,
-                                    let audioDevice = AVCaptureDevice.default(for: .audio)
-                                {
-                                    let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                                    if session.canAddInput(audioInput) {
-                                        session.addInput(audioInput)
-                                        self.audioInput = audioInput
-                                        self.activeVideoHasAudio = true
-                                    } else {
-                                        self.audioInput = nil
-                                        self.activeVideoHasAudio = false
-                                    }
-                                }
-                            } else if let audioInput = self.audioInput {
-                                session.removeInput(audioInput)
-                                self.audioInput = nil
-                                self.activeVideoHasAudio = false
-                            }
-
-                            session.commitConfiguration()
-                        } catch {
-                            session.commitConfiguration()
-                            DispatchQueue.main.async {
-                                completion(nil, error as NSError)
-                            }
-                            return
-                        }
-
-                        if !session.isRunning {
-                            session.startRunning()
-                        }
-
-                        // Prepare output URL.
+                        // Prepare output URL
                         let filename = "zcam1-\(UUID().uuidString).mov"
-                        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(
-                            filename)
+                        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
 
-                        // Remove any existing file at the path (defensive).
+                        // Remove any existing file at the path (defensive)
                         if FileManager.default.fileExists(atPath: tmpURL.path) {
                             try? FileManager.default.removeItem(at: tmpURL)
                         }
 
-                        self.activeMovieOutputURL = tmpURL
-                        self.pendingVideoStartCompletion = completion
-                        self.pendingVideoStopCompletion = nil
+                        do {
+                            // Create AVAssetWriter
+                            let assetWriter = try AVAssetWriter(outputURL: tmpURL, fileType: .mov)
 
-                        let delegate = MovieCaptureDelegate(owner: self)
-                        self.inFlightMovieDelegates.append(delegate)
-                        self.movieOutput.startRecording(to: tmpURL, recordingDelegate: delegate)
+                            // Configure video input settings
+                            // Use 1080p at 30fps, H.264 codec for broad compatibility
+                            let videoSettings: [String: Any] = [
+                                AVVideoCodecKey: AVVideoCodecType.h264,
+                                AVVideoWidthKey: 1920,
+                                AVVideoHeightKey: 1080,
+                                AVVideoCompressionPropertiesKey: [
+                                    AVVideoAverageBitRateKey: 10_000_000,  // 10 Mbps
+                                    AVVideoExpectedSourceFrameRateKey: 30,
+                                    AVVideoMaxKeyFrameIntervalKey: 30,
+                                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
+                                ]
+                            ]
+
+                            let videoInput = AVAssetWriterInput(
+                                mediaType: .video,
+                                outputSettings: videoSettings
+                            )
+                            videoInput.expectsMediaDataInRealTime = true
+
+                            // Set video orientation to portrait (rotate 90° from landscape sensor)
+                            videoInput.transform = CGAffineTransform(rotationAngle: .pi / 2)
+
+                            guard assetWriter.canAdd(videoInput) else {
+                                throw NSError(
+                                    domain: "Zcam1CameraService",
+                                    code: -45,
+                                    userInfo: [NSLocalizedDescriptionKey: "Cannot add video input to asset writer"]
+                                )
+                            }
+                            assetWriter.add(videoInput)
+
+                            // Configure audio input if available
+                            var audioInput: AVAssetWriterInput?
+                            if hasAudio {
+                                let audioSettings: [String: Any] = [
+                                    AVFormatIDKey: kAudioFormatMPEG4AAC,
+                                    AVSampleRateKey: 48000,
+                                    AVNumberOfChannelsKey: 1,
+                                    AVEncoderBitRateKey: 128000
+                                ]
+
+                                let input = AVAssetWriterInput(
+                                    mediaType: .audio,
+                                    outputSettings: audioSettings
+                                )
+                                input.expectsMediaDataInRealTime = true
+
+                                if assetWriter.canAdd(input) {
+                                    assetWriter.add(input)
+                                    audioInput = input
+                                }
+                            }
+
+                            // Start writing
+                            guard assetWriter.startWriting() else {
+                                throw assetWriter.error ?? NSError(
+                                    domain: "Zcam1CameraService",
+                                    code: -46,
+                                    userInfo: [NSLocalizedDescriptionKey: "Failed to start asset writer"]
+                                )
+                            }
+
+                            // Create recording state
+                            let state = AssetWriterRecordingState(
+                                assetWriter: assetWriter,
+                                videoInput: videoInput,
+                                audioInput: audioInput,
+                                outputURL: tmpURL
+                            )
+
+                            // Mark recording as active
+                            self.recordingLock.lock()
+                            self.recordingState = state
+                            state.isRecording = true
+                            self.recordingLock.unlock()
+
+                            print("[Zcam1CameraService] AVAssetWriter recording started (no preview flash)")
+
+                            // Immediately return success - no waiting for iOS callbacks
+                            let result: [String: Any] = [
+                                "status": "recording",
+                                "filePath": tmpURL.path,
+                                "format": "mov",
+                                "hasAudio": hasAudio,
+                            ]
+                            DispatchQueue.main.async {
+                                completion(result as NSDictionary, nil)
+                            }
+
+                        } catch {
+                            DispatchQueue.main.async {
+                                completion(nil, error as NSError)
+                            }
+                        }
                     }
                 }
             }
@@ -1884,7 +1766,9 @@ public final class Zcam1CameraService: NSObject {
     /// Stops an in-progress video recording and returns `{ filePath, format, durationSeconds? }`.
     public func stopVideoRecording(completion: @escaping (NSDictionary?, NSError?) -> Void) {
         sessionQueue.async {
-            guard self.movieOutput.isRecording else {
+            self.recordingLock.lock()
+            guard let state = self.recordingState, state.isRecording else {
+                self.recordingLock.unlock()
                 let err = NSError(
                     domain: "Zcam1CameraService",
                     code: -44,
@@ -1896,8 +1780,151 @@ public final class Zcam1CameraService: NSObject {
                 return
             }
 
-            self.pendingVideoStopCompletion = completion
-            self.movieOutput.stopRecording()
+            // Mark as not recording to stop accepting new samples
+            state.isRecording = false
+            self.recordingLock.unlock()
+
+            print("[Zcam1CameraService] Stopping AVAssetWriter recording...")
+
+            // Mark inputs as finished
+            state.videoInput.markAsFinished()
+            state.audioInput?.markAsFinished()
+
+            // Finalize the asset writer
+            state.assetWriter.finishWriting { [weak self] in
+                guard let self = self else { return }
+
+                self.recordingLock.lock()
+                self.recordingState = nil
+                self.recordingLock.unlock()
+
+                if let error = state.assetWriter.error {
+                    print("[Zcam1CameraService] AVAssetWriter error: \(error)")
+                    DispatchQueue.main.async {
+                        completion(nil, error as NSError)
+                    }
+                    return
+                }
+
+                print("[Zcam1CameraService] AVAssetWriter recording finished, frames: \(state.videoFrameCount), audio: \(state.audioSampleCount)")
+
+                // Build result dictionary with metadata
+                var result: [String: Any] = [
+                    "filePath": state.outputURL.path,
+                    "format": "mov",
+                    "hasAudio": state.audioInput != nil,
+                    "deviceMake": "Apple",
+                    "deviceModel": UIDevice.current.model,
+                    "softwareVersion": "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)",
+                ]
+
+                // File-level metadata (size)
+                do {
+                    let attrs = try FileManager.default.attributesOfItem(atPath: state.outputURL.path)
+                    if let sizeNumber = attrs[.size] as? NSNumber {
+                        result["fileSizeBytes"] = sizeNumber
+                    } else if let sizeInt = attrs[.size] as? Int {
+                        result["fileSizeBytes"] = NSNumber(value: sizeInt)
+                    }
+                } catch {
+                    // Best-effort: ignore file attribute failures
+                }
+
+                // Extract metadata from the recorded file
+                let asset = AVURLAsset(url: state.outputURL)
+
+                // Duration
+                let seconds = CMTimeGetSeconds(asset.duration)
+                if seconds.isFinite && !seconds.isNaN && seconds >= 0 {
+                    result["durationSeconds"] = seconds
+                }
+
+                // Video track metadata
+                if let videoTrack = asset.tracks(withMediaType: .video).first {
+                    // Width/height corrected for rotation
+                    let transformed = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
+                    let width = abs(transformed.width)
+                    let height = abs(transformed.height)
+                    if width.isFinite && !width.isNaN && height.isFinite && !height.isNaN {
+                        result["width"] = Int(width.rounded())
+                        result["height"] = Int(height.rounded())
+                    }
+
+                    // Frame rate
+                    let frameRate = videoTrack.nominalFrameRate
+                    if frameRate.isFinite && !frameRate.isNaN && frameRate > 0 {
+                        result["frameRate"] = Int(frameRate.rounded())
+                    }
+
+                    // Rotation
+                    result["rotationDegrees"] = 90
+                }
+
+                // Video/audio codec info
+                result["videoCodec"] = "avc1"  // H.264
+                if state.audioInput != nil {
+                    result["audioCodec"] = "mp4a"  // AAC
+                    result["audioSampleRate"] = 48000
+                    result["audioChannels"] = 1
+                }
+
+                DispatchQueue.main.async {
+                    completion(result as NSDictionary, nil)
+                }
+            }
+        }
+    }
+
+    // MARK: - Sample Buffer Writing for Recording
+
+    /// Called by the view when it receives a video sample buffer.
+    /// If recording is active, writes the sample to the asset writer.
+    public func writeVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        recordingLock.lock()
+        guard let state = recordingState, state.isRecording else {
+            recordingLock.unlock()
+            return
+        }
+        recordingLock.unlock()
+
+        let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
+        // Start the session on first video frame
+        if !state.hasStartedSession {
+            state.assetWriter.startSession(atSourceTime: timestamp)
+            state.hasStartedSession = true
+            state.startTime = timestamp
+            print("[Zcam1CameraService] Asset writer session started at \(timestamp.seconds)")
+        }
+
+        // Write video sample if input is ready
+        if state.videoInput.isReadyForMoreMediaData {
+            state.videoInput.append(sampleBuffer)
+            state.videoFrameCount += 1
+        }
+    }
+
+    // MARK: - AVCaptureAudioDataOutputSampleBufferDelegate
+
+    public func captureOutput(
+        _ output: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        // Only handle audio data output
+        guard output === audioDataOutput else { return }
+
+        recordingLock.lock()
+        guard let state = recordingState, state.isRecording, state.hasStartedSession else {
+            recordingLock.unlock()
+            return
+        }
+        recordingLock.unlock()
+
+        // Write audio sample if input is ready
+        if let audioInput = state.audioInput, audioInput.isReadyForMoreMediaData {
+            audioInput.append(sampleBuffer)
+            state.audioSampleCount += 1
         }
     }
 
@@ -2068,6 +2095,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if isReconfiguring {
             return
         }
+
+        // Forward sample buffer to service for recording (if active).
+        // This enables AVAssetWriter-based recording without any preview flash.
+        Zcam1CameraService.shared.writeVideoSampleBuffer(sampleBuffer)
 
         frameCount += 1
         if frameCount == 1 {
