@@ -7,8 +7,8 @@ src/generated/
 rust_modules/
 Zcam1Framework.xcframework/
 cpp/
-ios/ReactNativeZcam1.h
-ios/ReactNativeZcam1.mm
+ios/Zcam1Sdk.h
+ios/Zcam1Sdk.mm
 
 
 # node.js

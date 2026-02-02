@@ -3,7 +3,7 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-#import "ReactNativeZcam1-Swift.h"
+#import "Zcam1Sdk-Swift.h"
 
 @interface Zcam1CameraViewManager : RCTViewManager
 @end
