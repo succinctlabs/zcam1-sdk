@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 zcam1-c2pa-utils = { workspace = true, features = ["io", "editor"] }
 zcam1-certs-utils.workspace = true
-zcam1-proving-utils.workspace = true
 zcam1-verifier.workspace = true
 
 [lib]

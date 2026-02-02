@@ -6,9 +6,12 @@
 src/generated/
 rust_modules/
 Zcam1Framework.xcframework/
+Zcam1ProvingFramework.xcframework/
 cpp/
 ios/Zcam1Sdk.h
 ios/Zcam1Sdk.mm
+ios/proving/Zcam1Proving.h
+ios/proving/Zcam1Proving.mm
 
 
 # node.js

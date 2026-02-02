@@ -50,16 +50,22 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
+    "./proving": {
+      "import": "./lib/module/proving.js",
+      "require": "./lib/commonjs/proving.js",
+      "types": "./lib/typescript/src/proving.d.ts"
+    },
     "./package.json": "./package.json"
   },
   "types": "./lib/typescript/src/index.d.ts",
   "scripts": {
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
+    "ubrn:ios:proving": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --config ubrn.config.proving.yaml --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
     "ubrn:web": "ubrn build web",
     "clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/generated/",
     "build": "bob build",
-    "prepack": "npm run ubrn:ios -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded; fi",
+    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release&& npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded; fi",
     "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework",
     "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded",
     "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework; fi",

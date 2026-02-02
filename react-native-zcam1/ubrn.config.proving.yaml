@@ -1,0 +1,15 @@
+name: Zcam1Proving
+rust:
+  directory: ./..
+  manifestPath: crates/proving-bindings/Cargo.toml
+turboModule:
+  cpp: cpp/proving
+  ts: src/proving
+  entrypoint: src/proving/bindings.tsx
+bindings:
+  cpp: cpp/proving/generated
+ios:
+  directory: ios/proving
+  frameworkName: Zcam1ProvingFramework
+noOverwrite:
+  - "Zcam1Proving.podspec"

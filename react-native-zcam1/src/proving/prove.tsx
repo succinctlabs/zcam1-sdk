@@ -8,19 +8,22 @@ import React, {
   useState,
 } from "react";
 import {
-  buildSelfSignedCertificate,
-  formatFromPath,
-  ManifestEditor,
-  SelfSignedCertChain,
-  ExistingCertChain,
   FulfillmentStatus,
   type Initialized,
   IosProvingClient,
   type IosProvingClientInterface,
   ProofRequestStatus,
 } from "./bindings";
+
+import {
+  buildSelfSignedCertificate,
+  formatFromPath,
+  ManifestEditor,
+  SelfSignedCertChain,
+  ExistingCertChain,
+} from "../bindings";
 import { base64 } from "@scure/base";
-import { getContentPublicKey, getSecureEnclaveKeyId } from "./common";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "../common";
 import { Dirs, Util } from "react-native-file-access";
 
 /**

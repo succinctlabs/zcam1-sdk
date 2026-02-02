@@ -3,8 +3,6 @@ export {
   SelfSignedCertChain,
   authenticityStatus,
   AuthenticityStatus,
-  IosProvingClient,
-  FulfillmentStatus,
   PhotoMetadataInfo,
   VideoMetadataInfo,
 } from "./bindings";
@@ -17,13 +15,6 @@ export { ZCamera, type CameraFilter } from "./camera";
 export { privateDirectory, ZImagePicker } from "./picker";
 
 export { initCapture, type CaptureInfo } from "./capture";
-
-export {
-  ProverProvider,
-  ProvingClient,
-  useProver,
-  useProofRequestStatus,
-} from "./prove";
 
 export { VerifiableFile, type CaptureMetadata } from "./verify";
 

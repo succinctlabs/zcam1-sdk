@@ -15,12 +15,12 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/succinctlabs/zcam1-sdk.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift}", "ios/generated/**/*.{h,m,mm}", "cpp/**/*.{hpp,cpp,c,h}", "cpp/generated/**/*.{hpp,cpp,c,h}"
+  s.source_files = "ios/*.{h,m,mm,swift}",  "cpp/*.{hpp,cpp,c,h}", "cpp/generated/*.{hpp,cpp,c,h}"
   # Only expose ObjC headers publicly (Swift can import these).
   s.public_header_files = "ios/*.h"
 
   # Keep everything that contains C/C++ out of Swift's importer.
-  s.private_header_files = "ios/generated/**/*.h", "cpp/**/*.h", "cpp/**/*.hpp"
+  s.private_header_files = "cpp/**/*.h", "cpp/**/*.hpp"
 
   s.frameworks = ["QuickLook"]
   s.vendored_frameworks = "Zcam1Framework.xcframework"
