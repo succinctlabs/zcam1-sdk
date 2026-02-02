@@ -428,8 +428,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // AVAssetWriter-based video recording state.
     // Using AVAssetWriter eliminates preview flash since we manually write frames
     // without any AVCaptureSession reconfiguration.
-    // Thread safety: Access guarded by recordingState?.writerQueue for all mutations.
+    // Thread safety: recordingStateLock guards the reference; writerQueue guards internal mutations.
     private var recordingState: AssetWriterRecordingState?
+    private let recordingStateLock = NSLock()
 
     // Camera control state
     private var currentZoom: CGFloat = 1.0
@@ -1577,8 +1578,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             return
                         }
 
-                        // Check if recording is already in progress
-                        if self.recordingState != nil {
+                        // Check if recording is already in progress (with lock protection)
+                        self.recordingStateLock.lock()
+                        let isRecordingActive = self.recordingState != nil
+                        self.recordingStateLock.unlock()
+
+                        if isRecordingActive {
                             let err = NSError(
                                 domain: "Zcam1CameraService",
                                 code: -42,
@@ -1612,11 +1617,33 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             // Create AVAssetWriter
                             let assetWriter = try AVAssetWriter(outputURL: tmpURL, fileType: .mov)
 
-                            // Configure video input with nil settings to accept any format from the capture output.
-                            // The actual dimensions will match what the camera delivers.
+                            // Get video dimensions from the active video device format.
+                            // Camera delivers uncompressed BGRA pixel buffers from AVCaptureVideoDataOutput,
+                            // so we must encode them to H.264/HEVC (passthrough nil settings only works with
+                            // already-compressed samples).
+                            var videoWidth: Int = 1920
+                            var videoHeight: Int = 1080
+                            if let videoDevice = self.videoInput?.device {
+                                let dimensions = CMVideoFormatDescriptionGetDimensions(videoDevice.activeFormat.formatDescription)
+                                videoWidth = Int(dimensions.width)
+                                videoHeight = Int(dimensions.height)
+                            }
+
+                            // Use HEVC if available, otherwise H.264
+                            let videoCodec: AVVideoCodecType = AVAssetWriterInput.recommendedSettings(
+                                forMediaType: .video,
+                                outputFileType: .mov
+                            )?[AVVideoCodecKey] as? AVVideoCodecType ?? .hevc
+
+                            let videoSettings: [String: Any] = [
+                                AVVideoCodecKey: videoCodec,
+                                AVVideoWidthKey: videoWidth,
+                                AVVideoHeightKey: videoHeight,
+                            ]
+
                             let videoInput = AVAssetWriterInput(
                                 mediaType: .video,
-                                outputSettings: nil  // Passthrough - accepts any format
+                                outputSettings: videoSettings
                             )
                             videoInput.expectsMediaDataInRealTime = true
 
@@ -1632,12 +1659,20 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             }
                             assetWriter.add(videoInput)
 
-                            // Configure audio input with nil settings to accept any format from capture output.
+                            // Configure audio input with AAC encoding.
+                            // AVCaptureAudioDataOutput provides uncompressed LPCM samples, so we must
+                            // encode them (passthrough nil settings only works with already-compressed audio).
                             var audioInput: AVAssetWriterInput?
                             if hasAudio {
+                                let audioSettings: [String: Any] = [
+                                    AVFormatIDKey: kAudioFormatMPEG4AAC,
+                                    AVNumberOfChannelsKey: 2,
+                                    AVSampleRateKey: 44100.0,
+                                    AVEncoderBitRateKey: 128000,
+                                ]
                                 let input = AVAssetWriterInput(
                                     mediaType: .audio,
-                                    outputSettings: nil  // Passthrough - accepts any format
+                                    outputSettings: audioSettings
                                 )
                                 input.expectsMediaDataInRealTime = true
 
@@ -1668,7 +1703,11 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             state.writerQueue.sync {
                                 state.isRecording = true
                             }
+
+                            // Set recordingState with lock protection
+                            self.recordingStateLock.lock()
                             self.recordingState = state
+                            self.recordingStateLock.unlock()
 
                             print("[Zcam1CameraService] AVAssetWriter recording started (no preview flash)")
 
@@ -1746,7 +1785,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     /// Stops an in-progress video recording and returns `{ filePath, format, durationSeconds? }`.
     public func stopVideoRecording(completion: @escaping (NSDictionary?, NSError?) -> Void) {
         sessionQueue.async {
-            guard let state = self.recordingState else {
+            // Lock to safely read the recordingState reference
+            self.recordingStateLock.lock()
+            let state = self.recordingState
+            self.recordingStateLock.unlock()
+
+            guard let state = state else {
                 let err = NSError(
                     domain: "Zcam1CameraService",
                     code: -44,
@@ -1790,10 +1834,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
                 // Finalize the asset writer
                 state.assetWriter.finishWriting {
-                    // Clear recording state on session queue
-                    self.sessionQueue.async {
-                        self.recordingState = nil
-                    }
+                    // Clear recording state with lock protection
+                    self.recordingStateLock.lock()
+                    self.recordingState = nil
+                    self.recordingStateLock.unlock()
 
                     if let error = state.assetWriter.error {
                         print("[Zcam1CameraService] AVAssetWriter error: \(error)")
@@ -1924,9 +1968,13 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
     /// Called by the view when it receives a video sample buffer.
     /// If recording is active, writes the sample to the asset writer.
-    /// Thread-safe: all writes are serialized through the writer queue.
+    /// Thread-safe: recordingStateLock guards reference access; writerQueue serializes writes.
     public func writeVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard let state = recordingState else { return }
+        // Lock to safely read the recordingState reference
+        recordingStateLock.lock()
+        let state = recordingState
+        recordingStateLock.unlock()
+        guard let state = state else { return }
 
         // All writer operations must be serialized on the writer queue
         state.writerQueue.async {
@@ -1964,7 +2012,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     ) {
         // Only handle audio data output
         guard output === audioDataOutput else { return }
-        guard let state = recordingState else { return }
+
+        // Lock to safely read the recordingState reference
+        recordingStateLock.lock()
+        let state = recordingState
+        recordingStateLock.unlock()
+        guard let state = state else { return }
 
         // All writer operations must be serialized on the writer queue
         state.writerQueue.async {
