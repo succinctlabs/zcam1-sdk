@@ -13,3 +13,5 @@ ios:
   frameworkName: Zcam1ProvingFramework
 noOverwrite:
   - "Zcam1Proving.podspec"
+  - "src/proving/bindings.tsx"
+  - "src/proving/NativeZcam1Proving.ts"
