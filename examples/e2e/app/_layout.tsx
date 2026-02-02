@@ -2,11 +2,11 @@ import { useCallback, useState } from "react";
 import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1";
 import {
   ProverProvider,
   ProvingClient,
-  privateDirectory,
-} from "@succinctlabs/react-native-zcam1";
+} from "@succinctlabs/react-native-zcam1/proving";
 import { pickDirectory } from "@react-native-documents/picker";
 import { Pressable } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";

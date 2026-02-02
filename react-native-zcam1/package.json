@@ -46,15 +46,16 @@
   },
   "exports": {
     ".": {
-      "source": "./src/index.tsx",
+      "source": "./src/index.ts",
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
     "./proving": {
-      "import": "./lib/module/proving.js",
-      "require": "./lib/commonjs/proving.js",
-      "types": "./lib/typescript/src/proving.d.ts"
+      "source": "./lib/module/proving/index.ts",
+      "types": "./lib/typescript/src/proving/index.d.ts",
+      "default": "./lib/module/proving/index.js"
     },
+    "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },
   "types": "./lib/typescript/src/index.d.ts",
@@ -82,7 +83,8 @@
     "!**/__mocks__",
     "*.podspec",
     "Zcam1Framework.xcframework",
-    "README.md",
+    "Zcam1ProvingFramework.xcframework",
+    "app.plugin.js",
     "turbo.json"
   ],
   "react-native-builder-bob": {

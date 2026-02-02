@@ -5,10 +5,10 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   authenticityStatus,
-  useProver,
   ZImagePicker,
   AuthenticityStatus,
 } from "@succinctlabs/react-native-zcam1";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { useCallback, useEffect, useState } from "react";
 
 type BadgeProps = {

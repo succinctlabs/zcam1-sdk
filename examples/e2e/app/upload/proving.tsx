@@ -5,7 +5,7 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useProofRequestStatus,
   useProver,
-} from "@succinctlabs/react-native-zcam1";
+} from "@succinctlabs/react-native-zcam1/proving";
 
 export default function Proving() {
   return (

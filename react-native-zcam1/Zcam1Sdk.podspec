@@ -15,15 +15,69 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/succinctlabs/zcam1-sdk.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/*.{h,m,mm,swift}",  "cpp/*.{hpp,cpp,c,h}", "cpp/generated/*.{hpp,cpp,c,h}"
+  # Proving is opt-in.
+  #
+  # Enable proving in one of these ways:
+  #
+  # 1) Environment variable (works for Expo + non-Expo):
+  #    - ZCAM1_ENABLE_PROVING=1 pod install
+  #    - or set ENV["ZCAM1_ENABLE_PROVING"] = "1" early in your Podfile
+  #
+  # 2) Podfile.properties.json (recommended for Expo plugins that want to avoid editing Podfile):
+  #    - ios/Podfile.properties.json:
+  #        { "zcam1EnableProving": true }
+  #      or:
+  #        { "zcam1": { "enableProving": true } }
+  #      or:
+  #        { "zcam1.enableProving": true }
+  #
+  zcam1_truthy = ->(v) { v == true || v.to_s == "1" || v.to_s.downcase == "true" }
+  enable_proving_from_env = zcam1_truthy.call(ENV["ZCAM1_ENABLE_PROVING"])
+
+  enable_proving_from_props = begin
+    props_path = File.join(Pod::Config.instance.installation_root.to_s, "Podfile.properties.json")
+    if File.exist?(props_path)
+      props = JSON.parse(File.read(props_path))
+      zcam1_truthy.call(props["ZCAM1_ENABLE_PROVING"]) ||
+        zcam1_truthy.call(props["enableProving"])
+    else
+      false
+    end
+  rescue
+    false
+  end
+
+  enable_proving = enable_proving_from_env || enable_proving_from_props
+
+  source_files = [
+    "ios/*.{h,m,mm,swift}",
+    "cpp/*.{hpp,cpp,c,h}",
+    "cpp/generated/*.{hpp,cpp,c,h}",
+  ]
+  public_header_files = ["ios/*.h"]
+
+  vendored_frameworks = ["Zcam1Framework.xcframework"]
+
+  if enable_proving
+    source_files += [
+      "ios/proving/*.{h,m,mm,swift}",
+      "cpp/proving/*.{hpp,cpp,c,h}",
+      "cpp/proving/generated/*.{hpp,cpp,c,h}",
+    ]
+    public_header_files += ["ios/proving/*.h"]
+
+    vendored_frameworks += ["Zcam1ProvingFramework.xcframework"]
+  end
+
+  s.source_files = source_files
   # Only expose ObjC headers publicly (Swift can import these).
-  s.public_header_files = "ios/*.h"
+  s.public_header_files = public_header_files
 
   # Keep everything that contains C/C++ out of Swift's importer.
   s.private_header_files = "cpp/**/*.h", "cpp/**/*.hpp"
 
   s.frameworks = ["QuickLook"]
-  s.vendored_frameworks = "Zcam1Framework.xcframework"
+  s.vendored_frameworks = vendored_frameworks
   s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
 
   # Harbeth: GPU-accelerated image/video/camera filter library.
