@@ -995,6 +995,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             // Trigger depth prewarm right after the session is (or becomes) running
             // to avoid first-shot lag on depth-enabled captures.
             self.prewarmDepthPipelineIfNeeded()
+
+            // Prewarm audio if mic permission is already granted to avoid shutter on first recording.
+            self.prewarmAudioIfAuthorized()
         }
     }
 
@@ -1629,14 +1632,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                                 videoHeight = Int(dimensions.height)
                             }
 
-                            // Use HEVC if available, otherwise H.264
-                            let videoCodec: AVVideoCodecType = AVAssetWriterInput.recommendedSettings(
-                                forMediaType: .video,
-                                outputFileType: .mov
-                            )?[AVVideoCodecKey] as? AVVideoCodecType ?? .hevc
-
+                            // Use HEVC for modern devices (iOS 11+)
                             let videoSettings: [String: Any] = [
-                                AVVideoCodecKey: videoCodec,
+                                AVVideoCodecKey: AVVideoCodecType.hevc,
                                 AVVideoWidthKey: videoWidth,
                                 AVVideoHeightKey: videoHeight,
                             ]
@@ -1749,37 +1747,64 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
     /// Sets up audio input and output for recording. Called only when mic is authorized.
     /// Returns true if audio was successfully configured.
+    /// Uses a single beginConfiguration/commitConfiguration block to minimize preview interruption.
     private func setupAudioForRecording(session: AVCaptureSession) -> Bool {
-        // Add audio input if not already present
-        if self.audioInput == nil {
+        let needsInput = self.audioInput == nil
+        let needsOutput = !session.outputs.contains(self.audioDataOutput)
+
+        // If nothing to add, we're already configured
+        if !needsInput && !needsOutput {
+            return true
+        }
+
+        // Prepare audio input outside the configuration block to minimize lock time
+        var newAudioInput: AVCaptureDeviceInput?
+        if needsInput {
             guard let audioDevice = AVCaptureDevice.default(for: .audio) else {
                 return false
             }
             do {
-                let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                session.beginConfiguration()
-                if session.canAddInput(audioInput) {
-                    session.addInput(audioInput)
-                    self.audioInput = audioInput
-                }
-                session.commitConfiguration()
+                newAudioInput = try AVCaptureDeviceInput(device: audioDevice)
             } catch {
-                print("[Zcam1CameraService] Failed to add audio input: \(error)")
+                print("[Zcam1CameraService] Failed to create audio input: \(error)")
                 return false
             }
         }
 
-        // Add audio data output if not already present
-        if !session.outputs.contains(self.audioDataOutput) {
-            session.beginConfiguration()
-            if session.canAddOutput(self.audioDataOutput) {
-                session.addOutput(self.audioDataOutput)
-                self.audioDataOutput.setSampleBufferDelegate(self, queue: self.audioDataQueue)
-            }
-            session.commitConfiguration()
+        // Single configuration block for all changes
+        session.beginConfiguration()
+
+        if let audioInput = newAudioInput, session.canAddInput(audioInput) {
+            session.addInput(audioInput)
+            self.audioInput = audioInput
         }
 
+        if needsOutput && session.canAddOutput(self.audioDataOutput) {
+            session.addOutput(self.audioDataOutput)
+            self.audioDataOutput.setSampleBufferDelegate(self, queue: self.audioDataQueue)
+        }
+
+        session.commitConfiguration()
+
         return self.audioInput != nil && session.outputs.contains(self.audioDataOutput)
+    }
+
+    /// Prewarms audio configuration if mic permission is already granted.
+    /// Call this after camera session is configured to avoid shutter on first recording.
+    /// Must be called from sessionQueue.
+    private func prewarmAudioIfAuthorized() {
+        // Only prewarm if mic permission is already granted (don't trigger prompt)
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else {
+            return
+        }
+        guard let session = self.captureSession else {
+            return
+        }
+
+        if self.audioInput == nil || !session.outputs.contains(self.audioDataOutput) {
+            print("[Zcam1CameraService] Prewarming audio configuration...")
+            _ = self.setupAudioForRecording(session: session)
+        }
     }
 
     /// Stops an in-progress video recording and returns `{ filePath, format, durationSeconds? }`.
