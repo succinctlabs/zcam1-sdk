@@ -268,6 +268,31 @@ export interface Spec extends TurboModule {
   }>;
 
   /**
+   * Check if the current camera device supports depth data capture.
+   * Returns true for dual/triple rear cameras and TrueDepth front camera.
+   * Returns false for single rear cameras (iPhone SE, 16e, Air).
+   */
+  isDepthSupported(): Promise<boolean>;
+
+  /**
+   * Check if enabling depth would restrict zoom on this device.
+   * Returns true if zoom is limited to discrete levels (min == max in all ranges).
+   * This typically happens on dual-camera devices (iPhone 12-16 base).
+   * Returns false for triple-camera devices (Pro) and TrueDepth front cameras.
+   */
+  hasDepthZoomLimitations(): Promise<boolean>;
+
+  /**
+   * Get zoom ranges supported when depth data delivery is enabled.
+   * Returns array of [min, max] pairs. If min == max, it's a discrete level.
+   * Empty array means no depth support or no zoom restrictions.
+   *
+   * Example for dual-camera iPhone: [[2.0, 2.0], [4.0, 4.0]] (discrete 1x and 2x only)
+   * Example for triple-camera iPhone: [[1.0, 6.0]] (continuous zoom supported)
+   */
+  getDepthSupportedZoomRanges(): Promise<number[][]>;
+
+  /**
    * Present a native full-screen preview for any file using QLPreviewController.
    * Supports images, videos, PDFs, and other common file types.
    * @param filePath Absolute filesystem path to the file.

@@ -419,6 +419,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // We prewarm it once per session configuration to avoid first-shot lag.
     private var didPrewarmDepth: Bool = false
 
+    // Whether depth data delivery is enabled at the session/output level.
+    // When true, zoom may be restricted on dual-camera devices.
+    private var depthEnabledAtSessionLevel: Bool = false
+
     // Serial queue for all session operations
     private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session")
 
@@ -447,7 +451,11 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
     /// Best-effort prewarm for depth capture to avoid first-shot lag.
     /// This primes the system's depth pipeline (and related ISP work) ahead of the first user capture.
+    /// Only runs if depth is enabled at the session level.
     private func prewarmDepthPipelineIfNeeded() {
+        // Skip prewarm if depth is not enabled at the session level.
+        guard depthEnabledAtSessionLevel else { return }
+
         // Only prewarm once the session is running; otherwise the work may still be deferred
         // and the first real capture can pay the cost.
         guard let session = captureSession, session.isRunning else { return }
@@ -457,13 +465,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
         guard photoOutput.isDepthDataDeliverySupported else { return }
 
-        // Enable at the output level once so the pipeline is initialized ahead of time.
-        // Must wrap in beginConfiguration/commitConfiguration to avoid crashes.
-        if !photoOutput.isDepthDataDeliveryEnabled {
-            session.beginConfiguration()
-            photoOutput.isDepthDataDeliveryEnabled = true
-            session.commitConfiguration()
-        }
+        // Depth is already enabled at the output level in configureSessionIfNeeded().
+        // Just prepare the settings to prime the ISP.
 
         let settings: AVCapturePhotoSettings
         if photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
@@ -797,9 +800,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             // Prefer virtual devices that combine multiple cameras for seamless zoom.
             // Order matters - first available is used.
             let deviceTypes: [AVCaptureDevice.DeviceType] = [
-                .builtInTripleCamera,  // Ultra-wide + Wide + Telephoto
-                .builtInDualWideCamera,  // Ultra-wide + Wide
-                .builtInDualCamera,  // Wide + Telephoto
+                .builtInTripleCamera,  // Ultra-wide + Wide + Telephoto (back)
+                .builtInDualWideCamera,  // Ultra-wide + Wide (back)
+                .builtInDualCamera,  // Wide + Telephoto (back)
+                .builtInTrueDepthCamera,  // TrueDepth with depth support (front)
                 .builtInWideAngleCamera,  // Wide only (fallback)
             ]
 
@@ -854,18 +858,25 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         }
     }
 
-    /// Configure the capture session if needed (or reconfigure if the position changed).
+    /// Configure the capture session if needed (or reconfigure if the position or depth setting changed).
+    /// - Parameters:
+    ///   - position: The camera position (front or back).
+    ///   - depthEnabled: Whether to enable depth data delivery at the session level.
+    ///     When true, depth data can be captured but zoom may be restricted on dual-camera devices.
+    ///     When false (default), full zoom range is available.
     @nonobjc public func configureSessionIfNeeded(
         position: AVCaptureDevice.Position,
+        depthEnabled: Bool = false,
         completion: @escaping (Error?) -> Void
     ) {
         sessionQueue.async {
-            // Early return if session is already configured correctly for the requested position.
+            // Early return if session is already configured correctly for the requested position and depth setting.
             if let session = self.captureSession,
                 let currentInput = self.videoInput,
                 currentInput.device.position == position,
                 session.outputs.contains(self.photoOutput),
-                session.sessionPreset == .high
+                session.sessionPreset == .high,
+                self.depthEnabledAtSessionLevel == depthEnabled
             {
                 DispatchQueue.main.async {
                     completion(nil)
@@ -954,10 +965,14 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 }
 
                 // Depth delivery setup:
-                // - enable at the output level once (avoids first-shot lag when turning it on later)
-                // - prewarm the pipeline via setPreparedPhotoSettingsArray
+                // - Enable at the output level based on the depthEnabled parameter.
+                // - When enabled, prewarm the pipeline via setPreparedPhotoSettingsArray.
+                // - Note: Enabling depth restricts zoom on dual-camera devices.
                 if self.photoOutput.isDepthDataDeliverySupported {
-                    self.photoOutput.isDepthDataDeliveryEnabled = true
+                    self.photoOutput.isDepthDataDeliveryEnabled = depthEnabled
+                    self.depthEnabledAtSessionLevel = depthEnabled
+                } else {
+                    self.depthEnabledAtSessionLevel = false
                 }
 
                 // Camera calibration data delivery is configured per-capture on AVCapturePhotoSettings.
@@ -1104,6 +1119,60 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             "switchingBehavior": switchingBehavior,
             "isVirtualDevice": !switchOverFactors.isEmpty,
         ]
+    }
+
+    // MARK: - Depth Detection Methods
+
+    /// Check if the current camera device supports depth data capture.
+    /// Returns true for dual/triple rear cameras and TrueDepth front camera.
+    /// Returns false for single rear cameras (iPhone SE, 16e, Air).
+    public func isDepthSupported() -> Bool {
+        return photoOutput.isDepthDataDeliverySupported
+    }
+
+    /// Check if enabling depth would restrict zoom on this device.
+    /// Returns true if zoom is limited to discrete levels (min == max in all ranges).
+    /// This typically happens on dual-camera devices (iPhone 12-16 base).
+    /// Returns false for triple-camera devices (Pro) and TrueDepth front cameras.
+    public func hasDepthZoomLimitations() -> Bool {
+        guard let device = videoInput?.device,
+              photoOutput.isDepthDataDeliverySupported else { return false }
+
+        let format = device.activeFormat  // activeFormat is NOT optional.
+
+        // Use supportedVideoZoomRangesForDepthDataDelivery (iOS 17.2+).
+        // Returns [ClosedRange<CGFloat>] - use .lowerBound/.upperBound.
+        // If all ranges have min == max, zoom is restricted to discrete levels.
+        if #available(iOS 17.2, *) {
+            let ranges = format.supportedVideoZoomRangesForDepthDataDelivery
+            if ranges.isEmpty { return false }
+
+            // Check if ALL ranges are discrete (min == max).
+            let allDiscrete = ranges.allSatisfy { $0.lowerBound == $0.upperBound }
+            return allDiscrete
+        }
+
+        // Pre-iOS 17.2: assume limitations for dual camera devices.
+        return device.deviceType == .builtInDualCamera ||
+               device.deviceType == .builtInDualWideCamera
+    }
+
+    /// Get zoom ranges supported when depth data delivery is enabled.
+    /// Returns array of [min, max] pairs. If min == max, it's a discrete level.
+    /// Empty array means no depth support or no zoom restrictions.
+    public func getDepthSupportedZoomRanges() -> [[Double]] {
+        guard let device = videoInput?.device,
+              photoOutput.isDepthDataDeliverySupported else { return [] }
+
+        let format = device.activeFormat  // activeFormat is NOT optional.
+
+        if #available(iOS 17.2, *) {
+            // supportedVideoZoomRangesForDepthDataDelivery returns [ClosedRange<CGFloat>].
+            return format.supportedVideoZoomRangesForDepthDataDelivery.map {
+                [Double($0.lowerBound), Double($0.upperBound)]
+            }
+        }
+        return []
     }
 
     /// Set torch mode (continuous flashlight during preview).
@@ -1367,10 +1436,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
             let format = Zcam1CaptureFormat(from: formatString)
             print(
-                "[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format)"
+                "[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format), depthEnabled=\(self.depthEnabledAtSessionLevel)"
             )
 
-            self.configureSessionIfNeeded(position: position) { error in
+            self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel) { error in
                 print(
                     "[Zcam1CameraService] takePhoto: configureSessionIfNeeded completed, error=\(String(describing: error))"
                 )
@@ -1472,26 +1541,26 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     }
                     print("[Zcam1CameraService] takePhoto: quality prioritization configured")
 
-                    // Enable/disable depth + calibration delivery at both the output + settings level based on request.
+                    // Depth: only set on photo settings if already enabled at output level.
                     print(
-                        "[Zcam1CameraService] takePhoto: isDepthDataDeliverySupported=\(self.photoOutput.isDepthDataDeliverySupported)"
+                        "[Zcam1CameraService] takePhoto: isDepthDataDeliveryEnabled=\(self.photoOutput.isDepthDataDeliveryEnabled)"
                     )
-                    if self.photoOutput.isDepthDataDeliverySupported {
-                        // Output-level enabling is done during session configuration/prewarm to avoid first-shot lag.
+                    if self.photoOutput.isDepthDataDeliveryEnabled {
                         print(
-                            "[Zcam1CameraService] takePhoto: setting isDepthDataDeliveryEnabled=\(includeDepthData)"
+                            "[Zcam1CameraService] takePhoto: setting settings.isDepthDataDeliveryEnabled=\(includeDepthData)"
                         )
                         settings.isDepthDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isDepthDataDeliveryEnabled = false
                     }
 
+                    // Calibration: can be set directly if device supports it.
                     print(
                         "[Zcam1CameraService] takePhoto: isCameraCalibrationDataDeliverySupported=\(self.photoOutput.isCameraCalibrationDataDeliverySupported)"
                     )
                     if self.photoOutput.isCameraCalibrationDataDeliverySupported {
                         print(
-                            "[Zcam1CameraService] takePhoto: setting isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)"
+                            "[Zcam1CameraService] takePhoto: setting settings.isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)"
                         )
                         settings.isCameraCalibrationDataDeliveryEnabled = includeDepthData
                     } else {
@@ -1560,7 +1629,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     position = .back
                 }
 
-                self.configureSessionIfNeeded(position: position) { error in
+                self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel) { error in
                     if let error = error {
                         completion(nil, error as NSError)
                         return
@@ -2172,6 +2241,19 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
+    /// Enable depth data capture at session level.
+    /// When true, depth data can be captured but zoom may be restricted on dual-camera devices.
+    /// When false (default), full zoom range is available.
+    public var depthEnabled: Bool = false {
+        didSet {
+            guard oldValue != depthEnabled else { return }
+            print("[Zcam1CameraView] depthEnabled changed: \(oldValue) -> \(depthEnabled)")
+            // Reconfigure session to apply the new depth setting.
+            isReconfiguring = true
+            reconfigureSession()
+        }
+    }
+
     // Preview rendering - single UIImageView for all frames (filtered or not)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
@@ -2286,7 +2368,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         let positionEnum: AVCaptureDevice.Position =
             position.lowercased() == "front" ? .front : .back
 
-        svc.configureSessionIfNeeded(position: positionEnum) { [weak self] error in
+        svc.configureSessionIfNeeded(position: positionEnum, depthEnabled: depthEnabled) { [weak self] error in
             guard let self = self, error == nil else { return }
 
             // Apply camera settings.
