@@ -1436,10 +1436,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
             let format = Zcam1CaptureFormat(from: formatString)
             print(
-                "[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format)"
+                "[Zcam1CameraService] takePhoto: configuring session for position=\(position.rawValue), format=\(format), depthEnabled=\(self.depthEnabledAtSessionLevel)"
             )
 
-            self.configureSessionIfNeeded(position: position) { error in
+            self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel) { error in
                 print(
                     "[Zcam1CameraService] takePhoto: configureSessionIfNeeded completed, error=\(String(describing: error))"
                 )
@@ -1629,7 +1629,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     position = .back
                 }
 
-                self.configureSessionIfNeeded(position: position) { error in
+                self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel) { error in
                     if let error = error {
                         completion(nil, error as NSError)
                         return

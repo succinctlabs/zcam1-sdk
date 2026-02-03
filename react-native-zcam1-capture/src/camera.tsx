@@ -358,6 +358,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const aspectRatio: AspectRatio = options.aspectRatio ?? "4:3";
     const orientation: Orientation = options.orientation ?? "auto";
 
+    console.log("[ZCamera] takePhoto: calling native with includeDepthData =", includeDepthData);
+
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
@@ -367,6 +369,14 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       orientation,
       false, // skipPostProcessing - default to false for normal operation
     );
+
+    console.log("[ZCamera] takePhoto: native result:", {
+      filePath: result?.filePath ? "present" : "missing",
+      format: result?.format,
+      hasMetadata: !!result?.metadata,
+      hasDepthData: !!result?.depthData,
+      depthDataKeys: result?.depthData ? Object.keys(result.depthData) : null,
+    });
 
     if (!result || !result.filePath) {
       throw new Error(
