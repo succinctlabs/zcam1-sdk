@@ -133,7 +133,6 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
   if (attestation == null) {
     attestation = await updateRegistration(deviceKeyId, settings);
-    await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation);
   }
 
   return {
@@ -175,6 +174,8 @@ export async function updateRegistration(
       throw error;
     }
   }
+
+  await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
 }
