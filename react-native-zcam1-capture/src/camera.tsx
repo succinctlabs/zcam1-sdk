@@ -63,6 +63,14 @@ export interface ZCameraProps {
   exposure?: number;
   /** Filter preset to apply to preview and captured photos. Defaults to "normal". */
   filter?: CameraFilter;
+  /**
+   * Enable depth data capture at session level.
+   * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
+   * When false (default), full zoom range is available.
+   * Use isDepthSupported() and hasDepthZoomLimitations() to check device capabilities.
+   * @default false
+   */
+  depthEnabled?: boolean;
   /** Capture information used to generate C2PA bindings for each photo. */
   captureInfo: CaptureInfo;
   /** Optional certificate chain used to sign the C2PA manifest. */
@@ -98,6 +106,7 @@ type NativeCameraViewProps = {
   torch?: boolean;
   exposure?: number;
   filter?: CameraFilter;
+  depthEnabled?: boolean;
 };
 
 /**
@@ -222,6 +231,37 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     isVirtualDevice: boolean;
   }> {
     return NativeZcam1Sdk.getDeviceDiagnostics();
+  }
+
+  /**
+   * Check if the current camera device supports depth data capture.
+   * Returns true for dual/triple rear cameras and TrueDepth front camera.
+   * Returns false for single rear cameras (iPhone SE, 16e, Air).
+   */
+  async isDepthSupported(): Promise<boolean> {
+    return NativeZcam1Sdk.isDepthSupported();
+  }
+
+  /**
+   * Check if enabling depth would restrict zoom on this device.
+   * Returns true if zoom is limited to discrete levels (min == max in all ranges).
+   * This typically happens on dual-camera devices (iPhone 12-16 base).
+   * Returns false for triple-camera devices (Pro) and TrueDepth front cameras.
+   */
+  async hasDepthZoomLimitations(): Promise<boolean> {
+    return NativeZcam1Sdk.hasDepthZoomLimitations();
+  }
+
+  /**
+   * Get zoom ranges supported when depth data delivery is enabled.
+   * Returns array of [min, max] pairs. If min == max, it's a discrete level.
+   * Empty array means no depth support or no zoom restrictions.
+   *
+   * Example for dual-camera iPhone: [[2.0, 2.0], [4.0, 4.0]] (discrete 1x and 2x only)
+   * Example for triple-camera iPhone: [[1.0, 6.0]] (continuous zoom supported)
+   */
+  async getDepthSupportedZoomRanges(): Promise<number[][]> {
+    return NativeZcam1Sdk.getDepthSupportedZoomRanges();
   }
 
   /**
@@ -382,6 +422,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       torch = false,
       exposure = 0,
       filter = "normal",
+      depthEnabled = false,
       style,
     } = this.props;
 
@@ -396,6 +437,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         torch={torch}
         exposure={exposure}
         filter={filter}
+        depthEnabled={depthEnabled}
       />
     );
   }

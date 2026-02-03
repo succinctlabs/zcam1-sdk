@@ -236,6 +236,45 @@ static void ensureStaticStorageInitialized(void) {
   resolve(@{@"error": @"Diagnostics not available"});
 }
 
+- (void)isDepthSupported:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    BOOL supported = [[Zcam1CameraService shared] isDepthSupported];
+    resolve(@(supported));
+    return;
+  }
+#endif
+  resolve(@(NO));
+}
+
+- (void)hasDepthZoomLimitations:(RCTPromiseResolveBlock)resolve
+                         reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    BOOL hasLimitations = [[Zcam1CameraService shared] hasDepthZoomLimitations];
+    resolve(@(hasLimitations));
+    return;
+  }
+#endif
+  resolve(@(NO));
+}
+
+- (void)getDepthSupportedZoomRanges:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSArray<NSArray<NSNumber *> *> *ranges = [[Zcam1CameraService shared] getDepthSupportedZoomRanges];
+    resolve(ranges);
+    return;
+  }
+#endif
+  resolve(@[]);
+}
+
 - (void)startNativeVideoRecording:(NSString *)position
                           resolve:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
