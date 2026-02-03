@@ -1541,26 +1541,26 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     }
                     print("[Zcam1CameraService] takePhoto: quality prioritization configured")
 
-                    // Enable/disable depth + calibration delivery at both the output + settings level based on request.
+                    // Depth: only set on photo settings if already enabled at output level.
                     print(
-                        "[Zcam1CameraService] takePhoto: isDepthDataDeliverySupported=\(self.photoOutput.isDepthDataDeliverySupported)"
+                        "[Zcam1CameraService] takePhoto: isDepthDataDeliveryEnabled=\(self.photoOutput.isDepthDataDeliveryEnabled)"
                     )
-                    if self.photoOutput.isDepthDataDeliverySupported {
-                        // Output-level enabling is done during session configuration/prewarm to avoid first-shot lag.
+                    if self.photoOutput.isDepthDataDeliveryEnabled {
                         print(
-                            "[Zcam1CameraService] takePhoto: setting isDepthDataDeliveryEnabled=\(includeDepthData)"
+                            "[Zcam1CameraService] takePhoto: setting settings.isDepthDataDeliveryEnabled=\(includeDepthData)"
                         )
                         settings.isDepthDataDeliveryEnabled = includeDepthData
                     } else {
                         settings.isDepthDataDeliveryEnabled = false
                     }
 
+                    // Calibration: can be set directly if device supports it.
                     print(
                         "[Zcam1CameraService] takePhoto: isCameraCalibrationDataDeliverySupported=\(self.photoOutput.isCameraCalibrationDataDeliverySupported)"
                     )
                     if self.photoOutput.isCameraCalibrationDataDeliverySupported {
                         print(
-                            "[Zcam1CameraService] takePhoto: setting isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)"
+                            "[Zcam1CameraService] takePhoto: setting settings.isCameraCalibrationDataDeliveryEnabled=\(includeDepthData)"
                         )
                         settings.isCameraCalibrationDataDeliveryEnabled = includeDepthData
                     } else {
