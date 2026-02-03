@@ -33,7 +33,11 @@ export async function previewFile(filePath: string): Promise<void> {
 /**
  * Flash mode for photo capture.
  */
-export { type FlashMode, type AspectRatio, type Orientation } from "./NativeZcam1Sdk";
+export {
+  type FlashMode,
+  type AspectRatio,
+  type Orientation,
+} from "./NativeZcam1Sdk";
 
 /**
  * Native video recording results.
@@ -81,7 +85,10 @@ export class ZPhoto {
  * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
-  let deviceKeyId: string | undefined;
+  let deviceKeyId = await EncryptedStorage.getItem(
+    `deviceKeyId-${settings.appId}`,
+  );
+
   let contentKeyId: Uint8Array | undefined;
   const contentPublicKey = await getContentPublicKey();
 
@@ -91,7 +98,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  if (deviceKeyId === undefined) {
+  if (deviceKeyId == null) {
     // Try to generate hardware key, but fall back to mock for simulator
     try {
       deviceKeyId = await generateHardwareKey();
@@ -110,14 +117,23 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         throw error;
       }
     }
-    EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
+    await EncryptedStorage.setItem(
+      `deviceKeyId-${settings.appId}`,
+      deviceKeyId,
+    );
   }
 
-  if (deviceKeyId === undefined) {
+  if (deviceKeyId == null) {
     throw "failed to generate a device key";
   }
 
-  const attestation = await updateRegistration(deviceKeyId, settings);
+  let attestation = await EncryptedStorage.getItem(
+    `attestation-${deviceKeyId}`,
+  );
+
+  if (attestation == null) {
+    attestation = await updateRegistration(deviceKeyId, settings);
+  }
 
   return {
     appId: settings.appId,
@@ -153,11 +169,13 @@ export async function updateRegistration(
       );
       // Use a mock attestation for simulator testing
       // In production, this would need to be rejected by the backend
-      attestation = `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
+      return `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
     } else {
       throw error;
     }
   }
+
+  await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
 }

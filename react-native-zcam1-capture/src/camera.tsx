@@ -5,6 +5,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
+import JailMonkey from "jail-monkey";
 import {
   buildSelfSignedCertificate,
   computeHash,
@@ -24,7 +25,6 @@ import NativeZcam1Sdk, {
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertion } from "./utils";
-import { base64 } from "@scure/base";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -266,6 +266,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     try {
       const result = await NativeZcam1Sdk.stopNativeVideoRecording();
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
+      const isJailBroken = JailMonkey.isJailBroken();
+      const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
 
       result.filePath = await embedBindings(
         result.filePath,
@@ -286,6 +288,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           audioCodec: result.audioCodec,
           audioSampleRate: result.audioSampleRate,
           audioChannels: result.audioChannels,
+          authenticityData: {
+            isJailBroken,
+            isLocationSpoofingAvailable,
+          },
         },
         this.props.captureInfo,
         this.certChainPem,
@@ -345,6 +351,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const deviceMake = tiff.Make || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
+    const isJailBroken = JailMonkey.isJailBroken();
+    const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
 
     const destinationPath = await embedBindings(
       originalPath,
@@ -360,6 +368,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
+        authenticityData: {
+          isJailBroken,
+          isLocationSpoofingAvailable,
+        },
         depthData: result.depthData as any,
       },
       this.props.captureInfo,

@@ -142,6 +142,13 @@ impl Action<VideoMetadataInfo> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
+pub struct AuthenticityData {
+    is_jail_broken: bool,
+    is_location_spoofing_available: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct PhotoMetadataInfo {
     device_make: String,
     device_model: String,
@@ -153,6 +160,7 @@ pub struct PhotoMetadataInfo {
     exposure_time: u32,
     depth_of_field: u32,
     focal_length: u32,
+    authenticity_data: AuthenticityData,
     depth_data: Option<DepthData>,
 }
 
@@ -174,6 +182,7 @@ pub struct VideoMetadataInfo {
     audio_codec: Option<String>,
     audio_sample_rate: Option<u32>,
     audio_channels: Option<u32>,
+    authenticity_data: AuthenticityData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

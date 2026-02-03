@@ -100,6 +100,14 @@ function CaptureInfo({
         <Text style={styles.metadataRow}>
           Captured: {formatDate(metadata.when)}
         </Text>
+        <Text style={styles.metadataRow}>
+          Is jail broken: {params.authenticityData.isJailBroken ? "Yes" : "No"}
+        </Text>
+        <Text style={styles.metadataRow}>
+          Is location spoofing possible:{" "}
+          {params.authenticityData.isLocationSpoofingAvailable ? "Yes" : "No"}
+        </Text>
+
         {isVideo ? (
           <VideoCaptureInfo metadata={params as VideoMetadataInfo} />
         ) : (
