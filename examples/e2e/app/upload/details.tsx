@@ -101,8 +101,7 @@ function CaptureInfo({
           Captured: {formatDate(metadata.when)}
         </Text>
         <Text style={styles.metadataRow}>
-          Is jail broken:{" "}
-          {params.authenticityData.jailBreakData.isJailBroken ? "Yes" : "No"}
+          Is jail broken: {params.authenticityData.isJailBroken ? "Yes" : "No"}
         </Text>
         {isVideo ? (
           <VideoCaptureInfo metadata={params as VideoMetadataInfo} />

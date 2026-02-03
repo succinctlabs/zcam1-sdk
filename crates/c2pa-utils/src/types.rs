@@ -143,16 +143,11 @@ impl Action<VideoMetadataInfo> {
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticityData {
-    jail_break_data: JailBreakData,
+    is_jail_broken: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
-pub struct JailBreakData {
-    is_jail_broken: bool,
-    detection_timestamp: u32,
-}
-
 pub struct PhotoMetadataInfo {
     device_make: String,
     device_model: String,

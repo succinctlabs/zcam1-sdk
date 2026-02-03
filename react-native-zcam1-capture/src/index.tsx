@@ -3,7 +3,6 @@ import {
   getAttestation,
 } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
-import JailMonkey from "jail-monkey";
 import {
   getContentPublicKey,
   getSecureEnclaveKeyId,
@@ -156,16 +155,6 @@ export async function updateRegistration(
   keyId: string,
   settings: Settings,
 ): Promise<string> {
-  const jailBreakData = {
-    isJailBroken: JailMonkey.isJailBroken(),
-    detectionTimestamp: Date.now(),
-  };
-
-  await EncryptedStorage.setItem(
-    "jailBreakData",
-    JSON.stringify(jailBreakData),
-  );
-
   // Try to get real attestation, but fall back to mock for simulator
   let attestation: string;
   try {

@@ -5,13 +5,12 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
+import JailMonkey from "jail-monkey";
 import {
-  AuthenticityData,
   buildSelfSignedCertificate,
   computeHash,
   ExistingCertChain,
   formatFromPath,
-  JailBreakData,
   ManifestEditor,
   SelfSignedCertChain,
   type PhotoMetadataInfo,
@@ -26,8 +25,6 @@ import NativeZcam1Sdk, {
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
 import { generateAppAttestAssertion } from "./utils";
-import { base64 } from "@scure/base";
-import EncryptedStorage from "react-native-encrypted-storage";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -269,7 +266,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     try {
       const result = await NativeZcam1Sdk.stopNativeVideoRecording();
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
-      const jailBreakData = await EncryptedStorage.getItem("jailBreakData");
+      const isJailBroken = JailMonkey.isJailBroken();
 
       result.filePath = await embedBindings(
         result.filePath,
@@ -290,9 +287,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           audioCodec: result.audioCodec,
           audioSampleRate: result.audioSampleRate,
           audioChannels: result.audioChannels,
-          authenticityData: AuthenticityData.create({
-            jailBreakData: JSON.parse(jailBreakData!) as JailBreakData,
-          }),
+          authenticityData: {
+            isJailBroken,
+          },
         },
         this.props.captureInfo,
         this.certChainPem,
@@ -352,10 +349,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const deviceMake = tiff.Make || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
-
-    const jailBreakData = await EncryptedStorage.getItem("jailBreakData");
-
-    console.log("jailBreakData", jailBreakData);
+    const isJailBroken = JailMonkey.isJailBroken();
 
     const destinationPath = await embedBindings(
       originalPath,
@@ -371,9 +365,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
-        authenticityData: AuthenticityData.create({
-          jailBreakData: JSON.parse(jailBreakData!) as JailBreakData,
-        }),
+        authenticityData: {
+          isJailBroken,
+        },
         depthData: result.depthData as any,
       },
       this.props.captureInfo,
