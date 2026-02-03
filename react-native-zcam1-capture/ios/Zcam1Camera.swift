@@ -800,9 +800,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             // Prefer virtual devices that combine multiple cameras for seamless zoom.
             // Order matters - first available is used.
             let deviceTypes: [AVCaptureDevice.DeviceType] = [
-                .builtInTripleCamera,  // Ultra-wide + Wide + Telephoto
-                .builtInDualWideCamera,  // Ultra-wide + Wide
-                .builtInDualCamera,  // Wide + Telephoto
+                .builtInTripleCamera,  // Ultra-wide + Wide + Telephoto (back)
+                .builtInDualWideCamera,  // Ultra-wide + Wide (back)
+                .builtInDualCamera,  // Wide + Telephoto (back)
+                .builtInTrueDepthCamera,  // TrueDepth with depth support (front)
                 .builtInWideAngleCamera,  // Wide only (fallback)
             ]
 
