@@ -267,6 +267,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       const result = await NativeZcam1Sdk.stopNativeVideoRecording();
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
       const isJailBroken = JailMonkey.isJailBroken();
+      const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
 
       result.filePath = await embedBindings(
         result.filePath,
@@ -289,6 +290,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           audioChannels: result.audioChannels,
           authenticityData: {
             isJailBroken,
+            isLocationSpoofingAvailable,
           },
         },
         this.props.captureInfo,
@@ -350,6 +352,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
     const isJailBroken = JailMonkey.isJailBroken();
+    const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
 
     const destinationPath = await embedBindings(
       originalPath,
@@ -367,6 +370,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         focalLength: exif.FocalLength,
         authenticityData: {
           isJailBroken,
+          isLocationSpoofingAvailable,
         },
         depthData: result.depthData as any,
       },

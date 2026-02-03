@@ -144,6 +144,7 @@ impl Action<VideoMetadataInfo> {
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticityData {
     is_jail_broken: bool,
+    is_location_spoofing_available: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
