@@ -86,7 +86,10 @@ export class ZPhoto {
  * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
-  let deviceKeyId = await EncryptedStorage.getItem("deviceKeyId");
+  let deviceKeyId = await EncryptedStorage.getItem(
+    `deviceKeyId-${settings.appId}`,
+  );
+
   let contentKeyId: Uint8Array | undefined;
   const contentPublicKey = await getContentPublicKey();
 
@@ -96,7 +99,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
   contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  if (deviceKeyId === null) {
+  if (deviceKeyId == null) {
     // Try to generate hardware key, but fall back to mock for simulator
     try {
       deviceKeyId = await generateHardwareKey();
@@ -115,14 +118,24 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         throw error;
       }
     }
-    await EncryptedStorage.setItem("deviceKeyId", deviceKeyId);
+    await EncryptedStorage.setItem(
+      `deviceKeyId-${settings.appId}`,
+      deviceKeyId,
+    );
   }
 
-  if (deviceKeyId === null) {
+  if (deviceKeyId == null) {
     throw "failed to generate a device key";
   }
 
-  const attestation = await updateRegistration(deviceKeyId, settings);
+  let attestation = await EncryptedStorage.getItem(
+    `attestation-${deviceKeyId}`,
+  );
+
+  if (attestation == null) {
+    attestation = await updateRegistration(deviceKeyId, settings);
+    await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation);
+  }
 
   return {
     appId: settings.appId,
