@@ -542,25 +542,40 @@ npm install @succinctlabs/react-native-zcam1-picker
 
 ### Actions
 
-| Action                                                    | Description                                                 |
-| --------------------------------------------------------- | ----------------------------------------------------------- |
-| **Capture Actions**                                       |                                                             |
-| [initCapture](/sdk/capture/initCapture)                   | Initialize device keys and attestation for photo capture    |
-| [ZCamera](/sdk/capture/ZCamera)                           | React component for capturing C2PA-signed photos            |
-| [takePhoto](/sdk/capture/takePhoto)                       | Capture a photo with hardware-backed signatures             |
-| [previewFile](/sdk/capture/previewFile)                   | Preview any file using iOS native viewer                    |
-| **Prove Actions**                                         |                                                             |
-| [ProverProvider](/sdk/prove/ProverProvider)               | React context provider for proof generation                 |
-| [useProver](/sdk/prove/useProver)                         | Hook to access the proving client                           |
-| [useProofRequestStatus](/sdk/prove/useProofRequestStatus) | Hook to poll proof request status                           |
-| [requestProof](/sdk/prove/requestProof)                   | Request ZK proof generation for a photo                     |
-| [embedProof](/sdk/prove/embedProof)                       | Embed a generated proof into a photo                        |
-| [waitAndEmbedProof](/sdk/prove/waitAndEmbedProof)         | Request, wait for, and embed proof in one step              |
-| **Verify Actions**                                        |                                                             |
-| [verify](/sdk/verify/verify)                              | Verify C2PA manifest and ZK proof in a photo                |
-| **Picker Actions**                                        |                                                             |
-| [ZImagePicker](/sdk/picker/ZImagePicker)                  | React component for picking photos with authenticity badges |
-| [authenticityStatus](/sdk/picker/authenticityStatus)      | Check the authenticity status of a photo                    |
+| Action                                                            | Description                                                 |
+| ----------------------------------------------------------------- | ----------------------------------------------------------- |
+| **Capture Actions**                                               |                                                             |
+| [initCapture](/sdk/capture/initCapture)                           | Initialize device keys and attestation for photo capture    |
+| [ZCamera](/sdk/capture/ZCamera)                                   | React component for capturing C2PA-signed photos            |
+| [takePhoto](/sdk/capture/takePhoto)                               | Capture a photo with hardware-backed signatures             |
+| [previewFile](/sdk/capture/previewFile)                           | Preview any file using iOS native viewer                    |
+| [startVideoRecording](/sdk/capture/startVideoRecording)           | Start recording a video with C2PA signing                   |
+| [stopVideoRecording](/sdk/capture/stopVideoRecording)             | Stop recording and get finalized file with metadata         |
+| [getSwitchOverZoomFactors](/sdk/capture/getSwitchOverZoomFactors) | Get zoom factors where physical lenses switch               |
+| **Prove Actions**                                                 |                                                             |
+| [ProverProvider](/sdk/prove/ProverProvider)                       | React context provider for proof generation                 |
+| [useProver](/sdk/prove/useProver)                                 | Hook to access the proving client                           |
+| [requestProof](/sdk/prove/requestProof)                           | Request ZK proof generation for a photo                     |
+| [getProofStatus](/sdk/prove/getProofStatus)                       | Check the status of a proof request                         |
+| [useProofRequestStatus](/sdk/prove/useProofRequestStatus)         | Hook to poll proof request status                           |
+| [embedProof](/sdk/prove/embedProof)                               | Embed a generated proof into a photo                        |
+| [waitAndEmbedProof](/sdk/prove/waitAndEmbedProof)                 | Request, wait for, and embed proof in one step              |
+| **Verify Actions**                                                |                                                             |
+| [VerifiableFile](/sdk/verify/VerifiableFile)                      | Class for verifying C2PA manifests and ZK proofs            |
+| [verifyBindings](/sdk/verify/verifyBindings)                      | Verify hardware-backed bindings in a C2PA manifest          |
+| [verifyProof](/sdk/verify/verifyProof)                            | Verify zero-knowledge proof in a C2PA manifest              |
+| [dataHash](/sdk/verify/dataHash)                                  | Get the content hash from a C2PA manifest                   |
+| [captureMetadata](/sdk/verify/captureMetadata)                    | Get capture metadata from a C2PA manifest                   |
+| **Picker Actions**                                                |                                                             |
+| [ZImagePicker](/sdk/picker/ZImagePicker)                          | React component for picking photos with authenticity badges |
+| [privateDirectory](/sdk/picker/privateDirectory)                  | Get the path to the app's private document directory        |
+| [authenticityStatus](/sdk/picker/authenticityStatus)              | Check the authenticity status of a photo                    |
+
+### Type References
+
+* [Capture Types](/sdk/capture/types) - Types for the Capture SDK
+* [Prove Types](/sdk/prove/types) - Types for the Prove SDK
+* [Verify Types](/sdk/verify/types) - Types for the Verify SDK
 
 
 ## Picker SDK
@@ -1424,74 +1439,85 @@ Both hash and bindings/proof checks must pass for a photo to be considered authe
 * `captureMetadata()` provides access to device and camera settings recorded at capture time
 
 
-## verify
+## VerifiableFile
 
-Verify the C2PA manifest and ZK proof in a photo.
+Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
 
 ### Usage
 
 ```tsx
-import { verify } from "react-native-zcam1-verify";
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
 
-const result = await verify(photoUri);
+const verifiable = new VerifiableFile(photoPath);
 
-if (result.valid) {
-  console.log("Photo is authentic!");
-}
+// Verify hardware-backed bindings (App Attest)
+const bindingsValid = verifiable.verifyBindings(false);
+
+// Verify zero-knowledge proof
+const proofValid = verifiable.verifyProof('TEAM_ID.com.example.app');
+
+// Get capture metadata
+const metadata = verifiable.captureMetadata();
 ```
 
-### Parameters
+### Constructor
 
-#### uri
+#### new VerifiableFile(path)
+
+Creates a [`VerifiableFile`](/sdk/verify/VerifiableFile) instance by extracting the C2PA manifest from the file.
+
+#### path (required)
 
 * **Type:** `string`
 
-Path or URI to a photo with C2PA manifest.
+Path to the file to verify.
 
-### Returns
+### Methods
 
-`Promise<VerificationResult>`
+#### verifyBindings(appAttestProduction)
 
-```tsx
-type VerificationResult = {
-  valid: boolean;              // Whether the photo is valid
-  hasManifest: boolean;        // Whether photo has C2PA manifest
-  hasBindings: boolean;        // Whether photo has succinct.bindings
-  hasProof: boolean;           // Whether photo has succinct.proof
-  proofVerified?: boolean;     // Whether ZK proof is valid (if present)
-  manifestValid?: boolean;     // Whether C2PA manifest is valid
-  error?: string;              // Error message if verification failed
-}
-```
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify/verifyBindings).
+
+#### verifyProof(appId)
+
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify/verifyProof).
+
+#### dataHash()
+
+Gets the content hash from the C2PA manifest. See [`dataHash`](/sdk/verify/dataHash).
+
+#### captureMetadata()
+
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify/captureMetadata).
 
 ### Example
 
 ```tsx
-import { useState } from "react";
-import { Button, Text, View } from "react-native";
-import { verify } from "react-native-zcam1-verify";
-import { launchImageLibrary } from "react-native-image-picker";
+import { useState } from 'react';
+import { View, Button, Text, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
 
-function VerifyScreen() {
-  const [result, setResult] = useState<string>();
+function VerificationScreen() {
+  const [result, setResult] = useState<string>('');
 
-  const handleVerify = async () => {
-    const response = await launchImageLibrary({ mediaType: "photo" });
+  const verifyPhoto = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
     const uri = response.assets?.[0]?.uri;
     
     if (!uri) return;
 
     try {
-      const verification = await verify(uri);
+      const verifiable = new VerifiableFile(uri);
       
-      if (verification.valid) {
-        setResult("✓ Photo is authentic!");
-      } else if (!verification.hasManifest) {
-        setResult("No C2PA manifest found");
-      } else if (!verification.hasProof) {
-        setResult("No ZK proof found");
+      const bindingsValid = verifiable.verifyBindings(false);
+      const proofValid = verifiable.verifyProof(process.env.EXPO_PUBLIC_APP_ID!);
+      const metadata = verifiable.captureMetadata();
+      
+      if (bindingsValid && proofValid) {
+        setResult(`✓ Verified!\nCaptured: ${metadata?.when}`);
       } else {
-        setResult(`Verification failed: ${verification.error}`);
+        setResult('✗ Verification failed');
       }
     } catch (error: any) {
       setResult(`Error: ${error.message}`);
@@ -1499,28 +1525,449 @@ function VerifyScreen() {
   };
 
   return (
-    <View>
-      <Button title="Select & Verify Photo" onPress={handleVerify} />
-      {result && <Text>{result}</Text>}
+    <View style={styles.container}>
+      <Button title="Select & Verify Photo" onPress={verifyPhoto} />
+      {result && <Text style={styles.result}>{result}</Text>}
     </View>
   );
 }
 ```
 
-### Verification Checks
+### Notes
 
-The verify function performs the following checks:
+* Constructor throws an error if the file doesn't have a C2PA manifest
+* [`verifyProof()`](/sdk/verify/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+* Use [`verifyBindings(false)`](/sdk/verify/verifyBindings) for development, `verifyBindings(true)` for production
 
-1. **C2PA Manifest** - Validates the manifest structure and signatures
-2. **Succinct Bindings** - Checks for hardware-backed assertions
-3. **ZK Proof** - Verifies the zero-knowledge proof (if present)
-4. **Integrity** - Ensures the photo hasn't been tampered with
+
+## captureMetadata
+
+Returns the capture metadata from the C2PA manifest. Contains device info and camera settings recorded at capture time.
+
+### Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+
+const verifiable = new VerifiableFile(photoPath);
+const metadata = verifiable.captureMetadata();
+
+if (metadata) {
+  console.log('Captured at:', metadata.when);
+  console.log('Action:', metadata.action);
+  console.log('Parameters:', metadata.parameters);
+}
+```
+
+### Returns
+
+[`CaptureMetadata`](/sdk/verify/types#capturemetadata) `| null` - The capture metadata object, or `null` if not present in the manifest.
+
+### Example
+
+```tsx
+import { useState } from 'react';
+import { Button, Text, View, ScrollView, StyleSheet } from 'react-native';
+import { VerifiableFile, type CaptureMetadata } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function MetadataDisplayScreen() {
+  const [metadata, setMetadata] = useState<CaptureMetadata | null>(null);
+
+  const getMetadata = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      const meta = verifiable.captureMetadata();
+      setMetadata(meta);
+    } catch (error: any) {
+      console.error('Error:', error.message);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <Button title="Get Metadata" onPress={getMetadata} />
+      {metadata && (
+        <View style={styles.metadata}>
+          <Text style={styles.label}>Action:</Text>
+          <Text style={styles.value}>{metadata.action}</Text>
+          
+          <Text style={styles.label}>Captured:</Text>
+          <Text style={styles.value}>{new Date(metadata.when).toLocaleString()}</Text>
+          
+          <Text style={styles.label}>Parameters:</Text>
+          <Text style={styles.value}>{JSON.stringify(metadata.parameters, null, 2)}</Text>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+```
 
 ### Notes
 
-* Returns `valid: true` only if all checks pass
-* Photos without proofs will have `hasProof: false` but may still have valid bindings
-* Use `getManifest()`, `getBindings()`, or `getProof()` to extract specific data
+* Returns `null` if the C2PA manifest doesn't contain capture metadata
+* The `parameters` field contains detailed device and camera information
+* For photos, `parameters` is of type `PhotoMetadataInfo`
+* For videos, `parameters` is of type `VideoMetadataInfo`
+* All timestamps are in ISO 8601 format
+
+
+## dataHash
+
+Returns the file's content hash as recorded in the active C2PA manifest. This hash is used as a public input to the zero-knowledge proof.
+
+### Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+
+const verifiable = new VerifiableFile(photoPath);
+const hash = verifiable.dataHash();
+
+console.log('Content hash:', hash);
+```
+
+### Returns
+
+`string | undefined` - The manifest data hash (base64-encoded string), or `undefined` if not available.
+
+### Example
+
+```tsx
+import { useState } from 'react';
+import { Button, Text, View, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function HashDisplayScreen() {
+  const [hash, setHash] = useState<string>('');
+
+  const getHash = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      const photoHash = verifiable.dataHash();
+      
+      if (photoHash) {
+        setHash(`Hash: ${photoHash.substring(0, 32)}...`);
+      } else {
+        setHash('No hash available');
+      }
+    } catch (error: any) {
+      setHash(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Get Photo Hash" onPress={getHash} />
+      {hash && <Text style={styles.hash}>{hash}</Text>}
+    </View>
+  );
+}
+```
+
+### Notes
+
+* The hash is computed from the photo's actual file content
+* This hash is used as a public input when verifying the zero-knowledge proof
+* The hash is base64-encoded for readability and compatibility
+* Computed lazily on first access and cached for subsequent calls
+
+
+## Verify Types
+
+Type definitions used throughout the Verify SDK.
+
+### CaptureMetadata
+
+```typescript
+interface CaptureMetadata {
+  action: string;                                    // Action performed during capture (e.g., "c2pa.created")
+  when: string;                                      // ISO 8601 timestamp of when the photo/video was captured
+  parameters: PhotoMetadataInfo | VideoMetadataInfo; // Detailed camera settings and device information
+}
+```
+
+Capture metadata extracted from the C2PA manifest. Contains device info and camera settings at capture time.
+
+**Used by:**
+
+* [`VerifiableFile.captureMetadata()`](/sdk/verify/captureMetadata) - Returns capture metadata from the C2PA manifest
+
+### PhotoMetadataInfo
+
+```typescript
+interface PhotoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  xResolution: number;                // Horizontal resolution in pixels
+  yResolution: number;                // Vertical resolution in pixels
+  orientation: number;                // EXIF orientation value
+  iso: string;                        // ISO sensitivity setting
+  exposureTime: number;               // Exposure time in microseconds
+  depthOfField: number;               // Depth of field in millimeters
+  focalLength: number;                // Focal length in millimeters
+  authenticityData: AuthenticityData; // Device security status
+  depthData?: DepthData;              // Depth map information (optional)
+}
+```
+
+Detailed metadata for photos captured with the camera.
+
+### VideoMetadataInfo
+
+```typescript
+interface VideoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  format: string;                     // Video container format (e.g., "mov")
+  hasAudio: boolean;                  // Whether the video includes an audio track
+  durationSeconds: number;            // Video duration in seconds
+  fileSizeBytes: number;              // File size in bytes
+  width: number;                      // Video width in pixels
+  height: number;                     // Video height in pixels
+  rotationDegrees: number;            // Video rotation (0, 90, 180, or 270)
+  frameRate: number;                  // Video frame rate (fps)
+  videoCodec?: string;                // Video codec identifier (optional)
+  audioCodec?: string;                // Audio codec identifier (optional)
+  audioSampleRate?: number;           // Audio sample rate in Hz (optional)
+  audioChannels?: number;             // Number of audio channels (optional)
+  authenticityData: AuthenticityData; // Device security status
+}
+```
+
+Detailed metadata for videos recorded with the camera.
+
+### ManifestInterface
+
+```typescript
+interface ManifestInterface {
+  bindings(): string | undefined;
+  proof(): { data: string; vkHash: string } | undefined;
+  captureMetadataAction(): string | undefined;
+}
+```
+
+Interface representing the active C2PA manifest extracted from a file. This is the underlying C2PA manifest object from the `@succinctlabs/react-native-zcam1-c2pa` package.
+
+### AuthenticityData
+
+```typescript
+interface AuthenticityData {
+  isJailBroken: boolean;              // Whether the device was jailbroken at capture time
+  isLocationSpoofingAvailable: boolean; // Whether location spoofing was detected
+}
+```
+
+Device security status information captured at the time of photo/video creation.
+
+### DepthData
+
+```typescript
+interface DepthData {
+  width: number;                      // Width of the depth map in pixels
+  height: number;                     // Height of the depth map in pixels
+  pixelFormat: string;                // Pixel format (e.g., "kCVPixelFormatType_DepthFloat32")
+  statistics: DepthDataStatistics;    // Statistical information about depth values
+  accuracy: string;                   // Accuracy level (e.g., "relative", "absolute")
+}
+```
+
+Depth map information captured alongside a photo (only present in photos captured with depth data enabled).
+
+### DepthDataStatistics
+
+```typescript
+interface DepthDataStatistics {
+  min: string;             // Minimum depth value 
+  max: string;             // Maximum depth value 
+  mean: string;            // Mean depth value
+  stdDev: string;          // Standard deviation 
+  validPixelCount: number; // Number of pixels with valid depth data
+  sampleStride: number;    // Stride used when sampling for statistics
+}
+```
+
+Statistical information about depth values in a depth map.
+
+### APPLE\_ROOT\_CERT
+
+```typescript
+const APPLE_ROOT_CERT: string
+```
+
+The Apple App Attestation Root CA certificate in PEM format. Used internally for verifying App Attest attestations.
+
+
+## verifyBindings
+
+Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryptographic integrity of the hardware-backed assertion.
+
+### Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+
+const verifiable = new VerifiableFile(photoPath);
+
+// For development/testing
+const isValid = verifiable.verifyBindings(false);
+
+// For production
+const isValid = verifiable.verifyBindings(true);
+```
+
+### Parameters
+
+#### appAttestProduction (required)
+
+* **Type:** `boolean`
+
+Whether to verify against production App Attest environment. Use `false` for development/testing, `true` for production.
+
+### Returns
+
+`boolean` - `true` if bindings are valid, `false` otherwise.
+
+### Example
+
+```tsx
+import { useState } from 'react';
+import { Button, Text, View, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function BindingsVerificationScreen() {
+  const [result, setResult] = useState<string>('');
+
+  const verifyBindings = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      const isValid = verifiable.verifyBindings(false); // Use false for dev
+      
+      if (isValid) {
+        setResult('✓ Hardware bindings verified!');
+      } else {
+        setResult('✗ Bindings verification failed');
+      }
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Verify Bindings" onPress={verifyBindings} />
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+```
+
+### Notes
+
+* Verifies the App Attest attestation embedded in the C2PA manifest
+* The `appAttestProduction` parameter must match the environment where the photo was captured
+* Photos captured with [`ZCamera`](/sdk/capture/ZCamera) include hardware-backed bindings automatically
+* Bindings verify the authenticity of the device and key material used during capture
+
+
+## verifyProof
+
+Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
+
+### Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+
+const verifiable = new VerifiableFile(photoPath);
+const appId = process.env.EXPO_PUBLIC_APP_ID!;
+
+const isValid = verifiable.verifyProof(appId);
+```
+
+### Parameters
+
+#### appId (required)
+
+* **Type:** `string`
+
+The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Must match the `appId` used during [`initCapture()`](/sdk/capture/initCapture).
+
+### Returns
+
+`boolean` - `true` if the proof is valid, `false` otherwise.
+
+### Throws
+
+* Throws an error if the manifest doesn't contain a `succinct.proof` assertion
+
+### Example
+
+```tsx
+import { useState } from 'react';
+import { Button, Text, View, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function ProofVerificationScreen() {
+  const [result, setResult] = useState<string>('');
+
+  const verifyProof = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      const appId = process.env.EXPO_PUBLIC_APP_ID!;
+      const isValid = verifiable.verifyProof(appId);
+      
+      if (isValid) {
+        setResult('✓ Zero-knowledge proof verified!');
+      } else {
+        setResult('✗ Proof verification failed');
+      }
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Verify Proof" onPress={verifyProof} />
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+```
+
+### Notes
+
+* Requires the photo to have been proven using the [Prove SDK](/sdk/prove)
+* The `appId` parameter must match the value used during [`initCapture()`](/sdk/capture/initCapture)
+* Verifies the Groth16 proof using the embedded verification key hash
+* Public inputs include the photo hash, app ID, and Apple root certificate
 
 
 ## ProverProvider
@@ -1545,7 +1992,7 @@ function App() {
 
 #### settings (required)
 
-* **Type:** `Settings`
+* **Type:** [`Settings`](/sdk/prove/types#settings)
 
 Configuration for the proving client.
 
@@ -1557,9 +2004,17 @@ type Settings = {
 }
 ```
 
+**Field Details:**
+
+* **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
+* **`privateKey`** (`string`, optional) - SP1 prover network private key. If not provided, uses a mock prover
+* **`certChain`** (`SelfSignedCertChain | ExistingCertChain`, optional) - Certificate chain for C2PA signing. If not provided, generates self-signed certificate
+
+See [Settings type reference](/sdk/prove/types#settings) for details.
+
 #### onFulfilled
 
-* **Type:** `(requestId: string, photoPath: string, proof: ArrayBuffer, provingClient: ProvingClient) => void`
+* **Type:** `(requestId: string, photoPath: string, proof: ArrayBuffer, provingClient: `[`ProvingClient`](/sdk/prove/types#provingclient)`) => void`
 * **Optional**
 
 Callback when a proof request is fulfilled.
@@ -1616,6 +2071,7 @@ function App() {
 * The provider automatically polls for proof completion when using callbacks
 * If `privateKey` is not provided, uses a mock prover for development
 * If `certChain` is not provided, generates a self-signed certificate
+* Access the proving client via [`useProver()`](/sdk/prove/useProver) hook
 
 
 ## embedProof
@@ -1632,27 +2088,25 @@ const provenPath = await provingClient.embedProof(photoUri, proof);
 
 ### Parameters
 
-#### uri
+#### originalPath
 
 * **Type:** `string`
+* **Required**
 
-Path or URI to the original photo with `succinct.bindings`.
+Path or URI to the original photo with `succinct.bindings` assertion.
 
 #### proof
 
 * **Type:** `ArrayBuffer`
+* **Required**
 
-Proof bytes from `getProofStatus()` or `useProofRequestStatus()`.
+Proof bytes obtained from [`getProofStatus()`](/sdk/prove/getProofStatus) or [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus).
 
 ### Returns
 
 `Promise<string>`
 
 Path to the new photo with `succinct.proof` embedded in its C2PA manifest.
-
-### Throws
-
-Throws an error if the input photo doesn't contain `succinct.bindings`.
 
 ### Example
 
@@ -1688,27 +2142,94 @@ function ProvePhoto({ photoUri }: { photoUri: string }) {
 }
 ```
 
-### Complete Workflow
+### Notes
+
+* Adds `succinct.proof` assertion to the existing C2PA manifest (keeps `succinct.bindings`)
+* Creates a new file in the cache directory; the original is not modified
+* The proof includes the vk\_hash for verification
+* Requires the photo to have been captured with [`ZCamera`](/sdk/capture/ZCamera) or have `succinct.bindings` added
+* Use with [`getProofStatus()`](/sdk/prove/getProofStatus) or [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus) to get the proof bytes
+
+
+## getProofStatus
+
+Check the current status of a proof generation request. Used to poll for completion after calling [`requestProof()`](/sdk/prove/requestProof).
+
+### Usage
 
 ```tsx
-// 1. Request proof
+const { provingClient } = useProver();
+
+// Request proof first
 const requestId = await provingClient.requestProof(photoUri);
 
-// 2. Poll for completion
+// Poll for status
 const status = await provingClient.getProofStatus(requestId);
 
-// 3. Embed when fulfilled
-if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled && status.proof) {
-  const provenPath = await provingClient.embedProof(photoUri, status.proof);
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+  console.log('Proof ready!', status.proof);
+}
+```
+
+### Parameters
+
+#### requestId
+
+* **Type:** `string`
+* **Required**
+
+The request ID returned from [`requestProof()`](/sdk/prove/requestProof).
+
+### Returns
+
+`Promise<`[`ProofRequestStatus`](/sdk/prove/types#proofrequeststatus)`>`
+
+```tsx
+type ProofRequestStatus = {
+  fulfillmentStatus: FulfillmentStatus;  // Current status
+  proof?: ArrayBuffer;                   // Proof bytes (when fulfilled)
+}
+
+enum FulfillmentStatus {
+  UnspecifiedFulfillmentStatus = 0,  // Initial/unknown state
+  Requested = 1,                     // Request received by backend
+  Assigned = 2,                      // Request assigned to a prover
+  Fulfilled = 3,                     // Proof generated successfully
+  Unfulfillable = 4,                 // Proof generation failed
+}
+```
+
+### Example
+
+```tsx
+async function waitForProof(
+  provingClient: ProvingClient,
+  requestId: string
+): Promise<ArrayBuffer> {
+  while (true) {
+    const status = await provingClient.getProofStatus(requestId);
+
+    if (status.fulfillmentStatus === FulfillmentStatus.Unfulfillable) {
+      throw new Error('Proof generation failed');
+    }
+
+    if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+      return status.proof!;
+    }
+
+    // Wait 1 second before polling again
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
 }
 ```
 
 ### Notes
 
-* Replaces `succinct.bindings` with `succinct.proof` in the C2PA manifest
-* Creates a new file; the original is not modified
-* The proof includes the vk\_hash for verification
-* Use with `getProofStatus()` or `useProofRequestStatus()` to get the proof bytes
+* Typically used with manual polling loops
+* For React components, use [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus) hook instead for automatic polling
+* For simple use cases, use [`waitAndEmbedProof()`](/sdk/prove/waitAndEmbedProof) which handles polling internally
+* Poll interval recommendation: 1 second
+* Proof generation typically takes 2-5 seconds
 
 
 ## requestProof
@@ -1725,21 +2246,18 @@ const requestId = await provingClient.requestProof(photoUri);
 
 ### Parameters
 
-#### uri
+#### originalPath
 
 * **Type:** `string`
+* **Required**
 
-Path or URI to a photo with `succinct.bindings` assertion.
+Path or URI to a photo with `succinct.bindings` assertion (captured with [`ZCamera`](/sdk/capture/ZCamera)).
 
 ### Returns
 
 `Promise<string>`
 
 Request ID for polling proof status with `getProofStatus()` or `useProofRequestStatus()`.
-
-### Throws
-
-Throws an error if the input photo doesn't contain `succinct.bindings`.
 
 ### Example
 
@@ -1773,49 +2291,221 @@ function ProveButton({ photoUri }: { photoUri: string }) {
 }
 ```
 
-### Two-Step Workflow
-
-For better UX, use `requestProof()` to initiate generation, then poll with `useProofRequestStatus()`:
-
-```tsx
-import { useState, useEffect } from "react";
-import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
-
-function ProveWithProgress({ photoUri }: { photoUri: string }) {
-  const { provingClient } = useProver();
-  const [requestId, setRequestId] = useState<string | null>(null);
-  const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
-
-  // Step 1: Request proof
-  const handleProve = async () => {
-    const id = await provingClient?.requestProof(photoUri);
-    if (id) setRequestId(id);
-  };
-
-  // Step 2: When proof is ready, embed it
-  useEffect(() => {
-    if (proof && provingClient) {
-      provingClient.embedProof(photoUri, proof).then((path) => {
-        console.log("Proof embedded:", path);
-      });
-    }
-  }, [proof]);
-
-  return (
-    <>
-      <Button title="Generate Proof" onPress={handleProve} />
-      <Text>Status: {FulfillmentStatus[fulfillementStatus]}</Text>
-    </>
-  );
-}
-```
-
 ### Notes
 
 * Input photo must have `succinct.bindings` from the Capture SDK
 * Returns immediately with a request ID; actual proof generation happens asynchronously
 * Use `getProofStatus()` or `useProofRequestStatus()` to check completion
 * For simpler one-step generation, use `waitAndEmbedProof()` instead
+
+
+## Prove Types
+
+Type definitions used throughout the Prove SDK.
+
+### Settings
+
+Configuration for the proving client.
+
+```tsx
+type Settings = {
+  production: boolean;          // false for dev, true for production
+  privateKey?: string;          // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+}
+```
+
+**Used by:**
+
+* [`ProverProvider`](/sdk/prove/ProverProvider) - Accepts as `settings` prop
+
+***
+
+### ProvingClient
+
+Client for generating and embedding zero-knowledge proofs.
+
+```tsx
+class ProvingClient {
+  // Request proof generation
+  requestProof(originalPath: string): Promise<string>;
+  
+  // Check proof status
+  getProofStatus(requestId: string): Promise<ProofRequestStatus>;
+  
+  // Embed proof into photo
+  embedProof(originalPath: string, proof: ArrayBuffer): Promise<string>;
+  
+  // Convenience: request, wait, and embed in one step
+  waitAndEmbedProof(originalPath: string): Promise<string>;
+}
+```
+
+**Used by:**
+
+* [`useProver`](/sdk/prove/useProver) - Returns `provingClient` instance
+* All proof generation methods are called on this client
+
+***
+
+### ProverContextValue
+
+Context value returned by [`useProver()`](/sdk/prove/useProver).
+
+```tsx
+type ProverContextValue = {
+  provingClient: ProvingClient | null;     // The proving client instance
+  provingTasks: ProvingTasksState;         // Active proof requests
+  provingTasksCount: number;               // Number of active requests
+}
+```
+
+**Used by:**
+
+* [`useProver`](/sdk/prove/useProver) - Returns this type
+
+***
+
+### ProofRequestContextValue
+
+Context value returned by [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus).
+
+```tsx
+type ProofRequestContextValue = {
+  isInitializing: boolean;            // Whether proving client is initializing
+  error: unknown;                     // Any initialization error
+  fulfillementStatus: FulfillmentStatus; // Current proof status
+  proof: ArrayBuffer | undefined;     // Generated proof bytes (when fulfilled)
+}
+```
+
+**Used by:**
+
+* [`useProofRequestStatus`](/sdk/prove/useProofRequestStatus) - Returns this type
+
+***
+
+### ProvingTask
+
+Information about an active proof request.
+
+```tsx
+type ProvingTask = {
+  photoPath: string;      // Path to the photo being proven
+  createdAtMs: number;    // Timestamp when proof was requested
+}
+```
+
+**Used by:**
+
+* [`ProvingTasksState`](#provingtasksstate) - Values in the tasks record
+
+***
+
+### ProvingTasksState
+
+Record of active proof requests keyed by request ID.
+
+```tsx
+type ProvingTasksState = Record<string, ProvingTask>
+```
+
+**Used by:**
+
+* [`ProverContextValue`](#provercontextvalue) - Tracks active tasks
+
+***
+
+### ProofRequestStatus
+
+Status of a proof generation request returned from the backend.
+
+```tsx
+type ProofRequestStatus = {
+  fulfillmentStatus: FulfillmentStatus;  // Current status
+  proof?: ArrayBuffer;                   // Proof bytes (when fulfilled)
+}
+```
+
+**Used by:**
+
+* [`getProofStatus()`](/sdk/prove/getProofStatus) - Returns this type
+* [`useProofRequestStatus`](/sdk/prove/useProofRequestStatus) - Polls for this status
+
+***
+
+### FulfillmentStatus
+
+Enum representing the current status of a proof generation request.
+
+```tsx
+enum FulfillmentStatus {
+  UnspecifiedFulfillmentStatus = 0,  // Initial/unknown state
+  Requested = 1,                     // Request received by backend
+  Assigned = 2,                      // Request assigned to a prover
+  Fulfilled = 3,                     // Proof generated successfully
+  Unfulfillable = 4,                 // Proof generation failed
+}
+```
+
+**Used by:**
+
+* \[`ProofRequestStatus`]\(#proofre queststatus) - Indicates current status
+* [`ProofRequestContextValue`](#proofrequestcontextvalue) - Exposed via hook
+* [`waitAndEmbedProof`](/sdk/prove/waitAndEmbedProof) - Polls until `Fulfilled` or `Unfulfillable`
+
+***
+
+### SelfSignedCertChain
+
+Self-signed certificate chain configuration (re-exported from C2PA package).
+
+```tsx
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Algorithm for signing (default: ES256)
+  tsaUrl?: string;            // Timestamp authority URL (optional)
+}
+```
+
+**Used by:**
+
+* [`Settings`](#settings) - Certificate chain option
+
+***
+
+### ExistingCertChain
+
+Existing certificate chain in PEM format (re-exported from C2PA package).
+
+```tsx
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Used by:**
+
+* [`Settings`](#settings) - Certificate chain option
+
+***
+
+### AuthenticityStatus
+
+Enum for quick photo authenticity checks (re-exported from C2PA package).
+
+```tsx
+enum AuthenticityStatus {
+  Unknown = 0,          // Unable to determine status
+  NoManifest = 1,       // No C2PA manifest found
+  InvalidManifest = 2,  // C2PA manifest is invalid
+  Bindings = 3,         // Has succinct.bindings assertion
+  Proof = 4             // Has succinct.proof assertion
+}
+```
+
+**Used by:**
+
+* Checking if a photo needs proof generation (status `Bindings` means ready to prove)
 
 
 ## useProofRequestStatus
@@ -1938,14 +2628,6 @@ function ProveWithProgress({ photoUri }: { photoUri: string }) {
 }
 ```
 
-### Status Flow
-
-1. **UnspecifiedFulfillmentStatus** - Initial state before polling starts
-2. **Requested** - Proof request received by backend, waiting in queue
-3. **Assigned** - Proof generation assigned to a worker, in progress
-4. **Fulfilled** - Proof generation complete, `proof` available
-5. **Unfulfillable** - Proof generation failed permanently
-
 ### Notes
 
 * Automatically polls every second while status is not terminal
@@ -1975,22 +2657,24 @@ function ProveButton() {
 
 ### Returns
 
-`ProverContextValue`
+[`ProverContextValue`](/sdk/prove/types#provercontextvalue)
 
 ```tsx
 type ProverContextValue = {
   provingClient: ProvingClient | null;  // The proving client instance
-  isInitializing: boolean;              // Whether still initializing
-  error: unknown;                       // Any initialization error
-  provingTasks: Record<string, ProvingTask>; // Active proof requests
+  provingTasks: ProvingTasksState;      // Active proof requests
   provingTasksCount: number;            // Number of active requests
 }
+
+type ProvingTasksState = Record<string, ProvingTask>;
 
 type ProvingTask = {
   photoPath: string;
   createdAtMs: number;
 }
 ```
+
+See [ProverContextValue type reference](/sdk/prove/types#provercontextvalue) for details.
 
 ### Example
 
@@ -2037,10 +2721,10 @@ function ProveScreen() {
 
 ### Notes
 
-* Must be used within a `ProverProvider`
+* Must be used within a [`ProverProvider`](/sdk/prove/ProverProvider)
 * `provingClient` is `null` until initialization completes
 * `provingTasks` tracks all active proof requests when using the provider's callbacks
-* Check `isInitializing` before using `provingClient`
+* The proving client provides methods: [`requestProof`](/sdk/prove/requestProof), [`getProofStatus`](/sdk/prove/getProofStatus), [`embedProof`](/sdk/prove/embedProof), [`waitAndEmbedProof`](/sdk/prove/waitAndEmbedProof)
 
 
 ## waitAndEmbedProof
@@ -2126,51 +2810,12 @@ function QuickProveScreen() {
 }
 ```
 
-### Comparison with Two-Step Approach
-
-#### One-Step (waitAndEmbedProof)
-
-**Pros:**
-
-* Simplest API - single function call
-* Less code to write
-
-**Cons:**
-
-* Blocks until complete (several seconds)
-* No progress feedback during generation
-
-```tsx
-// Simple but blocking
-const provenPath = await provingClient.waitAndEmbedProof(photoUri);
-```
-
-#### Two-Step (requestProof + useProofRequestStatus)
-
-**Pros:**
-
-* Better UX with progress tracking
-* Non-blocking - can show loading states
-* Can cancel or handle errors gracefully
-
-**Cons:**
-
-* More code required
-* Need to manage request IDs
-
-```tsx
-// Better UX with progress
-const requestId = await provingClient.requestProof(photoUri);
-const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
-// Show status updates to user
-```
-
 ### Notes
 
-* This method polls the backend until the proof is ready
-* Proof generation typically takes a few seconds
-* For better UX, use `requestProof()` + `useProofRequestStatus()` to show progress
-* Perfect for quick prototyping or when UX isn't critical
+* This method polls the backend until the proof is ready (blocks for a few seconds)
+* Proof generation typically takes 2-5 seconds
+* For better UX with progress tracking, use [`requestProof()`](/sdk/prove/requestProof) + [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus)
+* Perfect for quick prototyping or simple workflows
 
 
 ## ZImagePicker
@@ -2291,72 +2936,11 @@ Function to render a selection overlay in multi-select mode.
 
 ### Examples
 
-#### Basic Usage
-
 ```tsx
 import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
 
 <ZImagePicker
   source={{ path: privateDirectory() }}
-  onSelect={(uri) => console.log("Selected:", uri)}
-/>
-```
-
-#### With Authenticity Badges
-
-```tsx
-import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
-
-<ZImagePicker
-  source={{ path: privateDirectory() }}
-  renderBadge={(uri, status) => {
-    if (status === AuthenticityStatus.Proof) {
-      return <View style={styles.badge}><Text>✓</Text></View>;
-    }
-    if (status === AuthenticityStatus.Bindings) {
-      return <View style={styles.badge}><Text>📝</Text></View>;
-    }
-    return null;
-  }}
-  onSelect={(uri) => console.log("Selected:", uri)}
-/>
-```
-
-#### Multi-Select Mode
-
-```tsx
-import { useState } from "react";
-import { ZImagePicker } from "react-native-zcam1-picker";
-
-function MultiSelectPicker() {
-  const [selected, setSelected] = useState<string[]>([]);
-
-  return (
-    <>
-      <ZImagePicker
-        source={{ path: privateDirectory() }}
-        multiSelect
-        selectedUris={selected}
-        onSelectionChange={setSelected}
-        renderSelectionOverlay={(uri, isSelected) => (
-          isSelected ? (
-            <View style={styles.overlay}>
-              <Text>✓</Text>
-            </View>
-          ) : null
-        )}
-      />
-      <Text>{selected.length} selected</Text>
-    </>
-  );
-}
-```
-
-#### From Photo Gallery
-
-```tsx
-<ZImagePicker
-  source={{ album: "My Album" }}
   onSelect={(uri) => console.log("Selected:", uri)}
 />
 ```
@@ -2447,57 +3031,56 @@ function PhotoStatus({ photoUri }: { photoUri: string }) {
 }
 ```
 
-### Status Progression
-
-Photos typically progress through these statuses:
-
-1. **NoManifest** - Regular photo without C2PA data
-2. **Bindings** - Photo captured with ZCAM1 Capture SDK (has hardware attestation)
-3. **Proof** - Photo proven with ZCAM1 Prove SDK (has ZK proof)
-
-### Use Cases
-
-#### Filter Photos by Status
-
-```tsx
-import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
-
-async function getPhotosNeedingProof(photoUris: string[]) {
-  const results = await Promise.all(
-    photoUris.map(async (uri) => ({
-      uri,
-      status: await authenticityStatus(uri)
-    }))
-  );
-
-  return results
-    .filter(r => r.status === AuthenticityStatus.Bindings)
-    .map(r => r.uri);
-}
-```
-
-#### Show Status Badge
-
-```tsx
-function PhotoBadge({ photoUri }: { photoUri: string }) {
-  const [status, setStatus] = useState<AuthenticityStatus>();
-
-  useEffect(() => {
-    authenticityStatus(photoUri).then(setStatus);
-  }, [photoUri]);
-
-  if (status === AuthenticityStatus.Proof) return <Text>✓</Text>;
-  if (status === AuthenticityStatus.Bindings) return <Text>📝</Text>;
-  return null;
-}
-```
-
 ### Notes
 
 * Quickly checks for presence of `succinct.bindings` or `succinct.proof`
 * Does not perform full cryptographic verification (use `verify()` for that)
 * Useful for UI indicators and filtering
 * Re-exports from `@succinctlabs/react-native-zcam1-c2pa`
+
+
+## privateDirectory
+
+Returns the path to the app's private document directory. This is the recommended location for storing captured photos and sensitive files.
+
+### Usage
+
+```tsx
+import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
+
+const privatePath = privateDirectory();
+console.log('Private directory:', privatePath);
+```
+
+### Returns
+
+`string` - The absolute path to the app's private document directory
+
+### Example
+
+```tsx
+import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
+import { ZImagePicker } from '@succinctlabs/react-native-zcam1-picker';
+
+function GalleryScreen() {
+  const privatePath = privateDirectory();
+  
+  return (
+    <ZImagePicker
+      source={{ path: privatePath }}
+      onSelect={(uri) => console.log('Selected:', uri)}
+    />
+  );
+}
+```
+
+### Notes
+
+* The private directory is app-specific and not accessible by other apps
+* Files in this directory persist across app launches
+* Files are automatically deleted when the app is uninstalled
+* This directory is not backed up to iCloud by default
+* The path is stable across app launches but may change on app reinstall
 
 
 ## ZCamera
@@ -2530,9 +3113,9 @@ function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
 
 #### captureInfo (required)
 
-* **Type:** `CaptureInfo`
+* **Type:** [`CaptureInfo`](/sdk/capture/types#captureinfo)
 
-Capture information from `initCapture()`. Required for C2PA signing.
+Capture information from [`initCapture()`](/sdk/capture/initCapture). Required for C2PA signing. See [initCapture Returns](/sdk/capture/initCapture#returns) for details.
 
 #### position
 
@@ -2547,6 +3130,13 @@ Which camera to use.
 * **Default:** `true`
 
 Whether the camera is actively running.
+
+#### captureFormat
+
+* **Type:** `"jpeg" | "dng"`
+* **Default:** `"jpeg"`
+
+Desired capture format. When set to `"dng"`, captures RAW DNG file while still producing a C2PA-signed JPEG copy.
 
 #### zoom
 
@@ -2576,10 +3166,10 @@ Exposure compensation in EV units.
 
 #### filter
 
-* **Type:** `"normal" | "vivid" | "warm" | "cool"`
+* **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter)
 * **Default:** `"normal"`
 
-Filter preset to apply to preview and captured photos.
+Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vivid"`, `"warm"`, `"cool"`.
 
 #### depthEnabled
 
@@ -2590,10 +3180,36 @@ Enable depth data capture at session level. When `true`, depth data can be captu
 
 #### certChain
 
-* **Type:** `SelfSignedCertChain | ExistingCertChain`
+* **Type:** [`SelfSignedCertChain`](/sdk/capture/types#selfsignedcertchain) | [`ExistingCertChain`](/sdk/capture/types#existingcertchain)
 * **Optional**
 
-Certificate chain for signing the C2PA manifest. If not provided, a self-signed certificate is generated.
+Certificate chain for signing the C2PA manifest. If not provided, a self-signed certificate is automatically generated.
+
+```tsx
+// Self-signed (default)
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Default: "ES256"
+  tsaUrl?: string;            // Optional timestamp authority URL
+}
+
+// Existing certificate
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Example:**
+
+```tsx
+// Use self-signed (automatic)
+<ZCamera captureInfo={captureInfo} />
+
+// Or provide custom certificate
+<ZCamera 
+  captureInfo={captureInfo}
+  certChain={{ pem: customCertChainPem }}
+/>
+```
 
 #### style
 
@@ -2631,6 +3247,64 @@ Sets zoom with smooth animation. See [setZoomAnimated](/sdk/capture/setZoomAnima
 #### isDepthSupported()
 
 Checks if device supports depth data capture. See [isDepthSupported](/sdk/capture/isDepthSupported).
+
+#### getSwitchOverZoomFactors()
+
+Gets the zoom factors where the device switches between physical lenses. See [getSwitchOverZoomFactors](/sdk/capture/getSwitchOverZoomFactors).
+
+#### startVideoRecording(position?)
+
+Starts recording a video. See [startVideoRecording](/sdk/capture/startVideoRecording).
+
+#### stopVideoRecording()
+
+Stops video recording and returns the finalized file. See [stopVideoRecording](/sdk/capture/stopVideoRecording).
+
+#### getDeviceDiagnostics()
+
+Returns diagnostic information about the current camera device.
+
+```tsx
+const diagnostics = await camera.current?.getDeviceDiagnostics();
+```
+
+**Returns:** `Promise<DeviceDiagnostics>`
+
+```tsx
+type DeviceDiagnostics = {
+  deviceType: string;          // e.g., "builtInTripleCamera"
+  minZoom: number;             // Minimum zoom factor
+  maxZoom: number;             // Maximum zoom factor
+  currentZoom: number;         // Current zoom factor
+  switchOverFactors: number[]; // Lens switch points
+  switchingBehavior: number;   // AVFoundation switching behavior
+  isVirtualDevice: boolean;    // Whether device is virtual (multi-camera)
+}
+```
+
+Useful for debugging zoom issues on different device configurations.
+
+#### hasDepthZoomLimitations()
+
+Checks if enabling depth would restrict zoom on this device.
+
+```tsx
+const hasLimitations = await camera.current?.hasDepthZoomLimitations();
+```
+
+**Returns:** `Promise<boolean>` - `true` if zoom is limited to discrete levels when depth is enabled (typically dual-camera devices), `false` for triple-camera devices.
+
+#### getDepthSupportedZoomRanges()
+
+Gets the zoom ranges supported when depth data delivery is enabled.
+
+```tsx
+const ranges = await camera.current?.getDepthSupportedZoomRanges();
+// Example: [[2.0, 2.0], [4.0, 4.0]] for discrete levels
+// Example: [[1.0, 6.0]] for continuous zoom
+```
+
+**Returns:** `Promise<number[][]>` - Array of `[min, max]` pairs. If `min == max`, it's a discrete level.
 
 ### Example
 
@@ -2859,6 +3533,174 @@ function CameraScreen({ captureInfo }) {
 * Use `hasUltraWideCamera()` to determine the device configuration
 
 
+## getSwitchOverZoomFactors
+
+Get the zoom factors where the device switches between physical lenses.
+
+### Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+const factors = await camera.current?.getSwitchOverZoomFactors();
+console.log('Lens switch points:', factors);
+// e.g., [2.0, 6.0] on iPhone Pro
+```
+
+### Returns
+
+`Promise<number[]>` - Array of zoom factors where lens switches occur. Empty array for single-camera devices.
+
+### Lens Switching Behavior
+
+#### Triple Camera (iPhone Pro)
+
+Typically returns `[2.0, 6.0]`:
+
+* **Below 2.0**: Ultra-wide lens (0.5x-1x user-facing)
+* **At 2.0**: Switches FROM ultra-wide TO wide lens (1x user-facing)
+* **2.0-6.0**: Wide lens (1x-3x user-facing)
+* **At 6.0**: Switches FROM wide TO telephoto lens (3x user-facing)
+* **Above 6.0**: Telephoto lens (3x+ user-facing)
+
+#### Dual Wide Camera (iPhone 11)
+
+Typically returns `[2.0]`:
+
+* **Below 2.0**: Ultra-wide lens (0.5x-1x user-facing)
+* **At 2.0**: Switches FROM ultra-wide TO wide lens (1x user-facing)
+* **Above 2.0**: Wide lens with digital zoom (1x+ user-facing)
+
+#### Dual Camera (iPhone X/XS)
+
+Typically returns `[2.0]`:
+
+* **Below 2.0**: Wide lens with digital zoom (1x user-facing at 1.0)
+* **At 2.0**: Switches FROM wide TO telephoto lens (2x user-facing)
+* **Above 2.0**: Telephoto lens with digital zoom (2x+ user-facing)
+
+#### Single Camera (iPhone SE, Air)
+
+Returns `[]` - No lens switching, all zoom is digital.
+
+### Example
+
+#### Smooth Zoom UI with Lens Indicators
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, Slider } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function CameraWithZoomIndicators({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [zoom, setZoom] = useState(2.0);
+  const [minZoom, setMinZoom] = useState(1.0);
+  const [maxZoom, setMaxZoom] = useState(15.0);
+  const [switchPoints, setSwitchPoints] = useState<number[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      if (!camera.current) return;
+      
+      const min = await camera.current.getMinZoom();
+      const max = await camera.current.getMaxZoom();
+      const factors = await camera.current.getSwitchOverZoomFactors();
+      
+      setMinZoom(min);
+      setMaxZoom(max);
+      setSwitchPoints(factors);
+    })();
+  }, []);
+
+  const getCurrentLens = () => {
+    if (switchPoints.length === 0) return 'Single';
+    if (switchPoints.length === 2) {
+      // Triple camera
+      if (zoom < switchPoints[0]) return '0.5x Ultra-Wide';
+      if (zoom < switchPoints[1]) return '1x Wide';
+      return '3x Telephoto';
+    }
+    // Dual camera
+    if (zoom < switchPoints[0]) return 'Wide';
+    return 'Telephoto';
+  };
+
+  const handleZoomChange = (value: number) => {
+    setZoom(value);
+    camera.current?.setZoomAnimated(value);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera
+        ref={camera}
+        captureInfo={captureInfo}
+        zoom={zoom}
+        style={{ flex: 1 }}
+      />
+      <View style={{ padding: 16 }}>
+        <Text>Current Lens: {getCurrentLens()}</Text>
+        <Text>Zoom: {(zoom / 2).toFixed(1)}x (device: {zoom.toFixed(1)})</Text>
+        <Slider
+          value={zoom}
+          minimumValue={minZoom}
+          maximumValue={maxZoom}
+          onValueChange={handleZoomChange}
+        />
+      </View>
+    </View>
+  );
+}
+```
+
+#### Snap to Lens Switching Points
+
+```tsx
+import { useRef, useState } from 'react';
+import { Button, View } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function CameraWithLensButtons({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [switchPoints, setSwitchPoints] = useState<number[]>([]);
+
+  useEffect(() => {
+    camera.current?.getSwitchOverZoomFactors().then(setSwitchPoints);
+  }, []);
+
+  const setLens = (factor: number) => {
+    camera.current?.setZoomAnimated(factor);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <View style={{ flexDirection: 'row', padding: 16 }}>
+        {switchPoints.length >= 1 && (
+          <>
+            <Button title="0.5x" onPress={() => setLens(1.0)} />
+            <Button title="1x" onPress={() => setLens(2.0)} />
+          </>
+        )}
+        {switchPoints.length >= 2 && (
+          <Button title="3x" onPress={() => setLens(6.0)} />
+        )}
+      </View>
+    </View>
+  );
+}
+```
+
+### Notes
+
+* Returns empty array on single-camera devices
+* Factors are in device zoom coordinates (where 2.0 typically = 1x user-facing)
+* Use with [`hasUltraWideCamera()`](/sdk/capture/hasUltraWideCamera) to interpret zoom factors correctly
+* Combine with [`getMinZoom()`](/sdk/capture/getMinZoom) and [`getMaxZoom()`](/sdk/capture/getMaxZoom) for full zoom range
+* Use [`setZoomAnimated()`](/sdk/capture/setZoomAnimated) for smooth transitions across lens boundaries
+
+
 ## hasUltraWideCamera
 
 Check if the current device has an ultra-wide camera lens.
@@ -2944,7 +3786,7 @@ const captureInfo = await initCapture({
 
 #### settings
 
-* **Type:** `Settings`
+* **Type:** [`Settings`](/sdk/capture/types#settings)
 
 Configuration for initialization.
 
@@ -2955,9 +3797,14 @@ type Settings = {
 }
 ```
 
+**Field Details:**
+
+* **`appId`** (`string`, required) - Your Team ID + Bundle ID (e.g., `"TEAM_ID.com.example.app"`)
+* **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
+
 ### Returns
 
-`Promise<CaptureInfo>`
+`Promise<`[`CaptureInfo`](/sdk/capture/types#captureinfo)`>`
 
 Device information including keys and attestation:
 
@@ -2970,6 +3817,8 @@ type CaptureInfo = {
   attestation: string;           // App Attest attestation blob
 }
 ```
+
+Pass this to [`ZCamera`](/sdk/capture/ZCamera) as the `captureInfo` prop. See [CaptureInfo type reference](/sdk/capture/types#captureinfo) for details.
 
 ### Example
 
@@ -3189,6 +4038,174 @@ function CameraWithPinchZoom({ captureInfo }) {
 * Prefer this over setting the `zoom` prop for gesture-driven zooming
 
 
+## startVideoRecording
+
+Start recording a video using the native camera. The recording continues until [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) is called.
+
+### Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+const result = await camera.current?.startVideoRecording();
+console.log('Recording to:', result.filePath);
+```
+
+### Parameters
+
+#### position (optional)
+
+* **Type:** `"front" | "back"`
+* **Default:** Camera's current `position` prop (or `"back"`)
+
+Which camera to use for recording.
+
+### Returns
+
+`Promise<`[`StartNativeVideoRecordingResult`](/sdk/capture/types#startnativevideorecordingresult)`>`
+
+```tsx
+type StartNativeVideoRecordingResult = {
+  status: "recording";           // Indicates recording successfully started
+  filePath: string;              // Path to in-progress movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+}
+```
+
+### Example
+
+```tsx
+import { useRef, useState } from 'react';
+import { View, Button, Text } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function VideoRecorder({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [filePath, setFilePath] = useState<string>();
+
+  const startRecording = async () => {
+    try {
+      const result = await camera.current?.startVideoRecording();
+      setIsRecording(true);
+      setFilePath(result?.filePath);
+      console.log('Recording started:', result);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const result = await camera.current?.stopVideoRecording();
+      setIsRecording(false);
+      console.log('Recording saved:', result?.filePath);
+      console.log('Duration:', result?.durationSeconds, 'seconds');
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <View style={{ padding: 16 }}>
+        {isRecording ? (
+          <>
+            <Text>Recording to: {filePath}</Text>
+            <Button title="Stop Recording" onPress={stopRecording} />
+          </>
+        ) : (
+          <Button title="Start Recording" onPress={startRecording} />
+        )}
+      </View>
+    </View>
+  );
+}
+```
+
+### Notes
+
+* Throws an error if a recording is already in progress
+* Requires both camera and microphone permissions for audio recording
+* Video is recorded to a temporary `.mov` file in the cache directory
+* The recording includes C2PA manifest with hardware-backed attestation
+* Call [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) to finalize and get the complete file with metadata
+* Audio is automatically included if microphone permission is granted
+* Recording continues even if the app goes to background (iOS will show recording indicator)
+
+
+## stopVideoRecording
+
+Stop the current video recording and return the finalized file path with comprehensive metadata.
+
+### Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+// Start recording first
+await camera.current?.startVideoRecording();
+
+// ... record for some time ...
+
+// Stop and get result
+const result = await camera.current?.stopVideoRecording();
+console.log('Video saved:', result.filePath);
+console.log('Duration:', result.durationSeconds, 'seconds');
+```
+
+### Returns
+
+`Promise<`[`StopNativeVideoRecordingResult`](/sdk/capture/types#stopnativevideorecordingresult)`>`
+
+```tsx
+type StopNativeVideoRecordingResult = {
+  filePath: string;              // Path to finalized movie file with C2PA manifest
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+  deviceMake: string;            // Device manufacturer (e.g., "Apple")
+  deviceModel: string;           // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;       // iOS version (e.g., "17.0")
+  durationSeconds: number;       // Video duration in seconds
+  fileSizeBytes: number;         // File size in bytes
+  width: number;                 // Video width (pixels)
+  height: number;                // Video height (pixels)
+  rotationDegrees: number;       // Rotation (0, 90, 180, 270)
+  frameRate: number;             // Nominal frame rate (fps)
+  videoCodec?: string;           // Video codec FourCC (e.g., "hvc1")
+  audioCodec?: string;           // Audio codec FourCC (e.g., "aac ")
+  audioSampleRate?: number;      // Audio sample rate (Hz)
+  audioChannels?: number;        // Audio channel count
+}
+```
+
+### Error Handling
+
+```tsx
+try {
+  const result = await camera.current?.stopVideoRecording();
+} catch (error) {
+  if (error.message.includes('No video recording')) {
+    console.error('No recording is in progress');
+  } else {
+    console.error('Failed to stop recording:', error);
+  }
+}
+```
+
+### Notes
+
+* Throws an error if no recording is in progress
+* The returned `filePath` contains a C2PA manifest with hardware-backed attestation
+* Video file is initially in the cache directory - copy to permanent storage if needed
+* All metadata fields are populated from the native AVFoundation video track
+* The `rotationDegrees` field accounts for device orientation during recording
+* Audio metadata (`audioCodec`, `audioSampleRate`, `audioChannels`) is only present if `hasAudio` is `true`
+* The file includes `succinct.bindings` assertion for proof generation
+
+
 ## takePhoto
 
 Captures a photo with hardware-backed C2PA signing and returns a `ZPhoto`.
@@ -3206,23 +4223,24 @@ console.log(photo.path); // C2PA-signed photo path
 
 #### options (optional)
 
-* **Type:** `TakePhotoOptions`
+* **Type:** [`TakePhotoOptions`](/sdk/capture/types#takephotooptions)
+* **Default:** `{}`
 
-Options for this specific capture.
+Options for this specific capture. All fields are optional with sensible defaults.
 
 ```tsx
 type TakePhotoOptions = {
-  format?: "jpeg" | "dng";           // Capture format
-  flash?: "off" | "on" | "auto";     // Flash mode
-  includeDepthData?: boolean;        // Include depth data in C2PA
-  aspectRatio?: "4:3" | "16:9";      // Photo aspect ratio
-  orientation?: "auto" | "portrait" | "landscape"; // Crop orientation
+  format?: "jpeg" | "dng";           // Capture format (default: "jpeg")
+  flash?: FlashMode;                 // Flash mode (default: "off")
+  includeDepthData?: boolean;        // Include depth data in C2PA (default: false)
+  aspectRatio?: AspectRatio;         // Photo aspect ratio (default: "4:3")
+  orientation?: Orientation;         // Crop orientation (default: "auto")
 }
 ```
 
 ### Returns
 
-`Promise<ZPhoto>`
+`Promise<`[`ZPhoto`](/sdk/capture/types#zphoto)`>`
 
 A photo object with paths to the original and C2PA-signed images:
 
@@ -3233,41 +4251,9 @@ class ZPhoto {
 }
 ```
 
-### Examples
+The `path` property contains a C2PA manifest with hardware-backed attestation required for proof generation.
 
-#### Basic Capture
-
-```tsx
-const photo = await camera.current?.takePhoto();
-```
-
-#### With Flash
-
-```tsx
-const photo = await camera.current?.takePhoto({
-  flash: "on"
-});
-```
-
-#### Capture DNG with Depth
-
-```tsx
-const photo = await camera.current?.takePhoto({
-  format: "dng",
-  includeDepthData: true
-});
-```
-
-#### With Aspect Ratio
-
-```tsx
-const photo = await camera.current?.takePhoto({
-  aspectRatio: "16:9",
-  orientation: "landscape"
-});
-```
-
-### Complete Example
+### Example
 
 ```tsx
 import { useRef } from "react";
@@ -3309,6 +4295,251 @@ function CameraScreen({ captureInfo }) {
 * This C2PA manifest is required for proof generation with the Prove SDK
 * App Attest assertions are generated over the photo hash during capture
 * On simulators, mock attestation values are used for development
+
+
+## Capture Types
+
+Type definitions used throughout the Capture SDK.
+
+### CaptureInfo
+
+Device registration information returned by [`initCapture()`](/sdk/capture/initCapture).
+
+```tsx
+type CaptureInfo = {
+  appId: string;                    // Your Team ID + Bundle ID
+  deviceKeyId: string;              // App Attest device key ID
+  contentPublicKey: ECKey;          // Secure Enclave content key
+  contentKeyId: Uint8Array;         // Derived content key identifier
+  attestation: string;              // App Attest attestation blob
+}
+```
+
+**Used by:**
+
+* [`initCapture()`](/sdk/capture/initCapture) - Returns this type
+* [`ZCamera`](/sdk/capture/ZCamera) - Requires as `captureInfo` prop
+
+***
+
+### Settings
+
+Configuration for device initialization.
+
+```tsx
+type Settings = {
+  appId: string;      // Your Team ID + Bundle ID (e.g., "TEAM_ID.com.example.app")
+  production: boolean; // false for dev, true for production App Attest
+}
+```
+
+**Used by:**
+
+* [`initCapture()`](/sdk/capture/initCapture) - Accepts as parameter
+
+***
+
+### ZPhoto
+
+Represents a captured photo with paths to original and C2PA-signed versions.
+
+```tsx
+class ZPhoto {
+  originalPath: string;  // Path to raw captured image
+  path: string;          // Path to C2PA-signed image with succinct.bindings
+}
+```
+
+**Used by:**
+
+* [`takePhoto()`](/sdk/capture/takePhoto) - Returns this type
+
+***
+
+### TakePhotoOptions
+
+Options for photo capture.
+
+```tsx
+type TakePhotoOptions = {
+  format?: "jpeg" | "dng";           // Capture format (default: "jpeg")
+  flash?: FlashMode;                 // Flash mode (default: "off")
+  includeDepthData?: boolean;        // Include depth data (default: false)
+  aspectRatio?: AspectRatio;         // Photo aspect ratio (default: "4:3")
+  orientation?: Orientation;         // Crop orientation (default: "auto")
+}
+```
+
+**Used by:**
+
+* [`takePhoto()`](/sdk/capture/takePhoto) - Accepts as parameter
+
+***
+
+### CameraFilter
+
+Filter preset for camera preview and captured photos.
+
+```tsx
+type CameraFilter = "normal" | "vivid" | "warm" | "cool"
+```
+
+* **`normal`** - No filter (default)
+* **`vivid`** - Enhanced saturation and vibrance
+* **`warm`** - Warmer color temperature (orange/yellow tones)
+* **`cool`** - Cooler color temperature (blue tones)
+
+**Used by:**
+
+* [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop
+
+***
+
+### FlashMode
+
+Flash mode for photo capture.
+
+```tsx
+type FlashMode = "off" | "on" | "auto"
+```
+
+**Used by:**
+
+* [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+***
+
+### AspectRatio
+
+Aspect ratio for captured photos.
+
+```tsx
+type AspectRatio = "4:3" | "16:9" | "1:1"
+```
+
+**Used by:**
+
+* [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+***
+
+### Orientation
+
+Crop orientation for captured photos.
+
+```tsx
+type Orientation = "auto" | "portrait" | "landscape"
+```
+
+* **`auto`** - Automatically determines orientation based on device orientation
+* **`portrait`** - Force portrait crop
+* **`landscape`** - Force landscape crop
+
+**Used by:**
+
+* [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+***
+
+### SelfSignedCertChain
+
+Self-signed certificate chain for C2PA manifest signing.
+
+```tsx
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Algorithm for signing (default: ES256)
+  tsaUrl?: string;            // Timestamp authority URL (optional)
+}
+```
+
+**Used by:**
+
+* [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `certChain` prop
+
+***
+
+### ExistingCertChain
+
+Existing certificate chain in PEM format.
+
+```tsx
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Used by:**
+
+* [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `certChain` prop
+
+***
+
+### StartNativeVideoRecordingResult
+
+Result from starting video recording.
+
+```tsx
+type StartNativeVideoRecordingResult = {
+  status: "recording";           // Indicates recording successfully started
+  filePath: string;              // Path to in-progress movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+}
+```
+
+**Used by:**
+
+* [`startVideoRecording()`](/sdk/capture/startVideoRecording) - Returns this type
+
+***
+
+### StopNativeVideoRecordingResult
+
+Result from stopping video recording with metadata.
+
+```tsx
+type StopNativeVideoRecordingResult = {
+  filePath: string;              // Path to finalized movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+  deviceMake: string;            // Device manufacturer
+  deviceModel: string;           // Device model
+  softwareVersion: string;       // iOS version
+  durationSeconds: number;       // Video duration in seconds
+  fileSizeBytes: number;         // File size in bytes
+  width: number;                 // Video width (pixels)
+  height: number;                // Video height (pixels)
+  rotationDegrees: number;       // Rotation (0, 90, 180, 270)
+  frameRate: number;             // Nominal frame rate (fps)
+  videoCodec?: string;           // Video codec FourCC (e.g., "hvc1")
+  audioCodec?: string;           // Audio codec FourCC (e.g., "aac ")
+  audioSampleRate?: number;      // Audio sample rate (Hz)
+  audioChannels?: number;        // Audio channel count
+}
+```
+
+**Used by:**
+
+* [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) - Returns this type
+
+***
+
+### ECKey
+
+Elliptic curve public key from Secure Enclave.
+
+```tsx
+type ECKey = {
+  kty: "EC";        // Key type
+  crv: string;      // Curve name (e.g., "P-256")
+  x: string;        // X coordinate (base64url)
+  y: string;        // Y coordinate (base64url)
+}
+```
+
+**Used by:**
+
+* [`CaptureInfo`](#captureinfo) - `contentPublicKey` field
 
 
 ## C2PA

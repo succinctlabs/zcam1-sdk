@@ -12,25 +12,37 @@
 - [Picker SDK](/sdk/picker): The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
 - [Prove SDK](/sdk/prove): The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
 - [Verify SDK](/sdk/verify): The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
-- [verify](/sdk/verify/verify): Verify the C2PA manifest and ZK proof in a photo.
+- [VerifiableFile](/sdk/verify/VerifiableFile): Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+- [captureMetadata](/sdk/verify/captureMetadata): Returns the capture metadata from the C2PA manifest. Contains device info and camera settings recorded at capture time.
+- [dataHash](/sdk/verify/dataHash): Returns the file's content hash as recorded in the active C2PA manifest. This hash is used as a public input to the zero-knowledge proof.
+- [Verify Types](/sdk/verify/types): Type definitions used throughout the Verify SDK.
+- [verifyBindings](/sdk/verify/verifyBindings): Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryptographic integrity of the hardware-backed assertion.
+- [verifyProof](/sdk/verify/verifyProof): Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
 - [ProverProvider](/sdk/prove/ProverProvider): React context provider that initializes the proving client for ZK proof generation.
 - [embedProof](/sdk/prove/embedProof): Embed a generated proof into a photo's C2PA manifest.
+- [getProofStatus](/sdk/prove/getProofStatus): Check the current status of a proof generation request. Used to poll for completion after calling [`requestProof()`](/sdk/prove/requestProof).
 - [requestProof](/sdk/prove/requestProof): Request ZK proof generation for a photo. Returns a request ID for polling status.
+- [Prove Types](/sdk/prove/types): Type definitions used throughout the Prove SDK.
 - [useProofRequestStatus](/sdk/prove/useProofRequestStatus): Hook to poll the status of a specific proof request.
 - [useProver](/sdk/prove/useProver): Hook to access the proving client from within `ProverProvider`.
 - [waitAndEmbedProof](/sdk/prove/waitAndEmbedProof): Convenience method that requests a proof, waits for it to be ready, and embeds it automatically.
 - [ZImagePicker](/sdk/picker/ZImagePicker): React component that displays a grid of images with authenticity status badges.
 - [authenticityStatus](/sdk/picker/authenticityStatus): Check the authenticity status of a photo by analyzing its C2PA manifest.
+- [privateDirectory](/sdk/picker/privateDirectory): Returns the path to the app's private document directory. This is the recommended location for storing captured photos and sensitive files.
 - [ZCamera](/sdk/capture/ZCamera): React component that renders a native iOS camera preview with hardware-backed C2PA signing.
 - [focusAtPoint](/sdk/capture/focusAtPoint): Focus the camera at a specific point in the preview. Also adjusts exposure point if supported by the device.
 - [getMaxZoom](/sdk/capture/getMaxZoom): Get the maximum supported zoom factor for the current camera device.
 - [getMinZoom](/sdk/capture/getMinZoom): Get the minimum supported zoom factor for the current camera device.
+- [getSwitchOverZoomFactors](/sdk/capture/getSwitchOverZoomFactors): Get the zoom factors where the device switches between physical lenses.
 - [hasUltraWideCamera](/sdk/capture/hasUltraWideCamera): Check if the current device has an ultra-wide camera lens.
 - [initCapture](/sdk/capture/initCapture): Initializes the device by generating hardware-backed keys and App Attest attestation. Call once on app startup.
 - [isDepthSupported](/sdk/capture/isDepthSupported): Check if the current camera device supports depth data capture.
 - [previewFile](/sdk/capture/previewFile): Present a native full-screen preview for any file using iOS QLPreviewController.
 - [setZoomAnimated](/sdk/capture/setZoomAnimated): Set zoom with smooth animation. Recommended for pinch-to-zoom gestures.
+- [startVideoRecording](/sdk/capture/startVideoRecording): Start recording a video using the native camera. The recording continues until [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) is called.
+- [stopVideoRecording](/sdk/capture/stopVideoRecording): Stop the current video recording and return the finalized file path with comprehensive metadata.
 - [takePhoto](/sdk/capture/takePhoto): Captures a photo with hardware-backed C2PA signing and returns a `ZPhoto`.
+- [Capture Types](/sdk/capture/types): Type definitions used throughout the Capture SDK.
 - [C2PA](/overview/c2pa): The **Coalition for Content Provenance and Authenticity (C2PA)** is an open technical standard for embedding provenance information directly into digital media files. It provides a standardized way to record where content came from, how it was created, and what modifications have been made.
 - [How it Works](/overview/how_it_works): ZCAM verifies photo authenticity via a combination of hardware-backed attestation, cryptographic signatures, and optional zero-knowledge proofs.
 - [Landscape](/overview/landscape): Several technologies exist for image authenticity and provenance. Most solve for different problems, such as edit history, AI detection, trust scoring, rather than proving a photo was authentically captured on a real device.
