@@ -1,0 +1,131 @@
+---
+title: Verify Types
+description: Type definitions for the ZCAM1 Verify SDK.
+---
+
+# Verify Types
+
+Type definitions used throughout the Verify SDK.
+
+## CaptureMetadata
+
+```typescript
+interface CaptureMetadata {
+  action: string;                                    // Action performed during capture (e.g., "c2pa.created")
+  when: string;                                      // ISO 8601 timestamp of when the photo/video was captured
+  parameters: PhotoMetadataInfo | VideoMetadataInfo; // Detailed camera settings and device information
+}
+```
+
+Capture metadata extracted from the C2PA manifest. Contains device info and camera settings at capture time.
+
+**Used by:**
+
+- [`VerifiableFile.captureMetadata()`](/sdk/verify/captureMetadata) - Returns capture metadata from the C2PA manifest
+
+## PhotoMetadataInfo
+
+```typescript
+interface PhotoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  xResolution: number;                // Horizontal resolution in pixels
+  yResolution: number;                // Vertical resolution in pixels
+  orientation: number;                // EXIF orientation value
+  iso: string;                        // ISO sensitivity setting
+  exposureTime: number;               // Exposure time in microseconds
+  depthOfField: number;               // Depth of field in millimeters
+  focalLength: number;                // Focal length in millimeters
+  authenticityData: AuthenticityData; // Device security status
+  depthData?: DepthData;              // Depth map information (optional)
+}
+```
+
+Detailed metadata for photos captured with the camera.
+
+## VideoMetadataInfo
+
+```typescript
+interface VideoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  format: string;                     // Video container format (e.g., "mov")
+  hasAudio: boolean;                  // Whether the video includes an audio track
+  durationSeconds: number;            // Video duration in seconds
+  fileSizeBytes: number;              // File size in bytes
+  width: number;                      // Video width in pixels
+  height: number;                     // Video height in pixels
+  rotationDegrees: number;            // Video rotation (0, 90, 180, or 270)
+  frameRate: number;                  // Video frame rate (fps)
+  videoCodec?: string;                // Video codec identifier (optional)
+  audioCodec?: string;                // Audio codec identifier (optional)
+  audioSampleRate?: number;           // Audio sample rate in Hz (optional)
+  audioChannels?: number;             // Number of audio channels (optional)
+  authenticityData: AuthenticityData; // Device security status
+}
+```
+
+Detailed metadata for videos recorded with the camera.
+
+## ManifestInterface
+
+```typescript
+interface ManifestInterface {
+  bindings(): string | undefined;
+  proof(): { data: string; vkHash: string } | undefined;
+  captureMetadataAction(): string | undefined;
+}
+```
+
+Interface representing the active C2PA manifest extracted from a file. This is the underlying C2PA manifest object from the `@succinctlabs/react-native-zcam1-c2pa` package.
+
+## AuthenticityData
+
+```typescript
+interface AuthenticityData {
+  isJailBroken: boolean;              // Whether the device was jailbroken at capture time
+  isLocationSpoofingAvailable: boolean; // Whether location spoofing was detected
+}
+```
+
+Device security status information captured at the time of photo/video creation.
+
+## DepthData
+
+```typescript
+interface DepthData {
+  width: number;                      // Width of the depth map in pixels
+  height: number;                     // Height of the depth map in pixels
+  pixelFormat: string;                // Pixel format (e.g., "kCVPixelFormatType_DepthFloat32")
+  statistics: DepthDataStatistics;    // Statistical information about depth values
+  accuracy: string;                   // Accuracy level (e.g., "relative", "absolute")
+}
+```
+
+Depth map information captured alongside a photo (only present in photos captured with depth data enabled).
+
+## DepthDataStatistics
+
+```typescript
+interface DepthDataStatistics {
+  min: string;             // Minimum depth value 
+  max: string;             // Maximum depth value 
+  mean: string;            // Mean depth value
+  stdDev: string;          // Standard deviation 
+  validPixelCount: number; // Number of pixels with valid depth data
+  sampleStride: number;    // Stride used when sampling for statistics
+}
+```
+
+Statistical information about depth values in a depth map.
+
+## APPLE_ROOT_CERT
+
+```typescript
+const APPLE_ROOT_CERT: string
+```
+
+The Apple App Attestation Root CA certificate in PEM format. Used internally for verifying App Attest attestations.
+

@@ -1,0 +1,203 @@
+---
+title: Prove Types
+description: TypeScript type definitions for the Prove SDK
+---
+
+# Prove Types
+
+Type definitions used throughout the Prove SDK.
+
+## Settings
+
+Configuration for the proving client.
+
+```tsx
+type Settings = {
+  production: boolean;          // false for dev, true for production
+  privateKey?: string;          // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+}
+```
+
+**Used by:**
+- [`ProverProvider`](/sdk/prove/ProverProvider) - Accepts as `settings` prop
+
+---
+
+## ProvingClient
+
+Client for generating and embedding zero-knowledge proofs.
+
+```tsx
+class ProvingClient {
+  // Request proof generation
+  requestProof(originalPath: string): Promise<string>;
+  
+  // Check proof status
+  getProofStatus(requestId: string): Promise<ProofRequestStatus>;
+  
+  // Embed proof into photo
+  embedProof(originalPath: string, proof: ArrayBuffer): Promise<string>;
+  
+  // Convenience: request, wait, and embed in one step
+  waitAndEmbedProof(originalPath: string): Promise<string>;
+}
+```
+
+**Used by:**
+- [`useProver`](/sdk/prove/useProver) - Returns `provingClient` instance
+- All proof generation methods are called on this client
+
+---
+
+## ProverContextValue
+
+Context value returned by [`useProver()`](/sdk/prove/useProver).
+
+```tsx
+type ProverContextValue = {
+  provingClient: ProvingClient | null;     // The proving client instance
+  provingTasks: ProvingTasksState;         // Active proof requests
+  provingTasksCount: number;               // Number of active requests
+}
+```
+
+**Used by:**
+- [`useProver`](/sdk/prove/useProver) - Returns this type
+
+---
+
+## ProofRequestContextValue
+
+Context value returned by [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus).
+
+```tsx
+type ProofRequestContextValue = {
+  isInitializing: boolean;            // Whether proving client is initializing
+  error: unknown;                     // Any initialization error
+  fulfillementStatus: FulfillmentStatus; // Current proof status
+  proof: ArrayBuffer | undefined;     // Generated proof bytes (when fulfilled)
+}
+```
+
+**Used by:**
+- [`useProofRequestStatus`](/sdk/prove/useProofRequestStatus) - Returns this type
+
+---
+
+## ProvingTask
+
+Information about an active proof request.
+
+```tsx
+type ProvingTask = {
+  photoPath: string;      // Path to the photo being proven
+  createdAtMs: number;    // Timestamp when proof was requested
+}
+```
+
+**Used by:**
+- [`ProvingTasksState`](#provingtasksstate) - Values in the tasks record
+
+---
+
+## ProvingTasksState
+
+Record of active proof requests keyed by request ID.
+
+```tsx
+type ProvingTasksState = Record<string, ProvingTask>
+```
+
+**Used by:**
+- [`ProverContextValue`](#provercontextvalue) - Tracks active tasks
+
+---
+
+## ProofRequestStatus
+
+Status of a proof generation request returned from the backend.
+
+```tsx
+type ProofRequestStatus = {
+  fulfillmentStatus: FulfillmentStatus;  // Current status
+  proof?: ArrayBuffer;                   // Proof bytes (when fulfilled)
+}
+```
+
+**Used by:**
+- [`getProofStatus()`](/sdk/prove/getProofStatus) - Returns this type
+- [`useProofRequestStatus`](/sdk/prove/useProofRequestStatus) - Polls for this status
+
+---
+
+## FulfillmentStatus
+
+Enum representing the current status of a proof generation request.
+
+```tsx
+enum FulfillmentStatus {
+  UnspecifiedFulfillmentStatus = 0,  // Initial/unknown state
+  Requested = 1,                     // Request received by backend
+  Assigned = 2,                      // Request assigned to a prover
+  Fulfilled = 3,                     // Proof generated successfully
+  Unfulfillable = 4,                 // Proof generation failed
+}
+```
+
+
+**Used by:**
+- [`ProofRequestStatus`](#proofre queststatus) - Indicates current status
+- [`ProofRequestContextValue`](#proofrequestcontextvalue) - Exposed via hook
+- [`waitAndEmbedProof`](/sdk/prove/waitAndEmbedProof) - Polls until `Fulfilled` or `Unfulfillable`
+
+---
+
+## SelfSignedCertChain
+
+Self-signed certificate chain configuration (re-exported from C2PA package).
+
+```tsx
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Algorithm for signing (default: ES256)
+  tsaUrl?: string;            // Timestamp authority URL (optional)
+}
+```
+
+**Used by:**
+- [`Settings`](#settings) - Certificate chain option
+
+---
+
+## ExistingCertChain
+
+Existing certificate chain in PEM format (re-exported from C2PA package).
+
+```tsx
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Used by:**
+- [`Settings`](#settings) - Certificate chain option
+
+---
+
+## AuthenticityStatus
+
+Enum for quick photo authenticity checks (re-exported from C2PA package).
+
+```tsx
+enum AuthenticityStatus {
+  Unknown = 0,          // Unable to determine status
+  NoManifest = 1,       // No C2PA manifest found
+  InvalidManifest = 2,  // C2PA manifest is invalid
+  Bindings = 3,         // Has succinct.bindings assertion
+  Proof = 4             // Has succinct.proof assertion
+}
+```
+
+**Used by:**
+- Checking if a photo needs proof generation (status `Bindings` means ready to prove)
+

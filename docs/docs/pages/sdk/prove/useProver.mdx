@@ -1,0 +1,89 @@
+# useProver
+
+Hook to access the proving client from within `ProverProvider`.
+
+## Usage
+
+```tsx
+import { useProver } from "react-native-zcam1-prove";
+
+function ProveButton() {
+  const { provingClient, isInitializing, error } = useProver();
+
+  if (isInitializing) return <Text>Loading...</Text>;
+  if (error) return <Text>Error: {error.message}</Text>;
+
+  // Use provingClient...
+}
+```
+
+## Returns
+
+[`ProverContextValue`](/sdk/prove/types#provercontextvalue)
+
+```tsx
+type ProverContextValue = {
+  provingClient: ProvingClient | null;  // The proving client instance
+  provingTasks: ProvingTasksState;      // Active proof requests
+  provingTasksCount: number;            // Number of active requests
+}
+
+type ProvingTasksState = Record<string, ProvingTask>;
+
+type ProvingTask = {
+  photoPath: string;
+  createdAtMs: number;
+}
+```
+
+See [ProverContextValue type reference](/sdk/prove/types#provercontextvalue) for details.
+
+## Example
+
+```tsx
+import { useState } from "react";
+import { Button, Text, ActivityIndicator } from "react-native";
+import { useProver } from "react-native-zcam1-prove";
+import { launchImageLibrary } from "react-native-image-picker";
+
+function ProveScreen() {
+  const { provingClient, isInitializing, provingTasksCount } = useProver();
+  const [result, setResult] = useState<string>();
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+
+    const response = await launchImageLibrary({ mediaType: "photo" });
+    const uri = response.assets?.[0]?.uri;
+    if (!uri) return;
+
+    try {
+      const provenPath = await provingClient.waitAndEmbedProof(uri);
+      setResult(`Proven: ${provenPath}`);
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
+
+  if (isInitializing) {
+    return <ActivityIndicator />;
+  }
+
+  return (
+    <>
+      <Button title="Prove Photo" onPress={handleProve} />
+      {provingTasksCount > 0 && (
+        <Text>{provingTasksCount} proofs in progress...</Text>
+      )}
+      {result && <Text>{result}</Text>}
+    </>
+  );
+}
+```
+
+## Notes
+
+- Must be used within a [`ProverProvider`](/sdk/prove/ProverProvider)
+- `provingClient` is `null` until initialization completes
+- `provingTasks` tracks all active proof requests when using the provider's callbacks
+- The proving client provides methods: [`requestProof`](/sdk/prove/requestProof), [`getProofStatus`](/sdk/prove/getProofStatus), [`embedProof`](/sdk/prove/embedProof), [`waitAndEmbedProof`](/sdk/prove/waitAndEmbedProof)

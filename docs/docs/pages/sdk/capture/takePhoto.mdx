@@ -1,0 +1,90 @@
+# takePhoto
+
+Captures a photo with hardware-backed C2PA signing and returns a `ZPhoto`.
+
+## Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+const photo = await camera.current?.takePhoto();
+console.log(photo.path); // C2PA-signed photo path
+```
+
+## Parameters
+
+### options (optional)
+
+- **Type:** [`TakePhotoOptions`](/sdk/capture/types#takephotooptions)
+- **Default:** `{}`
+
+Options for this specific capture. All fields are optional with sensible defaults.
+
+```tsx
+type TakePhotoOptions = {
+  format?: "jpeg" | "dng";           // Capture format (default: "jpeg")
+  flash?: FlashMode;                 // Flash mode (default: "off")
+  includeDepthData?: boolean;        // Include depth data in C2PA (default: false)
+  aspectRatio?: AspectRatio;         // Photo aspect ratio (default: "4:3")
+  orientation?: Orientation;         // Crop orientation (default: "auto")
+}
+```
+
+## Returns
+
+`Promise<`[`ZPhoto`](/sdk/capture/types#zphoto)`>`
+
+A photo object with paths to the original and C2PA-signed images:
+
+```tsx
+class ZPhoto {
+  originalPath: string;  // Path to raw captured image
+  path: string;          // Path to C2PA-signed image with succinct.bindings
+}
+```
+
+The `path` property contains a C2PA manifest with hardware-backed attestation required for proof generation.
+
+## Example
+
+```tsx
+import { useRef } from "react";
+import { Button } from "react-native";
+import { ZCamera } from "react-native-zcam1-capture";
+import { FileSystem, Dirs } from "react-native-file-access";
+
+function CameraScreen({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto({
+      flash: "auto",
+      aspectRatio: "4:3"
+    });
+
+    if (!photo) return;
+
+    // Save to app's document directory
+    const destPath = `${Dirs.DocumentDir}/photos/${Date.now()}.jpg`;
+    await FileSystem.mkdir(`${Dirs.DocumentDir}/photos`);
+    await FileSystem.cp(photo.path, destPath);
+
+    console.log("Saved C2PA-signed photo:", destPath);
+  };
+
+  return (
+    <>
+      <ZCamera ref={camera} captureInfo={captureInfo} />
+      <Button title="Capture" onPress={handleCapture} />
+    </>
+  );
+}
+```
+
+## Notes
+
+- The returned `photo.path` contains a C2PA manifest with `succinct.bindings` assertion
+- This C2PA manifest is required for proof generation with the Prove SDK
+- App Attest assertions are generated over the photo hash during capture
+- On simulators, mock attestation values are used for development
+

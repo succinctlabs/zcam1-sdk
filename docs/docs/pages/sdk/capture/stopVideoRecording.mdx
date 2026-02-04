@@ -1,0 +1,73 @@
+---
+title: stopVideoRecording
+description: Stop video recording and get the finalized file with metadata
+---
+
+# stopVideoRecording
+
+Stop the current video recording and return the finalized file path with comprehensive metadata.
+
+## Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+// Start recording first
+await camera.current?.startVideoRecording();
+
+// ... record for some time ...
+
+// Stop and get result
+const result = await camera.current?.stopVideoRecording();
+console.log('Video saved:', result.filePath);
+console.log('Duration:', result.durationSeconds, 'seconds');
+```
+
+## Returns
+
+`Promise<`[`StopNativeVideoRecordingResult`](/sdk/capture/types#stopnativevideorecordingresult)`>`
+
+```tsx
+type StopNativeVideoRecordingResult = {
+  filePath: string;              // Path to finalized movie file with C2PA manifest
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+  deviceMake: string;            // Device manufacturer (e.g., "Apple")
+  deviceModel: string;           // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;       // iOS version (e.g., "17.0")
+  durationSeconds: number;       // Video duration in seconds
+  fileSizeBytes: number;         // File size in bytes
+  width: number;                 // Video width (pixels)
+  height: number;                // Video height (pixels)
+  rotationDegrees: number;       // Rotation (0, 90, 180, 270)
+  frameRate: number;             // Nominal frame rate (fps)
+  videoCodec?: string;           // Video codec FourCC (e.g., "hvc1")
+  audioCodec?: string;           // Audio codec FourCC (e.g., "aac ")
+  audioSampleRate?: number;      // Audio sample rate (Hz)
+  audioChannels?: number;        // Audio channel count
+}
+```
+
+## Error Handling
+
+```tsx
+try {
+  const result = await camera.current?.stopVideoRecording();
+} catch (error) {
+  if (error.message.includes('No video recording')) {
+    console.error('No recording is in progress');
+  } else {
+    console.error('Failed to stop recording:', error);
+  }
+}
+```
+
+## Notes
+
+- Throws an error if no recording is in progress
+- The returned `filePath` contains a C2PA manifest with hardware-backed attestation
+- Video file is initially in the cache directory - copy to permanent storage if needed
+- All metadata fields are populated from the native AVFoundation video track
+- The `rotationDegrees` field accounts for device orientation during recording
+- Audio metadata (`audioCodec`, `audioSampleRate`, `audioChannels`) is only present if `hasAudio` is `true`
+- The file includes `succinct.bindings` assertion for proof generation

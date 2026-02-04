@@ -1,0 +1,64 @@
+# focusAtPoint
+
+Focus the camera at a specific point in the preview. Also adjusts exposure point if supported by the device.
+
+## Usage
+
+```tsx
+camera.current?.focusAtPoint(0.5, 0.5); // Focus at center
+```
+
+## Parameters
+
+### x
+
+- **Type:** `number`
+
+Normalized x coordinate (0-1, left to right).
+
+### y
+
+- **Type:** `number`
+
+Normalized y coordinate (0-1, top to bottom).
+
+## Returns
+
+`void`
+
+## Example
+
+```tsx
+import { TouchableWithoutFeedback, View } from "react-native";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraScreen({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+
+  const handlePress = (event: GestureResponderEvent) => {
+    const { locationX, locationY } = event.nativeEvent;
+    const { width, height } = event.currentTarget;
+
+    // Convert pixel coordinates to normalized 0-1 range
+    const x = locationX / width;
+    const y = locationY / height;
+
+    camera.current?.focusAtPoint(x, y);
+  };
+
+  return (
+    <TouchableWithoutFeedback onPress={handlePress}>
+      <View style={{ flex: 1 }}>
+        <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      </View>
+    </TouchableWithoutFeedback>
+  );
+}
+```
+
+## Notes
+
+- Coordinates are normalized: `(0, 0)` is top-left, `(1, 1)` is bottom-right
+- Also adjusts exposure point when supported by the device
+- Focus and exposure adjust automatically based on the tapped location
+

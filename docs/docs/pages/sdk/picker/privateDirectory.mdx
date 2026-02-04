@@ -1,0 +1,48 @@
+---
+title: privateDirectory
+description: Get the path to the app's private document directory
+---
+
+# privateDirectory
+
+Returns the path to the app's private document directory. This is the recommended location for storing captured photos and sensitive files.
+
+## Usage
+
+```tsx
+import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
+
+const privatePath = privateDirectory();
+console.log('Private directory:', privatePath);
+```
+
+## Returns
+
+`string` - The absolute path to the app's private document directory
+
+## Example
+
+```tsx
+import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
+import { ZImagePicker } from '@succinctlabs/react-native-zcam1-picker';
+
+function GalleryScreen() {
+  const privatePath = privateDirectory();
+  
+  return (
+    <ZImagePicker
+      source={{ path: privatePath }}
+      onSelect={(uri) => console.log('Selected:', uri)}
+    />
+  );
+}
+```
+
+## Notes
+
+- The private directory is app-specific and not accessible by other apps
+- Files in this directory persist across app launches
+- Files are automatically deleted when the app is uninstalled
+- This directory is not backed up to iCloud by default
+- The path is stable across app launches but may change on app reinstall
+

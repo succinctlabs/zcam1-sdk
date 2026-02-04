@@ -1,0 +1,66 @@
+# isDepthSupported
+
+Check if the current camera device supports depth data capture.
+
+## Usage
+
+```tsx
+const supportsDepth = await camera.current?.isDepthSupported();
+```
+
+## Returns
+
+`Promise<boolean>`
+
+- `true` for dual/triple rear cameras and TrueDepth front camera
+- `false` for single rear cameras (iPhone SE, 16e, Air)
+
+## Example
+
+```tsx
+import { useEffect, useState } from "react";
+import { Button, Text } from "react-native";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraWithDepth({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [supportsDepth, setSupportsDepth] = useState(false);
+  const [depthEnabled, setDepthEnabled] = useState(false);
+
+  useEffect(() => {
+    camera.current?.isDepthSupported().then(setSupportsDepth);
+  }, []);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto({
+      includeDepthData: depthEnabled
+    });
+    console.log("Captured with depth:", depthEnabled);
+  };
+
+  return (
+    <>
+      <ZCamera 
+        ref={camera} 
+        captureInfo={captureInfo}
+        depthEnabled={depthEnabled}
+      />
+      {supportsDepth && (
+        <Button 
+          title={`Depth: ${depthEnabled ? 'ON' : 'OFF'}`}
+          onPress={() => setDepthEnabled(!depthEnabled)}
+        />
+      )}
+      <Button title="Capture" onPress={handleCapture} />
+    </>
+  );
+}
+```
+
+## Notes
+
+- Depth data is captured using AVFoundation's depth data output
+- On dual-camera devices, enabling depth may restrict zoom range
+- Use `hasDepthZoomLimitations()` to check if depth affects zoom on your device
+- Depth data is embedded in the C2PA metadata when `includeDepthData: true`
+

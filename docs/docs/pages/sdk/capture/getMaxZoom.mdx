@@ -1,0 +1,58 @@
+# getMaxZoom
+
+Get the maximum supported zoom factor for the current camera device.
+
+## Usage
+
+```tsx
+const maxZoom = await camera.current?.getMaxZoom();
+```
+
+## Returns
+
+`Promise<number>`
+
+Maximum zoom factor, capped at 15x for better user experience.
+
+## Example
+
+```tsx
+import { Slider } from "@react-native-community/slider";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraWithZoomSlider({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [zoom, setZoom] = useState(2.0);
+  const [maxZoom, setMaxZoom] = useState(15);
+
+  useEffect(() => {
+    camera.current?.getMaxZoom().then(setMaxZoom);
+  }, []);
+
+  const handleZoomChange = (value: number) => {
+    setZoom(value);
+  };
+
+  return (
+    <>
+      <ZCamera 
+        ref={camera} 
+        captureInfo={captureInfo}
+        zoom={zoom}
+      />
+      <Slider
+        minimumValue={1.0}
+        maximumValue={maxZoom}
+        value={zoom}
+        onValueChange={handleZoomChange}
+      />
+    </>
+  );
+}
+```
+
+## Notes
+
+- Maximum zoom is capped at 15x for optimal image quality
+- Actual hardware capabilities may support higher zoom, but quality degrades significantly
+

@@ -1,0 +1,59 @@
+# Overview
+
+The ZCAM1 SDK provides React Native components and hooks for capturing, proving, and verifying authenticated photos using hardware-backed cryptography and zero-knowledge proofs.
+
+## Installation
+
+```bash
+# Capture SDK
+npm install @succinctlabs/react-native-zcam1-capture
+
+# Prove SDK  
+npm install @succinctlabs/react-native-zcam1-prove
+
+# Verify SDK
+npm install @succinctlabs/react-native-zcam1-verify
+
+# Picker SDK
+npm install @succinctlabs/react-native-zcam1-picker
+```
+
+
+
+## Actions
+
+| Action | Description |
+| --- | --- |
+| **Capture Actions** | |
+| [initCapture](/sdk/capture/initCapture) | Initialize device keys and attestation for photo capture |
+| [ZCamera](/sdk/capture/ZCamera) | React component for capturing C2PA-signed photos |
+| [takePhoto](/sdk/capture/takePhoto) | Capture a photo with hardware-backed signatures |
+| [previewFile](/sdk/capture/previewFile) | Preview any file using iOS native viewer |
+| [startVideoRecording](/sdk/capture/startVideoRecording) | Start recording a video with C2PA signing |
+| [stopVideoRecording](/sdk/capture/stopVideoRecording) | Stop recording and get finalized file with metadata |
+| [getSwitchOverZoomFactors](/sdk/capture/getSwitchOverZoomFactors) | Get zoom factors where physical lenses switch |
+| **Prove Actions** | |
+| [ProverProvider](/sdk/prove/ProverProvider) | React context provider for proof generation |
+| [useProver](/sdk/prove/useProver) | Hook to access the proving client |
+| [requestProof](/sdk/prove/requestProof) | Request ZK proof generation for a photo |
+| [getProofStatus](/sdk/prove/getProofStatus) | Check the status of a proof request |
+| [useProofRequestStatus](/sdk/prove/useProofRequestStatus) | Hook to poll proof request status |
+| [embedProof](/sdk/prove/embedProof) | Embed a generated proof into a photo |
+| [waitAndEmbedProof](/sdk/prove/waitAndEmbedProof) | Request, wait for, and embed proof in one step |
+| **Verify Actions** | |
+| [VerifiableFile](/sdk/verify/VerifiableFile) | Class for verifying C2PA manifests and ZK proofs |
+| [verifyBindings](/sdk/verify/verifyBindings) | Verify hardware-backed bindings in a C2PA manifest |
+| [verifyProof](/sdk/verify/verifyProof) | Verify zero-knowledge proof in a C2PA manifest |
+| [dataHash](/sdk/verify/dataHash) | Get the content hash from a C2PA manifest |
+| [captureMetadata](/sdk/verify/captureMetadata) | Get capture metadata from a C2PA manifest |
+| **Picker Actions** | |
+| [ZImagePicker](/sdk/picker/ZImagePicker) | React component for picking photos with authenticity badges |
+| [privateDirectory](/sdk/picker/privateDirectory) | Get the path to the app's private document directory |
+| [authenticityStatus](/sdk/picker/authenticityStatus) | Check the authenticity status of a photo |
+
+## Type References
+
+- [Capture Types](/sdk/capture/types) - Types for the Capture SDK
+- [Prove Types](/sdk/prove/types) - Types for the Prove SDK
+- [Verify Types](/sdk/verify/types) - Types for the Verify SDK
+

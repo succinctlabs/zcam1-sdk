@@ -1,0 +1,271 @@
+# ZCamera
+
+React component that renders a native iOS camera preview with hardware-backed C2PA signing.
+
+## Usage
+
+```tsx
+import { useRef } from "react";
+import { ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+
+function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
+  const camera = useRef<ZCamera>(null);
+
+  return (
+    <ZCamera
+      ref={camera}
+      captureInfo={captureInfo}
+      position="back"
+      isActive={true}
+      zoom={2.0}
+      style={{ flex: 1 }}
+    />
+  );
+}
+```
+
+## Props
+
+### captureInfo (required)
+
+- **Type:** [`CaptureInfo`](/sdk/capture/types#captureinfo)
+
+Capture information from [`initCapture()`](/sdk/capture/initCapture). Required for C2PA signing. See [initCapture Returns](/sdk/capture/initCapture#returns) for details.
+
+### position
+
+- **Type:** `"front" | "back"`
+- **Default:** `"back"`
+
+Which camera to use.
+
+### isActive
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Whether the camera is actively running.
+
+### captureFormat
+
+- **Type:** `"jpeg" | "dng"`
+- **Default:** `"jpeg"`
+
+Desired capture format. When set to `"dng"`, captures RAW DNG file while still producing a C2PA-signed JPEG copy.
+
+### zoom
+
+- **Type:** `number`
+- **Default:** `2.0` (back), `1.0` (front)
+
+Zoom factor. For devices with ultra-wide lens:
+- `1.0` = ultra-wide (0.5x user-facing)
+- `2.0` = wide-angle (1x user-facing)
+
+Use `getMinZoom()` and `getMaxZoom()` methods to determine valid range.
+
+### torch
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+Whether torch (flashlight) is enabled during preview.
+
+### exposure
+
+- **Type:** `number`
+- **Default:** `0`
+
+Exposure compensation in EV units.
+
+### filter
+
+- **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter)
+- **Default:** `"normal"`
+
+Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vivid"`, `"warm"`, `"cool"`.
+
+### depthEnabled
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+Enable depth data capture at session level. When `true`, depth data can be captured but zoom may be restricted on dual-camera devices.
+
+### certChain
+
+- **Type:** [`SelfSignedCertChain`](/sdk/capture/types#selfsignedcertchain) | [`ExistingCertChain`](/sdk/capture/types#existingcertchain)
+- **Optional**
+
+Certificate chain for signing the C2PA manifest. If not provided, a self-signed certificate is automatically generated.
+
+```tsx
+// Self-signed (default)
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Default: "ES256"
+  tsaUrl?: string;            // Optional timestamp authority URL
+}
+
+// Existing certificate
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Example:**
+
+```tsx
+// Use self-signed (automatic)
+<ZCamera captureInfo={captureInfo} />
+
+// Or provide custom certificate
+<ZCamera 
+  captureInfo={captureInfo}
+  certChain={{ pem: customCertChainPem }}
+/>
+```
+
+### style
+
+- **Type:** `StyleProp<ViewStyle>`
+- **Optional**
+
+Style for the underlying native view.
+
+## Methods
+
+### takePhoto()
+
+Captures a photo and returns a signed `ZPhoto`. See [takePhoto](/sdk/capture/takePhoto) for details.
+
+### getMinZoom()
+
+Gets the minimum supported zoom factor. See [getMinZoom](/sdk/capture/getMinZoom).
+
+### getMaxZoom()
+
+Gets the maximum supported zoom factor. See [getMaxZoom](/sdk/capture/getMaxZoom).
+
+### hasUltraWideCamera()
+
+Checks if device has an ultra-wide camera. See [hasUltraWideCamera](/sdk/capture/hasUltraWideCamera).
+
+### focusAtPoint(x, y)
+
+Focuses at a specific point in the preview. See [focusAtPoint](/sdk/capture/focusAtPoint).
+
+### setZoomAnimated(factor)
+
+Sets zoom with smooth animation. See [setZoomAnimated](/sdk/capture/setZoomAnimated).
+
+### isDepthSupported()
+
+Checks if device supports depth data capture. See [isDepthSupported](/sdk/capture/isDepthSupported).
+
+### getSwitchOverZoomFactors()
+
+Gets the zoom factors where the device switches between physical lenses. See [getSwitchOverZoomFactors](/sdk/capture/getSwitchOverZoomFactors).
+
+### startVideoRecording(position?)
+
+Starts recording a video. See [startVideoRecording](/sdk/capture/startVideoRecording).
+
+### stopVideoRecording()
+
+Stops video recording and returns the finalized file. See [stopVideoRecording](/sdk/capture/stopVideoRecording).
+
+### getDeviceDiagnostics()
+
+Returns diagnostic information about the current camera device.
+
+```tsx
+const diagnostics = await camera.current?.getDeviceDiagnostics();
+```
+
+**Returns:** `Promise<DeviceDiagnostics>`
+
+```tsx
+type DeviceDiagnostics = {
+  deviceType: string;          // e.g., "builtInTripleCamera"
+  minZoom: number;             // Minimum zoom factor
+  maxZoom: number;             // Maximum zoom factor
+  currentZoom: number;         // Current zoom factor
+  switchOverFactors: number[]; // Lens switch points
+  switchingBehavior: number;   // AVFoundation switching behavior
+  isVirtualDevice: boolean;    // Whether device is virtual (multi-camera)
+}
+```
+
+Useful for debugging zoom issues on different device configurations.
+
+### hasDepthZoomLimitations()
+
+Checks if enabling depth would restrict zoom on this device.
+
+```tsx
+const hasLimitations = await camera.current?.hasDepthZoomLimitations();
+```
+
+**Returns:** `Promise<boolean>` - `true` if zoom is limited to discrete levels when depth is enabled (typically dual-camera devices), `false` for triple-camera devices.
+
+### getDepthSupportedZoomRanges()
+
+Gets the zoom ranges supported when depth data delivery is enabled.
+
+```tsx
+const ranges = await camera.current?.getDepthSupportedZoomRanges();
+// Example: [[2.0, 2.0], [4.0, 4.0]] for discrete levels
+// Example: [[1.0, 6.0]] for continuous zoom
+```
+
+**Returns:** `Promise<number[][]>` - Array of `[min, max]` pairs. If `min == max`, it's a discrete level.
+
+## Example
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { View, Button, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { initCapture, ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+
+export function CaptureScreen() {
+  const camera = useRef<ZCamera>(null);
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+
+  useEffect(() => {
+    initCapture({
+      appId: process.env.EXPO_PUBLIC_APP_ID!,
+      production: false,
+    }).then(setCaptureInfo);
+  }, []);
+
+  const handleCapture = async () => {
+    const photo = await camera.current?.takePhoto();
+    console.log("Captured:", photo?.path);
+  };
+
+  if (!captureInfo) return null;
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ZCamera 
+        ref={camera} 
+        captureInfo={captureInfo} 
+        style={styles.camera}
+        filter="vivid"
+        zoom={2.0}
+      />
+      <View style={styles.controls}>
+        <Button title="Capture" onPress={handleCapture} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  camera: { flex: 1 },
+  controls: { padding: 16 },
+});
+```
+

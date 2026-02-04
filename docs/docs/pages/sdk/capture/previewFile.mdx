@@ -1,0 +1,56 @@
+# previewFile
+
+Present a native full-screen preview for any file using iOS QLPreviewController.
+
+## Usage
+
+```tsx
+await previewFile("/path/to/photo.jpg");
+```
+
+## Parameters
+
+### filePath
+
+- **Type:** `string`
+
+Absolute filesystem path to the file to preview.
+
+## Returns
+
+`Promise<void>`
+
+Resolves when the preview is dismissed.
+
+## Example
+
+```tsx
+import { Button } from "react-native";
+import { previewFile } from "react-native-zcam1-capture";
+
+function PhotoViewer({ photoPath }: { photoPath: string }) {
+  const handlePreview = async () => {
+    await previewFile(photoPath);
+    console.log("Preview dismissed");
+  };
+
+  return <Button title="Preview Photo" onPress={handlePreview} />;
+}
+```
+
+## Supported File Types
+
+The native QLPreviewController supports:
+- Images (JPEG, PNG, HEIC, etc.)
+- Videos (MOV, MP4, etc.)
+- PDFs
+- Documents (Pages, Word, Excel, etc.)
+- And many other common file types
+
+## Notes
+
+- Uses iOS's native Quick Look framework for optimal performance
+- Supports pinch-to-zoom, sharing, and other native gestures
+- Automatically provides native playback controls for videos
+- Preview is presented modally and dismissed when user taps "Done"
+

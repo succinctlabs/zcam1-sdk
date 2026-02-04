@@ -1,0 +1,75 @@
+# embedProof
+
+Embed a generated proof into a photo's C2PA manifest.
+
+## Usage
+
+```tsx
+const { provingClient } = useProver();
+
+const provenPath = await provingClient.embedProof(photoUri, proof);
+```
+
+## Parameters
+
+### originalPath
+
+- **Type:** `string`
+- **Required**
+
+Path or URI to the original photo with `succinct.bindings` assertion.
+
+### proof
+
+- **Type:** `ArrayBuffer`
+- **Required**
+
+Proof bytes obtained from [`getProofStatus()`](/sdk/prove/getProofStatus) or [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus).
+
+## Returns
+
+`Promise<string>`
+
+Path to the new photo with `succinct.proof` embedded in its C2PA manifest.
+
+## Example
+
+```tsx
+import { useEffect, useState } from "react";
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProvePhoto({ photoUri }: { photoUri: string }) {
+  const { provingClient } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const { proof, fulfillementStatus } = useProofRequestStatus(requestId);
+  const [provenPath, setProvenPath] = useState<string>();
+
+  // Request proof
+  useEffect(() => {
+    if (provingClient) {
+      provingClient.requestProof(photoUri).then(setRequestId);
+    }
+  }, [provingClient, photoUri]);
+
+  // Embed proof when ready
+  useEffect(() => {
+    if (proof && provingClient) {
+      provingClient.embedProof(photoUri, proof).then(setProvenPath);
+    }
+  }, [proof, provingClient, photoUri]);
+
+  if (fulfillementStatus === FulfillmentStatus.Fulfilled && provenPath) {
+    return <Text>Proven photo: {provenPath}</Text>;
+  }
+
+  return <Text>Generating proof...</Text>;
+}
+```
+
+## Notes
+
+- Adds `succinct.proof` assertion to the existing C2PA manifest (keeps `succinct.bindings`)
+- Creates a new file in the cache directory; the original is not modified
+- The proof includes the vk_hash for verification
+- Requires the photo to have been captured with [`ZCamera`](/sdk/capture/ZCamera) or have `succinct.bindings` added
+- Use with [`getProofStatus()`](/sdk/prove/getProofStatus) or [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus) to get the proof bytes

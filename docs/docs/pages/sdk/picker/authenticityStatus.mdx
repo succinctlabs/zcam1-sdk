@@ -1,0 +1,84 @@
+# authenticityStatus
+
+Check the authenticity status of a photo by analyzing its C2PA manifest.
+
+## Usage
+
+```tsx
+import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+
+const status = await authenticityStatus(photoUri);
+
+if (status === AuthenticityStatus.Proof) {
+  console.log("Photo has verified ZK proof");
+}
+```
+
+## Parameters
+
+### uri
+
+- **Type:** `string`
+
+Path or URI to a photo file.
+
+## Returns
+
+`Promise<AuthenticityStatus>`
+
+```tsx
+enum AuthenticityStatus {
+  Unknown = 0,          // Unable to determine status
+  NoManifest = 1,       // No C2PA manifest found
+  InvalidManifest = 2,  // C2PA manifest is invalid
+  Bindings = 3,         // Has succinct.bindings assertion
+  Proof = 4             // Has succinct.proof assertion
+}
+```
+
+## Example
+
+```tsx
+import { useState } from "react";
+import { Button, Text } from "react-native";
+import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+
+function PhotoStatus({ photoUri }: { photoUri: string }) {
+  const [status, setStatus] = useState<AuthenticityStatus>();
+
+  const checkStatus = async () => {
+    const result = await authenticityStatus(photoUri);
+    setStatus(result);
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case AuthenticityStatus.Proof:
+        return "✓ Verified with ZK proof";
+      case AuthenticityStatus.Bindings:
+        return "📝 Hardware-attested (proof pending)";
+      case AuthenticityStatus.NoManifest:
+        return "⚠️ No authenticity data";
+      case AuthenticityStatus.InvalidManifest:
+        return "✗ Invalid manifest";
+      default:
+        return "Unknown";
+    }
+  };
+
+  return (
+    <>
+      <Button title="Check Status" onPress={checkStatus} />
+      {status !== undefined && <Text>{getStatusText()}</Text>}
+    </>
+  );
+}
+```
+
+## Notes
+
+- Quickly checks for presence of `succinct.bindings` or `succinct.proof`
+- Does not perform full cryptographic verification (use `verify()` for that)
+- Useful for UI indicators and filtering
+- Re-exports from `@succinctlabs/react-native-zcam1-c2pa`
+

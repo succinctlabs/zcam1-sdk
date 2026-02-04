@@ -1,0 +1,89 @@
+# waitAndEmbedProof
+
+Convenience method that requests a proof, waits for it to be ready, and embeds it automatically.
+
+## Usage
+
+```tsx
+const { provingClient } = useProver();
+
+const provenPath = await provingClient.waitAndEmbedProof(photoUri);
+```
+
+## Parameters
+
+### uri
+
+- **Type:** `string`
+
+Path or URI to a photo with `succinct.bindings` assertion.
+
+## Returns
+
+`Promise<string>`
+
+Path to the new photo with `succinct.proof` embedded.
+
+## Throws
+
+- Error if the input photo doesn't contain `succinct.bindings`
+- Error if proof generation fails or is unfulfillable
+
+## Example
+
+```tsx
+import { useState } from "react";
+import { Button, Text, ActivityIndicator } from "react-native";
+import { useProver } from "react-native-zcam1-prove";
+import { launchImageLibrary } from "react-native-image-picker";
+
+function QuickProveScreen() {
+  const { provingClient } = useProver();
+  const [isProving, setIsProving] = useState(false);
+  const [result, setResult] = useState<string>();
+
+  const handleProve = async () => {
+    const response = await launchImageLibrary({ mediaType: "photo" });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri || !provingClient) return;
+
+    setIsProving(true);
+    setResult(undefined);
+
+    try {
+      // One-step proof generation
+      const provenPath = await provingClient.waitAndEmbedProof(uri);
+      setResult(`Success: ${provenPath}`);
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    } finally {
+      setIsProving(false);
+    }
+  };
+
+  return (
+    <>
+      <Button 
+        title="Select & Prove Photo" 
+        onPress={handleProve} 
+        disabled={isProving} 
+      />
+      {isProving && (
+        <>
+          <ActivityIndicator />
+          <Text>Generating proof... This may take a few seconds.</Text>
+        </>
+      )}
+      {result && <Text>{result}</Text>}
+    </>
+  );
+}
+```
+
+## Notes
+
+- This method polls the backend until the proof is ready (blocks for a few seconds)
+- Proof generation typically takes 2-5 seconds
+- For better UX with progress tracking, use [`requestProof()`](/sdk/prove/requestProof) + [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus)
+- Perfect for quick prototyping or simple workflows

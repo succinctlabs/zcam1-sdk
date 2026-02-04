@@ -1,0 +1,52 @@
+# getMinZoom
+
+Get the minimum supported zoom factor for the current camera device.
+
+## Usage
+
+```tsx
+const minZoom = await camera.current?.getMinZoom();
+```
+
+## Returns
+
+`Promise<number>`
+
+Minimum zoom factor. For devices with ultra-wide lens, this is typically `1.0` (corresponds to 0.5x user-facing zoom).
+
+## Example
+
+```tsx
+import { useEffect, useState } from "react";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraScreen({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number }>();
+
+  useEffect(() => {
+    const getZoomInfo = async () => {
+      const min = await camera.current?.getMinZoom();
+      const max = await camera.current?.getMaxZoom();
+      if (min !== undefined && max !== undefined) {
+        setZoomRange({ min, max });
+      }
+    };
+    getZoomInfo();
+  }, []);
+
+  return (
+    <>
+      <ZCamera ref={camera} captureInfo={captureInfo} />
+      <Text>Zoom range: {zoomRange?.min}x - {zoomRange?.max}x</Text>
+    </>
+  );
+}
+```
+
+## Notes
+
+- For virtual devices with ultra-wide lens, `1.0` = 0.5x user-facing zoom
+- For devices without ultra-wide, `1.0` = 1x user-facing zoom
+- Use `hasUltraWideCamera()` to determine the device configuration
+
