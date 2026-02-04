@@ -1,0 +1,168 @@
+---
+title: getSwitchOverZoomFactors
+description: Get zoom factors where the device switches between physical lenses
+---
+
+# getSwitchOverZoomFactors
+
+Get the zoom factors where the device switches between physical lenses.
+
+## Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+const factors = await camera.current?.getSwitchOverZoomFactors();
+console.log('Lens switch points:', factors);
+// e.g., [2.0, 6.0] on iPhone Pro
+```
+
+## Returns
+
+`Promise<number[]>` - Array of zoom factors where lens switches occur. Empty array for single-camera devices.
+
+## Lens Switching Behavior
+
+### Triple Camera (iPhone Pro)
+
+Typically returns `[2.0, 6.0]`:
+- **Below 2.0**: Ultra-wide lens (0.5x-1x user-facing)
+- **At 2.0**: Switches FROM ultra-wide TO wide lens (1x user-facing)
+- **2.0-6.0**: Wide lens (1x-3x user-facing)
+- **At 6.0**: Switches FROM wide TO telephoto lens (3x user-facing)
+- **Above 6.0**: Telephoto lens (3x+ user-facing)
+
+### Dual Wide Camera (iPhone 11)
+
+Typically returns `[2.0]`:
+- **Below 2.0**: Ultra-wide lens (0.5x-1x user-facing)
+- **At 2.0**: Switches FROM ultra-wide TO wide lens (1x user-facing)
+- **Above 2.0**: Wide lens with digital zoom (1x+ user-facing)
+
+### Dual Camera (iPhone X/XS)
+
+Typically returns `[2.0]`:
+- **Below 2.0**: Wide lens with digital zoom (1x user-facing at 1.0)
+- **At 2.0**: Switches FROM wide TO telephoto lens (2x user-facing)
+- **Above 2.0**: Telephoto lens with digital zoom (2x+ user-facing)
+
+### Single Camera (iPhone SE, Air)
+
+Returns `[]` - No lens switching, all zoom is digital.
+
+## Example
+
+### Smooth Zoom UI with Lens Indicators
+
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, Slider } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function CameraWithZoomIndicators({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [zoom, setZoom] = useState(2.0);
+  const [minZoom, setMinZoom] = useState(1.0);
+  const [maxZoom, setMaxZoom] = useState(15.0);
+  const [switchPoints, setSwitchPoints] = useState<number[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      if (!camera.current) return;
+      
+      const min = await camera.current.getMinZoom();
+      const max = await camera.current.getMaxZoom();
+      const factors = await camera.current.getSwitchOverZoomFactors();
+      
+      setMinZoom(min);
+      setMaxZoom(max);
+      setSwitchPoints(factors);
+    })();
+  }, []);
+
+  const getCurrentLens = () => {
+    if (switchPoints.length === 0) return 'Single';
+    if (switchPoints.length === 2) {
+      // Triple camera
+      if (zoom < switchPoints[0]) return '0.5x Ultra-Wide';
+      if (zoom < switchPoints[1]) return '1x Wide';
+      return '3x Telephoto';
+    }
+    // Dual camera
+    if (zoom < switchPoints[0]) return 'Wide';
+    return 'Telephoto';
+  };
+
+  const handleZoomChange = (value: number) => {
+    setZoom(value);
+    camera.current?.setZoomAnimated(value);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera
+        ref={camera}
+        captureInfo={captureInfo}
+        zoom={zoom}
+        style={{ flex: 1 }}
+      />
+      <View style={{ padding: 16 }}>
+        <Text>Current Lens: {getCurrentLens()}</Text>
+        <Text>Zoom: {(zoom / 2).toFixed(1)}x (device: {zoom.toFixed(1)})</Text>
+        <Slider
+          value={zoom}
+          minimumValue={minZoom}
+          maximumValue={maxZoom}
+          onValueChange={handleZoomChange}
+        />
+      </View>
+    </View>
+  );
+}
+```
+
+### Snap to Lens Switching Points
+
+```tsx
+import { useRef, useState } from 'react';
+import { Button, View } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function CameraWithLensButtons({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [switchPoints, setSwitchPoints] = useState<number[]>([]);
+
+  useEffect(() => {
+    camera.current?.getSwitchOverZoomFactors().then(setSwitchPoints);
+  }, []);
+
+  const setLens = (factor: number) => {
+    camera.current?.setZoomAnimated(factor);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <View style={{ flexDirection: 'row', padding: 16 }}>
+        {switchPoints.length >= 1 && (
+          <>
+            <Button title="0.5x" onPress={() => setLens(1.0)} />
+            <Button title="1x" onPress={() => setLens(2.0)} />
+          </>
+        )}
+        {switchPoints.length >= 2 && (
+          <Button title="3x" onPress={() => setLens(6.0)} />
+        )}
+      </View>
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Returns empty array on single-camera devices
+- Factors are in device zoom coordinates (where 2.0 typically = 1x user-facing)
+- Use with [`hasUltraWideCamera()`](/sdk/capture/hasUltraWideCamera) to interpret zoom factors correctly
+- Combine with [`getMinZoom()`](/sdk/capture/getMinZoom) and [`getMaxZoom()`](/sdk/capture/getMaxZoom) for full zoom range
+- Use [`setZoomAnimated()`](/sdk/capture/setZoomAnimated) for smooth transitions across lens boundaries

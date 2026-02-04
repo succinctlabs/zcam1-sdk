@@ -1,0 +1,85 @@
+---
+title: getProofStatus
+description: Check the status of a proof generation request
+---
+
+# getProofStatus
+
+Check the current status of a proof generation request. Used to poll for completion after calling [`requestProof()`](/sdk/prove/requestProof).
+
+## Usage
+
+```tsx
+const { provingClient } = useProver();
+
+// Request proof first
+const requestId = await provingClient.requestProof(photoUri);
+
+// Poll for status
+const status = await provingClient.getProofStatus(requestId);
+
+if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+  console.log('Proof ready!', status.proof);
+}
+```
+
+## Parameters
+
+### requestId
+
+- **Type:** `string`
+- **Required**
+
+The request ID returned from [`requestProof()`](/sdk/prove/requestProof).
+
+## Returns
+
+`Promise<`[`ProofRequestStatus`](/sdk/prove/types#proofrequeststatus)`>`
+
+```tsx
+type ProofRequestStatus = {
+  fulfillmentStatus: FulfillmentStatus;  // Current status
+  proof?: ArrayBuffer;                   // Proof bytes (when fulfilled)
+}
+
+enum FulfillmentStatus {
+  UnspecifiedFulfillmentStatus = 0,  // Initial/unknown state
+  Requested = 1,                     // Request received by backend
+  Assigned = 2,                      // Request assigned to a prover
+  Fulfilled = 3,                     // Proof generated successfully
+  Unfulfillable = 4,                 // Proof generation failed
+}
+```
+
+## Example
+
+```tsx
+async function waitForProof(
+  provingClient: ProvingClient,
+  requestId: string
+): Promise<ArrayBuffer> {
+  while (true) {
+    const status = await provingClient.getProofStatus(requestId);
+
+    if (status.fulfillmentStatus === FulfillmentStatus.Unfulfillable) {
+      throw new Error('Proof generation failed');
+    }
+
+    if (status.fulfillmentStatus === FulfillmentStatus.Fulfilled) {
+      return status.proof!;
+    }
+
+    // Wait 1 second before polling again
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
+```
+
+## Notes
+
+- Typically used with manual polling loops
+- For React components, use [`useProofRequestStatus()`](/sdk/prove/useProofRequestStatus) hook instead for automatic polling
+- For simple use cases, use [`waitAndEmbedProof()`](/sdk/prove/waitAndEmbedProof) which handles polling internally
+- Poll interval recommendation: 1 second
+- Proof generation typically takes 2-5 seconds
+

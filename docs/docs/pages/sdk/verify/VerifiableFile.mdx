@@ -1,0 +1,104 @@
+---
+title: VerifiableFile
+description: Class for verifying C2PA manifests and ZK proofs in photos
+---
+
+# VerifiableFile
+
+Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+
+## Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+
+const verifiable = new VerifiableFile(photoPath);
+
+// Verify hardware-backed bindings (App Attest)
+const bindingsValid = verifiable.verifyBindings(false);
+
+// Verify zero-knowledge proof
+const proofValid = verifiable.verifyProof('TEAM_ID.com.example.app');
+
+// Get capture metadata
+const metadata = verifiable.captureMetadata();
+```
+
+## Constructor
+
+### new VerifiableFile(path)
+
+Creates a [`VerifiableFile`](/sdk/verify/VerifiableFile) instance by extracting the C2PA manifest from the file.
+
+### path (required)
+
+- **Type:** `string`
+
+Path to the file to verify.
+
+## Methods
+
+### verifyBindings(appAttestProduction)
+
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify/verifyBindings).
+
+### verifyProof(appId)
+
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify/verifyProof).
+
+### dataHash()
+
+Gets the content hash from the C2PA manifest. See [`dataHash`](/sdk/verify/dataHash).
+
+### captureMetadata()
+
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify/captureMetadata).
+
+## Example
+
+```tsx
+import { useState } from 'react';
+import { View, Button, Text, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function VerificationScreen() {
+  const [result, setResult] = useState<string>('');
+
+  const verifyPhoto = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      
+      const bindingsValid = verifiable.verifyBindings(false);
+      const proofValid = verifiable.verifyProof(process.env.EXPO_PUBLIC_APP_ID!);
+      const metadata = verifiable.captureMetadata();
+      
+      if (bindingsValid && proofValid) {
+        setResult(`✓ Verified!\nCaptured: ${metadata?.when}`);
+      } else {
+        setResult('✗ Verification failed');
+      }
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Select & Verify Photo" onPress={verifyPhoto} />
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Constructor throws an error if the file doesn't have a C2PA manifest
+- [`verifyProof()`](/sdk/verify/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+- Use [`verifyBindings(false)`](/sdk/verify/verifyBindings) for development, `verifyBindings(true)` for production

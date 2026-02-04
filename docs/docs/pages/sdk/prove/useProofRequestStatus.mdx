@@ -1,0 +1,127 @@
+# useProofRequestStatus
+
+Hook to poll the status of a specific proof request.
+
+## Usage
+
+```tsx
+import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+
+function ProofStatus({ requestId }: { requestId: string }) {
+  const { proof, fulfillementStatus, error } = useProofRequestStatus(requestId);
+
+  if (fulfillementStatus === FulfillmentStatus.Fulfilled) {
+    return <Text>Proof ready!</Text>;
+  }
+  
+  return <Text>Generating proof...</Text>;
+}
+```
+
+## Parameters
+
+### requestId
+
+- **Type:** `string | null`
+
+The request ID returned from `requestProof()`. Pass `null` to skip polling.
+
+## Returns
+
+`ProofRequestContextValue`
+
+```tsx
+type ProofRequestContextValue = {
+  isInitializing: boolean;           // Whether the prover is initializing
+  error: unknown;                    // Any error that occurred
+  fulfillementStatus: FulfillmentStatus; // Current status
+  proof: ArrayBuffer | undefined;    // Proof bytes when fulfilled
+}
+
+enum FulfillmentStatus {
+  UnspecifiedFulfillmentStatus = 0,
+  Requested = 1,
+  Assigned = 2,
+  Fulfilled = 3,
+  Unfulfillable = 4
+}
+```
+
+## Example
+
+```tsx
+import { useState, useEffect } from "react";
+import { View, Button, Text, ActivityIndicator } from "react-native";
+import {
+  useProver,
+  useProofRequestStatus,
+  FulfillmentStatus
+} from "react-native-zcam1-prove";
+
+function ProveWithProgress({ photoUri }: { photoUri: string }) {
+  const { provingClient } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const { proof, fulfillementStatus, error } = useProofRequestStatus(requestId);
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+    const id = await provingClient.requestProof(photoUri);
+    setRequestId(id);
+  };
+
+  useEffect(() => {
+    if (proof && provingClient) {
+      provingClient.embedProof(photoUri, proof).then((path) => {
+        console.log("Proof embedded:", path);
+      });
+    }
+  }, [proof, provingClient, photoUri]);
+
+  if (error) {
+    return <Text>Error: {(error as Error).message}</Text>;
+  }
+
+  return (
+    <View>
+      {!requestId && (
+        <Button title="Generate Proof" onPress={handleProve} />
+      )}
+      
+      {requestId && (
+        <>
+          <Text>
+            Status: {FulfillmentStatus[fulfillementStatus]}
+          </Text>
+          
+          {fulfillementStatus === FulfillmentStatus.Requested && (
+            <Text>Queued...</Text>
+          )}
+          
+          {fulfillementStatus === FulfillmentStatus.Assigned && (
+            <>
+              <ActivityIndicator />
+              <Text>Generating proof...</Text>
+            </>
+          )}
+          
+          {fulfillementStatus === FulfillmentStatus.Fulfilled && (
+            <Text>✓ Proof ready!</Text>
+          )}
+          
+          {fulfillementStatus === FulfillmentStatus.Unfulfillable && (
+            <Text>✗ Proof generation failed</Text>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Automatically polls every second while status is not terminal
+- Stops polling when status reaches `Fulfilled` or `Unfulfillable`
+- Pass `null` as requestId to disable polling (useful for conditional rendering)
+- Use with `requestProof()` for two-step proof generation with progress tracking
+

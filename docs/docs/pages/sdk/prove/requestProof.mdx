@@ -1,0 +1,66 @@
+# requestProof
+
+Request ZK proof generation for a photo. Returns a request ID for polling status.
+
+## Usage
+
+```tsx
+const { provingClient } = useProver();
+
+const requestId = await provingClient.requestProof(photoUri);
+```
+
+## Parameters
+
+### originalPath
+
+- **Type:** `string`
+- **Required**
+
+Path or URI to a photo with `succinct.bindings` assertion (captured with [`ZCamera`](/sdk/capture/ZCamera)).
+
+## Returns
+
+`Promise<string>`
+
+Request ID for polling proof status with `getProofStatus()` or `useProofRequestStatus()`.
+
+## Example
+
+```tsx
+import { useState } from "react";
+import { Button, Text } from "react-native";
+import { useProver } from "react-native-zcam1-prove";
+
+function ProveButton({ photoUri }: { photoUri: string }) {
+  const { provingClient } = useProver();
+  const [requestId, setRequestId] = useState<string | null>(null);
+
+  const handleProve = async () => {
+    if (!provingClient) return;
+    
+    try {
+      const id = await provingClient.requestProof(photoUri);
+      setRequestId(id);
+      console.log("Proof requested:", id);
+    } catch (error: any) {
+      console.error("Failed to request proof:", error.message);
+    }
+  };
+
+  return (
+    <>
+      <Button title="Request Proof" onPress={handleProve} disabled={!!requestId} />
+      {requestId && <Text>Request ID: {requestId}</Text>}
+    </>
+  );
+}
+```
+
+## Notes
+
+- Input photo must have `succinct.bindings` from the Capture SDK
+- Returns immediately with a request ID; actual proof generation happens asynchronously
+- Use `getProofStatus()` or `useProofRequestStatus()` to check completion
+- For simpler one-step generation, use `waitAndEmbedProof()` instead
+

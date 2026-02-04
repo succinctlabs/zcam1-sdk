@@ -1,0 +1,61 @@
+# setZoomAnimated
+
+Set zoom with smooth animation. Recommended for pinch-to-zoom gestures.
+
+## Usage
+
+```tsx
+camera.current?.setZoomAnimated(3.0);
+```
+
+## Parameters
+
+### factor
+
+- **Type:** `number`
+
+Device zoom factor. Use `getMinZoom()` and `getMaxZoom()` to determine valid range.
+
+## Returns
+
+`void`
+
+## Example
+
+```tsx
+import { useRef } from "react";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraWithPinchZoom({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [baseZoom, setBaseZoom] = useState(2.0);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      const newZoom = baseZoom * e.scale;
+      camera.current?.setZoomAnimated(newZoom);
+    })
+    .onEnd((e) => {
+      setBaseZoom(baseZoom * e.scale);
+    });
+
+  return (
+    <GestureDetector gesture={pinchGesture}>
+      <ZCamera 
+        ref={camera} 
+        captureInfo={captureInfo}
+        style={{ flex: 1 }}
+      />
+    </GestureDetector>
+  );
+}
+```
+
+## Notes
+
+- Uses native AVFoundation ramp for smooth transitions
+- Automatically handles lens switchover boundaries on multi-camera devices
+- Bypasses React re-renders for lowest latency during continuous gestures
+- Prefer this over setting the `zoom` prop for gesture-driven zooming
+

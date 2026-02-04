@@ -1,0 +1,101 @@
+---
+title: startVideoRecording
+description: Start recording a video with hardware-backed C2PA signing
+---
+
+# startVideoRecording
+
+Start recording a video using the native camera. The recording continues until [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) is called.
+
+## Usage
+
+```tsx
+const camera = useRef<ZCamera>(null);
+
+const result = await camera.current?.startVideoRecording();
+console.log('Recording to:', result.filePath);
+```
+
+## Parameters
+
+### position (optional)
+
+- **Type:** `"front" | "back"`
+- **Default:** Camera's current `position` prop (or `"back"`)
+
+Which camera to use for recording.
+
+## Returns
+
+`Promise<`[`StartNativeVideoRecordingResult`](/sdk/capture/types#startnativevideorecordingresult)`>`
+
+```tsx
+type StartNativeVideoRecordingResult = {
+  status: "recording";           // Indicates recording successfully started
+  filePath: string;              // Path to in-progress movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+}
+```
+
+## Example
+
+```tsx
+import { useRef, useState } from 'react';
+import { View, Button, Text } from 'react-native';
+import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+
+function VideoRecorder({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [filePath, setFilePath] = useState<string>();
+
+  const startRecording = async () => {
+    try {
+      const result = await camera.current?.startVideoRecording();
+      setIsRecording(true);
+      setFilePath(result?.filePath);
+      console.log('Recording started:', result);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const result = await camera.current?.stopVideoRecording();
+      setIsRecording(false);
+      console.log('Recording saved:', result?.filePath);
+      console.log('Duration:', result?.durationSeconds, 'seconds');
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ZCamera ref={camera} captureInfo={captureInfo} style={{ flex: 1 }} />
+      <View style={{ padding: 16 }}>
+        {isRecording ? (
+          <>
+            <Text>Recording to: {filePath}</Text>
+            <Button title="Stop Recording" onPress={stopRecording} />
+          </>
+        ) : (
+          <Button title="Start Recording" onPress={startRecording} />
+        )}
+      </View>
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Throws an error if a recording is already in progress
+- Requires both camera and microphone permissions for audio recording
+- Video is recorded to a temporary `.mov` file in the cache directory
+- The recording includes C2PA manifest with hardware-backed attestation
+- Call [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) to finalize and get the complete file with metadata
+- Audio is automatically included if microphone permission is granted
+- Recording continues even if the app goes to background (iOS will show recording indicator)

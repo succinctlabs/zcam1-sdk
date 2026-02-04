@@ -1,0 +1,135 @@
+# ZImagePicker
+
+React component that displays a grid of images with authenticity status badges.
+
+## Usage
+
+```tsx
+import { ZImagePicker, privateDirectory, AuthenticityStatus } from "react-native-zcam1-picker";
+
+function PickerScreen() {
+  return (
+    <ZImagePicker
+      source={{ path: privateDirectory() }}
+      onSelect={(uri) => console.log("Selected:", uri)}
+      renderBadge={(uri, status) => {
+        if (status === AuthenticityStatus.Proof) return <Text>✓</Text>;
+        return null;
+      }}
+    />
+  );
+}
+```
+
+## Props
+
+### source (required)
+
+- **Type:** `PrivateFolder | PhotoGallery`
+
+Source from which to load images.
+
+```tsx
+// Load from private folder
+type PrivateFolder = {
+  path: string; // File system path
+}
+
+// Load from photo gallery
+type PhotoGallery = {
+  album?: string; // Album name (optional)
+}
+```
+
+### onSelect
+
+- **Type:** `(uri: string) => void`
+- **Optional**
+
+Callback when an image is selected in single-select mode.
+
+### renderBadge
+
+- **Type:** `(uri: string, status: AuthenticityStatus) => ReactElement | null`
+- **Optional**
+
+Function to render a badge based on authenticity status.
+
+```tsx
+enum AuthenticityStatus {
+  Unknown = 0,
+  NoManifest = 1,
+  InvalidManifest = 2,
+  Bindings = 3,  // Has succinct.bindings
+  Proof = 4      // Has succinct.proof
+}
+```
+
+### refreshToken
+
+- **Type:** `string | number`
+- **Optional**
+
+Change this value to force the picker to reload images.
+
+### renderFromBottom
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+Whether to start rendering images from the bottom of the list.
+
+### sortOrder
+
+- **Type:** `"newest-first" | "oldest-first"`
+- **Default:** `"oldest-first"`
+
+Sort order for images.
+
+### multiSelect
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+Enable multi-selection mode.
+
+### selectedUris
+
+- **Type:** `string[]`
+- **Optional**
+
+Array of currently selected image URIs (multi-select mode only).
+
+### onSelectionChange
+
+- **Type:** `(uris: string[]) => void`
+- **Optional**
+
+Callback when selection changes in multi-select mode.
+
+### renderSelectionOverlay
+
+- **Type:** `(uri: string, isSelected: boolean) => ReactElement | null`
+- **Optional**
+
+Function to render a selection overlay in multi-select mode.
+
+## Examples
+
+```tsx
+import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+
+<ZImagePicker
+  source={{ path: privateDirectory() }}
+  onSelect={(uri) => console.log("Selected:", uri)}
+/>
+```
+
+## Notes
+
+- Uses `@shopify/flash-list` for performant rendering of large image grids
+- Automatically checks authenticity status for each image
+- Generates thumbnails for video files
+- Displays 3 columns by default
+- Supports both file system paths and photo gallery albums
+

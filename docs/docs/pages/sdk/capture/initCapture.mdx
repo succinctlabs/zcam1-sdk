@@ -1,0 +1,83 @@
+# initCapture
+
+Initializes the device by generating hardware-backed keys and App Attest attestation. Call once on app startup.
+
+## Usage
+
+```tsx
+import { initCapture } from "@succinctlabs/react-native-zcam1-capture";
+
+const captureInfo = await initCapture({
+  appId: "TEAM_ID.com.example.app",
+  production: false
+});
+```
+
+## Parameters
+
+### settings
+
+- **Type:** [`Settings`](/sdk/capture/types#settings)
+
+Configuration for initialization.
+
+```tsx
+type Settings = {
+  appId: string;      // Your Team ID + Bundle ID
+  production: boolean; // false for dev, true for production
+}
+```
+
+**Field Details:**
+
+- **`appId`** (`string`, required) - Your Team ID + Bundle ID (e.g., `"TEAM_ID.com.example.app"`)
+- **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
+
+## Returns
+
+`Promise<`[`CaptureInfo`](/sdk/capture/types#captureinfo)`>`
+
+Device information including keys and attestation:
+
+```tsx
+type CaptureInfo = {
+  appId: string;
+  deviceKeyId: string;          // App Attest device key ID
+  contentPublicKey: ECKey;       // Secure Enclave content key
+  contentKeyId: Uint8Array;      // Derived content key identifier
+  attestation: string;           // App Attest attestation blob
+}
+```
+
+Pass this to [`ZCamera`](/sdk/capture/ZCamera) as the `captureInfo` prop. See [CaptureInfo type reference](/sdk/capture/types#captureinfo) for details.
+
+## Example
+
+```tsx
+import { useEffect, useState } from "react";
+import { initCapture, type CaptureInfo } from "react-native-zcam1-capture";
+
+function App() {
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
+
+  useEffect(() => {
+    initCapture({
+      appId: process.env.EXPO_PUBLIC_APP_ID!,
+      production: false,
+    }).then(setCaptureInfo);
+  }, []);
+
+  if (!captureInfo) {
+    return <Text>Initializing...</Text>;
+  }
+
+  return <ZCamera captureInfo={captureInfo} />;
+}
+```
+
+## Notes
+
+- Generates Secure Enclave keys on first call; subsequent calls load existing keys
+- App Attest only works on physical devices; uses mock values in simulators
+- Safe to call multiple times - keys are persisted in encrypted storage
+

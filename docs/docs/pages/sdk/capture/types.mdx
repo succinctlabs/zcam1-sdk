@@ -1,0 +1,236 @@
+---
+title: Capture Types
+description: TypeScript type definitions for the Capture SDK
+---
+
+# Capture Types
+
+Type definitions used throughout the Capture SDK.
+
+## CaptureInfo
+
+Device registration information returned by [`initCapture()`](/sdk/capture/initCapture).
+
+```tsx
+type CaptureInfo = {
+  appId: string;                    // Your Team ID + Bundle ID
+  deviceKeyId: string;              // App Attest device key ID
+  contentPublicKey: ECKey;          // Secure Enclave content key
+  contentKeyId: Uint8Array;         // Derived content key identifier
+  attestation: string;              // App Attest attestation blob
+}
+```
+
+**Used by:**
+- [`initCapture()`](/sdk/capture/initCapture) - Returns this type
+- [`ZCamera`](/sdk/capture/ZCamera) - Requires as `captureInfo` prop
+
+---
+
+## Settings
+
+Configuration for device initialization.
+
+```tsx
+type Settings = {
+  appId: string;      // Your Team ID + Bundle ID (e.g., "TEAM_ID.com.example.app")
+  production: boolean; // false for dev, true for production App Attest
+}
+```
+
+**Used by:**
+- [`initCapture()`](/sdk/capture/initCapture) - Accepts as parameter
+
+---
+
+## ZPhoto
+
+Represents a captured photo with paths to original and C2PA-signed versions.
+
+```tsx
+class ZPhoto {
+  originalPath: string;  // Path to raw captured image
+  path: string;          // Path to C2PA-signed image with succinct.bindings
+}
+```
+
+**Used by:**
+- [`takePhoto()`](/sdk/capture/takePhoto) - Returns this type
+
+---
+
+## TakePhotoOptions
+
+Options for photo capture.
+
+```tsx
+type TakePhotoOptions = {
+  format?: "jpeg" | "dng";           // Capture format (default: "jpeg")
+  flash?: FlashMode;                 // Flash mode (default: "off")
+  includeDepthData?: boolean;        // Include depth data (default: false)
+  aspectRatio?: AspectRatio;         // Photo aspect ratio (default: "4:3")
+  orientation?: Orientation;         // Crop orientation (default: "auto")
+}
+```
+
+**Used by:**
+- [`takePhoto()`](/sdk/capture/takePhoto) - Accepts as parameter
+
+---
+
+## CameraFilter
+
+Filter preset for camera preview and captured photos.
+
+```tsx
+type CameraFilter = "normal" | "vivid" | "warm" | "cool"
+```
+
+- **`normal`** - No filter (default)
+- **`vivid`** - Enhanced saturation and vibrance
+- **`warm`** - Warmer color temperature (orange/yellow tones)
+- **`cool`** - Cooler color temperature (blue tones)
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop
+
+---
+
+## FlashMode
+
+Flash mode for photo capture.
+
+```tsx
+type FlashMode = "off" | "on" | "auto"
+```
+
+**Used by:**
+- [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+---
+
+## AspectRatio
+
+Aspect ratio for captured photos.
+
+```tsx
+type AspectRatio = "4:3" | "16:9" | "1:1"
+```
+
+**Used by:**
+- [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+---
+
+## Orientation
+
+Crop orientation for captured photos.
+
+```tsx
+type Orientation = "auto" | "portrait" | "landscape"
+```
+
+- **`auto`** - Automatically determines orientation based on device orientation
+- **`portrait`** - Force portrait crop
+- **`landscape`** - Force landscape crop
+
+**Used by:**
+- [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+---
+
+## SelfSignedCertChain
+
+Self-signed certificate chain for C2PA manifest signing.
+
+```tsx
+type SelfSignedCertChain = {
+  signingAlgorithm?: string;  // Algorithm for signing (default: ES256)
+  tsaUrl?: string;            // Timestamp authority URL (optional)
+}
+```
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `certChain` prop
+
+---
+
+## ExistingCertChain
+
+Existing certificate chain in PEM format.
+
+```tsx
+type ExistingCertChain = {
+  pem: string;  // Certificate chain in PEM format
+}
+```
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `certChain` prop
+
+---
+
+## StartNativeVideoRecordingResult
+
+Result from starting video recording.
+
+```tsx
+type StartNativeVideoRecordingResult = {
+  status: "recording";           // Indicates recording successfully started
+  filePath: string;              // Path to in-progress movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+}
+```
+
+**Used by:**
+- [`startVideoRecording()`](/sdk/capture/startVideoRecording) - Returns this type
+
+---
+
+## StopNativeVideoRecordingResult
+
+Result from stopping video recording with metadata.
+
+```tsx
+type StopNativeVideoRecordingResult = {
+  filePath: string;              // Path to finalized movie file
+  format: "mov";                 // Container format
+  hasAudio: boolean;             // Whether audio is included
+  deviceMake: string;            // Device manufacturer
+  deviceModel: string;           // Device model
+  softwareVersion: string;       // iOS version
+  durationSeconds: number;       // Video duration in seconds
+  fileSizeBytes: number;         // File size in bytes
+  width: number;                 // Video width (pixels)
+  height: number;                // Video height (pixels)
+  rotationDegrees: number;       // Rotation (0, 90, 180, 270)
+  frameRate: number;             // Nominal frame rate (fps)
+  videoCodec?: string;           // Video codec FourCC (e.g., "hvc1")
+  audioCodec?: string;           // Audio codec FourCC (e.g., "aac ")
+  audioSampleRate?: number;      // Audio sample rate (Hz)
+  audioChannels?: number;        // Audio channel count
+}
+```
+
+**Used by:**
+- [`stopVideoRecording()`](/sdk/capture/stopVideoRecording) - Returns this type
+
+---
+
+## ECKey
+
+Elliptic curve public key from Secure Enclave.
+
+```tsx
+type ECKey = {
+  kty: "EC";        // Key type
+  crv: string;      // Curve name (e.g., "P-256")
+  x: string;        // X coordinate (base64url)
+  y: string;        // Y coordinate (base64url)
+}
+```
+
+**Used by:**
+- [`CaptureInfo`](#captureinfo) - `contentPublicKey` field
+

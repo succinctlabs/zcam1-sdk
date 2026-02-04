@@ -1,0 +1,63 @@
+# hasUltraWideCamera
+
+Check if the current device has an ultra-wide camera lens.
+
+## Usage
+
+```tsx
+const hasUltraWide = await camera.current?.hasUltraWideCamera();
+```
+
+## Returns
+
+`Promise<boolean>`
+
+- `true` for devices with ultra-wide lens (iPhone 11+, Pro models with triple or dual-wide camera)
+- `false` for devices with only wide + telephoto (iPhone X/XS) or single-lens devices
+
+## Example
+
+```tsx
+import { useEffect, useState } from "react";
+import { Text } from "react-native";
+import { ZCamera } from "react-native-zcam1-capture";
+
+function CameraInfo({ captureInfo }) {
+  const camera = useRef<ZCamera>(null);
+  const [hasUltraWide, setHasUltraWide] = useState(false);
+
+  useEffect(() => {
+    camera.current?.hasUltraWideCamera().then(setHasUltraWide);
+  }, []);
+
+  return (
+    <>
+      <ZCamera ref={camera} captureInfo={captureInfo} />
+      <Text>
+        {hasUltraWide 
+          ? "Zoom: 1.0 = 0.5x (ultra-wide), 2.0 = 1x (wide)"
+          : "Zoom: 1.0 = 1x (wide)"}
+      </Text>
+    </>
+  );
+}
+```
+
+## Use Case
+
+Use this to correctly interpret zoom factors:
+
+**If device has ultra-wide:**
+- `minZoom` (1.0) = 0.5x user-facing zoom (ultra-wide lens)
+- `switchOverFactors[0]` (2.0) = 1x user-facing zoom (wide lens)
+
+**If device doesn't have ultra-wide:**
+- `minZoom` (1.0) = 1x user-facing zoom (wide lens)
+- `switchOverFactors[0]` (2.0) = 2x user-facing zoom (telephoto lens)
+
+## Notes
+
+- True for `builtInTripleCamera` and `builtInDualWideCamera` configurations
+- False for `builtInDualCamera` (wide + telephoto only) and single-lens devices
+- Useful for displaying accurate zoom labels in your UI
+

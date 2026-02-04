@@ -81,20 +81,156 @@ export default defineConfig({
       collapsed: true,
       items: [
         {
+          text: 'Overview',
+          link: '/sdk',
+        },
+        {
           text: 'Capture',
-          link: '/sdk/capture',
+          collapsed: true,
+          items: [
+            {
+              text: 'initCapture',
+              link: '/sdk/capture/initCapture',
+            },
+            {
+              text: 'ZCamera',
+              link: '/sdk/capture/ZCamera',
+            },
+            {
+              text: 'takePhoto',
+              link: '/sdk/capture/takePhoto',
+            },
+            {
+              text: 'previewFile',
+              link: '/sdk/capture/previewFile',
+            },
+            {
+              text: 'getMinZoom',
+              link: '/sdk/capture/getMinZoom',
+            },
+            {
+              text: 'getMaxZoom',
+              link: '/sdk/capture/getMaxZoom',
+            },
+            {
+              text: 'focusAtPoint',
+              link: '/sdk/capture/focusAtPoint',
+            },
+            {
+              text: 'setZoomAnimated',
+              link: '/sdk/capture/setZoomAnimated',
+            },
+            {
+              text: 'hasUltraWideCamera',
+              link: '/sdk/capture/hasUltraWideCamera',
+            },
+            {
+              text: 'isDepthSupported',
+              link: '/sdk/capture/isDepthSupported',
+            },
+            {
+              text: 'getSwitchOverZoomFactors',
+              link: '/sdk/capture/getSwitchOverZoomFactors',
+            },
+            {
+              text: 'startVideoRecording',
+              link: '/sdk/capture/startVideoRecording',
+            },
+            {
+              text: 'stopVideoRecording',
+              link: '/sdk/capture/stopVideoRecording',
+            },
+            {
+              text: 'Types',
+              link: '/sdk/capture/types',
+            },
+          ],
         },
         {
           text: 'Prove',
-          link: '/sdk/prove',
+          collapsed: true,
+          items: [
+            {
+              text: 'ProverProvider',
+              link: '/sdk/prove/ProverProvider',
+            },
+            {
+              text: 'useProver',
+              link: '/sdk/prove/useProver',
+            },
+            {
+              text: 'requestProof',
+              link: '/sdk/prove/requestProof',
+            },
+            {
+              text: 'getProofStatus',
+              link: '/sdk/prove/getProofStatus',
+            },
+            {
+              text: 'useProofRequestStatus',
+              link: '/sdk/prove/useProofRequestStatus',
+            },
+            {
+              text: 'embedProof',
+              link: '/sdk/prove/embedProof',
+            },
+            {
+              text: 'waitAndEmbedProof',
+              link: '/sdk/prove/waitAndEmbedProof',
+            },
+            {
+              text: 'Types',
+              link: '/sdk/prove/types',
+            },
+          ],
         },
         {
           text: 'Verify',
-          link: '/sdk/verify',
+          collapsed: true,
+          items: [
+            {
+              text: 'VerifiableFile',
+              link: '/sdk/verify/VerifiableFile',
+            },
+            {
+              text: 'verifyBindings',
+              link: '/sdk/verify/verifyBindings',
+            },
+            {
+              text: 'verifyProof',
+              link: '/sdk/verify/verifyProof',
+            },
+            {
+              text: 'dataHash',
+              link: '/sdk/verify/dataHash',
+            },
+            {
+              text: 'captureMetadata',
+              link: '/sdk/verify/captureMetadata',
+            },
+            {
+              text: 'Types',
+              link: '/sdk/verify/types',
+            },
+          ],
         },
         {
           text: 'Picker',
-          link: '/sdk/picker',
+          collapsed: true,
+          items: [
+            {
+              text: 'ZImagePicker',
+              link: '/sdk/picker/ZImagePicker',
+            },
+            {
+              text: 'privateDirectory',
+              link: '/sdk/picker/privateDirectory',
+            },
+            {
+              text: 'authenticityStatus',
+              link: '/sdk/picker/authenticityStatus',
+            },
+          ],
         },
       ],
     },
