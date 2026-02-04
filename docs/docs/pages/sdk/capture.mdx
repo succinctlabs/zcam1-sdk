@@ -1,11 +1,11 @@
 # Capture SDK
 
-The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+The Capture SDK (`@succinctlabs/react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
 
 ## Installation
 
 ```bash
-npm i react-native-zcam1-capture
+npm i @succinctlabs/react-native-zcam1-capture
 cd ios && pod install
 ```
 
@@ -24,7 +24,7 @@ The Capture SDK:
 Initializes device keys and attestation. Call once on app startup.
 
 ```tsx
-import { initCapture, CaptureInfo, Settings } from "react-native-zcam1-capture";
+import { initCapture, CaptureInfo, Settings } from "@succinctlabs/react-native-zcam1-capture";
 
 const settings: Settings = {
   appId: "TEAM_ID.com.example.app",
@@ -51,7 +51,7 @@ React component that renders the native camera preview.
 
 ```tsx
 import { useRef } from "react";
-import { ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1-capture";
 
 function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
   const camera = useRef<ZCamera>(null);

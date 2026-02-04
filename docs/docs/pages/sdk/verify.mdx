@@ -1,11 +1,11 @@
 # Verify SDK
 
-The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+The Verify SDK (`@succinctlabs/react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
 
 ## Installation
 
 ```bash
-npm i react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1-verify
 cd ios && pod install
 ```
 
@@ -26,23 +26,13 @@ The Verify SDK:
 Class for verifying photo authenticity.
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
 
 const file = new VerifiableFile(photoUri);
 ```
 
 **Constructor:**
 - `uriOrPath` - File path or URI to the photo
-
-### `VerifiableFile.verifyHash()`
-
-Checks that the photo's content hash matches the hash recorded in the C2PA manifest.
-
-```tsx
-const isHashValid: boolean = file.verifyHash();
-```
-
-**Returns:** `true` if the file contents haven't been tampered with
 
 ### `VerifiableFile.verifyBindings()`
 
@@ -60,6 +50,9 @@ const isBindingsValid: boolean = file.verifyBindings(appAttestProduction);
 **Note:** This method works for photos with `succinct.bindings`. For photos with `succinct.proof`, use `verifyProof()` instead.
 
 ### `VerifiableFile.verifyProof()`
+
+**Parameters:**
+- `appId` - The app identifier
 
 Validates the embedded ZK proof against the photo hash and Apple Root CA.
 
@@ -86,7 +79,7 @@ const hash: string | undefined = file.dataHash();
 Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
 
 ```tsx
-import { CaptureMetadata } from "react-native-zcam1-verify";
+import { CaptureMetadata } from "@succinctlabs/react-native-zcam1-verify";
 
 const metadata: CaptureMetadata | null = file.captureMetadata();
 ```
@@ -109,8 +102,8 @@ const metadata: CaptureMetadata | null = file.captureMetadata();
 ```tsx
 import { useState } from "react";
 import { View, Button, Text, StyleSheet } from "react-native";
-import { launchImageLibrary } from "react-native-image-picker";
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
 
 type VerificationResult = {
   hashValid: boolean;
@@ -137,8 +130,7 @@ export function VerifyScreen() {
     try {
       const file = new VerifiableFile(asset.uri);
 
-      const hashValid = file.verifyHash();
-      const proofValid = file.verifyProof();
+      const proofValid = file.verifyProof("TEAM_ID.com.example.app");
 
       setResult({
         hashValid,
@@ -182,7 +174,7 @@ const styles = StyleSheet.create({
 Create a reusable verification function:
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
 
 export type VerificationStatus =
   | { status: "authentic" }
@@ -194,10 +186,6 @@ export type VerificationStatus =
 export function verifyPhoto(uri: string): VerificationStatus {
   try {
     const file = new VerifiableFile(uri);
-
-    if (!file.verifyHash()) {
-      return { status: "invalid_hash" };
-    }
 
     if (!file.verifyProof()) {
       return { status: "invalid_proof" };

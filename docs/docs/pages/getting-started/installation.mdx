@@ -30,7 +30,7 @@ The ZCAM SDK is divided into standalone packages. Install only what you need:
 
 ```bash
 # Full flow (capture, prove, verify)
-npm i react-native-zcam1-capture react-native-zcam1-prove react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-verify
 
 # Install native dependencies
 cd ios && pod install
@@ -40,10 +40,10 @@ Individual packages:
 
 | Package | Purpose |
 |---------|---------|
-| `react-native-zcam1-capture` | Take photos with C2PA manifests |
-| `react-native-zcam1-prove` | Generate ZK proofs for photos |
-| `react-native-zcam1-verify` | Verify photo authenticity |
-| `react-native-zcam1-picker` | Image picker with authenticity badges |
+| `@succinctlabs/react-native-zcam1-capture` | Take photos with C2PA manifests |
+| `@succinctlabs/react-native-zcam1-prove` | Generate ZK proofs for photos |
+| `@succinctlabs/react-native-zcam1-verify` | Verify photo authenticity |
+| `@succinctlabs/react-native-zcam1-picker` | Image picker with authenticity badges |
 
 :::warning
 The UniFFI bindings are built during `npm install`. This can take several minutes on first install.
@@ -95,15 +95,6 @@ Add these keys to your `Info.plist` (or `app.json` for Expo):
     }
   }
 }
-```
-
-## Environment Variables
-
-Create a `.env` file with your configuration:
-
-```bash
-EXPO_PUBLIC_APP_ID=<TEAM_ID>.<BUNDLE_IDENTIFIER>
-EXPO_PUBLIC_BACKEND_URL=https://your-backend-url.com
 ```
 
 ## Running on Device
