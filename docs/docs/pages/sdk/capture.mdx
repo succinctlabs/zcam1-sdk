@@ -79,11 +79,24 @@ function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
 Captures a photo and returns a signed `ZPhoto`.
 
 ```tsx
-const photo = await camera.current?.takePhoto();
+const photo = await camera.current?.takePhoto({
+  format: "jpeg",
+  flash: "off",
+  includeDepthData: false,
+  aspectRatio: "4:3",
+  orientation: "auto",
+});
 
 console.log(photo.originalPath); // Raw capture path
 console.log(photo.path);         // C2PA-signed photo path
 ```
+
+**Parameters:**
+- `options.format` - `"jpeg"` or `"dng"` (default: `"jpeg"`)
+- `options.flash` - `"off"`, `"on"`, or `"auto"` (default: `"off"`)
+- `options.includeDepthData` - Include depth data when supported (default: `false`)
+- `options.aspectRatio` - `"4:3"`, `"16:9"`, or `"1:1"` (default: `"4:3"`)
+- `options.orientation` - `"auto"`, `"portrait"`, or `"landscape"` (default: `"auto"`)
 
 **Returns:** `ZPhoto` with:
 - `originalPath` - Path to the raw captured image
