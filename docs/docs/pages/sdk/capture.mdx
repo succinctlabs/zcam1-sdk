@@ -21,7 +21,7 @@ The Capture SDK:
 
 ### `initCapture(settings)`
 
-Initializes device keys and attestation. Call once on app startup.
+Initializes device keys and attestation. Call once on app startup. Requires network access.
 
 ```tsx
 import { initCapture, CaptureInfo, Settings } from "@succinctlabs/react-native-zcam1-capture";
@@ -166,5 +166,6 @@ const styles = StyleSheet.create({
 ## Notes
 
 - `initCapture()` generates Secure Enclave keys on first call; subsequent calls load existing keys
+- `initCapture()` requires network access
 - App Attest only works on physical devices; the SDK uses mock values in simulators
 - The captured photo at `photo.path` contains a C2PA manifest with `succinct.bindings`—this is required for proof generation

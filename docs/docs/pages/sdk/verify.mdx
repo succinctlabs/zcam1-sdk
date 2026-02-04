@@ -89,13 +89,41 @@ const metadata: CaptureMetadata | null = file.captureMetadata();
 **Metadata includes:**
 - `action` - The capture action type
 - `when` - Timestamp of capture
-- `parameters` - Device and camera settings:
-  - `device_make`, `device_model`
-  - `software_version`
-  - `x_resolution`, `y_resolution`
-  - `orientation`
-  - `iso`, `exposure_time`
-  - `focal_length`, `depth_of_field`
+- `parameters` - Photo or video capture settings:
+  - **Photo fields:**
+    - `deviceMake`, `deviceModel`
+    - `softwareVersion`
+    - `xResolution`, `yResolution`
+    - `orientation`
+    - `iso`, `exposureTime`
+    - `focalLength`, `depthOfField`
+    - `authenticityData`:
+      - `isJailBroken`
+      - `isLocationSpoofingAvailable`
+    - `depthData` (when available):
+      - `width`, `height`
+      - `pixelFormat`
+      - `accuracy`
+      - `statistics`:
+        - `min`, `max`, `mean`, `stdDev`
+        - `validPixelCount`, `sampleStride`
+  - **Video fields:**
+    - `deviceMake`, `deviceModel`
+    - `softwareVersion`
+    - `format`
+    - `hasAudio`
+    - `durationSeconds`
+    - `fileSizeBytes`
+    - `width`, `height`
+    - `rotationDegrees`
+    - `frameRate`
+    - `videoCodec`
+    - `audioCodec`
+    - `audioSampleRate`
+    - `audioChannels`
+    - `authenticityData`:
+      - `isJailBroken`
+      - `isLocationSpoofingAvailable`
 
 ## Complete Example
 
