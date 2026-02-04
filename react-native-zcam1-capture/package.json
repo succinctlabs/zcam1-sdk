@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-capture",
-  "version": "0.2.58",
+  "version": "0.2.60",
   "description": "ZCAM1 Capture SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -17,6 +17,8 @@
   "license": "MIT",
   "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
   "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0",
     "react-native-builder-bob": "^0.40.17",

@@ -436,6 +436,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     private var recordingState: AssetWriterRecordingState?
     private let recordingStateLock = NSLock()
 
+    // Auto-stop support: a cancellable work item that fires when maxDurationSeconds is reached.
+    // When it fires, it calls stopVideoRecording and caches the result so that a subsequent
+    // JS-side stopVideoRecording call can retrieve it without an error.
+    private var autoStopWorkItem: DispatchWorkItem?
+    private var autoStopResult: NSDictionary?
+
     // Camera control state
     private var currentZoom: CGFloat = 1.0
     private var flashMode: AVCaptureDevice.FlashMode = .off
@@ -1592,8 +1598,16 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     /// Starts video recording to a temporary `.mov` file using AVAssetWriter.
     /// This approach eliminates preview flash since no session reconfiguration is needed.
     /// Call `stopVideoRecording` to finish and receive the final file path.
+    ///
+    /// - Parameters:
+    ///   - positionString: Camera position ("front" or "back").
+    ///   - maxDurationSeconds: Maximum recording duration in seconds. When greater
+    ///     than zero the native layer will automatically stop recording after this
+    ///     many seconds and cache the result for the next `stopVideoRecording` call.
+    ///   - completion: Called once the recorder has started (or on error).
     public func startVideoRecording(
         positionString: String?,
+        maxDurationSeconds: Double = 0,
         completion: @escaping (NSDictionary?, NSError?) -> Void
     ) {
         #if targetEnvironment(simulator)
@@ -1778,6 +1792,37 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
                             print("[Zcam1CameraService] AVAssetWriter recording started (no preview flash)")
 
+                            // Schedule auto-stop if a duration cap was requested.
+                            self.autoStopWorkItem?.cancel()
+                            self.autoStopWorkItem = nil
+                            self.autoStopResult = nil
+
+                            if maxDurationSeconds > 0 {
+                                let workItem = DispatchWorkItem { [weak self] in
+                                    guard let self = self else { return }
+
+                                    // Verify recording is still active before auto-stopping.
+                                    self.recordingStateLock.lock()
+                                    let isActive = self.recordingState != nil
+                                    self.recordingStateLock.unlock()
+
+                                    guard isActive else { return }
+
+                                    print("[Zcam1CameraService] Auto-stopping recording (maxDurationSeconds=\(maxDurationSeconds))")
+                                    self.stopVideoRecording { result, error in
+                                        if let result = result {
+                                            // Cache the result so the next JS stopVideoRecording call can retrieve it.
+                                            self.autoStopResult = result
+                                        }
+                                    }
+                                }
+                                self.autoStopWorkItem = workItem
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + maxDurationSeconds,
+                                    execute: workItem
+                                )
+                            }
+
                             // Immediately return success - no waiting for iOS callbacks
                             let result: [String: Any] = [
                                 "status": "recording",
@@ -1877,14 +1922,31 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     }
 
     /// Stops an in-progress video recording and returns `{ filePath, format, durationSeconds? }`.
+    ///
+    /// If the recording was already auto-stopped (via `maxDurationSeconds`), the cached result
+    /// is returned immediately instead of an error.
     public func stopVideoRecording(completion: @escaping (NSDictionary?, NSError?) -> Void) {
+        // Cancel any pending auto-stop timer since we are stopping explicitly.
+        self.autoStopWorkItem?.cancel()
+        self.autoStopWorkItem = nil
+
         sessionQueue.async {
-            // Lock to safely read the recordingState reference
+            // Lock to safely read the recordingState reference.
             self.recordingStateLock.lock()
             let state = self.recordingState
             self.recordingStateLock.unlock()
 
             guard let state = state else {
+                // Recording state is nil. Check if the native auto-stop already ran and
+                // cached the result — if so, return it instead of an error.
+                if let cachedResult = self.autoStopResult {
+                    self.autoStopResult = nil
+                    DispatchQueue.main.async {
+                        completion(cachedResult, nil)
+                    }
+                    return
+                }
+
                 let err = NSError(
                     domain: "Zcam1CameraService",
                     code: -44,
@@ -1898,14 +1960,22 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
             // All finalization must happen on the writer queue to prevent races with append
             state.writerQueue.async {
-                // Check if still recording (might have been stopped already)
+                // Check if still recording (might have been stopped already by auto-stop).
                 guard state.isRecording else {
-                    DispatchQueue.main.async {
-                        completion(nil, NSError(
-                            domain: "Zcam1CameraService",
-                            code: -44,
-                            userInfo: [NSLocalizedDescriptionKey: "Recording already stopped"]
-                        ))
+                    // The auto-stop may have already finished and cached the result.
+                    if let cachedResult = self.autoStopResult {
+                        self.autoStopResult = nil
+                        DispatchQueue.main.async {
+                            completion(cachedResult, nil)
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            completion(nil, NSError(
+                                domain: "Zcam1CameraService",
+                                code: -44,
+                                userInfo: [NSLocalizedDescriptionKey: "Recording already stopped"]
+                            ))
+                        }
                     }
                     return
                 }

@@ -276,6 +276,7 @@ static void ensureStaticStorageInitialized(void) {
 }
 
 - (void)startNativeVideoRecording:(NSString *)position
+               maxDurationSeconds:(double)maxDurationSeconds
                           resolve:(RCTPromiseResolveBlock)resolve
                            reject:(RCTPromiseRejectBlock)reject
 {
@@ -295,6 +296,7 @@ static void ensureStaticStorageInitialized(void) {
     }
 
     [service startVideoRecordingWithPositionString:positionString
+                                maxDurationSeconds:maxDurationSeconds
                                        completion:^(NSDictionary *result, NSError *error) {
       RCTPromiseResolveBlock storedResolve = nil;
       RCTPromiseRejectBlock storedReject = nil;

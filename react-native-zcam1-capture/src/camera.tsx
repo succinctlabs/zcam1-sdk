@@ -268,9 +268,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    * Start recording a native video to a temporary `.mov` file.
    *
    * Promise resolves once the native recorder reports it has started.
+   *
+   * @param position Which camera to record from.
+   * @param options Optional recording configuration.
+   * @param options.maxDurationSeconds Maximum recording duration in seconds.
+   *   The native layer will automatically stop the recording when this limit is
+   *   reached. Pass 0 or omit for unlimited recording.
    */
   async startVideoRecording(
     position: "front" | "back" = this.props.position || "back",
+    options?: { maxDurationSeconds?: number },
   ): Promise<StartNativeVideoRecordingResult> {
     if (this.recordingInProgress) {
       throw new Error(
@@ -282,7 +289,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     this.lastVideoStartResult = null;
 
     try {
-      const result = await NativeZcam1Sdk.startNativeVideoRecording(position);
+      const result = await NativeZcam1Sdk.startNativeVideoRecording(
+        position,
+        options?.maxDurationSeconds ?? 0,
+      );
       this.lastVideoStartResult = result;
       return result;
     } catch (e) {
