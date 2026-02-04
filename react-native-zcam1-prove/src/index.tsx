@@ -438,7 +438,7 @@ export class ProvingClient {
    * @param originalPath - Path to the original image file
    * @param deviceInfo - Device information for signing
    * @param settings - Configuration settings for proof generation
-   * @returns Path to the new file with embedded proof
+   * @returns Request ID for polling proof status
    */
   async requestProof(originalPath: string): Promise<string> {
     originalPath = originalPath.replace("file://", "");
