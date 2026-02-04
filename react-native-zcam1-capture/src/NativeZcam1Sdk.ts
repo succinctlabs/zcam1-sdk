@@ -186,10 +186,16 @@ export interface Spec extends TurboModule {
    * Start recording a video using the native camera stack.
    *
    * The recording is written to a temporary file and continues until
-   * `stopNativeVideoRecording()` is called.
+   * `stopNativeVideoRecording()` is called or the optional duration cap is reached.
+   *
+   * @param position Which camera to use.
+   * @param maxDurationSeconds Maximum recording duration in seconds. The native
+   *   layer will automatically stop recording when this limit is reached. Pass 0
+   *   for unlimited recording.
    */
   startNativeVideoRecording(
     position: "front" | "back",
+    maxDurationSeconds: number,
   ): Promise<StartNativeVideoRecordingResult>;
 
   /**
