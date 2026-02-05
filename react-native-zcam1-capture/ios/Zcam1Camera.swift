@@ -2682,7 +2682,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         // Orientation-aware rotation only applies to photo capture and video recording,
         // NOT to the live preview.
         let isFront = position.lowercased() == "front"
-        let imageOrientation: UIImage.Orientation = isFront ? .leftMirrored : .right
+        let imageOrientation: UIImage.Orientation = isFront ? .rightMirrored : .right
 
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 
