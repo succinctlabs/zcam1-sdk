@@ -2434,10 +2434,18 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
 
         // Fall back to built-in preset.
-        print("[Zcam1CameraView] Using built-in filter '\(filter)'")
-        currentCustomFilters = nil
-        currentFilterEnum = Zcam1CameraFilter(from: filter)
-        Zcam1CameraService.shared.setFilter(currentFilterEnum)
+        // Use same code path as overrides for consistency.
+        let presetEnum = Zcam1CameraFilter(from: filter)
+        if presetEnum == .normal {
+            currentCustomFilters = nil
+            currentFilterEnum = .normal
+            Zcam1CameraService.shared.setFilter(.normal)
+        } else {
+            let filters = presetEnum.createFilters()
+            currentCustomFilters = filters
+            currentFilterEnum = .normal
+            Zcam1CameraService.shared.setCustomFilters(filters)
+        }
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate

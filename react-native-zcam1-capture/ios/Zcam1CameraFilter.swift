@@ -31,12 +31,13 @@ public enum Zcam1CameraFilter: String, CaseIterable {
 
     /// Returns an array of Harbeth filters to apply for this preset.
     func createFilters() -> [C7FilterProtocol] {
+        let filters: [C7FilterProtocol]
         switch self {
         case .normal:
-            return []
+            filters = []
         case .mellow:
             // Negative Film Gold style - warm, saturated, lifted shadows.
-            return [
+            filters = [
                 C7WhiteBalance(temperature: 6900, tint: 40),
                 C7Saturation(saturation: 1.4),
                 C7Contrast(contrast: 0.8),
@@ -45,15 +46,15 @@ public enum Zcam1CameraFilter: String, CaseIterable {
             ]
         case .bw:
             // Contrasty B&W with warm tint.
-            return [
+            filters = [
                 C7Monochrome(intensity: 1.0, color: C7Color(red: 0.6, green: 0.55, blue: 0.5, alpha: 1.0)),
                 C7Contrast(contrast: 1.2),
                 C7Brightness(brightness: -0.1),
             ]
         case .nostalgic:
-            // Kodak Magenta Chrome - warm amber, faded, lifted shadows, bright.
+            // Kodak Portra 400 - warm amber, faded, lifted shadows, bright.
             // Based on Ricoh GR III recipe: CTE + A:12, Sat+1, Contrast-3, Highlight-4, Shadow+4, HighKey+3
-            return [
+            filters = [
                 C7WhiteBalance(temperature: 7000, tint: 0),
                 C7Saturation(saturation: 1.1),
                 C7Contrast(contrast: 0.7),
@@ -61,6 +62,7 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                 C7HighlightShadow(highlights: -0.4, shadows: 0.5),
             ]
         }
+        return filters
     }
 
     // MARK: - Custom Filter Recipe Parser

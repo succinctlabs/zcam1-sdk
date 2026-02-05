@@ -40,7 +40,7 @@ export type CaptureFormat = "jpeg" | "dng";
  * - "normal": No filter (default)
  * - "mellow": Negative Film Gold style - warm, saturated, lifted shadows
  * - "bw": Contrasty B&W with warm tint
- * - "nostalgic": Kodak Magenta Chrome style - warm amber, faded, bright
+ * - "nostalgic": Kodak Portra 400 style - warm amber, faded, bright
  */
 export type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic";
 
@@ -91,6 +91,35 @@ export type FilterEffect =
  * Effects are applied sequentially to produce the final look.
  */
 export type FilterRecipe = FilterEffect[];
+
+/**
+ * Default filter recipes for built-in presets.
+ */
+const DEFAULT_FILTER_RECIPES: Record<CameraFilter, FilterRecipe> = {
+  normal: [],
+  // Mellow: Negative Film Gold - warm amber/magenta, saturated, lifted shadows.
+  mellow: [
+    { type: "whiteBalance", config: { temperature: 6900, tint: 40 } },
+    { type: "saturation", value: 1.4 },
+    { type: "contrast", value: 0.8 },
+    { type: "brightness", value: -0.1 },
+    { type: "highlightShadow", config: { highlights: 0, shadows: 0.4 } },
+  ],
+  // Nostalgic: Kodak Portra 400 - warm amber, faded, lifted shadows, bright.
+  nostalgic: [
+    { type: "whiteBalance", config: { temperature: 7000, tint: 0 } },
+    { type: "saturation", value: 1.1 },
+    { type: "contrast", value: 0.7 },
+    { type: "brightness", value: 0.15 },
+    { type: "highlightShadow", config: { highlights: -0.4, shadows: 0.5 } },
+  ],
+  // B&W: Contrasty black and white with subtle warm tint.
+  bw: [
+    { type: "monochrome", config: { intensity: 1.0, color: { r: 0.6, g: 0.55, b: 0.5 } } },
+    { type: "contrast", value: 1.2 },
+    { type: "brightness", value: -0.1 },
+  ],
+};
 
 export interface ZCameraProps {
   /** Which camera to use. Defaults to "back". */
@@ -521,6 +550,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       style,
     } = this.props;
 
+    // Merge default recipes with user overrides (user overrides take precedence).
+    const mergedFilterOverrides = {
+      ...DEFAULT_FILTER_RECIPES,
+      ...filterOverrides,
+    };
+
     return (
       <Zcam1CameraView
         ref={this.nativeRef}
@@ -532,7 +567,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         torch={torch}
         exposure={exposure}
         filter={filter}
-        filterOverrides={filterOverrides}
+        filterOverrides={mergedFilterOverrides}
         customFilters={customFilters}
         depthEnabled={depthEnabled}
       />
