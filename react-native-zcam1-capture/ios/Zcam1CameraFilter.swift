@@ -40,8 +40,8 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                 C7WhiteBalance(temperature: 6900, tint: 40),
                 C7Saturation(saturation: 1.4),
                 C7Contrast(contrast: 0.8),
-                C7HighlightShadow(highlights: 0.0, shadows: 0.4),
                 C7Brightness(brightness: -0.1),
+                C7HighlightShadow(highlights: 0.0, shadows: 0.4),
             ]
         case .bw:
             // Contrasty B&W with warm tint.
@@ -57,8 +57,8 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                 C7WhiteBalance(temperature: 7000, tint: 0),
                 C7Saturation(saturation: 1.1),
                 C7Contrast(contrast: 0.7),
-                C7HighlightShadow(highlights: -0.4, shadows: 0.5),
                 C7Brightness(brightness: 0.15),
+                C7HighlightShadow(highlights: -0.4, shadows: 0.5),
             ]
         }
     }
