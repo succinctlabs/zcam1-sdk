@@ -124,18 +124,33 @@ type AspectRatio = "4:3" | "16:9" | "1:1"
 
 ## Orientation
 
-Crop orientation for captured photos.
+Orientation for captured photos and videos. Uses accelerometer-based detection that works even when iOS orientation lock is enabled.
 
 ```tsx
-type Orientation = "auto" | "portrait" | "landscape"
+type Orientation = "auto" | "portrait" | "landscape" | "landscapeLeft" | "landscapeRight"
 ```
 
-- **`auto`** - Automatically determines orientation based on device orientation
-- **`portrait`** - Force portrait crop
-- **`landscape`** - Force landscape crop
+- **`auto`** - Automatically determines orientation from the device accelerometer
+- **`portrait`** - Force portrait orientation
+- **`landscape`** - Force landscape, auto-detecting left or right from the accelerometer
+- **`landscapeLeft`** - Force landscape with home button on the left
+- **`landscapeRight`** - Force landscape with home button on the right
 
 **Used by:**
 - [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+---
+
+## DeviceOrientation
+
+Physical device orientation reported by the accelerometer. Emitted via the [`onOrientationChange`](/sdk/capture/ZCamera#onorientationchange) callback on `ZCamera`.
+
+```tsx
+type DeviceOrientation = "portrait" | "portraitUpsideDown" | "landscapeLeft" | "landscapeRight"
+```
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - `onOrientationChange` callback parameter
 
 ---
 
