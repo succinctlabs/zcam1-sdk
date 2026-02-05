@@ -1759,8 +1759,11 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             )
                             videoInput.expectsMediaDataInRealTime = true
 
-                            // Set video orientation to portrait (rotate 90° from landscape sensor)
-                            videoInput.transform = CGAffineTransform(rotationAngle: .pi / 2)
+                            // Set video orientation based on camera position.
+                            // Back camera sensor: landscape-right → rotate 90° CW (.pi / 2) for portrait
+                            // Front camera sensor: landscape-left + mirrored → rotate 90° CCW (-.pi / 2) for portrait
+                            let rotationAngle: CGFloat = (position == .front) ? -.pi / 2 : .pi / 2
+                            videoInput.transform = CGAffineTransform(rotationAngle: rotationAngle)
 
                             guard assetWriter.canAdd(videoInput) else {
                                 throw NSError(
