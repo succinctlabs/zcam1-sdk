@@ -83,13 +83,13 @@ type TakePhotoOptions = {
 Filter preset for camera preview and captured photos.
 
 ```tsx
-type CameraFilter = "normal" | "vivid" | "warm" | "cool"
+type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic"
 ```
 
 - **`normal`** - No filter (default)
-- **`vivid`** - Enhanced saturation and vibrance
-- **`warm`** - Warmer color temperature (orange/yellow tones)
-- **`cool`** - Cooler color temperature (blue tones)
+- **`mellow`** - Negative Film Gold style - warm, saturated, lifted shadows
+- **`bw`** - Muted B&W with slight warm tint (Apple style)
+- **`nostalgic`** - Kodak Portra 400 style - warm, faded, lifted shadows
 
 **Used by:**
 - [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop

@@ -45,7 +45,7 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic) CGFloat zoom;                  // 1.0 = no zoom
 // @property (nonatomic) BOOL torch;                    // torch on/off
 // @property (nonatomic) float exposure;               // exposure bias in EV
-// @property (nonatomic, copy) NSString *filter;       // "normal" | "vivid" | "mono" | "noir" | "warm" | "cool"
+// @property (nonatomic, copy) NSString *filter;       // "normal" | "mellow" | "bw" | "nostalgic"
 // @property (nonatomic) BOOL depthEnabled;            // enable depth data at session level (default: NO)
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);

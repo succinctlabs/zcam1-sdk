@@ -83,7 +83,7 @@ Exposure compensation in EV units.
 - **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter)
 - **Default:** `"normal"`
 
-Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vivid"`, `"warm"`, `"cool"`.
+Filter preset to apply to preview and captured photos. Options: `"normal"`, `"mellow"`, `"bw"`, `"nostalgic"`.
 
 ### depthEnabled
 
@@ -252,7 +252,7 @@ export function CaptureScreen() {
         ref={camera} 
         captureInfo={captureInfo} 
         style={styles.camera}
-        filter="vivid"
+        filter="mellow"
         zoom={2.0}
       />
       <View style={styles.controls}>

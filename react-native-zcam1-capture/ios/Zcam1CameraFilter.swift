@@ -11,19 +11,19 @@ import UIKit
 /// Camera filter presets.
 public enum Zcam1CameraFilter: String, CaseIterable {
     case normal
-    case vivid
-    case warm
-    case cool
+    case mellow
+    case bw
+    case nostalgic
 
     /// Initialize from a string (case-insensitive).
     init(from string: String?) {
         switch string?.lowercased() {
-        case "vivid":
-            self = .vivid
-        case "warm":
-            self = .warm
-        case "cool":
-            self = .cool
+        case "mellow":
+            self = .mellow
+        case "bw":
+            self = .bw
+        case "nostalgic":
+            self = .nostalgic
         default:
             self = .normal
         }
@@ -34,24 +34,30 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         switch self {
         case .normal:
             return []
-        case .vivid:
-            // Enhanced saturation and vibrance without color shift.
+        case .mellow:
+            // Negative Film Gold style - warm, saturated, lifted shadows.
             return [
-                C7Saturation(saturation: 1.5),
-                C7Contrast(contrast: 1.15),
-                C7Vibrance(vibrance: 0.3),
+                C7WhiteBalance(temperature: 6900, tint: 40),
+                C7Saturation(saturation: 1.4),
+                C7Contrast(contrast: 0.8),
+                C7HighlightShadow(highlights: 0.0, shadows: 0.4),
+                C7Brightness(brightness: -0.1),
             ]
-        case .warm:
-            // Warmer tones - higher temperature adds orange/yellow warmth.
+        case .bw:
+            // Muted B&W with slight warm tint (Apple style).
             return [
-                C7WhiteBalance(temperature: 8000),
+                C7Monochrome(intensity: 1.0, color: C7Color(red: 0.95, green: 0.92, blue: 0.88, alpha: 1.0)),
+                C7Contrast(contrast: 1.1),
+            ]
+        case .nostalgic:
+            // Kodak Portra 400 style - warm, faded, lifted shadows.
+            return [
+                C7WhiteBalance(temperature: 6500, tint: 60),
                 C7Saturation(saturation: 1.1),
-            ]
-        case .cool:
-            // Cooler tones - lower temperature adds blue coolness.
-            return [
-                C7WhiteBalance(temperature: 3500),
-                C7Saturation(saturation: 1.05),
+                C7Hue(hue: 85),
+                C7Contrast(contrast: 0.7),
+                C7HighlightShadow(highlights: 0.4, shadows: 0.4),
+                C7Brightness(brightness: 0.15),
             ]
         }
     }

@@ -2301,7 +2301,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
-    /// Filter preset name ("normal", "vivid", "mono", "noir", "warm", "cool").
+    /// Filter preset name ("normal", "mellow", "bw", "nostalgic").
     public var filter: String = "normal" {
         didSet {
             guard oldValue != filter else { return }
