@@ -1,0 +1,41 @@
+{
+  "name": "zcam1-verify",
+  "version": "0.1.0",
+  "description": "ZCAM1 Verify SDK for browser",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "preview": "vite preview",
+    "test": "vitest --browser=chromium --run",
+    "test:watch": "vitest",
+    "test:browser": "vitest --browser=chromium --run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
+  },
+  "author": "leruaa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/succinctlabs/zcam1-sdk/issues"
+  },
+  "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
+  "dependencies": {
+    "@contentauth/c2pa-web": "^0.5.7"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^1.6.1",
+    "jsdom": "^28.0.0",
+    "playwright": "^1.46.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^1.6.0"
+  }
+}
