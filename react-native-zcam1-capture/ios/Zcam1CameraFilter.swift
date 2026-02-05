@@ -62,6 +62,86 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         }
     }
 
+    // MARK: - Custom Filter Recipe Parser
+
+    /// Parse a filter recipe from JavaScript into Harbeth filters.
+    /// Each effect dictionary should have a "type" key and either a "value" or "config" key.
+    static func createFilters(from recipe: [[String: Any]]) -> [C7FilterProtocol] {
+        var filters: [C7FilterProtocol] = []
+
+        for effect in recipe {
+            guard let type = effect["type"] as? String else { continue }
+
+            switch type {
+            case "whiteBalance":
+                if let config = effect["config"] as? [String: Any],
+                   let temp = config["temperature"] as? Float {
+                    let tint = config["tint"] as? Float ?? 0
+                    filters.append(C7WhiteBalance(temperature: temp, tint: tint))
+                }
+            case "saturation":
+                if let value = effect["value"] as? Float {
+                    filters.append(C7Saturation(saturation: value))
+                }
+            case "contrast":
+                if let value = effect["value"] as? Float {
+                    filters.append(C7Contrast(contrast: value))
+                }
+            case "brightness":
+                if let value = effect["value"] as? Float {
+                    filters.append(C7Brightness(brightness: value))
+                }
+            case "hue":
+                if let value = effect["value"] as? Float {
+                    filters.append(C7Hue(hue: value))
+                }
+            case "vibrance":
+                if let value = effect["value"] as? Float {
+                    filters.append(C7Vibrance(vibrance: value))
+                }
+            case "highlightShadow":
+                if let config = effect["config"] as? [String: Any],
+                   let highlights = config["highlights"] as? Float,
+                   let shadows = config["shadows"] as? Float {
+                    filters.append(C7HighlightShadow(highlights: highlights, shadows: shadows))
+                }
+            case "monochrome":
+                if let config = effect["config"] as? [String: Any],
+                   let intensity = config["intensity"] as? Float {
+                    var color = C7Color.zero
+                    if let colorConfig = config["color"] as? [String: Any],
+                       let r = colorConfig["r"] as? CGFloat,
+                       let g = colorConfig["g"] as? CGFloat,
+                       let b = colorConfig["b"] as? CGFloat {
+                        color = C7Color(red: r, green: g, blue: b, alpha: 1.0)
+                    }
+                    filters.append(C7Monochrome(intensity: intensity, color: color))
+                }
+            default:
+                print("[Zcam1CameraFilter] Unknown filter type: \(type)")
+            }
+        }
+
+        return filters
+    }
+
+    /// Apply an array of custom filters to a UIImage.
+    static func apply(filters: [C7FilterProtocol], to image: UIImage) -> UIImage {
+        guard !filters.isEmpty else {
+            return image
+        }
+
+        var result = image
+        for filter in filters {
+            do {
+                result = try result.make(filter: filter)
+            } catch {
+                print("[Zcam1CameraFilter] Failed to apply custom filter: \(error)")
+            }
+        }
+        return result
+    }
+
     /// Apply this filter preset to a UIImage and return the filtered result.
     func apply(to image: UIImage) -> UIImage {
         guard self != .normal else {

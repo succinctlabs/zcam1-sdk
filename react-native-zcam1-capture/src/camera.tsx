@@ -44,6 +44,54 @@ export type CaptureFormat = "jpeg" | "dng";
  */
 export type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom Filter Recipe Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** White balance adjustment configuration. */
+export type WhiteBalanceConfig = {
+  /** Color temperature in Kelvin (e.g., 5500 for daylight, 6500 for cloudy). */
+  temperature: number;
+  /** Tint adjustment (-100 to 100, green to magenta). Defaults to 0. */
+  tint?: number;
+};
+
+/** Highlight and shadow adjustment configuration. */
+export type HighlightShadowConfig = {
+  /** Highlight adjustment (0 = no change, negative = reduce, positive = boost). */
+  highlights: number;
+  /** Shadow adjustment (0 = no change, positive = lift shadows). */
+  shadows: number;
+};
+
+/** Monochrome (black & white) filter configuration. */
+export type MonochromeConfig = {
+  /** Intensity of the monochrome effect (0 = none, 1 = full B&W). */
+  intensity: number;
+  /** Optional tint color for the monochrome effect. */
+  color?: { r: number; g: number; b: number };
+};
+
+/**
+ * Individual filter effect that can be combined into a recipe.
+ * Effects are applied in the order they appear in the recipe array.
+ */
+export type FilterEffect =
+  | { type: "whiteBalance"; config: WhiteBalanceConfig }
+  | { type: "saturation"; value: number }
+  | { type: "contrast"; value: number }
+  | { type: "brightness"; value: number }
+  | { type: "hue"; value: number }
+  | { type: "vibrance"; value: number }
+  | { type: "highlightShadow"; config: HighlightShadowConfig }
+  | { type: "monochrome"; config: MonochromeConfig };
+
+/**
+ * A filter recipe is an ordered array of filter effects.
+ * Effects are applied sequentially to produce the final look.
+ */
+export type FilterRecipe = FilterEffect[];
+
 export interface ZCameraProps {
   /** Which camera to use. Defaults to "back". */
   position?: "front" | "back";
@@ -63,6 +111,17 @@ export interface ZCameraProps {
   exposure?: number;
   /** Filter preset to apply to preview and captured photos. Defaults to "normal". */
   filter?: CameraFilter;
+  /**
+   * Override built-in filter presets with custom recipes.
+   * When a preset name is used with `filter` prop and an override exists,
+   * the custom recipe is applied instead of the built-in preset.
+   */
+  filterOverrides?: Partial<Record<CameraFilter, FilterRecipe>>;
+  /**
+   * Define additional custom filters referenced by name.
+   * Use with `filter` prop by casting the custom name: `filter={"myFilter" as CameraFilter}`.
+   */
+  customFilters?: Record<string, FilterRecipe>;
   /**
    * Enable depth data capture at session level.
    * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
@@ -106,6 +165,8 @@ type NativeCameraViewProps = {
   torch?: boolean;
   exposure?: number;
   filter?: CameraFilter;
+  filterOverrides?: Record<string, FilterEffect[]>;
+  customFilters?: Record<string, FilterEffect[]>;
   depthEnabled?: boolean;
 };
 
@@ -454,6 +515,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       torch = false,
       exposure = 0,
       filter = "normal",
+      filterOverrides,
+      customFilters,
       depthEnabled = false,
       style,
     } = this.props;
@@ -469,6 +532,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         torch={torch}
         exposure={exposure}
         filter={filter}
+        filterOverrides={filterOverrides}
+        customFilters={customFilters}
         depthEnabled={depthEnabled}
       />
     );

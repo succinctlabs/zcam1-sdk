@@ -96,6 +96,79 @@ type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic"
 
 ---
 
+## FilterEffect
+
+Individual filter effect that can be combined into a custom recipe.
+
+```tsx
+type FilterEffect =
+  | { type: "whiteBalance"; config: WhiteBalanceConfig }
+  | { type: "saturation"; value: number }
+  | { type: "contrast"; value: number }
+  | { type: "brightness"; value: number }
+  | { type: "hue"; value: number }
+  | { type: "vibrance"; value: number }
+  | { type: "highlightShadow"; config: HighlightShadowConfig }
+  | { type: "monochrome"; config: MonochromeConfig }
+```
+
+**Used by:**
+- [`FilterRecipe`](#filterrecipe) - Array of effects
+
+---
+
+## FilterRecipe
+
+An ordered array of filter effects applied sequentially to produce the final look.
+
+```tsx
+type FilterRecipe = FilterEffect[]
+```
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - In `filterOverrides` and `customFilters` props
+
+---
+
+## WhiteBalanceConfig
+
+Configuration for white balance adjustment.
+
+```tsx
+type WhiteBalanceConfig = {
+  temperature: number;  // Color temperature in Kelvin (e.g., 5500 daylight, 6500 cloudy)
+  tint?: number;        // Tint adjustment (-100 to 100, green to magenta). Default: 0
+}
+```
+
+---
+
+## HighlightShadowConfig
+
+Configuration for highlight and shadow adjustments.
+
+```tsx
+type HighlightShadowConfig = {
+  highlights: number;  // Highlight adjustment (0 = no change, negative = reduce, positive = boost)
+  shadows: number;     // Shadow adjustment (0 = no change, positive = lift shadows)
+}
+```
+
+---
+
+## MonochromeConfig
+
+Configuration for monochrome (black & white) filter.
+
+```tsx
+type MonochromeConfig = {
+  intensity: number;                            // 0 = none, 1 = full B&W
+  color?: { r: number; g: number; b: number };  // Optional tint color (0-1 range)
+}
+```
+
+---
+
 ## FlashMode
 
 Flash mode for photo capture.

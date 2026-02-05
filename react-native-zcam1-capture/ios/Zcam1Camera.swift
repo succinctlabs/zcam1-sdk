@@ -450,6 +450,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
     // Filter state
     private var currentFilter: Zcam1CameraFilter = .normal
+    private var customFilterChain: [C7FilterProtocol]?
 
     private override init() {
         super.init()
@@ -504,13 +505,26 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // MARK: - Filter
 
     /// Set the active camera filter for preview and capture.
+    /// Clears any custom filter chain.
     public func setFilter(_ filter: Zcam1CameraFilter) {
         self.currentFilter = filter
+        self.customFilterChain = nil
+    }
+
+    /// Set a custom filter chain for preview and capture.
+    /// Overrides the built-in preset filter.
+    public func setCustomFilters(_ filters: [C7FilterProtocol]) {
+        self.customFilterChain = filters.isEmpty ? nil : filters
     }
 
     /// Get the current filter.
     public func getFilter() -> Zcam1CameraFilter {
         return currentFilter
+    }
+
+    /// Check if custom filters are active.
+    public func hasCustomFilters() -> Bool {
+        return customFilterChain != nil
     }
 
     /// Get the current camera position.
@@ -531,7 +545,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         aspectRatio: Zcam1AspectRatio,
         compressionQuality: CGFloat = 0.95
     ) -> Data? {
-        let needsFilter = currentFilter != .normal
+        let needsFilter = currentFilter != .normal || customFilterChain != nil
 
         guard let image = UIImage(data: data),
               let cgImage = image.cgImage else { return data }
@@ -562,10 +576,16 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             }
         }
 
-        // Apply filter if needed, preserving original orientation
+        // Apply filter if needed, preserving original orientation.
         var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: image.imageOrientation)
         if needsFilter {
-            finalImage = currentFilter.apply(to: finalImage)
+            if let customFilters = customFilterChain {
+                // Apply custom filter chain.
+                finalImage = Zcam1CameraFilter.apply(filters: customFilters, to: finalImage)
+            } else {
+                // Apply built-in preset.
+                finalImage = currentFilter.apply(to: finalImage)
+            }
         }
 
         return encodeJPEGWithMetadata(finalImage, metadata: metadata, compressionQuality: compressionQuality)
@@ -2301,13 +2321,30 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
-    /// Filter preset name ("normal", "mellow", "bw", "nostalgic").
+    /// Filter preset name ("normal", "mellow", "bw", "nostalgic") or custom filter name.
     public var filter: String = "normal" {
         didSet {
             guard oldValue != filter else { return }
             print("[Zcam1CameraView] Filter changed: \(oldValue) -> \(filter)")
-            currentFilterEnum = Zcam1CameraFilter(from: filter)
-            Zcam1CameraService.shared.setFilter(currentFilterEnum)
+            applyCurrentFilter()
+        }
+    }
+
+    /// Custom filter recipe overrides for built-in presets.
+    /// Keys are preset names, values are arrays of filter effect dictionaries.
+    @objc public var filterOverrides: NSDictionary? {
+        didSet {
+            print("[Zcam1CameraView] filterOverrides updated")
+            applyCurrentFilter()
+        }
+    }
+
+    /// Additional custom filters defined by name.
+    /// Keys are custom filter names, values are arrays of filter effect dictionaries.
+    @objc public var customFilters: NSDictionary? {
+        didSet {
+            print("[Zcam1CameraView] customFilters updated")
+            applyCurrentFilter()
         }
     }
 
@@ -2336,6 +2373,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilterEnum: Zcam1CameraFilter = .normal
+    private var currentCustomFilters: [C7FilterProtocol]?
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private var frameCount: Int = 0
 
@@ -2367,6 +2405,39 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public override func layoutSubviews() {
         super.layoutSubviews()
         previewImageView.frame = bounds
+    }
+
+    // MARK: - Filter Resolution
+
+    /// Resolves and applies the current filter, checking overrides and custom filters first.
+    private func applyCurrentFilter() {
+        // Check filterOverrides first.
+        if let overrides = filterOverrides as? [String: [[String: Any]]],
+           let recipe = overrides[filter] {
+            print("[Zcam1CameraView] Using filter override for '\(filter)'")
+            let filters = Zcam1CameraFilter.createFilters(from: recipe)
+            currentCustomFilters = filters
+            currentFilterEnum = .normal
+            Zcam1CameraService.shared.setCustomFilters(filters)
+            return
+        }
+
+        // Check customFilters next.
+        if let custom = customFilters as? [String: [[String: Any]]],
+           let recipe = custom[filter] {
+            print("[Zcam1CameraView] Using custom filter '\(filter)'")
+            let filters = Zcam1CameraFilter.createFilters(from: recipe)
+            currentCustomFilters = filters
+            currentFilterEnum = .normal
+            Zcam1CameraService.shared.setCustomFilters(filters)
+            return
+        }
+
+        // Fall back to built-in preset.
+        print("[Zcam1CameraView] Using built-in filter '\(filter)'")
+        currentCustomFilters = nil
+        currentFilterEnum = Zcam1CameraFilter(from: filter)
+        Zcam1CameraService.shared.setFilter(currentFilterEnum)
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -2410,8 +2481,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         let orientation: UIImage.Orientation = (position.lowercased() == "front") ? .left : .right
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
 
-        // Apply filter if not normal.
-        if currentFilterEnum != .normal {
+        // Apply filter if needed.
+        if let customFilters = currentCustomFilters {
+            displayImage = Zcam1CameraFilter.apply(filters: customFilters, to: displayImage)
+        } else if currentFilterEnum != .normal {
             displayImage = currentFilterEnum.apply(to: displayImage)
         }
 

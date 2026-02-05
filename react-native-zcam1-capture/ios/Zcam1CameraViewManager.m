@@ -45,7 +45,9 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic) CGFloat zoom;                  // 1.0 = no zoom
 // @property (nonatomic) BOOL torch;                    // torch on/off
 // @property (nonatomic) float exposure;               // exposure bias in EV
-// @property (nonatomic, copy) NSString *filter;       // "normal" | "mellow" | "bw" | "nostalgic"
+// @property (nonatomic, copy) NSString *filter;       // "normal" | "mellow" | "bw" | "nostalgic" or custom name
+// @property (nonatomic, copy) NSDictionary *filterOverrides; // custom recipes for built-in presets
+// @property (nonatomic, copy) NSDictionary *customFilters;   // additional custom filters by name
 // @property (nonatomic) BOOL depthEnabled;            // enable depth data at session level (default: NO)
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);
@@ -61,6 +63,22 @@ RCT_CUSTOM_VIEW_PROPERTY(filter, NSString, Zcam1CameraView)
   NSString *filterValue = json ? [RCTConvert NSString:json] : @"normal";
   NSLog(@"[Zcam1CameraViewManager] Setting filter to: %@", filterValue);
   view.filter = filterValue;
+}
+
+// Custom filter recipe overrides for built-in presets.
+RCT_CUSTOM_VIEW_PROPERTY(filterOverrides, NSDictionary, Zcam1CameraView)
+{
+  NSDictionary *overrides = json ? [RCTConvert NSDictionary:json] : nil;
+  NSLog(@"[Zcam1CameraViewManager] Setting filterOverrides: %@", overrides ? @"present" : @"nil");
+  view.filterOverrides = overrides;
+}
+
+// Additional custom filters defined by name.
+RCT_CUSTOM_VIEW_PROPERTY(customFilters, NSDictionary, Zcam1CameraView)
+{
+  NSDictionary *custom = json ? [RCTConvert NSDictionary:json] : nil;
+  NSLog(@"[Zcam1CameraViewManager] Setting customFilters: %@", custom ? @"present" : @"nil");
+  view.customFilters = custom;
 }
 
 @end
