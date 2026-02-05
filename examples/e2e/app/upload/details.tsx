@@ -179,6 +179,12 @@ function PhotoCaptureInfo({ metadata }: { metadata: PhotoMetadataInfo }) {
           <Text style={styles.metadataRow}>
             Pixel format: {metadata.depthData.pixelFormat}
           </Text>
+          {metadata.depthData.convertedFromDisparity &&
+            metadata.depthData.originalPixelFormat && (
+              <Text style={styles.metadataRow}>
+                Original pixel format: {metadata.depthData.originalPixelFormat}
+              </Text>
+            )}
           <Text style={styles.metadataRow}>
             Valid pixel count: {metadata.depthData.statistics.validPixelCount}
           </Text>

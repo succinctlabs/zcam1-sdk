@@ -213,6 +213,9 @@ pub struct DepthData {
     pixel_format: String,
     statistics: DepthDataStatistics,
     accuracy: String,
+    #[serde(default)]
+    converted_from_disparity: bool,
+    original_pixel_format: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
