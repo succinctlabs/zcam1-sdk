@@ -9,6 +9,7 @@
     "dist"
   ],
   "scripts": {
+    "ubrn:web": "ubrn build web --and-generate",
     "build": "vite build",
     "dev": "vite dev",
     "preview": "vite preview",
@@ -27,7 +28,11 @@
   },
   "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
   "dependencies": {
-    "@contentauth/c2pa-web": "^0.5.7"
+    "@contentauth/c2pa-web": "^0.5.7",
+    "@noble/hashes": "^2.0.1",
+    "@scure/base": "^2.0.0",
+    "@succinctlabs/sp1-wasm-verifier": "^5.0.6",
+    "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "devDependencies": {
     "@vitest/browser": "^1.6.1",

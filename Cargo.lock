@@ -9059,6 +9059,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-wasm-bindings"
+version = "0.1.0"
+dependencies = [
+ "zcam1-c2pa-utils",
+]
+
+[[package]]
 name = "zerocopy"
 version = "0.8.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"

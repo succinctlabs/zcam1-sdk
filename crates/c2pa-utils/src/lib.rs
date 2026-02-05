@@ -111,6 +111,13 @@ pub fn compute_hash(path: &str) -> Result<Vec<u8>, C2paError> {
     compute_hash_from_stream(&mut file, file_size, &format)
 }
 
+#[uniffi::export]
+pub fn compute_hash_from_buffer(buffer: Vec<u8>, format: &str) -> Result<Vec<u8>, C2paError> {
+    let stream = Cursor::new(&buffer);
+
+    compute_hash_from_stream(stream, buffer.len(), format)
+}
+
 pub fn compute_hash_from_stream<S: Read + Seek + Send>(
     mut stream: S,
     stream_size: usize,

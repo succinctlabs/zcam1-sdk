@@ -9,6 +9,9 @@ export default defineConfig({
     }),
   ],
   assetsInclude: ["**/*.wasm"],
+  optimizeDeps: {
+    exclude: ["@succinctlabs/sp1-wasm-verifier"],
+  },
   build: {
     lib: {
       entry: "src/index.ts",
