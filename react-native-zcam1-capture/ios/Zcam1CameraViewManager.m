@@ -47,6 +47,7 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic) float exposure;               // exposure bias in EV
 // @property (nonatomic, copy) NSString *filter;       // "normal" | "vivid" | "mono" | "noir" | "warm" | "cool"
 // @property (nonatomic) BOOL depthEnabled;            // enable depth data at session level (default: NO)
+// @property (nonatomic, copy) RCTDirectEventBlock onOrientationChange;  // orientation change callback
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);
 RCT_EXPORT_VIEW_PROPERTY(captureFormat, NSString);
@@ -54,6 +55,7 @@ RCT_EXPORT_VIEW_PROPERTY(zoom, CGFloat);
 RCT_EXPORT_VIEW_PROPERTY(torch, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(exposure, float);
 RCT_EXPORT_VIEW_PROPERTY(depthEnabled, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(onOrientationChange, RCTDirectEventBlock);
 
 // Use custom property setter to ensure the Swift setter is called properly.
 RCT_CUSTOM_VIEW_PROPERTY(filter, NSString, Zcam1CameraView)

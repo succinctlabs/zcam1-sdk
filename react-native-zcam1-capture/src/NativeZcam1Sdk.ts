@@ -154,7 +154,23 @@ export type FlashMode = "off" | "on" | "auto";
 
 export type AspectRatio = "4:3" | "16:9" | "1:1";
 
-export type Orientation = "auto" | "portrait" | "landscape";
+export type Orientation =
+  | "auto"
+  | "portrait"
+  | "landscape"
+  | "landscapeLeft"
+  | "landscapeRight";
+
+/**
+ * Physical device orientation as reported by the accelerometer.
+ * Unlike Orientation (which is a capture setting), this reflects the
+ * actual device position and is emitted via onOrientationChange events.
+ */
+export type DeviceOrientation =
+  | "portrait"
+  | "portraitUpsideDown"
+  | "landscapeLeft"
+  | "landscapeRight";
 
 export interface Spec extends TurboModule {
   /**

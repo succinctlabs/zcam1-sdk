@@ -2428,6 +2428,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
+    /// Callback fired when device physical orientation changes.
+    /// Sends a dictionary with "orientation" key ("portrait", "landscapeLeft", "landscapeRight", "portraitUpsideDown").
+    public var onOrientationChange: (([String: Any]) -> Void)?
+
     // Preview rendering - single UIImageView for all frames (filtered or not)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
@@ -2464,8 +2468,19 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         previewImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(previewImageView)
 
+        // Register for orientation change events from the motion manager.
+        Zcam1MotionManager.shared.addListener { [weak self] orientation in
+            guard let self = self, let callback = self.onOrientationChange else { return }
+            callback(["orientation": orientationToString(orientation)])
+        }
+
         // Configure session and start receiving frames.
         reconfigureSession()
+    }
+
+    deinit {
+        // Clean up motion manager listeners when the view is deallocated.
+        Zcam1MotionManager.shared.removeAllListeners()
     }
 
     public override func layoutSubviews() {
@@ -2506,26 +2521,14 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Create UIImage with correct orientation for display based on device orientation.
-        // Camera sensor buffers always arrive in landscape (native sensor orientation).
-        // We map the detected physical orientation to the correct UIImage.Orientation
-        // so the preview displays correctly regardless of how the device is held.
+        // Create UIImage with fixed portrait orientation for display.
+        // The app UI is portrait-locked, so the preview frame is always taller than wide.
+        // Camera sensor buffers always arrive in landscape (native sensor orientation),
+        // so we always rotate 90° CW (.right) to fit the portrait frame.
+        // Orientation-aware rotation only applies to photo capture and video recording,
+        // NOT to the live preview.
         let isFront = position.lowercased() == "front"
-        let videoOrientation = Zcam1MotionManager.shared.currentOrientation()
-
-        let imageOrientation: UIImage.Orientation
-        switch videoOrientation {
-        case .portrait:
-            imageOrientation = isFront ? .leftMirrored : .right
-        case .portraitUpsideDown:
-            imageOrientation = isFront ? .rightMirrored : .left
-        case .landscapeRight:
-            imageOrientation = isFront ? .downMirrored : .up
-        case .landscapeLeft:
-            imageOrientation = isFront ? .upMirrored : .down
-        @unknown default:
-            imageOrientation = isFront ? .leftMirrored : .right
-        }
+        let imageOrientation: UIImage.Orientation = isFront ? .leftMirrored : .right
 
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 
