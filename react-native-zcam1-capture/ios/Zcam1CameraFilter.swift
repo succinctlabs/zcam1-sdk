@@ -44,19 +44,20 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                 C7Brightness(brightness: -0.1),
             ]
         case .bw:
-            // Muted B&W with slight warm tint (Apple style).
+            // Contrasty B&W with warm tint.
             return [
-                C7Monochrome(intensity: 1.0, color: C7Color(red: 0.95, green: 0.92, blue: 0.88, alpha: 1.0)),
-                C7Contrast(contrast: 1.1),
+                C7Monochrome(intensity: 1.0, color: C7Color(red: 0.6, green: 0.55, blue: 0.5, alpha: 1.0)),
+                C7Contrast(contrast: 1.2),
+                C7Brightness(brightness: -0.1),
             ]
         case .nostalgic:
-            // Kodak Portra 400 style - warm, faded, lifted shadows.
+            // Kodak Magenta Chrome - warm amber, faded, lifted shadows, bright.
+            // Based on Ricoh GR III recipe: CTE + A:12, Sat+1, Contrast-3, Highlight-4, Shadow+4, HighKey+3
             return [
-                C7WhiteBalance(temperature: 6500, tint: 60),
+                C7WhiteBalance(temperature: 7000, tint: 0),
                 C7Saturation(saturation: 1.1),
-                C7Hue(hue: 85),
                 C7Contrast(contrast: 0.7),
-                C7HighlightShadow(highlights: 0.4, shadows: 0.4),
+                C7HighlightShadow(highlights: -0.4, shadows: 0.5),
                 C7Brightness(brightness: 0.15),
             ]
         }
