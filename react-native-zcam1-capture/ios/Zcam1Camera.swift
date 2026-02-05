@@ -15,16 +15,22 @@ import UIKit
 
 // MARK: - Motion Manager (Singleton for orientation detection)
 
-/// Singleton motion manager that provides non-blocking orientation detection.
-/// Uses accelerometer data to determine portrait/landscape for preview.
+/// Singleton motion manager that provides non-blocking 4-way orientation detection.
+/// Uses accelerometer data with a 0.75g threshold (same approach as Signal-iOS)
+/// to determine portrait, portraitUpsideDown, landscapeLeft, and landscapeRight.
+/// Works even when the user has iOS orientation lock enabled.
 @available(iOS 16.0, *)
 final class Zcam1MotionManager {
     static let shared = Zcam1MotionManager()
 
     private let motionManager = CMMotionManager()
     private let queue = OperationQueue()
-    private var cachedOrientation: Zcam1Orientation = .portrait
+    private var cachedOrientation: AVCaptureVideoOrientation = .portrait
     private let lock = NSLock()
+
+    /// Listeners notified on orientation change (called on main thread), keyed by token.
+    private var listeners: [Int: (AVCaptureVideoOrientation) -> Void] = [:]
+    private var nextToken: Int = 0
 
     private init() {
         queue.name = "com.zcam1.motion"
@@ -36,19 +42,48 @@ final class Zcam1MotionManager {
         guard motionManager.isAccelerometerAvailable else { return }
         guard !motionManager.isAccelerometerActive else { return }
 
-        motionManager.accelerometerUpdateInterval = 0.1 // 10 Hz is sufficient
+        // 5 Hz is sufficient for orientation detection (same as Signal).
+        motionManager.accelerometerUpdateInterval = 0.2
         motionManager.startAccelerometerUpdates(to: queue) { [weak self] data, _ in
             guard let self = self, let data = data else { return }
 
+            // Use 0.75g threshold with deadzone to prevent jitter at 45 degrees.
+            // When neither axis exceeds the threshold, keep the current orientation.
             let x = data.acceleration.x
             let y = data.acceleration.y
 
-            // Track simple portrait/landscape for preview
-            let orientation: Zcam1Orientation = abs(x) > abs(y) ? .landscape : .portrait
+            let newOrientation: AVCaptureVideoOrientation?
+            if x >= 0.75 {
+                newOrientation = .landscapeLeft
+            } else if x <= -0.75 {
+                newOrientation = .landscapeRight
+            } else if y <= -0.75 {
+                newOrientation = .portrait
+            } else if y >= 0.75 {
+                newOrientation = .portraitUpsideDown
+            } else {
+                // Ambiguous angle (e.g. 45 degrees) — keep current orientation.
+                newOrientation = nil
+            }
+
+            guard let newOrientation = newOrientation else { return }
 
             self.lock.lock()
-            self.cachedOrientation = orientation
+            let changed = newOrientation != self.cachedOrientation
+            if changed {
+                self.cachedOrientation = newOrientation
+            }
+            let currentListeners = Array(self.listeners.values)
             self.lock.unlock()
+
+            // Notify listeners on main thread when orientation changes.
+            if changed {
+                DispatchQueue.main.async {
+                    for listener in currentListeners {
+                        listener(newOrientation)
+                    }
+                }
+            }
         }
     }
 
@@ -57,12 +92,29 @@ final class Zcam1MotionManager {
         motionManager.stopAccelerometerUpdates()
     }
 
-    /// Get the current orientation (non-blocking, returns cached value).
-    func currentOrientation() -> Zcam1Orientation {
+    /// Get the current orientation as AVCaptureVideoOrientation (non-blocking, cached).
+    func currentOrientation() -> AVCaptureVideoOrientation {
         lock.lock()
         let orientation = cachedOrientation
         lock.unlock()
         return orientation
+    }
+
+    /// Add a listener for orientation changes. Returns a token to remove it later.
+    func addListener(_ listener: @escaping (AVCaptureVideoOrientation) -> Void) -> Int {
+        lock.lock()
+        let token = nextToken
+        nextToken += 1
+        listeners[token] = listener
+        lock.unlock()
+        return token
+    }
+
+    /// Remove a specific listener by its token.
+    func removeListener(_ token: Int) {
+        lock.lock()
+        listeners.removeValue(forKey: token)
+        lock.unlock()
     }
 }
 
@@ -148,15 +200,50 @@ final class Zcam1MotionManager {
         }
     }
 
-    /// Resolve auto orientation using accelerometer data (works with orientation lock).
-    /// Uses the singleton motion manager for non-blocking access.
+    /// Resolve to a concrete AVCaptureVideoOrientation using accelerometer data.
+    /// Works even when the user has iOS orientation lock enabled.
     @available(iOS 16.0, *)
-    func resolve() -> Zcam1Orientation {
-        if self != .auto { return self }
+    func resolveToVideoOrientation() -> AVCaptureVideoOrientation {
+        switch self {
+        case .portrait:
+            return .portrait
+        case .landscape:
+            // Auto-detect left/right from accelerometer.
+            let detected = Zcam1MotionManager.shared.currentOrientation()
+            if detected == .landscapeLeft || detected == .landscapeRight {
+                return detected
+            }
+            // Default to landscapeRight if not currently in landscape.
+            return .landscapeRight
+        case .auto:
+            return Zcam1MotionManager.shared.currentOrientation()
+        }
+    }
+}
 
-        // Use the motion manager's cached orientation (non-blocking).
-        // The motion manager should be started when the camera becomes active.
-        return Zcam1MotionManager.shared.currentOrientation()
+// MARK: - Orientation Helpers
+
+/// Convert AVCaptureVideoOrientation to a JS-friendly string.
+@available(iOS 16.0, *)
+func orientationToString(_ orientation: AVCaptureVideoOrientation) -> String {
+    switch orientation {
+    case .portrait: return "portrait"
+    case .portraitUpsideDown: return "portraitUpsideDown"
+    case .landscapeLeft: return "landscapeLeft"
+    case .landscapeRight: return "landscapeRight"
+    @unknown default: return "portrait"
+    }
+}
+
+/// Convert AVCaptureVideoOrientation to a rotation angle for the video writer transform.
+@available(iOS 16.0, *)
+func videoWriterRotationAngle(for orientation: AVCaptureVideoOrientation) -> CGFloat {
+    switch orientation {
+    case .portrait: return .pi / 2              // 90° CW
+    case .portraitUpsideDown: return -.pi / 2   // 90° CCW
+    case .landscapeRight: return 0              // No rotation (sensor native)
+    case .landscapeLeft: return .pi             // 180°
+    @unknown default: return .pi / 2
     }
 }
 
@@ -536,18 +623,14 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         guard let image = UIImage(data: data),
               let cgImage = image.cgImage else { return data }
 
-        // Check if EXIF orientation will rotate the image 90° (swapping width/height for display)
-        let willSwapDimensions = image.imageOrientation == .left ||
-                                  image.imageOrientation == .right ||
-                                  image.imageOrientation == .leftMirrored ||
-                                  image.imageOrientation == .rightMirrored
-
-        // Calculate if cropping is needed, accounting for EXIF rotation
+        // Calculate if cropping is needed.
+        // The sensor buffer is always landscape (width > height) regardless of capture orientation.
+        // EXIF orientation handles the final display rotation (portrait vs landscape).
+        // So we always crop in landscape pixel space using the inverted portrait ratio.
         let pixelWidth = CGFloat(cgImage.width)
         let pixelHeight = CGFloat(cgImage.height)
         let sourceRatio = pixelWidth / pixelHeight
-        // If dimensions will be swapped on display, we need to invert our target ratio for cropping
-        let targetRatio = willSwapDimensions ? (1.0 / aspectRatio.value) : aspectRatio.value
+        let targetRatio = 1.0 / aspectRatio.value
         let needsCrop = abs(sourceRatio - targetRatio) > 0.01
 
         // If no processing needed, return original
@@ -1573,6 +1656,15 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                         settings.isCameraCalibrationDataDeliveryEnabled = false
                     }
 
+                    // Set the capture connection orientation so EXIF metadata is correct.
+                    // This is the key step that makes landscape photos display correctly.
+                    let resolvedOrientation = orientationEnum.resolveToVideoOrientation()
+                    if let connection = self.photoOutput.connection(with: .video),
+                       connection.isVideoOrientationSupported {
+                        connection.videoOrientation = resolvedOrientation
+                        print("[Zcam1CameraService] takePhoto: set videoOrientation=\(orientationToString(resolvedOrientation))")
+                    }
+
                     // Create delegate to handle capture and keep it alive until completion.
                     print("[Zcam1CameraService] takePhoto: creating PhotoCaptureDelegate...")
                     let delegate = PhotoCaptureDelegate(
@@ -1728,8 +1820,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             )
                             videoInput.expectsMediaDataInRealTime = true
 
-                            // Set video orientation to portrait (rotate 90° from landscape sensor)
-                            videoInput.transform = CGAffineTransform(rotationAngle: .pi / 2)
+                            // Set video orientation based on current physical device orientation.
+                            // The transform is locked at recording start (same as Apple Camera and Signal).
+                            let recordingOrientation = Zcam1MotionManager.shared.currentOrientation()
+                            let rotationAngle = videoWriterRotationAngle(for: recordingOrientation)
+                            videoInput.transform = CGAffineTransform(rotationAngle: rotationAngle)
+                            print("[Zcam1CameraService] video recording orientation: \(orientationToString(recordingOrientation)), angle: \(rotationAngle)")
 
                             guard assetWriter.canAdd(videoInput) else {
                                 throw NSError(
@@ -2324,6 +2420,13 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
+    /// Callback fired when device physical orientation changes.
+    /// Sends a dictionary with "orientation" key ("portrait", "landscapeLeft", "landscapeRight", "portraitUpsideDown").
+    public var onOrientationChange: (([String: Any]) -> Void)?
+
+    /// Token for this view's motion manager listener, used for cleanup in deinit.
+    private var orientationListenerToken: Int?
+
     // Preview rendering - single UIImageView for all frames (filtered or not)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
@@ -2360,8 +2463,21 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         previewImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(previewImageView)
 
+        // Register for orientation change events from the motion manager.
+        orientationListenerToken = Zcam1MotionManager.shared.addListener { [weak self] orientation in
+            guard let self = self, let callback = self.onOrientationChange else { return }
+            callback(["orientation": orientationToString(orientation)])
+        }
+
         // Configure session and start receiving frames.
         reconfigureSession()
+    }
+
+    deinit {
+        // Remove only this view's listener from the motion manager.
+        if let token = orientationListenerToken {
+            Zcam1MotionManager.shared.removeListener(token)
+        }
     }
 
     public override func layoutSubviews() {
@@ -2402,13 +2518,16 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Create UIImage with correct orientation for display.
-        // Camera sensor buffers arrive in landscape orientation (native sensor orientation).
-        // Back camera sensor: landscape-right → use .right (rotate 90° CW for portrait)
-        // Front camera sensor: landscape-left → use .left (rotate 90° CCW for portrait)
-        // Note: Mirroring for front camera is handled via connection.isVideoMirrored.
-        let orientation: UIImage.Orientation = (position.lowercased() == "front") ? .left : .right
-        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+        // Create UIImage with fixed portrait orientation for display.
+        // The app UI is portrait-locked, so the preview frame is always taller than wide.
+        // Camera sensor buffers always arrive in landscape (native sensor orientation),
+        // so we always rotate 90° CW (.right) to fit the portrait frame.
+        // Orientation-aware rotation only applies to photo capture and video recording,
+        // NOT to the live preview.
+        let isFront = position.lowercased() == "front"
+        let imageOrientation: UIImage.Orientation = isFront ? .leftMirrored : .right
+
+        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 
         // Apply filter if not normal.
         if currentFilterEnum != .normal {
