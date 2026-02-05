@@ -627,18 +627,14 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         guard let image = UIImage(data: data),
               let cgImage = image.cgImage else { return data }
 
-        // Check if EXIF orientation will rotate the image 90° (swapping width/height for display)
-        let willSwapDimensions = image.imageOrientation == .left ||
-                                  image.imageOrientation == .right ||
-                                  image.imageOrientation == .leftMirrored ||
-                                  image.imageOrientation == .rightMirrored
-
-        // Calculate if cropping is needed, accounting for EXIF rotation
+        // Calculate if cropping is needed.
+        // The sensor buffer is always landscape (width > height) regardless of capture orientation.
+        // EXIF orientation handles the final display rotation (portrait vs landscape).
+        // So we always crop in landscape pixel space using the inverted portrait ratio.
         let pixelWidth = CGFloat(cgImage.width)
         let pixelHeight = CGFloat(cgImage.height)
         let sourceRatio = pixelWidth / pixelHeight
-        // If dimensions will be swapped on display, we need to invert our target ratio for cropping
-        let targetRatio = willSwapDimensions ? (1.0 / aspectRatio.value) : aspectRatio.value
+        let targetRatio = 1.0 / aspectRatio.value
         let needsCrop = abs(sourceRatio - targetRatio) > 0.01
 
         // If no processing needed, return original
