@@ -127,14 +127,12 @@ type AspectRatio = "4:3" | "16:9" | "1:1"
 Orientation for captured photos and videos. Uses accelerometer-based detection that works even when iOS orientation lock is enabled.
 
 ```tsx
-type Orientation = "auto" | "portrait" | "landscape" | "landscapeLeft" | "landscapeRight"
+type Orientation = "auto" | "portrait" | "landscape"
 ```
 
-- **`auto`** - Automatically determines orientation from the device accelerometer
+- **`auto`** - Automatically determines orientation from the device accelerometer (portrait or landscape depending on how the device is held)
 - **`portrait`** - Force portrait orientation
-- **`landscape`** - Force landscape, auto-detecting left or right from the accelerometer
-- **`landscapeLeft`** - Force landscape with home button on the left
-- **`landscapeRight`** - Force landscape with home button on the right
+- **`landscape`** - Force landscape orientation (auto-detects left/right from the accelerometer)
 
 **Used by:**
 - [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`

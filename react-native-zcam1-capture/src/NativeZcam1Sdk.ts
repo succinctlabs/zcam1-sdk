@@ -154,12 +154,7 @@ export type FlashMode = "off" | "on" | "auto";
 
 export type AspectRatio = "4:3" | "16:9" | "1:1";
 
-export type Orientation =
-  | "auto"
-  | "portrait"
-  | "landscape"
-  | "landscapeLeft"
-  | "landscapeRight";
+export type Orientation = "auto" | "portrait" | "landscape";
 
 /**
  * Physical device orientation as reported by the accelerometer.

@@ -28,8 +28,9 @@ final class Zcam1MotionManager {
     private var cachedOrientation: AVCaptureVideoOrientation = .portrait
     private let lock = NSLock()
 
-    /// Listeners notified on orientation change (called on main thread).
-    private var listeners: [(AVCaptureVideoOrientation) -> Void] = []
+    /// Listeners notified on orientation change (called on main thread), keyed by token.
+    private var listeners: [Int: (AVCaptureVideoOrientation) -> Void] = [:]
+    private var nextToken: Int = 0
 
     private init() {
         queue.name = "com.zcam1.motion"
@@ -72,7 +73,7 @@ final class Zcam1MotionManager {
             if changed {
                 self.cachedOrientation = newOrientation
             }
-            let currentListeners = self.listeners
+            let currentListeners = Array(self.listeners.values)
             self.lock.unlock()
 
             // Notify listeners on main thread when orientation changes.
@@ -99,17 +100,20 @@ final class Zcam1MotionManager {
         return orientation
     }
 
-    /// Add a listener for orientation changes. Called on main thread.
-    func addListener(_ listener: @escaping (AVCaptureVideoOrientation) -> Void) {
+    /// Add a listener for orientation changes. Returns a token to remove it later.
+    func addListener(_ listener: @escaping (AVCaptureVideoOrientation) -> Void) -> Int {
         lock.lock()
-        listeners.append(listener)
+        let token = nextToken
+        nextToken += 1
+        listeners[token] = listener
         lock.unlock()
+        return token
     }
 
-    /// Remove all listeners.
-    func removeAllListeners() {
+    /// Remove a specific listener by its token.
+    func removeListener(_ token: Int) {
         lock.lock()
-        listeners.removeAll()
+        listeners.removeValue(forKey: token)
         lock.unlock()
     }
 }
@@ -186,16 +190,12 @@ final class Zcam1MotionManager {
 @objc public enum Zcam1Orientation: Int {
     case auto = 0
     case portrait = 1
-    case landscape = 2          // Auto-detect left/right via accelerometer.
-    case landscapeLeft = 3      // Force landscape left.
-    case landscapeRight = 4     // Force landscape right.
+    case landscape = 2
 
     init(from string: String?) {
         switch string?.lowercased() {
         case "portrait": self = .portrait
         case "landscape": self = .landscape
-        case "landscapeleft": self = .landscapeLeft
-        case "landscaperight": self = .landscapeRight
         default: self = .auto
         }
     }
@@ -207,10 +207,6 @@ final class Zcam1MotionManager {
         switch self {
         case .portrait:
             return .portrait
-        case .landscapeLeft:
-            return .landscapeLeft
-        case .landscapeRight:
-            return .landscapeRight
         case .landscape:
             // Auto-detect left/right from accelerometer.
             let detected = Zcam1MotionManager.shared.currentOrientation()
@@ -2428,6 +2424,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// Sends a dictionary with "orientation" key ("portrait", "landscapeLeft", "landscapeRight", "portraitUpsideDown").
     public var onOrientationChange: (([String: Any]) -> Void)?
 
+    /// Token for this view's motion manager listener, used for cleanup in deinit.
+    private var orientationListenerToken: Int?
+
     // Preview rendering - single UIImageView for all frames (filtered or not)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
@@ -2465,7 +2464,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         addSubview(previewImageView)
 
         // Register for orientation change events from the motion manager.
-        Zcam1MotionManager.shared.addListener { [weak self] orientation in
+        orientationListenerToken = Zcam1MotionManager.shared.addListener { [weak self] orientation in
             guard let self = self, let callback = self.onOrientationChange else { return }
             callback(["orientation": orientationToString(orientation)])
         }
@@ -2475,8 +2474,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     }
 
     deinit {
-        // Clean up motion manager listeners when the view is deallocated.
-        Zcam1MotionManager.shared.removeAllListeners()
+        // Remove only this view's listener from the motion manager.
+        if let token = orientationListenerToken {
+            Zcam1MotionManager.shared.removeListener(token)
+        }
     }
 
     public override func layoutSubviews() {
