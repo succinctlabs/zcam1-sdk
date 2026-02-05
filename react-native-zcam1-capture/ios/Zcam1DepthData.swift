@@ -27,7 +27,21 @@ public class Zcam1DepthDataProcessor {
 
     /// Process AVDepthData and return a dictionary with depth information.
     public static func processDepthData(_ depthData: AVDepthData) -> [String: Any] {
-        let depthDataMap = depthData.depthDataMap
+        var workingDepthData = depthData
+        let depthDataType = depthData.depthDataType
+
+        // Convert disparity to depth if needed.
+        let isDisparity =
+            depthDataType == kCVPixelFormatType_DisparityFloat32
+            || depthDataType == kCVPixelFormatType_DisparityFloat16
+
+        if isDisparity {
+            workingDepthData = depthData.converting(
+                toDepthDataType: kCVPixelFormatType_DepthFloat32
+            )
+        }
+
+        let depthDataMap = workingDepthData.depthDataMap
 
         // Get depth data dimensions
         let width = CVPixelBufferGetWidth(depthDataMap)
@@ -43,7 +57,7 @@ public class Zcam1DepthDataProcessor {
         // Get accuracy if available (iOS 14.1+)
         var accuracyString = "relative"
         if #available(iOS 14.1, *) {
-            switch depthData.depthDataAccuracy {
+            switch workingDepthData.depthDataAccuracy {
             case .relative:
                 accuracyString = "relative"
             case .absolute:
@@ -60,6 +74,11 @@ public class Zcam1DepthDataProcessor {
             "statistics": statistics,
             "accuracy": accuracyString,
         ]
+
+        if isDisparity {
+            result["convertedFromDisparity"] = true
+            result["originalPixelFormat"] = pixelFormatTypeToString(depthDataType)
+        }
 
         return result
     }
@@ -223,195 +242,4 @@ public class Zcam1DepthDataProcessor {
             return "unknown"
         }
     }
-
-    /// Encode depth data as a grayscale image for visualization.
-    ///
-    /// The output is encoded to match Google's GDepth `RangeInverse` convention:
-    /// values are higher (brighter) for nearer pixels and lower (darker) for farther pixels.
-    public static func encodeDepthDataAsImage(
-        depthData: AVDepthData
-    ) -> UIImage? {
-        let depthDataMap = depthData.depthDataMap
-        let width = CVPixelBufferGetWidth(depthDataMap)
-        let height = CVPixelBufferGetHeight(depthDataMap)
-
-        CVPixelBufferLockBaseAddress(depthDataMap, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(depthDataMap, .readOnly) }
-
-        guard let baseAddress = CVPixelBufferGetBaseAddress(depthDataMap) else {
-            return nil
-        }
-
-        let pixelFormatType = CVPixelBufferGetPixelFormatType(depthDataMap)
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(depthDataMap)
-
-        // Extract depth values and find their range
-        var depthValues: [Float] = []
-        depthValues.reserveCapacity(width * height)
-        var minDepth: Float = .infinity
-        var maxDepth: Float = -.infinity
-
-        switch pixelFormatType {
-        case kCVPixelFormatType_DepthFloat32, kCVPixelFormatType_DisparityFloat32:
-            let floatBuffer = baseAddress.assumingMemoryBound(to: Float32.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float32>.stride) + x
-                    let value = floatBuffer[offset]
-                    if !value.isNaN && !value.isInfinite {
-                        depthValues.append(value)
-                        // Ignore non-positive values when establishing near/far planes,
-                        // since RangeInverse uses 1/depth.
-                        if value > 0 {
-                            minDepth = min(minDepth, value)
-                            maxDepth = max(maxDepth, value)
-                        }
-                    }
-                }
-            }
-
-        case kCVPixelFormatType_DepthFloat16, kCVPixelFormatType_DisparityFloat16:
-            let float16Buffer = baseAddress.assumingMemoryBound(to: Float16.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float16>.stride) + x
-                    let value = Float(float16Buffer[offset])
-                    if !value.isNaN && !value.isInfinite {
-                        depthValues.append(value)
-                        // Ignore non-positive values when establishing near/far planes,
-                        // since RangeInverse uses 1/depth.
-                        if value > 0 {
-                            minDepth = min(minDepth, value)
-                            maxDepth = max(maxDepth, value)
-                        }
-                    }
-                }
-            }
-
-        default:
-            return nil
-        }
-
-        // Create grayscale image from normalized depth data
-        guard !depthValues.isEmpty else { return nil }
-
-        // If we never saw any positive finite values, near/far planes are not usable.
-        if !minDepth.isFinite || !maxDepth.isFinite || minDepth <= 0 || maxDepth <= 0 {
-            minDepth = 0
-            maxDepth = 0
-        }
-
-        let depthRange = maxDepth - minDepth
-        var pixelData = [UInt8]()
-        pixelData.reserveCapacity(width * height)
-
-        switch pixelFormatType {
-        case kCVPixelFormatType_DepthFloat32, kCVPixelFormatType_DisparityFloat32:
-            let floatBuffer = baseAddress.assumingMemoryBound(to: Float32.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float32>.stride) + x
-                    let value = floatBuffer[offset]
-                    if value.isNaN || value.isInfinite || value <= 0 {
-                        pixelData.append(0)
-                        continue
-                    }
-
-                    // RangeInverse: normalize in inverse-depth space (1/z), so nearer pixels are brighter.
-                    let normalized: Float
-                    if depthRange > 0, minDepth > 0, maxDepth > 0 {
-                        let inv = 1.0 / value
-                        let invNear = 1.0 / minDepth
-                        let invFar = 1.0 / maxDepth
-                        let invRange = invNear - invFar
-
-                        if inv.isFinite, invNear.isFinite, invFar.isFinite, invRange != 0 {
-                            normalized = (inv - invFar) / invRange
-                        } else {
-                            normalized = 0
-                        }
-                    } else {
-                        normalized = 0
-                    }
-
-                    if !normalized.isFinite {
-                        pixelData.append(0)
-                    } else {
-                        let clamped = max(0, min(1, normalized))
-                        pixelData.append(UInt8(max(0, min(255, clamped * 255))))
-                    }
-                }
-            }
-
-        case kCVPixelFormatType_DepthFloat16, kCVPixelFormatType_DisparityFloat16:
-            let float16Buffer = baseAddress.assumingMemoryBound(to: Float16.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let offset = y * (bytesPerRow / MemoryLayout<Float16>.stride) + x
-                    let value = Float(float16Buffer[offset])
-                    if value.isNaN || value.isInfinite || value <= 0 {
-                        pixelData.append(0)
-                        continue
-                    }
-
-                    // RangeInverse: normalize in inverse-depth space (1/z), so nearer pixels are brighter.
-                    let normalized: Float
-                    if depthRange > 0, minDepth > 0, maxDepth > 0 {
-                        let inv = 1.0 / value
-                        let invNear = 1.0 / minDepth
-                        let invFar = 1.0 / maxDepth
-                        let invRange = invNear - invFar
-
-                        if inv.isFinite, invNear.isFinite, invFar.isFinite, invRange != 0 {
-                            normalized = (inv - invFar) / invRange
-                        } else {
-                            normalized = 0
-                        }
-                    } else {
-                        normalized = 0
-                    }
-
-                    if !normalized.isFinite {
-                        pixelData.append(0)
-                    } else {
-                        let clamped = max(0, min(1, normalized))
-                        pixelData.append(UInt8(max(0, min(255, clamped * 255))))
-                    }
-                }
-            }
-
-        default:
-            return nil
-        }
-
-        // Create CGImage from pixel data
-        guard
-            let provider = CGDataProvider(
-                data: NSData(bytes: pixelData, length: pixelData.count))
-        else {
-            return nil
-        }
-
-        let colorSpace = CGColorSpaceCreateDeviceGray()
-        guard
-            let cgImage = CGImage(
-                width: width,
-                height: height,
-                bitsPerComponent: 8,
-                bitsPerPixel: 8,
-                bytesPerRow: width,
-                space: colorSpace,
-                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
-                provider: provider,
-                decode: nil,
-                shouldInterpolate: false,
-                intent: .defaultIntent
-            )
-        else {
-            return nil
-        }
-
-        return UIImage(cgImage: cgImage)
-    }
-
 }
