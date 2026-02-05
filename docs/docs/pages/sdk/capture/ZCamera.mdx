@@ -78,12 +78,54 @@ Whether torch (flashlight) is enabled during preview.
 
 Exposure compensation in EV units.
 
-### filter
+### filmStyle
 
-- **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter)
+- **Type:** [`CameraFilmStyle`](/sdk/capture/types#camerafilmstyle) | `string`
 - **Default:** `"normal"`
 
-Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vivid"`, `"warm"`, `"cool"`.
+Film style preset to apply to camera. You can specify a built-in option or a custom film style you defined in `customFilmStyles`.
+
+### filmStyleOverrides
+
+- **Type:** `Partial<Record<CameraFilmStyle, FilmStyleRecipe>>`
+- **Optional**
+
+Override built-in film style presets with custom recipes. When a preset name is used with `filmStyle` prop and an override exists, the custom recipe is applied instead.
+
+```tsx
+<ZCamera
+  filmStyle="mellow"
+  filmStyleOverrides={{
+    mellow: [
+      { type: "whiteBalance", config: { temperature: 7000, tint: 30 } },
+      { type: "saturation", value: 1.3 },
+      { type: "contrast", value: 0.85 },
+    ]
+  }}
+/>
+```
+
+### customFilmStyles
+
+- **Type:** `Record<string, FilmStyleRecipe>`
+- **Optional**
+
+Define additional custom film styles by name. Reference them using the `filmStyle` prop.
+
+```tsx
+<ZCamera
+  filmStyle={"myVintage" as CameraFilmStyle}
+  customFilmStyles={{
+    myVintage: [
+      { type: "whiteBalance", config: { temperature: 6800 } },
+      { type: "vibrance", value: 0.6 },
+      { type: "highlightShadow", config: { highlights: 0.2, shadows: 0.5 } },
+    ]
+  }}
+/>
+```
+
+See [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) for all available effect types.
 
 ### depthEnabled
 
@@ -271,7 +313,7 @@ export function CaptureScreen() {
         ref={camera} 
         captureInfo={captureInfo} 
         style={styles.camera}
-        filter="vivid"
+        filmStyle="mellow"
         zoom={2.0}
       />
       <View style={styles.controls}>

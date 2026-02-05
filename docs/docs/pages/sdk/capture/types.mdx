@@ -78,21 +78,89 @@ type TakePhotoOptions = {
 
 ---
 
-## CameraFilter
+## CameraFilmStyle
 
-Filter preset for camera preview and captured photos.
+Film style preset for camera.
 
 ```tsx
-type CameraFilter = "normal" | "vivid" | "warm" | "cool"
+type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw"
 ```
 
-- **`normal`** - No filter (default)
-- **`vivid`** - Enhanced saturation and vibrance
-- **`warm`** - Warmer color temperature (orange/yellow tones)
-- **`cool`** - Cooler color temperature (blue tones)
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filmStyle` prop
+
+---
+
+## FilmStyleEffect
+
+Individual film style effect that can be combined into a custom recipe.
+
+```tsx
+type FilmStyleEffect =
+  | { type: "whiteBalance"; config: WhiteBalanceConfig }
+  | { type: "saturation"; value: number }
+  | { type: "contrast"; value: number }
+  | { type: "brightness"; value: number }
+  | { type: "hue"; value: number }
+  | { type: "vibrance"; value: number }
+  | { type: "highlightShadow"; config: HighlightShadowConfig }
+  | { type: "monochrome"; config: MonochromeConfig }
+```
 
 **Used by:**
-- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop
+- [`FilmStyleRecipe`](#filmstylerecipe) - Array of effects
+
+---
+
+## FilmStyleRecipe
+
+An ordered array of film style effects applied sequentially to produce the final look.
+
+```tsx
+type FilmStyleRecipe = FilmStyleEffect[]
+```
+
+**Used by:**
+- [`ZCamera`](/sdk/capture/ZCamera) - In `filmStyleOverrides` and `customFilmStyles` props
+
+---
+
+## WhiteBalanceConfig
+
+Configuration for white balance adjustment.
+
+```tsx
+type WhiteBalanceConfig = {
+  temperature: number;  // Color temperature in Kelvin (e.g., 5500 daylight, 6500 cloudy)
+  tint?: number;        // Tint adjustment (-100 to 100, green to magenta). Default: 0
+}
+```
+
+---
+
+## HighlightShadowConfig
+
+Configuration for highlight and shadow adjustments.
+
+```tsx
+type HighlightShadowConfig = {
+  highlights: number;  // Highlight adjustment (0 = no change, negative = reduce, positive = boost)
+  shadows: number;     // Shadow adjustment (0 = no change, positive = lift shadows)
+}
+```
+
+---
+
+## MonochromeConfig
+
+Configuration for monochrome (black & white) film style.
+
+```tsx
+type MonochromeConfig = {
+  intensity: number;                            // 0 = none, 1 = full B&W
+  color?: { r: number; g: number; b: number };  // Optional tint color (0-1 range)
+}
+```
 
 ---
 

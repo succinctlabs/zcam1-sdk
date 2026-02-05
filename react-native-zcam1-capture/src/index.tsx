@@ -17,7 +17,15 @@ export {
 /**
  * Camera component for capturing photos with secure enclave integration.
  */
-export { ZCamera, type CameraFilter } from "./camera";
+export {
+  ZCamera,
+  type CameraFilmStyle,
+  type FilmStyleEffect,
+  type FilmStyleRecipe,
+  type WhiteBalanceConfig,
+  type HighlightShadowConfig,
+  type MonochromeConfig,
+} from "./camera";
 
 import NativeZcam1Sdk from "./NativeZcam1Sdk";
 

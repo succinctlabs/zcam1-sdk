@@ -37,13 +37,90 @@ export const CERT_KEY_TAG = "CERT_KEY_TAG";
 export type CaptureFormat = "jpeg" | "dng";
 
 /**
- * Camera filter presets.
- * - "normal": No filter (default)
- * - "vivid": Enhanced saturation and vibrance
- * - "warm": Warmer color temperature (orange/yellow tones)
- * - "cool": Cooler color temperature (blue tones)
+ * Camera film style presets.
+ * - "normal": No film style (default)
+ * - "mellow": Negative Film Gold style - warm, saturated, lifted shadows
+ * - "nostalgic": Kodak Portra 400 style - warm amber, faded, bright
+ * - "bw": Contrasty B&W with warm tint
  */
-export type CameraFilter = "normal" | "vivid" | "warm" | "cool";
+export type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom Film Style Recipe Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** White balance adjustment configuration. */
+export type WhiteBalanceConfig = {
+  /** Color temperature in Kelvin (e.g., 5500 for daylight, 6500 for cloudy). */
+  temperature: number;
+  /** Tint adjustment (-100 to 100, green to magenta). Defaults to 0. */
+  tint?: number;
+};
+
+/** Highlight and shadow adjustment configuration. */
+export type HighlightShadowConfig = {
+  /** Highlight adjustment (0 = no change, negative = reduce, positive = boost). */
+  highlights: number;
+  /** Shadow adjustment (0 = no change, positive = lift shadows). */
+  shadows: number;
+};
+
+/** Monochrome (black & white) film style configuration. */
+export type MonochromeConfig = {
+  /** Intensity of the monochrome effect (0 = none, 1 = full B&W). */
+  intensity: number;
+  /** Optional tint color for the monochrome effect. */
+  color?: { r: number; g: number; b: number };
+};
+
+/**
+ * Individual film style effect that can be combined into a recipe.
+ * Effects are applied in the order they appear in the recipe array.
+ */
+export type FilmStyleEffect =
+  | { type: "whiteBalance"; config: WhiteBalanceConfig }
+  | { type: "saturation"; value: number }
+  | { type: "contrast"; value: number }
+  | { type: "brightness"; value: number }
+  | { type: "hue"; value: number }
+  | { type: "vibrance"; value: number }
+  | { type: "highlightShadow"; config: HighlightShadowConfig }
+  | { type: "monochrome"; config: MonochromeConfig };
+
+/**
+ * A film style recipe is an ordered array of film style effects.
+ * Effects are applied sequentially to produce the final look.
+ */
+export type FilmStyleRecipe = FilmStyleEffect[];
+
+/**
+ * Default film style recipes for built-in presets.
+ */
+const DEFAULT_FILM_STYLE_RECIPES: Record<CameraFilmStyle, FilmStyleRecipe> = {
+  normal: [],
+  // Mellow: Negative Film Gold - warm amber/magenta, saturated, lifted shadows.
+  mellow: [
+    { type: "whiteBalance", config: { temperature: 6900, tint: 40 } },
+    { type: "saturation", value: 1.4 },
+    { type: "contrast", value: 0.8 },
+    { type: "brightness", value: -0.1 },
+    { type: "highlightShadow", config: { highlights: 0, shadows: 0.4 } },
+  ],
+  // Nostalgic: Kodak Portra 400 - warm amber, faded, lifted shadows, bright.
+  nostalgic: [
+    { type: "whiteBalance", config: { temperature: 7000, tint: 0 } },
+    { type: "saturation", value: 1.1 },
+    { type: "contrast", value: 0.7 },
+    { type: "brightness", value: 0.15 },
+    { type: "highlightShadow", config: { highlights: -0.4, shadows: 0.5 } },
+  ],
+  // B&W: Contrasty black and white with subtle warm tint.
+  bw: [
+    { type: "monochrome", config: { intensity: 1.0, color: { r: 0.6, g: 0.55, b: 0.5 } } },
+    { type: "contrast", value: 1.2 },
+    { type: "brightness", value: -0.1 },
+  ],
+};
 
 export interface ZCameraProps {
   /** Which camera to use. Defaults to "back". */
@@ -62,8 +139,19 @@ export interface ZCameraProps {
   torch?: boolean;
   /** Exposure compensation in EV units. Defaults to 0. */
   exposure?: number;
-  /** Filter preset to apply to preview and captured photos. Defaults to "normal". */
-  filter?: CameraFilter;
+  /** Film style preset to apply to preview and captured photos. Defaults to "normal". */
+  filmStyle?: CameraFilmStyle;
+  /**
+   * Override built-in film style presets with custom recipes.
+   * When a preset name is used with `filmStyle` prop and an override exists,
+   * the custom recipe is applied instead of the built-in preset.
+   */
+  filmStyleOverrides?: Partial<Record<CameraFilmStyle, FilmStyleRecipe>>;
+  /**
+   * Define additional custom film styles referenced by name.
+   * Use with `filmStyle` prop by casting the custom name: `filmStyle={"myStyle" as CameraFilmStyle}`.
+   */
+  customFilmStyles?: Record<string, FilmStyleRecipe>;
   /**
    * Enable depth data capture at session level.
    * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
@@ -112,7 +200,9 @@ type NativeCameraViewProps = {
   zoom?: number;
   torch?: boolean;
   exposure?: number;
-  filter?: CameraFilter;
+  filmStyle?: CameraFilmStyle;
+  filmStyleOverrides?: Record<string, FilmStyleEffect[]>;
+  customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
   onOrientationChange?: (event: { nativeEvent: { orientation: string } }) => void;
 };
@@ -461,11 +551,19 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       zoom = position === "front" ? 1.0 : 2.0,
       torch = false,
       exposure = 0,
-      filter = "normal",
+      filmStyle = "normal",
+      filmStyleOverrides,
+      customFilmStyles,
       depthEnabled = false,
       onOrientationChange,
       style,
     } = this.props;
+
+    // Merge default recipes with user overrides (user overrides take precedence).
+    const mergedFilmStyleOverrides = {
+      ...DEFAULT_FILM_STYLE_RECIPES,
+      ...filmStyleOverrides,
+    };
 
     return (
       <Zcam1CameraView
@@ -477,7 +575,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         zoom={zoom}
         torch={torch}
         exposure={exposure}
-        filter={filter}
+        filmStyle={filmStyle}
+        filmStyleOverrides={mergedFilmStyleOverrides}
+        customFilmStyles={customFilmStyles}
         depthEnabled={depthEnabled}
         onOrientationChange={
           onOrientationChange
