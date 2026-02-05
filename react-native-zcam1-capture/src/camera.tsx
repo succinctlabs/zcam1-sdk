@@ -21,6 +21,7 @@ import NativeZcam1Sdk, {
   type FlashMode,
   type AspectRatio,
   type Orientation,
+  type DeviceOrientation,
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Sdk";
@@ -159,6 +160,12 @@ export interface ZCameraProps {
    * @default false
    */
   depthEnabled?: boolean;
+  /**
+   * Callback fired when the device physical orientation changes.
+   * Uses accelerometer data to detect orientation even when iOS orientation lock is enabled.
+   * @param orientation The new physical orientation of the device.
+   */
+  onOrientationChange?: (orientation: DeviceOrientation) => void;
   /** Capture information used to generate C2PA bindings for each photo. */
   captureInfo: CaptureInfo;
   /** Optional certificate chain used to sign the C2PA manifest. */
@@ -197,6 +204,7 @@ type NativeCameraViewProps = {
   filmStyleOverrides?: Record<string, FilmStyleEffect[]>;
   customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
+  onOrientationChange?: (event: { nativeEvent: { orientation: string } }) => void;
 };
 
 /**
@@ -547,6 +555,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       filmStyleOverrides,
       customFilmStyles,
       depthEnabled = false,
+      onOrientationChange,
       style,
     } = this.props;
 
@@ -570,6 +579,14 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         filmStyleOverrides={mergedFilmStyleOverrides}
         customFilmStyles={customFilmStyles}
         depthEnabled={depthEnabled}
+        onOrientationChange={
+          onOrientationChange
+            ? (event) =>
+                onOrientationChange(
+                  event.nativeEvent.orientation as DeviceOrientation,
+                )
+            : undefined
+        }
       />
     );
   }

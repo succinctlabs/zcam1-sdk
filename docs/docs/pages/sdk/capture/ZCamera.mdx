@@ -134,6 +134,25 @@ See [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) for all available ef
 
 Enable depth data capture at session level. When `true`, depth data can be captured but zoom may be restricted on dual-camera devices.
 
+### onOrientationChange
+
+- **Type:** `(orientation: DeviceOrientation) => void`
+- **Optional**
+
+Callback fired when the device physical orientation changes. Uses accelerometer data, so it works even when iOS orientation lock is enabled. Useful for rotating UI controls to match the device orientation.
+
+```tsx
+<ZCamera
+  captureInfo={captureInfo}
+  onOrientationChange={(orientation) => {
+    // orientation: "portrait" | "landscapeLeft" | "landscapeRight" | "portraitUpsideDown"
+    console.log("Device orientation:", orientation);
+  }}
+/>
+```
+
+See [`DeviceOrientation`](/sdk/capture/types#deviceorientation) for the type definition.
+
 ### certChain
 
 - **Type:** [`SelfSignedCertChain`](/sdk/capture/types#selfsignedcertchain) | [`ExistingCertChain`](/sdk/capture/types#existingcertchain)

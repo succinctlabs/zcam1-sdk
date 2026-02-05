@@ -1,4 +1,4 @@
-use zcam1_verifier::ios::verify_proof;
+use zcam1_verify_utils::ios::verify_proof;
 
 const IMAGE_WITH_VALID_PROOF: &str = "./tests/fixtures/with_proof.jpg";
 

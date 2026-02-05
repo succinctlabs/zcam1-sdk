@@ -1,14 +1,18 @@
 [package]
-name = "zcam1-verifier"
+name = "zcam1-verify-utils"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 # Members
-zcam1-c2pa-utils = { workspace = true, features = ["io"] }
+zcam1-c2pa-utils = { workspace = true }
 
 # sp1
 sp1-verifier.workspace = true
 
 base64ct.workspace = true
 thiserror.workspace = true
+
+[features]
+default = ["io"]
+io = ["zcam1-c2pa-utils/io"]

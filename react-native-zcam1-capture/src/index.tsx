@@ -45,6 +45,7 @@ export {
   type FlashMode,
   type AspectRatio,
   type Orientation,
+  type DeviceOrientation,
 } from "./NativeZcam1Sdk";
 
 /**
