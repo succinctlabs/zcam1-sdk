@@ -29,42 +29,6 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         }
     }
 
-    /// Returns an array of Harbeth filters to apply for this preset.
-    func createFilters() -> [C7FilterProtocol] {
-        let filters: [C7FilterProtocol]
-        switch self {
-        case .normal:
-            filters = []
-        case .mellow:
-            // Negative Film Gold style - warm, saturated, lifted shadows.
-            filters = [
-                C7WhiteBalance(temperature: 6900, tint: 40),
-                C7Saturation(saturation: 1.4),
-                C7Contrast(contrast: 0.8),
-                C7Brightness(brightness: -0.1),
-                C7HighlightShadow(highlights: 0.0, shadows: 0.4),
-            ]
-        case .bw:
-            // Contrasty B&W with warm tint.
-            filters = [
-                C7Monochrome(intensity: 1.0, color: C7Color(red: 0.6, green: 0.55, blue: 0.5, alpha: 1.0)),
-                C7Contrast(contrast: 1.2),
-                C7Brightness(brightness: -0.1),
-            ]
-        case .nostalgic:
-            // Kodak Portra 400 - warm amber, faded, lifted shadows, bright.
-            // Based on Ricoh GR III recipe: CTE + A:12, Sat+1, Contrast-3, Highlight-4, Shadow+4, HighKey+3
-            filters = [
-                C7WhiteBalance(temperature: 7000, tint: 0),
-                C7Saturation(saturation: 1.1),
-                C7Contrast(contrast: 0.7),
-                C7Brightness(brightness: 0.15),
-                C7HighlightShadow(highlights: -0.4, shadows: 0.5),
-            ]
-        }
-        return filters
-    }
-
     // MARK: - Custom Filter Recipe Parser
 
     /// Parse a filter recipe from JavaScript into Harbeth filters.
@@ -143,42 +107,5 @@ public enum Zcam1CameraFilter: String, CaseIterable {
             }
         }
         return result
-    }
-
-    /// Apply this filter preset to a UIImage and return the filtered result.
-    func apply(to image: UIImage) -> UIImage {
-        guard self != .normal else {
-            return image
-        }
-
-        let filters = createFilters()
-        guard !filters.isEmpty else {
-            print("[Zcam1CameraFilter] No filters to apply for \(self)")
-            return image
-        }
-
-        var result = image
-        for filter in filters {
-            do {
-                result = try result.make(filter: filter)
-            } catch {
-                print("[Zcam1CameraFilter] Failed to apply filter: \(error)")
-            }
-        }
-        return result
-    }
-
-    /// Apply this filter preset to image data and return filtered JPEG data.
-    func apply(toData data: Data, compressionQuality: CGFloat = 0.9) -> Data? {
-        guard self != .normal else {
-            return data
-        }
-
-        guard let inputImage = UIImage(data: data) else {
-            return data
-        }
-
-        let filteredImage = apply(to: inputImage)
-        return filteredImage.jpegData(compressionQuality: compressionQuality)
     }
 }

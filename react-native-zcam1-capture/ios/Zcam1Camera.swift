@@ -545,7 +545,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         aspectRatio: Zcam1AspectRatio,
         compressionQuality: CGFloat = 0.95
     ) -> Data? {
-        let needsFilter = currentFilter != .normal || customFilterChain != nil
+        let needsFilter = customFilterChain != nil
 
         guard let image = UIImage(data: data),
               let cgImage = image.cgImage else { return data }
@@ -578,14 +578,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
         // Apply filter if needed, preserving original orientation.
         var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: image.imageOrientation)
-        if needsFilter {
-            if let customFilters = customFilterChain {
-                // Apply custom filter chain.
-                finalImage = Zcam1CameraFilter.apply(filters: customFilters, to: finalImage)
-            } else {
-                // Apply built-in preset.
-                finalImage = currentFilter.apply(to: finalImage)
-            }
+        if let customFilters = customFilterChain {
+            finalImage = Zcam1CameraFilter.apply(filters: customFilters, to: finalImage)
         }
 
         return encodeJPEGWithMetadata(finalImage, metadata: metadata, compressionQuality: compressionQuality)
@@ -2433,19 +2427,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Fall back to built-in preset.
-        // Use same code path as overrides for consistency.
-        let presetEnum = Zcam1CameraFilter(from: filter)
-        if presetEnum == .normal {
-            currentCustomFilters = nil
-            currentFilterEnum = .normal
-            Zcam1CameraService.shared.setFilter(.normal)
-        } else {
-            let filters = presetEnum.createFilters()
-            currentCustomFilters = filters
-            currentFilterEnum = .normal
-            Zcam1CameraService.shared.setCustomFilters(filters)
-        }
+        // Fall back to no filter (JS SDK provides all built-in recipes via filterOverrides).
+        currentCustomFilters = nil
+        currentFilterEnum = .normal
+        Zcam1CameraService.shared.setFilter(.normal)
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -2492,8 +2477,6 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         // Apply filter if needed.
         if let customFilters = currentCustomFilters {
             displayImage = Zcam1CameraFilter.apply(filters: customFilters, to: displayImage)
-        } else if currentFilterEnum != .normal {
-            displayImage = currentFilterEnum.apply(to: displayImage)
         }
 
         // Update UI on main thread, but double-check we're not reconfiguring.
