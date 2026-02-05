@@ -2675,14 +2675,14 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Create UIImage with correct orientation for display.
-        // Camera sensor buffers arrive in landscape orientation (native sensor orientation).
-        // Back camera sensor: landscape-right → use .right (rotate 90° CW for portrait)
-        // Front camera sensor: landscape-left → use .left (rotate 90° CCW for portrait)
-        // Note: Mirroring for front camera is already handled via connection.isVideoMirrored,
-        // so we use .left (not .leftMirrored) to avoid double-mirroring.
+        // Create UIImage with fixed portrait orientation for display.
+        // The app UI is portrait-locked, so the preview frame is always taller than wide.
+        // Camera sensor buffers always arrive in landscape (native sensor orientation),
+        // so we always rotate 90° CW (.right) to fit the portrait frame.
+        // Orientation-aware rotation only applies to photo capture and video recording,
+        // NOT to the live preview.
         let isFront = position.lowercased() == "front"
-        let imageOrientation: UIImage.Orientation = isFront ? .left : .right
+        let imageOrientation: UIImage.Orientation = isFront ? .leftMirrored : .right
 
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 

@@ -93,14 +93,10 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
     }
 
     /// Apply an array of film style effects to a UIImage.
-    /// Preserves the original image orientation through the filter chain.
     static func apply(filmStyles: [C7FilterProtocol], to image: UIImage) -> UIImage {
         guard !filmStyles.isEmpty else {
             return image
         }
-
-        // Store original orientation to preserve it after filtering.
-        let originalOrientation = image.imageOrientation
 
         var result = image
         for effect in filmStyles {
@@ -109,12 +105,6 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
             } catch {
                 print("[Zcam1CameraFilmStyle] Failed to apply film style effect: \(error)")
             }
-        }
-
-        // Harbeth's make(filter:) may reset orientation to .up.
-        // Restore the original orientation if it was lost.
-        if let cgImage = result.cgImage, result.imageOrientation != originalOrientation {
-            return UIImage(cgImage: cgImage, scale: result.scale, orientation: originalOrientation)
         }
         return result
     }
