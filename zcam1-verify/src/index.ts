@@ -15,6 +15,40 @@ const c2pa = await createC2pa({ wasmSrc });
 await uniffiInitAsync();
 await init();
 
+export async function verifyBindings(
+  file: File,
+  production: boolean,
+): Promise<boolean> {
+  const reader = await c2pa.reader.fromBlob(file.type, file);
+
+  if (!reader) {
+    throw new Error("The provided file doesn't contain C2PA metadata");
+  }
+
+  let store = await reader.manifestStore();
+
+  if (!store.active_manifest) {
+    throw new Error("The provided file doesn't contain a C2PA manifest");
+  }
+
+  const activeManifest = store.manifests[store.active_manifest];
+  let bindingsAssertion: any = undefined;
+
+  if (activeManifest.assertions) {
+    for (const a of activeManifest.assertions) {
+      if (a.label === "succinct.bindings") {
+        bindingsAssertion = a.data;
+      }
+    }
+  }
+
+  if (!bindingsAssertion) {
+    throw new Error("The provided file doesn't contain bindings");
+  }
+
+  return false;
+}
+
 export async function verifyProof(file: File, appId: string): Promise<boolean> {
   const reader = await c2pa.reader.fromBlob(file.type, file);
 
@@ -31,10 +65,8 @@ export async function verifyProof(file: File, appId: string): Promise<boolean> {
   const activeManifest = store.manifests[store.active_manifest];
   let proofAssertion: any = undefined;
 
-  console.log("ASSERTIONS");
   if (activeManifest.assertions) {
     for (const a of activeManifest.assertions) {
-      console.log("label", a.label);
       if (a.label === "succinct.proof") {
         proofAssertion = a.data;
       }
