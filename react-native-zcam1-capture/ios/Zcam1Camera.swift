@@ -365,6 +365,7 @@ private final class AssetWriterRecordingState {
     let assetWriter: AVAssetWriter
     let videoInput: AVAssetWriterInput
     let audioInput: AVAssetWriterInput?
+    let pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor
     let outputURL: URL
 
     /// Serial queue for all writer operations to prevent race conditions.
@@ -383,10 +384,17 @@ private final class AssetWriterRecordingState {
     var videoFrameCount: Int = 0
     var audioSampleCount: Int = 0
 
-    init(assetWriter: AVAssetWriter, videoInput: AVAssetWriterInput, audioInput: AVAssetWriterInput?, outputURL: URL) {
+    init(
+        assetWriter: AVAssetWriter,
+        videoInput: AVAssetWriterInput,
+        audioInput: AVAssetWriterInput?,
+        pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor,
+        outputURL: URL
+    ) {
         self.assetWriter = assetWriter
         self.videoInput = videoInput
         self.audioInput = audioInput
+        self.pixelBufferAdaptor = pixelBufferAdaptor
         self.outputURL = outputURL
     }
 }
@@ -435,6 +443,15 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // Thread safety: recordingStateLock guards the reference; writerQueue guards internal mutations.
     private var recordingState: AssetWriterRecordingState?
     private let recordingStateLock = NSLock()
+
+    /// Returns true if video recording is currently active.
+    /// Thread-safe: uses recordingStateLock to protect access.
+    public var isVideoRecording: Bool {
+        recordingStateLock.lock()
+        let recording = recordingState?.isRecording ?? false
+        recordingStateLock.unlock()
+        return recording
+    }
 
     // Auto-stop support: a cancellable work item that fires when maxDurationSeconds is reached.
     // When it fires, it calls stopVideoRecording and caches the result so that a subsequent
@@ -1754,6 +1771,19 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                             }
                             assetWriter.add(videoInput)
 
+                            // Create pixel buffer adaptor for writing filtered frames.
+                            // This allows us to write CVPixelBuffer directly instead of CMSampleBuffer,
+                            // which is necessary when applying film style filters to video frames.
+                            let pixelBufferAttributes: [String: Any] = [
+                                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                                kCVPixelBufferWidthKey as String: videoWidth,
+                                kCVPixelBufferHeightKey as String: videoHeight,
+                            ]
+                            let pixelBufferAdaptor = AVAssetWriterInputPixelBufferAdaptor(
+                                assetWriterInput: videoInput,
+                                sourcePixelBufferAttributes: pixelBufferAttributes
+                            )
+
                             // Configure audio input with AAC encoding.
                             // AVCaptureAudioDataOutput provides uncompressed LPCM samples, so we must
                             // encode them (passthrough nil settings only works with already-compressed audio).
@@ -1791,6 +1821,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                                 assetWriter: assetWriter,
                                 videoInput: videoInput,
                                 audioInput: audioInput,
+                                pixelBufferAdaptor: pixelBufferAdaptor,
                                 outputURL: tmpURL
                             )
 
@@ -2146,21 +2177,25 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
     /// Called by the view when it receives a video sample buffer.
     /// If recording is active, writes the sample to the asset writer.
+    /// Applies film style filters if a custom film style chain is active.
     /// Thread-safe: recordingStateLock guards reference access; writerQueue serializes writes.
     public func writeVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        // Lock to safely read the recordingState reference
+        // Lock to safely read the recordingState reference.
         recordingStateLock.lock()
         let state = recordingState
         recordingStateLock.unlock()
         guard let state = state else { return }
 
-        // All writer operations must be serialized on the writer queue
+        // Capture film style chain outside the async block to avoid race conditions.
+        let filmStyles = customFilmStyleChain
+
+        // All writer operations must be serialized on the writer queue.
         state.writerQueue.async {
             guard state.isRecording else { return }
 
             let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
 
-            // Start the session on first video frame
+            // Start the session on first video frame.
             if !state.hasStartedSession {
                 state.assetWriter.startSession(atSourceTime: timestamp)
                 state.hasStartedSession = true
@@ -2168,8 +2203,47 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 print("[Zcam1CameraService] Asset writer session started at \(timestamp.seconds)")
             }
 
-            // Write video sample if input is ready
-            if state.videoInput.isReadyForMoreMediaData {
+            // Write video frame if input is ready.
+            guard state.videoInput.isReadyForMoreMediaData else { return }
+
+            // Check if we have a film style to apply.
+            if let filmStyles = filmStyles, !filmStyles.isEmpty {
+                // Apply film style filter to the pixel buffer.
+                guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+                    print("[Zcam1CameraService] Failed to get pixel buffer from sample buffer")
+                    return
+                }
+
+                // Use .up orientation for video recording - the asset writer's transform handles rotation.
+                // Film style filters only modify colors, not geometry.
+                let orientation: UIImage.Orientation = .up
+
+                // Apply film style filter.
+                if let filteredBuffer = Zcam1CameraFilmStyle.apply(
+                    filmStyles: filmStyles,
+                    to: pixelBuffer,
+                    orientation: orientation
+                ) {
+                    // Write filtered pixel buffer via adaptor.
+                    if !state.pixelBufferAdaptor.append(filteredBuffer, withPresentationTime: timestamp) {
+                        if let error = state.assetWriter.error {
+                            print("[Zcam1CameraService] Filtered video append failed: \(error)")
+                        }
+                    } else {
+                        state.videoFrameCount += 1
+                    }
+                } else {
+                    // Fallback: write original buffer if filtering fails.
+                    if !state.pixelBufferAdaptor.append(pixelBuffer, withPresentationTime: timestamp) {
+                        if let error = state.assetWriter.error {
+                            print("[Zcam1CameraService] Video append failed: \(error)")
+                        }
+                    } else {
+                        state.videoFrameCount += 1
+                    }
+                }
+            } else {
+                // No film style - write original sample buffer directly.
                 if !state.videoInput.append(sampleBuffer) {
                     if let error = state.assetWriter.error {
                         print("[Zcam1CameraService] Video append failed: \(error)")

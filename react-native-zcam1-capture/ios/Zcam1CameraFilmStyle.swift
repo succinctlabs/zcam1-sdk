@@ -108,4 +108,84 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
         }
         return result
     }
+
+    // MARK: - Pixel Buffer Filtering for Video Recording
+
+    /// Shared CIContext for efficient pixel buffer rendering.
+    private static let ciContext: CIContext = {
+        // Use Metal for GPU-accelerated rendering.
+        if let device = MTLCreateSystemDefaultDevice() {
+            return CIContext(mtlDevice: device, options: [.cacheIntermediates: false])
+        }
+        return CIContext(options: [.useSoftwareRenderer: false])
+    }()
+
+    /// Apply an array of film style effects to a CVPixelBuffer.
+    /// Returns a new filtered pixel buffer, or nil if filtering fails.
+    /// Used for applying film styles to video frames during recording.
+    static func apply(
+        filmStyles: [C7FilterProtocol],
+        to pixelBuffer: CVPixelBuffer,
+        orientation: UIImage.Orientation
+    ) -> CVPixelBuffer? {
+        guard !filmStyles.isEmpty else {
+            return nil
+        }
+
+        // Convert pixel buffer to CIImage.
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+        // Create CGImage from CIImage.
+        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
+            print("[Zcam1CameraFilmStyle] Failed to create CGImage from pixel buffer")
+            return nil
+        }
+
+        // Create UIImage with correct orientation and apply filters.
+        var image = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+        for effect in filmStyles {
+            do {
+                image = try image.make(filter: effect)
+            } catch {
+                print("[Zcam1CameraFilmStyle] Failed to apply film style effect: \(error)")
+            }
+        }
+
+        // Convert filtered UIImage back to pixel buffer.
+        guard let filteredCGImage = image.cgImage else {
+            print("[Zcam1CameraFilmStyle] Failed to get CGImage from filtered UIImage")
+            return nil
+        }
+
+        // Create a new pixel buffer with the same dimensions as the original.
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+
+        var newPixelBuffer: CVPixelBuffer?
+        let attributes: [String: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:],
+        ]
+
+        let status = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            width,
+            height,
+            kCVPixelFormatType_32BGRA,
+            attributes as CFDictionary,
+            &newPixelBuffer
+        )
+
+        guard status == kCVReturnSuccess, let outputBuffer = newPixelBuffer else {
+            print("[Zcam1CameraFilmStyle] Failed to create output pixel buffer: \(status)")
+            return nil
+        }
+
+        // Render the filtered CIImage to the new pixel buffer.
+        let filteredCIImage = CIImage(cgImage: filteredCGImage)
+        ciContext.render(filteredCIImage, to: outputBuffer)
+
+        return outputBuffer
+    }
 }
