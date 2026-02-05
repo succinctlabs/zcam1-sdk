@@ -8,6 +8,7 @@ import {
   Image,
   Button,
   Pressable,
+  Share,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
@@ -334,6 +335,8 @@ function Bindings({
             onPress={verifyBindings}
             disabled={isInitializing}
           />
+
+          <ShareArtifact uri={uri} />
         </View>
       )}
       {isProving && !proof && (
@@ -387,7 +390,10 @@ function Proof({
           <Text style={styles.title}>
             This {isVideo ? "video" : "photo"} has a proof attached
           </Text>
+
           <Button title="Verify the proof" onPress={verifyProof} />
+
+          <ShareArtifact uri={uri} />
         </View>
       )}
       {isValid && (
@@ -409,6 +415,17 @@ function Proof({
       )}
     </View>
   );
+}
+
+function ShareArtifact({ uri }: { uri: string }) {
+  const onShare = async () => {
+    await Share.share({
+      message: "Share",
+      url: uri,
+    });
+  };
+
+  return <Button onPress={onShare} title="Share" />;
 }
 
 // Format capture date - handle various formats
