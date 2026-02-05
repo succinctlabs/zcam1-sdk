@@ -1,15 +1,15 @@
 //
-//  Zcam1CameraFilter.swift
+//  Zcam1CameraFilmStyle.swift
 //  react-native-zcam1-sdk
 //
-//  Camera filter presets using Harbeth filters for real-time preview and capture.
+//  Camera film style presets using Harbeth for real-time preview and capture.
 //
 
 import Harbeth
 import UIKit
 
-/// Camera filter presets.
-public enum Zcam1CameraFilter: String, CaseIterable {
+/// Camera film style presets.
+public enum Zcam1CameraFilmStyle: String, CaseIterable {
     case normal
     case mellow
     case bw
@@ -29,12 +29,12 @@ public enum Zcam1CameraFilter: String, CaseIterable {
         }
     }
 
-    // MARK: - Custom Filter Recipe Parser
+    // MARK: - Custom Film Style Recipe Parser
 
-    /// Parse a filter recipe from JavaScript into Harbeth filters.
+    /// Parse a film style recipe from JavaScript into Harbeth effects.
     /// Each effect dictionary should have a "type" key and either a "value" or "config" key.
-    static func createFilters(from recipe: [[String: Any]]) -> [C7FilterProtocol] {
-        var filters: [C7FilterProtocol] = []
+    static func createFilmStyles(from recipe: [[String: Any]]) -> [C7FilterProtocol] {
+        var filmStyles: [C7FilterProtocol] = []
 
         for effect in recipe {
             guard let type = effect["type"] as? String else { continue }
@@ -44,33 +44,33 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                 if let config = effect["config"] as? [String: Any],
                    let temp = config["temperature"] as? Float {
                     let tint = config["tint"] as? Float ?? 0
-                    filters.append(C7WhiteBalance(temperature: temp, tint: tint))
+                    filmStyles.append(C7WhiteBalance(temperature: temp, tint: tint))
                 }
             case "saturation":
                 if let value = effect["value"] as? Float {
-                    filters.append(C7Saturation(saturation: value))
+                    filmStyles.append(C7Saturation(saturation: value))
                 }
             case "contrast":
                 if let value = effect["value"] as? Float {
-                    filters.append(C7Contrast(contrast: value))
+                    filmStyles.append(C7Contrast(contrast: value))
                 }
             case "brightness":
                 if let value = effect["value"] as? Float {
-                    filters.append(C7Brightness(brightness: value))
+                    filmStyles.append(C7Brightness(brightness: value))
                 }
             case "hue":
                 if let value = effect["value"] as? Float {
-                    filters.append(C7Hue(hue: value))
+                    filmStyles.append(C7Hue(hue: value))
                 }
             case "vibrance":
                 if let value = effect["value"] as? Float {
-                    filters.append(C7Vibrance(vibrance: value))
+                    filmStyles.append(C7Vibrance(vibrance: value))
                 }
             case "highlightShadow":
                 if let config = effect["config"] as? [String: Any],
                    let highlights = config["highlights"] as? Float,
                    let shadows = config["shadows"] as? Float {
-                    filters.append(C7HighlightShadow(highlights: highlights, shadows: shadows))
+                    filmStyles.append(C7HighlightShadow(highlights: highlights, shadows: shadows))
                 }
             case "monochrome":
                 if let config = effect["config"] as? [String: Any],
@@ -82,28 +82,28 @@ public enum Zcam1CameraFilter: String, CaseIterable {
                        let b = colorConfig["b"] as? CGFloat {
                         color = C7Color(red: r, green: g, blue: b, alpha: 1.0)
                     }
-                    filters.append(C7Monochrome(intensity: intensity, color: color))
+                    filmStyles.append(C7Monochrome(intensity: intensity, color: color))
                 }
             default:
-                print("[Zcam1CameraFilter] Unknown filter type: \(type)")
+                print("[Zcam1CameraFilmStyle] Unknown effect type: \(type)")
             }
         }
 
-        return filters
+        return filmStyles
     }
 
-    /// Apply an array of custom filters to a UIImage.
-    static func apply(filters: [C7FilterProtocol], to image: UIImage) -> UIImage {
-        guard !filters.isEmpty else {
+    /// Apply an array of film style effects to a UIImage.
+    static func apply(filmStyles: [C7FilterProtocol], to image: UIImage) -> UIImage {
+        guard !filmStyles.isEmpty else {
             return image
         }
 
         var result = image
-        for filter in filters {
+        for effect in filmStyles {
             do {
-                result = try result.make(filter: filter)
+                result = try result.make(filter: effect)
             } catch {
-                print("[Zcam1CameraFilter] Failed to apply custom filter: \(error)")
+                print("[Zcam1CameraFilmStyle] Failed to apply film style effect: \(error)")
             }
         }
         return result

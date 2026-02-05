@@ -36,16 +36,16 @@ export const CERT_KEY_TAG = "CERT_KEY_TAG";
 export type CaptureFormat = "jpeg" | "dng";
 
 /**
- * Camera filter presets.
- * - "normal": No filter (default)
+ * Camera film style presets.
+ * - "normal": No film style (default)
  * - "mellow": Negative Film Gold style - warm, saturated, lifted shadows
- * - "bw": Contrasty B&W with warm tint
  * - "nostalgic": Kodak Portra 400 style - warm amber, faded, bright
+ * - "bw": Contrasty B&W with warm tint
  */
-export type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic";
+export type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Custom Filter Recipe Types
+// Custom Film Style Recipe Types
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** White balance adjustment configuration. */
@@ -64,7 +64,7 @@ export type HighlightShadowConfig = {
   shadows: number;
 };
 
-/** Monochrome (black & white) filter configuration. */
+/** Monochrome (black & white) film style configuration. */
 export type MonochromeConfig = {
   /** Intensity of the monochrome effect (0 = none, 1 = full B&W). */
   intensity: number;
@@ -73,10 +73,10 @@ export type MonochromeConfig = {
 };
 
 /**
- * Individual filter effect that can be combined into a recipe.
+ * Individual film style effect that can be combined into a recipe.
  * Effects are applied in the order they appear in the recipe array.
  */
-export type FilterEffect =
+export type FilmStyleEffect =
   | { type: "whiteBalance"; config: WhiteBalanceConfig }
   | { type: "saturation"; value: number }
   | { type: "contrast"; value: number }
@@ -87,15 +87,15 @@ export type FilterEffect =
   | { type: "monochrome"; config: MonochromeConfig };
 
 /**
- * A filter recipe is an ordered array of filter effects.
+ * A film style recipe is an ordered array of film style effects.
  * Effects are applied sequentially to produce the final look.
  */
-export type FilterRecipe = FilterEffect[];
+export type FilmStyleRecipe = FilmStyleEffect[];
 
 /**
- * Default filter recipes for built-in presets.
+ * Default film style recipes for built-in presets.
  */
-const DEFAULT_FILTER_RECIPES: Record<CameraFilter, FilterRecipe> = {
+const DEFAULT_FILM_STYLE_RECIPES: Record<CameraFilmStyle, FilmStyleRecipe> = {
   normal: [],
   // Mellow: Negative Film Gold - warm amber/magenta, saturated, lifted shadows.
   mellow: [
@@ -138,19 +138,19 @@ export interface ZCameraProps {
   torch?: boolean;
   /** Exposure compensation in EV units. Defaults to 0. */
   exposure?: number;
-  /** Filter preset to apply to preview and captured photos. Defaults to "normal". */
-  filter?: CameraFilter;
+  /** Film style preset to apply to preview and captured photos. Defaults to "normal". */
+  filmStyle?: CameraFilmStyle;
   /**
-   * Override built-in filter presets with custom recipes.
-   * When a preset name is used with `filter` prop and an override exists,
+   * Override built-in film style presets with custom recipes.
+   * When a preset name is used with `filmStyle` prop and an override exists,
    * the custom recipe is applied instead of the built-in preset.
    */
-  filterOverrides?: Partial<Record<CameraFilter, FilterRecipe>>;
+  filmStyleOverrides?: Partial<Record<CameraFilmStyle, FilmStyleRecipe>>;
   /**
-   * Define additional custom filters referenced by name.
-   * Use with `filter` prop by casting the custom name: `filter={"myFilter" as CameraFilter}`.
+   * Define additional custom film styles referenced by name.
+   * Use with `filmStyle` prop by casting the custom name: `filmStyle={"myStyle" as CameraFilmStyle}`.
    */
-  customFilters?: Record<string, FilterRecipe>;
+  customFilmStyles?: Record<string, FilmStyleRecipe>;
   /**
    * Enable depth data capture at session level.
    * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
@@ -193,9 +193,9 @@ type NativeCameraViewProps = {
   zoom?: number;
   torch?: boolean;
   exposure?: number;
-  filter?: CameraFilter;
-  filterOverrides?: Record<string, FilterEffect[]>;
-  customFilters?: Record<string, FilterEffect[]>;
+  filmStyle?: CameraFilmStyle;
+  filmStyleOverrides?: Record<string, FilmStyleEffect[]>;
+  customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
 };
 
@@ -543,17 +543,17 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       zoom = position === "front" ? 1.0 : 2.0,
       torch = false,
       exposure = 0,
-      filter = "normal",
-      filterOverrides,
-      customFilters,
+      filmStyle = "normal",
+      filmStyleOverrides,
+      customFilmStyles,
       depthEnabled = false,
       style,
     } = this.props;
 
     // Merge default recipes with user overrides (user overrides take precedence).
-    const mergedFilterOverrides = {
-      ...DEFAULT_FILTER_RECIPES,
-      ...filterOverrides,
+    const mergedFilmStyleOverrides = {
+      ...DEFAULT_FILM_STYLE_RECIPES,
+      ...filmStyleOverrides,
     };
 
     return (
@@ -566,9 +566,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         zoom={zoom}
         torch={torch}
         exposure={exposure}
-        filter={filter}
-        filterOverrides={mergedFilterOverrides}
-        customFilters={customFilters}
+        filmStyle={filmStyle}
+        filmStyleOverrides={mergedFilmStyleOverrides}
+        customFilmStyles={customFilmStyles}
         depthEnabled={depthEnabled}
       />
     );

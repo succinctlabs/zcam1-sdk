@@ -45,9 +45,9 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic) CGFloat zoom;                  // 1.0 = no zoom
 // @property (nonatomic) BOOL torch;                    // torch on/off
 // @property (nonatomic) float exposure;               // exposure bias in EV
-// @property (nonatomic, copy) NSString *filter;       // "normal" | "mellow" | "bw" | "nostalgic" or custom name
-// @property (nonatomic, copy) NSDictionary *filterOverrides; // custom recipes for built-in presets
-// @property (nonatomic, copy) NSDictionary *customFilters;   // additional custom filters by name
+// @property (nonatomic, copy) NSString *filmStyle;    // "normal" | "mellow" | "bw" | "nostalgic" or custom name
+// @property (nonatomic, copy) NSDictionary *filmStyleOverrides; // custom recipes for built-in presets
+// @property (nonatomic, copy) NSDictionary *customFilmStyles;   // additional custom film styles by name
 // @property (nonatomic) BOOL depthEnabled;            // enable depth data at session level (default: NO)
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);
@@ -58,27 +58,27 @@ RCT_EXPORT_VIEW_PROPERTY(exposure, float);
 RCT_EXPORT_VIEW_PROPERTY(depthEnabled, BOOL);
 
 // Use custom property setter to ensure the Swift setter is called properly.
-RCT_CUSTOM_VIEW_PROPERTY(filter, NSString, Zcam1CameraView)
+RCT_CUSTOM_VIEW_PROPERTY(filmStyle, NSString, Zcam1CameraView)
 {
-  NSString *filterValue = json ? [RCTConvert NSString:json] : @"normal";
-  NSLog(@"[Zcam1CameraViewManager] Setting filter to: %@", filterValue);
-  view.filter = filterValue;
+  NSString *filmStyleValue = json ? [RCTConvert NSString:json] : @"normal";
+  NSLog(@"[Zcam1CameraViewManager] Setting filmStyle to: %@", filmStyleValue);
+  view.filmStyle = filmStyleValue;
 }
 
-// Custom filter recipe overrides for built-in presets.
-RCT_CUSTOM_VIEW_PROPERTY(filterOverrides, NSDictionary, Zcam1CameraView)
+// Custom film style recipe overrides for built-in presets.
+RCT_CUSTOM_VIEW_PROPERTY(filmStyleOverrides, NSDictionary, Zcam1CameraView)
 {
   NSDictionary *overrides = json ? [RCTConvert NSDictionary:json] : nil;
-  NSLog(@"[Zcam1CameraViewManager] Setting filterOverrides: %@", overrides ? @"present" : @"nil");
-  view.filterOverrides = overrides;
+  NSLog(@"[Zcam1CameraViewManager] Setting filmStyleOverrides: %@", overrides ? @"present" : @"nil");
+  view.filmStyleOverrides = overrides;
 }
 
-// Additional custom filters defined by name.
-RCT_CUSTOM_VIEW_PROPERTY(customFilters, NSDictionary, Zcam1CameraView)
+// Additional custom film styles defined by name.
+RCT_CUSTOM_VIEW_PROPERTY(customFilmStyles, NSDictionary, Zcam1CameraView)
 {
   NSDictionary *custom = json ? [RCTConvert NSDictionary:json] : nil;
-  NSLog(@"[Zcam1CameraViewManager] Setting customFilters: %@", custom ? @"present" : @"nil");
-  view.customFilters = custom;
+  NSLog(@"[Zcam1CameraViewManager] Setting customFilmStyles: %@", custom ? @"present" : @"nil");
+  view.customFilmStyles = custom;
 }
 
 @end

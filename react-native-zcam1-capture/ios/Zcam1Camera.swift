@@ -269,12 +269,12 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
         print("[PhotoCaptureDelegate] processing photo...")
         var data = photoData
 
-        // Apply crop + filter in a single pass (avoids double JPEG compression, preserves EXIF).
+        // Apply crop + film style in a single pass (avoids double JPEG compression, preserves EXIF).
         // Skip post-processing if requested (returns raw sensor output).
         if skipPostProcessing {
             print("[PhotoCaptureDelegate] skipPostProcessing=true, returning raw JPEG data")
         } else {
-            print("[PhotoCaptureDelegate] applying crop and filter...")
+            print("[PhotoCaptureDelegate] applying crop and film style...")
             if let owner = self.owner,
                let processedData = owner.processImage(
                    data,
@@ -448,9 +448,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     private var currentExposureBias: Float = 0.0
     private var currentPosition: AVCaptureDevice.Position = .back
 
-    // Filter state
-    private var currentFilter: Zcam1CameraFilter = .normal
-    private var customFilterChain: [C7FilterProtocol]?
+    // Film style state
+    private var currentFilmStyle: Zcam1CameraFilmStyle = .normal
+    private var customFilmStyleChain: [C7FilterProtocol]?
 
     private override init() {
         super.init()
@@ -502,29 +502,29 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         }
     }
 
-    // MARK: - Filter
+    // MARK: - Film Style
 
-    /// Set the active camera filter for preview and capture.
-    /// Clears any custom filter chain.
-    public func setFilter(_ filter: Zcam1CameraFilter) {
-        self.currentFilter = filter
-        self.customFilterChain = nil
+    /// Set the active camera film style for preview and capture.
+    /// Clears any custom film style chain.
+    public func setFilmStyle(_ filmStyle: Zcam1CameraFilmStyle) {
+        self.currentFilmStyle = filmStyle
+        self.customFilmStyleChain = nil
     }
 
-    /// Set a custom filter chain for preview and capture.
-    /// Overrides the built-in preset filter.
-    public func setCustomFilters(_ filters: [C7FilterProtocol]) {
-        self.customFilterChain = filters.isEmpty ? nil : filters
+    /// Set a custom film style chain for preview and capture.
+    /// Overrides the built-in preset film style.
+    public func setCustomFilmStyles(_ filmStyles: [C7FilterProtocol]) {
+        self.customFilmStyleChain = filmStyles.isEmpty ? nil : filmStyles
     }
 
-    /// Get the current filter.
-    public func getFilter() -> Zcam1CameraFilter {
-        return currentFilter
+    /// Get the current film style.
+    public func getFilmStyle() -> Zcam1CameraFilmStyle {
+        return currentFilmStyle
     }
 
-    /// Check if custom filters are active.
-    public func hasCustomFilters() -> Bool {
-        return customFilterChain != nil
+    /// Check if custom film styles are active.
+    public func hasCustomFilmStyles() -> Bool {
+        return customFilmStyleChain != nil
     }
 
     /// Get the current camera position.
@@ -532,7 +532,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         return currentPosition
     }
 
-    /// Process image data with crop and filter. iOS handles orientation via EXIF metadata.
+    /// Process image data with crop and film style. iOS handles orientation via EXIF metadata.
     /// - Parameters:
     ///   - data: The original JPEG image data
     ///   - metadata: The original photo metadata (EXIF, TIFF, GPS, etc.)
@@ -545,7 +545,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         aspectRatio: Zcam1AspectRatio,
         compressionQuality: CGFloat = 0.95
     ) -> Data? {
-        let needsFilter = customFilterChain != nil
+        let needsFilmStyle = customFilmStyleChain != nil
 
         guard let image = UIImage(data: data),
               let cgImage = image.cgImage else { return data }
@@ -565,7 +565,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         let needsCrop = abs(sourceRatio - targetRatio) > 0.01
 
         // If no processing needed, return original
-        guard needsCrop || needsFilter else { return data }
+        guard needsCrop || needsFilmStyle else { return data }
 
         var processedCGImage: CGImage = cgImage
 
@@ -576,10 +576,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             }
         }
 
-        // Apply filter if needed, preserving original orientation.
+        // Apply film style if needed, preserving original orientation.
         var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: image.imageOrientation)
-        if let customFilters = customFilterChain {
-            finalImage = Zcam1CameraFilter.apply(filters: customFilters, to: finalImage)
+        if let customFilmStyles = customFilmStyleChain {
+            finalImage = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: finalImage)
         }
 
         return encodeJPEGWithMetadata(finalImage, metadata: metadata, compressionQuality: compressionQuality)
@@ -662,10 +662,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         }
     }
 
-    // MARK: - Video Data Output for Filtered Preview
+    // MARK: - Video Data Output for Film Style Preview
 
-    /// Configure and add a video data output to the session for filtered preview.
-    /// Must be called to get video frames for applying filters in real-time.
+    /// Configure and add a video data output to the session for film style preview.
+    /// Must be called to get video frames for applying film styles in real-time.
     /// - Parameters:
     ///   - delegate: The sample buffer delegate to receive video frames.
     ///   - callbackQueue: The queue for delegate callbacks.
@@ -2261,8 +2261,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 /// UIView subclass that displays the live camera preview.
 ///
 /// NEW ARCHITECTURE: Always uses AVCaptureVideoDataOutput for preview rendering.
-/// This eliminates the complexity of toggling between preview layer and filtered image view.
-/// All frames go through the same pipeline - filter is applied when needed.
+/// This eliminates the complexity of toggling between preview layer and film style image view.
+/// All frames go through the same pipeline - film style is applied when needed.
 ///
 /// This view is intended to be wrapped by a React Native view manager
 /// and controlled via props such as `isActive` and `position`.
@@ -2315,30 +2315,30 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
-    /// Filter preset name ("normal", "mellow", "bw", "nostalgic") or custom filter name.
-    public var filter: String = "normal" {
+    /// Film style preset name ("normal", "mellow", "bw", "nostalgic") or custom film style name.
+    public var filmStyle: String = "normal" {
         didSet {
-            guard oldValue != filter else { return }
-            print("[Zcam1CameraView] Filter changed: \(oldValue) -> \(filter)")
-            applyCurrentFilter()
+            guard oldValue != filmStyle else { return }
+            print("[Zcam1CameraView] Film style changed: \(oldValue) -> \(filmStyle)")
+            applyCurrentFilmStyle()
         }
     }
 
-    /// Custom filter recipe overrides for built-in presets.
-    /// Keys are preset names, values are arrays of filter effect dictionaries.
-    @objc public var filterOverrides: NSDictionary? {
+    /// Custom film style recipe overrides for built-in presets.
+    /// Keys are preset names, values are arrays of film style effect dictionaries.
+    @objc public var filmStyleOverrides: NSDictionary? {
         didSet {
-            print("[Zcam1CameraView] filterOverrides updated")
-            applyCurrentFilter()
+            print("[Zcam1CameraView] filmStyleOverrides updated")
+            applyCurrentFilmStyle()
         }
     }
 
-    /// Additional custom filters defined by name.
-    /// Keys are custom filter names, values are arrays of filter effect dictionaries.
-    @objc public var customFilters: NSDictionary? {
+    /// Additional custom film styles defined by name.
+    /// Keys are custom film style names, values are arrays of film style effect dictionaries.
+    @objc public var customFilmStyles: NSDictionary? {
         didSet {
-            print("[Zcam1CameraView] customFilters updated")
-            applyCurrentFilter()
+            print("[Zcam1CameraView] customFilmStyles updated")
+            applyCurrentFilmStyle()
         }
     }
 
@@ -2355,7 +2355,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
-    // Preview rendering - single UIImageView for all frames (filtered or not)
+    // Preview rendering - single UIImageView for all frames (with or without film style)
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
@@ -2366,8 +2366,8 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     // Video processing
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
-    private var currentFilterEnum: Zcam1CameraFilter = .normal
-    private var currentCustomFilters: [C7FilterProtocol]?
+    private var currentFilmStyleEnum: Zcam1CameraFilmStyle = .normal
+    private var currentCustomFilmStyles: [C7FilterProtocol]?
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     private var frameCount: Int = 0
 
@@ -2401,36 +2401,36 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         previewImageView.frame = bounds
     }
 
-    // MARK: - Filter Resolution
+    // MARK: - Film Style Resolution
 
-    /// Resolves and applies the current filter, checking overrides and custom filters first.
-    private func applyCurrentFilter() {
-        // Check filterOverrides first.
-        if let overrides = filterOverrides as? [String: [[String: Any]]],
-           let recipe = overrides[filter] {
-            print("[Zcam1CameraView] Using filter override for '\(filter)'")
-            let filters = Zcam1CameraFilter.createFilters(from: recipe)
-            currentCustomFilters = filters
-            currentFilterEnum = .normal
-            Zcam1CameraService.shared.setCustomFilters(filters)
+    /// Resolves and applies the current film style, checking overrides and custom film styles first.
+    private func applyCurrentFilmStyle() {
+        // Check filmStyleOverrides first.
+        if let overrides = filmStyleOverrides as? [String: [[String: Any]]],
+           let recipe = overrides[filmStyle] {
+            print("[Zcam1CameraView] Using film style override for '\(filmStyle)'")
+            let filmStyles = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
+            currentCustomFilmStyles = filmStyles
+            currentFilmStyleEnum = .normal
+            Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
             return
         }
 
-        // Check customFilters next.
-        if let custom = customFilters as? [String: [[String: Any]]],
-           let recipe = custom[filter] {
-            print("[Zcam1CameraView] Using custom filter '\(filter)'")
-            let filters = Zcam1CameraFilter.createFilters(from: recipe)
-            currentCustomFilters = filters
-            currentFilterEnum = .normal
-            Zcam1CameraService.shared.setCustomFilters(filters)
+        // Check customFilmStyles next.
+        if let custom = customFilmStyles as? [String: [[String: Any]]],
+           let recipe = custom[filmStyle] {
+            print("[Zcam1CameraView] Using custom film style '\(filmStyle)'")
+            let filmStyles = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
+            currentCustomFilmStyles = filmStyles
+            currentFilmStyleEnum = .normal
+            Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
             return
         }
 
-        // Fall back to no filter (JS SDK provides all built-in recipes via filterOverrides).
-        currentCustomFilters = nil
-        currentFilterEnum = .normal
-        Zcam1CameraService.shared.setFilter(.normal)
+        // Fall back to no film style (JS SDK provides all built-in recipes via filmStyleOverrides).
+        currentCustomFilmStyles = nil
+        currentFilmStyleEnum = .normal
+        Zcam1CameraService.shared.setFilmStyle(.normal)
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -2451,9 +2451,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
 
         frameCount += 1
         if frameCount == 1 {
-            print("[Zcam1CameraView] FIRST FRAME! filter=\(currentFilterEnum)")
+            print("[Zcam1CameraView] FIRST FRAME! filmStyle=\(currentFilmStyleEnum)")
         } else if frameCount % 60 == 0 {
-            print("[Zcam1CameraView] frame \(frameCount), filter=\(currentFilterEnum)")
+            print("[Zcam1CameraView] frame \(frameCount), filmStyle=\(currentFilmStyleEnum)")
         }
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
@@ -2474,9 +2474,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         let orientation: UIImage.Orientation = (position.lowercased() == "front") ? .left : .right
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
 
-        // Apply filter if needed.
-        if let customFilters = currentCustomFilters {
-            displayImage = Zcam1CameraFilter.apply(filters: customFilters, to: displayImage)
+        // Apply film style if needed.
+        if let customFilmStyles = currentCustomFilmStyles {
+            displayImage = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: displayImage)
         }
 
         // Update UI on main thread, but double-check we're not reconfiguring.

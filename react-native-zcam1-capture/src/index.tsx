@@ -19,9 +19,9 @@ export {
  */
 export {
   ZCamera,
-  type CameraFilter,
-  type FilterEffect,
-  type FilterRecipe,
+  type CameraFilmStyle,
+  type FilmStyleEffect,
+  type FilmStyleRecipe,
   type WhiteBalanceConfig,
   type HighlightShadowConfig,
   type MonochromeConfig,

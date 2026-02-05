@@ -78,24 +78,24 @@ Whether torch (flashlight) is enabled during preview.
 
 Exposure compensation in EV units.
 
-### filter
+### filmStyle
 
-- **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter) | `string`
+- **Type:** [`CameraFilmStyle`](/sdk/capture/types#camerafilmstyle) | `string`
 - **Default:** `"normal"`
 
-Filter preset to apply to preview and captured photos. Built-in options: `"normal"`, `"mellow"`, `"bw"`, `"nostalgic"`. Can also reference a custom filter name defined in `customFilters`.
+Film style preset to apply to camera. You can specify a built-in option or a custom film style you defined in `customFilmStyles`.
 
-### filterOverrides
+### filmStyleOverrides
 
-- **Type:** `Partial<Record<CameraFilter, FilterRecipe>>`
+- **Type:** `Partial<Record<CameraFilmStyle, FilmStyleRecipe>>`
 - **Optional**
 
-Override built-in filter presets with custom recipes. When a preset name is used with `filter` prop and an override exists, the custom recipe is applied instead.
+Override built-in film style presets with custom recipes. When a preset name is used with `filmStyle` prop and an override exists, the custom recipe is applied instead.
 
 ```tsx
 <ZCamera
-  filter="mellow"
-  filterOverrides={{
+  filmStyle="mellow"
+  filmStyleOverrides={{
     mellow: [
       { type: "whiteBalance", config: { temperature: 7000, tint: 30 } },
       { type: "saturation", value: 1.3 },
@@ -105,17 +105,17 @@ Override built-in filter presets with custom recipes. When a preset name is used
 />
 ```
 
-### customFilters
+### customFilmStyles
 
-- **Type:** `Record<string, FilterRecipe>`
+- **Type:** `Record<string, FilmStyleRecipe>`
 - **Optional**
 
-Define additional custom filters by name. Reference them using the `filter` prop.
+Define additional custom film styles by name. Reference them using the `filmStyle` prop.
 
 ```tsx
 <ZCamera
-  filter={"myVintage" as CameraFilter}
-  customFilters={{
+  filmStyle={"myVintage" as CameraFilmStyle}
+  customFilmStyles={{
     myVintage: [
       { type: "whiteBalance", config: { temperature: 6800 } },
       { type: "vibrance", value: 0.6 },
@@ -125,7 +125,7 @@ Define additional custom filters by name. Reference them using the `filter` prop
 />
 ```
 
-See [`FilterEffect`](/sdk/capture/types#filtereffect) for all available effect types.
+See [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) for all available effect types.
 
 ### depthEnabled
 
@@ -294,7 +294,7 @@ export function CaptureScreen() {
         ref={camera} 
         captureInfo={captureInfo} 
         style={styles.camera}
-        filter="mellow"
+        filmStyle="mellow"
         zoom={2.0}
       />
       <View style={styles.controls}>

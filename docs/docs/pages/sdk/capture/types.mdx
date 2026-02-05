@@ -78,30 +78,25 @@ type TakePhotoOptions = {
 
 ---
 
-## CameraFilter
+## CameraFilmStyle
 
-Filter preset for camera preview and captured photos.
+Film style preset for camera.
 
 ```tsx
-type CameraFilter = "normal" | "mellow" | "bw" | "nostalgic"
+type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw"
 ```
 
-- **`normal`** - No filter (default)
-- **`mellow`** - Negative Film Gold style - warm, saturated, lifted shadows
-- **`nostalgic`** - Kodak Portra 400 style - warm amber, faded, bright
-- **`bw`** - Contrasty B&W with warm tint
-
 **Used by:**
-- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop
+- [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filmStyle` prop
 
 ---
 
-## FilterEffect
+## FilmStyleEffect
 
-Individual filter effect that can be combined into a custom recipe.
+Individual film style effect that can be combined into a custom recipe.
 
 ```tsx
-type FilterEffect =
+type FilmStyleEffect =
   | { type: "whiteBalance"; config: WhiteBalanceConfig }
   | { type: "saturation"; value: number }
   | { type: "contrast"; value: number }
@@ -113,20 +108,20 @@ type FilterEffect =
 ```
 
 **Used by:**
-- [`FilterRecipe`](#filterrecipe) - Array of effects
+- [`FilmStyleRecipe`](#filmstylerecipe) - Array of effects
 
 ---
 
-## FilterRecipe
+## FilmStyleRecipe
 
-An ordered array of filter effects applied sequentially to produce the final look.
+An ordered array of film style effects applied sequentially to produce the final look.
 
 ```tsx
-type FilterRecipe = FilterEffect[]
+type FilmStyleRecipe = FilmStyleEffect[]
 ```
 
 **Used by:**
-- [`ZCamera`](/sdk/capture/ZCamera) - In `filterOverrides` and `customFilters` props
+- [`ZCamera`](/sdk/capture/ZCamera) - In `filmStyleOverrides` and `customFilmStyles` props
 
 ---
 
@@ -158,7 +153,7 @@ type HighlightShadowConfig = {
 
 ## MonochromeConfig
 
-Configuration for monochrome (black & white) filter.
+Configuration for monochrome (black & white) film style.
 
 ```tsx
 type MonochromeConfig = {
