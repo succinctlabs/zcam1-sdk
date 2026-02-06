@@ -22,4 +22,5 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true,
   },
+  "exclude": ["rust_modules", "node_modules", "lib"]
 }

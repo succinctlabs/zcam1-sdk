@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noFallthroughCasesInSwitch": true,
@@ -22,4 +22,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true,
   },
+  "include": ["src"],
+  "exclude": ["node_modules", "lib"]
 }

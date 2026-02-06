@@ -140,6 +140,19 @@ impl Action<VideoMetadataInfo> {
     }
 }
 
+/// Film style (filter) information captured at the time of photo/video creation.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct FilmStyleInfo {
+    /// Name of the film style (e.g. "mellow", "bw", or a custom name).
+    pub name: String,
+    /// Whether this is a built-in preset, an overridden preset, or a custom style.
+    /// One of "builtin", "override", or "custom".
+    pub source: String,
+    /// The recipe that was applied, serialized as a JSON array of effects.
+    pub recipe: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticityData {
@@ -162,6 +175,7 @@ pub struct PhotoMetadataInfo {
     focal_length: u32,
     authenticity_data: AuthenticityData,
     depth_data: Option<DepthData>,
+    film_style: Option<FilmStyleInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
@@ -183,6 +197,7 @@ pub struct VideoMetadataInfo {
     audio_sample_rate: Option<u32>,
     audio_channels: Option<u32>,
     authenticity_data: AuthenticityData,
+    film_style: Option<FilmStyleInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

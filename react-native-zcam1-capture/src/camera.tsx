@@ -256,6 +256,45 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
+   * Resolve the current film style info for embedding in capture metadata.
+   * Returns null for "normal" with no overrides (no filter applied).
+   */
+  private resolveFilmStyleInfo(): {
+    name: string;
+    source: string;
+    recipe: string;
+  } | undefined {
+    const {
+      filmStyle = "normal",
+      filmStyleOverrides,
+      customFilmStyles,
+    } = this.props;
+
+    // Determine the source of the active film style.
+    const isOverride = filmStyleOverrides?.[filmStyle] !== undefined;
+    const isCustom = customFilmStyles?.[filmStyle] !== undefined;
+    const source = isOverride ? "override" : isCustom ? "custom" : "builtin";
+
+    // Resolve the actual recipe that was applied.
+    const recipe =
+      filmStyleOverrides?.[filmStyle] ??
+      customFilmStyles?.[filmStyle] ??
+      DEFAULT_FILM_STYLE_RECIPES[filmStyle] ??
+      [];
+
+    // Skip embedding for unmodified "normal" (no effects applied).
+    if (filmStyle === "normal" && source === "builtin") {
+      return undefined;
+    }
+
+    return {
+      name: filmStyle,
+      source,
+      recipe: JSON.stringify(recipe),
+    };
+  }
+
+  /**
    * Get the minimum supported zoom factor.
    * For virtual devices with ultra-wide, this is 1.0 (corresponds to 0.5x user-facing).
    */
@@ -440,6 +479,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
             isJailBroken,
             isLocationSpoofingAvailable,
           },
+          filmStyle: this.resolveFilmStyleInfo(),
         },
         this.props.captureInfo,
         this.certChainPem,
@@ -531,6 +571,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           isLocationSpoofingAvailable,
         },
         depthData: result.depthData as any,
+        filmStyle: this.resolveFilmStyleInfo(),
       },
       this.props.captureInfo,
       this.certChainPem,
