@@ -7,6 +7,7 @@ import {
   PhotoMetadataInfo,
   uniffiInitAsync,
   VideoMetadataInfo,
+  AuthenticityStatus,
 } from "./bindings";
 import { utf8ToBytes, bytesToHex, concatBytes } from "@noble/hashes/utils.js";
 import init, { verify_groth16 } from "@succinctlabs/sp1-wasm-verifier";
@@ -37,88 +38,106 @@ const c2pa = await createC2pa({ wasmSrc });
 await uniffiInitAsync();
 await init();
 
-/**
- * Verifies the bindings assertion in a C2PA manifest by validating the attestation
- * and assertion against the photo hash and capture action metadata.
- *
- * @param file - The file containing the C2PA manifest to verify
- * @param production - Whether to use production or development Apple App Attestation GUID
- * @returns A promise that resolves to true if the bindings are valid, throws an error otherwise
- */
-export async function verifyBindings(
-  file: File,
-  production: boolean,
-): Promise<boolean> {
-  const activeManifest = await extractActiveManifest(file);
-  const bindingsAssertion = retrieveAssertion(
-    activeManifest,
-    "succinct.bindings",
-  );
-  const fileBuffer = await file.arrayBuffer();
-  const photoHash = new Uint8Array(
-    computeHashFromBuffer(fileBuffer, file.type),
-  );
+export class VerifiableFile {
+  file: File;
+  hash: ArrayBuffer | undefined;
 
-  const captureAction = retrieveAction(activeManifest, "succinct.capture");
-  const normalizedCaptureAction = canonicalize(captureAction);
-  const clientData = computeClientData(
-    photoHash,
-    utf8ToBytes(normalizedCaptureAction),
-  );
+  /**
+   * Creates a VerifiableFile instance by extracting the C2PA manifest from the file.
+   * @param file - The file to verify
+   */
+  constructor(file: File) {
+    this.file = file;
+  }
 
-  const publicKey = await validateAttestation(
-    bindingsAssertion.attestation,
-    bindingsAssertion.device_key_id,
-    bindingsAssertion.device_key_id,
-    bindingsAssertion.app_id,
-    production,
-    !production,
-  );
+  /**
+   * Verifies the bindings assertion in a C2PA manifest by validating the attestation
+   * and assertion against the photo hash and capture action metadata.
+   *
+   * @param production - Whether to use production or development Apple App Attestation GUID
+   * @returns A promise that resolves to true if the bindings are valid, throws an error otherwise
+   */
+  async verifyBindings(production: boolean): Promise<boolean> {
+    const activeManifest = await extractActiveManifest(this.file);
+    const bindingsAssertion = retrieveAssertion(
+      activeManifest,
+      "succinct.bindings",
+    );
+    const fileBuffer = await this.file.arrayBuffer();
+    const photoHash = new Uint8Array(
+      computeHashFromBuffer(fileBuffer, this.file.type),
+    );
 
-  return await validateAssertion(
-    bindingsAssertion.assertion,
-    clientData,
-    publicKey,
-    bindingsAssertion.app_id,
-  );
-}
+    const captureAction = retrieveAction(activeManifest, "succinct.capture");
+    const normalizedCaptureAction = canonicalize(captureAction);
+    const clientData = computeClientData(
+      photoHash,
+      utf8ToBytes(normalizedCaptureAction),
+    );
 
-/**
- * Verifies the zero-knowledge proof assertion in a C2PA manifest using Groth16 verification.
- *
- * @param file - The file containing the C2PA manifest with the proof assertion
- * @param appId - The application identifier to include in the public inputs
- * @returns A promise that resolves to true if the proof is valid, false otherwise
- */
-export async function verifyProof(file: File, appId: string): Promise<boolean> {
-  const activeManifest = await extractActiveManifest(file);
-  const proofAssertion = retrieveAssertion(activeManifest, "succinct.proof");
-  const fileBuffer = await file.arrayBuffer();
-  const photoHash = new Uint8Array(
-    computeHashFromBuffer(fileBuffer, file.type),
-  );
-  const appIdBytes = utf8ToBytes(appId);
-  const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
-  let publicInputs = concatBytes(photoHash, appIdBytes, appleRootCert);
+    const publicKey = await validateAttestation(
+      bindingsAssertion.attestation,
+      bindingsAssertion.device_key_id,
+      bindingsAssertion.device_key_id,
+      bindingsAssertion.app_id,
+      production,
+      !production,
+    );
 
-  return verify_groth16(
-    base64.decode(proofAssertion["data"]),
-    publicInputs,
-    proofAssertion["vk_hash"],
-  );
-}
+    return await validateAssertion(
+      bindingsAssertion.assertion,
+      clientData,
+      publicKey,
+      bindingsAssertion.app_id,
+    );
+  }
 
-/**
- * Extracts the capture metadata from a C2PA manifest, including timestamp and capture parameters.
- *
- * @param file - The file containing the C2PA manifest to extract metadata from
- * @returns A promise that resolves to the capture metadata containing when and parameters information
- */
-export async function extractCaptureMetadata(
-  file: File,
-): Promise<CaptureMetadata> {
-  const manifest = await extractActiveManifest(file);
-  return await retrieveAction(manifest, "succinct.capture");
+  /**
+   * Verifies the zero-knowledge proof assertion in a C2PA manifest using Groth16 verification.
+   *
+   * @param appId - The application identifier to include in the public inputs
+   * @returns A promise that resolves to true if the proof is valid, false otherwise
+   */
+  async verifyProof(appId: string): Promise<boolean> {
+    const activeManifest = await extractActiveManifest(this.file);
+    const proofAssertion = retrieveAssertion(activeManifest, "succinct.proof");
+    const fileBuffer = await this.file.arrayBuffer();
+    const photoHash = new Uint8Array(
+      computeHashFromBuffer(fileBuffer, this.file.type),
+    );
+    const appIdBytes = utf8ToBytes(appId);
+    const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
+    let publicInputs = concatBytes(photoHash, appIdBytes, appleRootCert);
+
+    return verify_groth16(
+      base64.decode(proofAssertion["data"]),
+      publicInputs,
+      proofAssertion["vk_hash"],
+    );
+  }
+
+  /**
+   * Returns the file's content hash as recorded in the active C2PA manifest.
+   * @returns The manifest data hash (base64-encoded string)
+   */
+  async dataHash(): Promise<string> {
+    if (this.hash === undefined) {
+      const fileBuffer = await this.file.arrayBuffer();
+      this.hash = computeHashFromBuffer(fileBuffer, this.file.type);
+    }
+
+    return base64.encode(new Uint8Array(this.hash));
+  }
+
+  /**
+   * Extracts the capture metadata from a C2PA manifest, including timestamp and capture parameters.
+   *
+   * @returns A promise that resolves to the capture metadata containing when and parameters information
+   */
+  async captureMetadata(): Promise<CaptureMetadata> {
+    const manifest = await extractActiveManifest(this.file);
+    return await retrieveAction(manifest, "succinct.capture");
+  }
 }
 
 async function extractActiveManifest(file: File): Promise<Manifest> {
