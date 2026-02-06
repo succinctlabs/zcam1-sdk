@@ -2,6 +2,7 @@ rust:
   directory: ./..
   manifestPath: crates/wasm-bindings/Cargo.toml
 web:
+  wasmCrateName: zcam1-verify
   defaultFeatures: false
   workspace: true
   entrypoint: src/bindings.ts
