@@ -18,7 +18,11 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import * as x509 from "@peculiar/x509";
 import { fromBER } from "asn1js";
 
-export { PhotoMetadataInfo, VideoMetadataInfo } from "./bindings";
+export {
+  PhotoMetadataInfo,
+  VideoMetadataInfo,
+  AuthenticityStatus,
+} from "./bindings";
 
 export interface CaptureMetadata {
   when: string;
@@ -137,6 +141,32 @@ export class VerifiableFile {
   async captureMetadata(): Promise<CaptureMetadata> {
     const manifest = await extractActiveManifest(this.file);
     return await retrieveAction(manifest, "succinct.capture");
+  }
+
+  /**
+   * Determines the authenticity status of the file based on its C2PA manifest.
+   *
+   * @returns A promise that resolves to the file's authenticity status:
+   *   - `Bindings`: File contains a bindings assertion
+   *   - `Proof`: File contains a proof assertion
+   *   - `InvalidManifest`: Manifest exists but lacks required assertions
+   *   - `NoManifest`: No C2PA manifest found
+   */
+  async authenticityStatus(): Promise<AuthenticityStatus> {
+    return extractActiveManifest(this.file)
+      .then((manifest) => {
+        try {
+          retrieveAssertion(manifest, "succinct.bindings");
+          return AuthenticityStatus.Bindings;
+        } catch {}
+        try {
+          retrieveAssertion(manifest, "succinct.proof");
+          return AuthenticityStatus.Proof;
+        } catch {}
+
+        return AuthenticityStatus.InvalidManifest;
+      })
+      .catch(() => AuthenticityStatus.NoManifest);
   }
 }
 
