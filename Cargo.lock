@@ -8914,7 +8914,6 @@ dependencies = [
  "c2pa",
  "futures",
  "p256",
- "pem",
  "security-framework",
  "serde",
  "serde_json",

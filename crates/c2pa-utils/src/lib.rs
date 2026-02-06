@@ -7,13 +7,11 @@ use std::{
 use c2pa::{hash_stream_by_alg, jumbf_io::get_assetio_handler, Reader};
 use futures::channel::oneshot;
 
-use crate::{
-    error::C2paError,
-    types::{AuthenticityStatus, ManifestStore},
-};
+use crate::error::C2paError;
 
 pub mod error;
 
+#[cfg(feature = "editor")]
 pub mod types;
 
 #[cfg(feature = "editor")]
@@ -25,10 +23,13 @@ mod signing;
 uniffi::setup_scaffolding!();
 
 #[cfg(feature = "editor")]
-pub use manifest_editor::ManifestEditor;
+pub use {
+    manifest_editor::ManifestEditor,
+    types::{AuthenticityStatus, ManifestStore},
+};
 
 #[uniffi::export]
-#[cfg(feature = "io")]
+#[cfg(all(feature = "io", feature = "editor"))]
 pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
 
@@ -46,6 +47,7 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     Ok(store)
 }
 
+#[cfg(feature = "editor")]
 pub fn extract_manifest_from_stream(
     format: &str,
     stream: impl Read + Seek + Send,
@@ -64,7 +66,7 @@ pub fn format_from_path(path: &str) -> Option<String> {
     c2pa::format_from_path(path)
 }
 
-#[cfg(feature = "io")]
+#[cfg(all(feature = "io", feature = "editor"))]
 #[uniffi::export]
 pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     let path = path.to_string();

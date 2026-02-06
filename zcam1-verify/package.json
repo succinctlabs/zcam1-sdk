@@ -30,8 +30,12 @@
   "dependencies": {
     "@contentauth/c2pa-web": "^0.5.7",
     "@noble/hashes": "^2.0.1",
+    "@peculiar/x509": "^1.14.3",
     "@scure/base": "^2.0.0",
     "@succinctlabs/sp1-wasm-verifier": "^5.0.6",
+    "asn1js": "^3.0.7",
+    "cbor2": "^2.2.1",
+    "json-canonicalize": "^2.0.0",
     "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "devDependencies": {
