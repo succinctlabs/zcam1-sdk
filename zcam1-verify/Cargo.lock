@@ -3311,7 +3311,7 @@ dependencies = [
 
 [[package]]
 name = "zcam1-verify"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "uniffi-runtime-javascript",
  "wasm-bindgen",
