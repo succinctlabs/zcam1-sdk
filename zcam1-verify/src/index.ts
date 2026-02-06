@@ -2,7 +2,12 @@ import { createC2pa, Manifest } from "@contentauth/c2pa-web";
 
 import wasmSrc from "@contentauth/c2pa-web/resources/c2pa.wasm?url";
 
-import { computeHashFromBuffer, uniffiInitAsync } from "./bindings";
+import {
+  computeHashFromBuffer,
+  PhotoMetadataInfo,
+  uniffiInitAsync,
+  VideoMetadataInfo,
+} from "./bindings";
 import { utf8ToBytes, bytesToHex, concatBytes } from "@noble/hashes/utils.js";
 import init, { verify_groth16 } from "@succinctlabs/sp1-wasm-verifier";
 import { base64 } from "@scure/base";
@@ -11,6 +16,13 @@ import { canonicalize } from "json-canonicalize";
 import { sha256 } from "@noble/hashes/sha2.js";
 import * as x509 from "@peculiar/x509";
 import { fromBER } from "asn1js";
+
+export { PhotoMetadataInfo, VideoMetadataInfo } from "./bindings";
+
+export interface CaptureMetadata {
+  when: string;
+  parameters: PhotoMetadataInfo | VideoMetadataInfo;
+}
 
 const APPLE_ROOT_CERT =
   "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD";
@@ -94,6 +106,19 @@ export async function verifyProof(file: File, appId: string): Promise<boolean> {
     publicInputs,
     proofAssertion["vk_hash"],
   );
+}
+
+/**
+ * Extracts the capture metadata from a C2PA manifest, including timestamp and capture parameters.
+ *
+ * @param file - The file containing the C2PA manifest to extract metadata from
+ * @returns A promise that resolves to the capture metadata containing when and parameters information
+ */
+export async function extractCaptureMetadata(
+  file: File,
+): Promise<CaptureMetadata> {
+  const manifest = await extractActiveManifest(file);
+  return await retrieveAction(manifest, "succinct.capture");
 }
 
 async function extractActiveManifest(file: File): Promise<Manifest> {

@@ -7,7 +7,6 @@ use std::{
 use c2pa::{assertions::DataHash, HashRange};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_json_canonicalizer::to_string;
 
 use crate::error::C2paError;
 
@@ -42,14 +41,18 @@ impl Manifest {
     pub fn proof(&self) -> Option<Proof> {
         self.assertion_store.proof.clone()
     }
+}
 
+#[cfg(feature = "editor")]
+#[uniffi::export]
+impl Manifest {
     pub fn capture_metadata_action(&self) -> Result<Option<String>, C2paError> {
         let action = self.assertion_store.actions.get("succinct.capture");
 
         let metadata_action = action
             .map(|a| {
                 let metadata_action = serde_json::from_value::<Action<MetadataInfo>>(a.clone())?;
-                to_string(&metadata_action)
+                serde_json_canonicalizer::to_string(&metadata_action)
             })
             .transpose()?;
 

@@ -7,11 +7,13 @@ use std::{
 use c2pa::{hash_stream_by_alg, jumbf_io::get_assetio_handler, Reader};
 use futures::channel::oneshot;
 
-use crate::error::C2paError;
+use crate::{
+    error::C2paError,
+    types::{AuthenticityStatus, ManifestStore},
+};
 
 pub mod error;
 
-#[cfg(feature = "editor")]
 pub mod types;
 
 #[cfg(feature = "editor")]
@@ -23,10 +25,7 @@ mod signing;
 uniffi::setup_scaffolding!();
 
 #[cfg(feature = "editor")]
-pub use {
-    manifest_editor::ManifestEditor,
-    types::{AuthenticityStatus, ManifestStore},
-};
+pub use manifest_editor::ManifestEditor;
 
 #[uniffi::export]
 #[cfg(all(feature = "io", feature = "editor"))]
