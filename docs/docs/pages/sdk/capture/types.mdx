@@ -80,7 +80,7 @@ type TakePhotoOptions = {
 
 ## CameraFilmStyle
 
-Film style preset for camera.
+Film style preset for camera. When a non-default film style is applied, the style name, source, and full recipe are embedded in the C2PA metadata (see [`FilmStyleInfo`](/sdk/verify/types#filmstyleinfo)).
 
 ```tsx
 type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw"
