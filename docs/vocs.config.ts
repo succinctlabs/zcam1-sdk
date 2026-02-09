@@ -86,7 +86,7 @@ export default defineConfig({
             link: "/sdk",
           },
           {
-            text: "Capture",
+            text: "Capture (React Native)",
             link: "/sdk/capture",
             collapsed: true,
             items: [
@@ -149,7 +149,7 @@ export default defineConfig({
             ],
           },
           {
-            text: "Prove",
+            text: "Prove (React Native)",
             link: "/sdk/prove",
             collapsed: true,
             items: [
@@ -188,7 +188,7 @@ export default defineConfig({
             ],
           },
           {
-            text: "Verify",
+            text: "Verify (React Native)",
             link: "/sdk/verify",
             collapsed: true,
             items: [
@@ -219,7 +219,46 @@ export default defineConfig({
             ],
           },
           {
-            text: "Picker",
+            text: "Verify (browser)",
+            link: "/sdk/verify-browser",
+            collapsed: true,
+            items: [
+              {
+                text: "VerifiableFile",
+                link: "/sdk/verify-browser/VerifiableFile",
+              },
+              {
+                text: "verifyBindings",
+                link: "/sdk/verify-browser/verifyBindings",
+              },
+              {
+                text: "verifyProof",
+                link: "/sdk/verify-browser/verifyProof",
+              },
+              {
+                text: "dataHash",
+                link: "/sdk/verify-browser/dataHash",
+              },
+              {
+                text: "captureMetadata",
+                link: "/sdk/verify-browser/captureMetadata",
+              },
+              {
+                text: "authenticityStatus",
+                link: "/sdk/verify-browser/authenticityStatus",
+              },
+              {
+                text: "c2paReader",
+                link: "/sdk/verify-browser/c2paReader",
+              },
+              {
+                text: "Types",
+                link: "/sdk/verify-browser/types",
+              },
+            ],
+          },
+          {
+            text: "Picker (React Native)",
             link: "/sdk/picker",
             collapsed: true,
             items: [

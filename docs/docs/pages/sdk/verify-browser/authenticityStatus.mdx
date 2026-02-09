@@ -1,0 +1,79 @@
+---
+title: authenticityStatus
+description: Determine the authenticity status of a file
+---
+
+# authenticityStatus
+
+Determines the authenticity status of the file based on its C2PA manifest. Use this to decide which verification method to call.
+
+## Usage
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const result = await verifiable.authenticityStatus();
+
+if (result.isOk()) {
+  switch (result.value) {
+    case AuthenticityStatus.Bindings:
+      // File has hardware-backed bindings, use verifyBindings()
+      break;
+    case AuthenticityStatus.Proof:
+      // File has a ZK proof, use verifyProof()
+      break;
+    case AuthenticityStatus.InvalidManifest:
+      // Manifest exists but lacks required assertions
+      break;
+  }
+}
+```
+
+## Returns
+
+`ResultAsync<AuthenticityStatus, Error>` - The file's authenticity status:
+- `AuthenticityStatus.Bindings` - File contains a bindings assertion
+- `AuthenticityStatus.Proof` - File contains a proof assertion
+- `AuthenticityStatus.InvalidManifest` - Manifest exists but lacks required assertions
+
+Returns an error if no C2PA manifest is found.
+
+## Example
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.authenticityStatus();
+
+  if (result.isErr()) {
+    console.log("No valid C2PA manifest found");
+    return;
+  }
+
+  switch (result.value) {
+    case AuthenticityStatus.Bindings:
+      console.log("File has hardware-backed bindings");
+      break;
+    case AuthenticityStatus.Proof:
+      console.log("File has a ZK proof");
+      break;
+    case AuthenticityStatus.InvalidManifest:
+      console.log("Invalid manifest");
+      break;
+  }
+});
+```
+
+## Notes
+
+- Use this method to determine which verification method to call
+- Files with `succinct.bindings` should be verified with [`verifyBindings()`](/sdk/verify-browser/verifyBindings)
+- Files with `succinct.proof` should be verified with [`verifyProof()`](/sdk/verify-browser/verifyProof)

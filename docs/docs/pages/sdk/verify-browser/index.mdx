@@ -1,0 +1,164 @@
+# Verify Browser SDK
+
+The Verify Browser SDK (`@succinctlabs/zcam1-verify`) validates the authenticity of C2PA-signed photos and videos in the browser.
+
+## Installation
+
+```bash
+npm i @succinctlabs/zcam1-verify
+```
+
+## Core Concepts
+
+The Verify Browser SDK:
+- Extracts C2PA manifests from photos and videos
+- Computes the file content hash
+- Validates bindings (Apple App Attest signatures) for files with `succinct.bindings`
+- Validates ZK proofs against a pinned Apple Root CA for files with `succinct.proof`
+- Extracts capture metadata (device info, camera settings, etc.)
+- Confirms the file was captured on a genuine iOS device
+
+## API Reference
+
+### `VerifiableFile`
+
+Class for verifying file authenticity.
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const file = new VerifiableFile(inputFile);
+```
+
+**Constructor:**
+- `file` - A `File` object to verify
+
+### `VerifiableFile.verifyBindings()`
+
+Verifies the Apple App Attest bindings for files that have `succinct.bindings` but haven't been proven yet.
+
+```ts
+const result = await file.verifyBindings(production);
+```
+
+**Parameters:**
+- `production` - `true` if the file was captured in production mode, `false` for development
+
+**Returns:** `ResultAsync<boolean, Error>` - `true` if the bindings are valid, or an error
+
+### `VerifiableFile.verifyProof()`
+
+Validates the embedded ZK proof against the file hash and Apple Root CA.
+
+```ts
+const result = await file.verifyProof(appId);
+```
+
+**Parameters:**
+- `appId` - The app ID in format `TEAM_ID.BUNDLE_ID`
+
+**Returns:** `ResultAsync<boolean, Error>` - `true` if the proof is valid, `false` otherwise
+
+### `VerifiableFile.dataHash()`
+
+Computes the content hash of the file.
+
+```ts
+const hash: Uint8Array = await file.dataHash();
+```
+
+**Returns:** `Promise<Uint8Array>` - The file's content hash
+
+### `VerifiableFile.captureMetadata()`
+
+Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
+
+```ts
+const result = await file.captureMetadata();
+```
+
+**Returns:** `ResultAsync<CaptureMetadata, Error>` - The capture metadata object, or an error if not present
+
+### `VerifiableFile.authenticityStatus()`
+
+Determines the authenticity status of the file based on its C2PA manifest.
+
+```ts
+const result = await file.authenticityStatus();
+```
+
+**Returns:** `ResultAsync<AuthenticityStatus, Error>` - The file's authenticity status
+
+### `VerifiableFile.c2paReader()`
+
+Returns the underlying C2PA Reader for the file.
+
+```ts
+const result = await file.c2paReader();
+```
+
+**Returns:** `ResultAsync<Reader, Error>` - The C2PA Reader, or an error if no C2PA metadata is found
+
+## Complete Example
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+
+  const statusResult = await verifiable.authenticityStatus();
+
+  if (statusResult.isErr()) {
+    console.error("No valid manifest found");
+    return;
+  }
+
+  const status = statusResult.value;
+
+  if (status === AuthenticityStatus.Bindings) {
+    const bindingsResult = await verifiable.verifyBindings(true);
+    console.log("Bindings valid:", bindingsResult.isOk() && bindingsResult.value);
+  } else if (status === AuthenticityStatus.Proof) {
+    const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+    console.log("Proof valid:", proofResult.isOk() && proofResult.value);
+  } else {
+    console.log("Invalid manifest");
+  }
+
+  const metadataResult = await verifiable.captureMetadata();
+  if (metadataResult.isOk()) {
+    console.log("Captured at:", metadataResult.value.when);
+    console.log("Parameters:", metadataResult.value.parameters);
+  }
+});
+```
+
+## What Verification Checks
+
+| Check | What It Validates | Use Case |
+|-------|-------------------|----------|
+| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the file hash | For files with `succinct.bindings` (before proof generation) |
+| `verifyProof()` | ZK proof is valid and chains to the Apple Root CA | For files with `succinct.proof` (after proof generation) |
+
+**Verification Flow:**
+
+For files with `succinct.bindings`:
+1. Call `verifyBindings()` to verify the Apple App Attest signature
+
+For files with `succinct.proof`:
+1. Call `verifyProof()` to verify the ZK proof
+
+## Notes
+
+- All verification methods use `ResultAsync` from `neverthrow` for error handling
+- Use `verifyBindings()` for files with `succinct.bindings` (before proof generation)
+- Use `verifyProof()` for files with `succinct.proof` (after proof generation)
+- Files with only `succinct.bindings` will fail `verifyProof()` (they haven't been proven yet)
+- The Apple Root CA is pinned in the SDK; proofs must chain to this root
+- `captureMetadata()` provides access to device and camera settings recorded at capture time
