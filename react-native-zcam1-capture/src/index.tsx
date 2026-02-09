@@ -93,22 +93,22 @@ export class ZPhoto {
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${settings.appId}`);
 
-  let contentKeyId: Uint8Array | undefined;
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
     throw "Only EC public keys are supported";
   }
 
-  contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
+  const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
   if (deviceKeyId == null) {
     // Try to generate hardware key, but fall back to mock for simulator
     try {
       deviceKeyId = await generateHardwareKey();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If running in simulator, hardware key generation is not supported
-      if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+      const err = error as { code?: string; message?: string } | undefined;
+      if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
         console.warn(
           "[ZCAM] Running in simulator - using mock device key. This is for development only.",
         );
@@ -146,14 +146,15 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
  * @param settings - Configuration settings for registration
  * @returns Attestation data and challenge
  */
-export async function updateRegistration(keyId: string, settings: Settings): Promise<string> {
+export async function updateRegistration(keyId: string, _settings: Settings): Promise<string> {
   // Try to get real attestation, but fall back to mock for simulator
   let attestation: string;
   try {
     attestation = await getAttestation(keyId, keyId);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If running in simulator, App Attest is not supported
-    if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+    const err = error as { code?: string; message?: string } | undefined;
+    if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
       console.warn(
         "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
       );

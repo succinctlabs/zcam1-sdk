@@ -2,7 +2,6 @@ import { base64 } from "@scure/base";
 import {
   buildSelfSignedCertificate,
   ExistingCertChain,
-  extractManifest,
   formatFromPath,
   ManifestEditor,
   SelfSignedCertChain,
@@ -130,7 +129,7 @@ function provingTasksReducer(
       };
     case "removed": {
       if (!(action.requestId in state)) return state;
-      const { [action.requestId]: _removed, ...rest } = state;
+      const { [action.requestId]: _, ...rest } = state;
       return rest;
     }
     default:

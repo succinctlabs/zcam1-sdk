@@ -1,6 +1,7 @@
 import {
   buildSelfSignedCertificate,
   computeHash,
+  DepthData,
   ExistingCertChain,
   formatFromPath,
   ManifestEditor,
@@ -223,6 +224,7 @@ const Zcam1CameraView = requireNativeComponent<NativeCameraViewProps>("Zcam1Came
  */
 export class ZCamera extends React.PureComponent<ZCameraProps> {
   /** Reference to the underlying native view (if needed later). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private nativeRef = React.createRef<any>();
 
   /** Best-effort JS-side guard; native is the source of truth. */
@@ -526,6 +528,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     }
 
     const originalPath = result.filePath;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadata = (result.metadata as any) ?? {};
 
     const exif = metadata["{Exif}"] ?? {};
@@ -556,7 +559,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           isJailBroken,
           isLocationSpoofingAvailable,
         },
-        depthData: result.depthData as any,
+        depthData: result.depthData as DepthData | undefined,
         filmStyle: this.resolveFilmStyleInfo(),
       },
       this.props.captureInfo,

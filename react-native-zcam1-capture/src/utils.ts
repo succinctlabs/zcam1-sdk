@@ -20,8 +20,9 @@ export async function generateAppAttestAssertion(
       base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes)),
       deviceKeyId,
     );
-  } catch (error: any) {
-    if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string } | undefined;
+    if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
       console.warn(
         "[ZCAMs] Running in simulator - using mock attestation. This is for development only.",
       );

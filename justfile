@@ -51,3 +51,19 @@ clean:
     cd react-native-zcam1-c2pa && npm run clean
     cd react-native-zcam1-prove && npm run clean
     cd react-native-zcam1-verify && npm run clean
+
+lint-all:
+    cd react-native-zcam1-common && npm run lint
+    cd react-native-zcam1-c2pa && npm run lint
+    cd react-native-zcam1-capture && npm run lint
+    cd react-native-zcam1-prove && npm run lint
+    cd react-native-zcam1-verify && npm run lint
+    cd react-native-zcam1-picker && npm run lint
+
+format-all:
+    cd react-native-zcam1-common && npm run format
+    cd react-native-zcam1-c2pa && npm run format
+    cd react-native-zcam1-capture && npm run format
+    cd react-native-zcam1-prove && npm run format
+    cd react-native-zcam1-verify && npm run format
+    cd react-native-zcam1-picker && npm run format

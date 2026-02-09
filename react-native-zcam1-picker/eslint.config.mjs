@@ -30,6 +30,12 @@ export default tseslint.config(
       // Import organization (matches Biome organizeImports)
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
+
+      // Allow underscore-prefixed variables to be unused (common convention)
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+      }],
     },
     settings: {
       react: { version: "detect" },
