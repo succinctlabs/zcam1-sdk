@@ -692,10 +692,21 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             }
         }
 
-        // Apply film style if needed, preserving original orientation.
-        var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: image.imageOrientation)
+        // Apply film style if needed, preserving original EXIF orientation.
+        // Harbeth's make(filter:) calls flattened() which bakes UIImage orientation into the
+        // pixel data and returns .up. This corrupts the EXIF orientation metadata (e.g., a
+        // portrait photo would get EXIF 1 "Up" instead of EXIF 6 "Right"). To prevent this,
+        // we pass the CGImage with .up orientation so flattened() is a no-op, then restore
+        // the original orientation afterward. Film style effects are purely color-space
+        // operations and do not depend on pixel orientation.
+        let originalOrientation = image.imageOrientation
+        var finalImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: originalOrientation)
         if let customFilmStyles = customFilmStyleChain {
-            finalImage = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: finalImage)
+            let upImage = UIImage(cgImage: processedCGImage, scale: image.scale, orientation: .up)
+            let filtered = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: upImage)
+            if let filteredCG = filtered.cgImage {
+                finalImage = UIImage(cgImage: filteredCG, scale: image.scale, orientation: originalOrientation)
+            }
         }
 
         return encodeJPEGWithMetadata(finalImage, metadata: metadata, compressionQuality: compressionQuality)
