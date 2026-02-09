@@ -86,8 +86,7 @@ export default defineConfig({
             link: "/sdk",
           },
           {
-            text: "Capture (React Native)",
-            link: "/sdk/capture",
+            text: "Capture",
             collapsed: true,
             items: [
               {
@@ -149,8 +148,7 @@ export default defineConfig({
             ],
           },
           {
-            text: "Prove (React Native)",
-            link: "/sdk/prove",
+            text: "Prove",
             collapsed: true,
             items: [
               {
@@ -188,8 +186,7 @@ export default defineConfig({
             ],
           },
           {
-            text: "Verify (React Native)",
-            link: "/sdk/verify",
+            text: "Verify",
             collapsed: true,
             items: [
               {
@@ -259,7 +256,6 @@ export default defineConfig({
           },
           {
             text: "Picker (React Native)",
-            link: "/sdk/picker",
             collapsed: true,
             items: [
               {
