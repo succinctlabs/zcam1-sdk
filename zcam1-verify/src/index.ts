@@ -63,7 +63,7 @@ export class VerifiableFile {
    * and assertion against the photo hash and capture action metadata.
    *
    * @param production - Whether to use production or development Apple App Attestation GUID
-   * @returns A promise that resolves to true if the bindings are valid, throws an error otherwise
+   * @returns true if the bindings are valid, or an error
    */
   verifyBindings(production: boolean): ResultAsync<boolean, Error> {
     return this.extractActiveManifest()
@@ -142,8 +142,8 @@ export class VerifiableFile {
   }
 
   /**
-   * Returns the file's content hash as recorded in the active C2PA manifest.
-   * @returns The manifest data hash (base64-encoded string)
+   * Computes the content hash of the file.
+   * @returns The file's content hash as a Uint8Array
    */
   async dataHash(): Promise<Uint8Array> {
     if (this.cachedHash === undefined) {
@@ -168,11 +168,10 @@ export class VerifiableFile {
   /**
    * Determines the authenticity status of the file based on its C2PA manifest.
    *
-   * @returns A promise that resolves to the file's authenticity status:
+   * @returns The file's authenticity status:
    *   - `Bindings`: File contains a bindings assertion
    *   - `Proof`: File contains a proof assertion
    *   - `InvalidManifest`: Manifest exists but lacks required assertions
-   *   - `NoManifest`: No C2PA manifest found
    */
   authenticityStatus(): ResultAsync<AuthenticityStatus, Error> {
     return this.extractActiveManifest().andThen((manifest) => {
@@ -187,16 +186,23 @@ export class VerifiableFile {
     });
   }
 
-  extractActiveManifest(): ResultAsync<Manifest, Error> {
+  /**
+   * Returns the underlying C2PA Reader for the file.
+   * @returns The C2PA Reader, or an error if no C2PA metadata is found
+   */
+  c2paReader(): ResultAsync<Reader, Error> {
+    return ResultAsync.fromSafePromise(this.readerPromise).andThen((reader) => {
+      if (reader) return okAsync(reader);
+      else return errAsync(new Error("No C2PA metadata found"));
+    });
+  }
+
+  private extractActiveManifest(): ResultAsync<Manifest, Error> {
     if (this.cachedActiveManifest) {
       return okAsync(this.cachedActiveManifest);
     }
 
-    return ResultAsync.fromSafePromise(this.readerPromise)
-      .andThen((reader) => {
-        if (reader) return okAsync(reader);
-        else return errAsync(new Error("No C2PA metadata found"));
-      })
+    return this.c2paReader()
       .map((reader) => reader.manifestStore())
       .andThen((store) => {
         if (store.active_manifest) {
