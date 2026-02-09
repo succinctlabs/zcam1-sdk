@@ -1,4 +1,4 @@
-import { createC2pa, Manifest } from "@contentauth/c2pa-web";
+import { createC2pa, Manifest, Reader } from "@contentauth/c2pa-web";
 
 import wasmSrc from "@contentauth/c2pa-web/resources/c2pa.wasm?url";
 
@@ -17,6 +17,7 @@ import { canonicalize } from "json-canonicalize";
 import { sha256 } from "@noble/hashes/sha2.js";
 import * as x509 from "@peculiar/x509";
 import { fromBER } from "asn1js";
+import { err, errAsync, ok, okAsync, Result, ResultAsync } from "neverthrow";
 
 export {
   PhotoMetadataInfo,
@@ -44,7 +45,9 @@ await init();
 
 export class VerifiableFile {
   file: File;
-  hash: ArrayBuffer | undefined;
+  readerPromise: Promise<Reader | null>;
+  cachedActiveManifest: Manifest | undefined;
+  cachedHash: ArrayBuffer | undefined;
 
   /**
    * Creates a VerifiableFile instance by extracting the C2PA manifest from the file.
@@ -52,6 +55,7 @@ export class VerifiableFile {
    */
   constructor(file: File) {
     this.file = file;
+    this.readerPromise = c2pa.reader.fromBlob(file.type, file);
   }
 
   /**
@@ -61,39 +65,48 @@ export class VerifiableFile {
    * @param production - Whether to use production or development Apple App Attestation GUID
    * @returns A promise that resolves to true if the bindings are valid, throws an error otherwise
    */
-  async verifyBindings(production: boolean): Promise<boolean> {
-    const activeManifest = await extractActiveManifest(this.file);
-    const bindingsAssertion = retrieveAssertion(
-      activeManifest,
-      "succinct.bindings",
-    );
-    const fileBuffer = await this.file.arrayBuffer();
-    const photoHash = new Uint8Array(
-      computeHashFromBuffer(fileBuffer, this.file.type),
-    );
+  verifyBindings(production: boolean): ResultAsync<boolean, Error> {
+    return this.extractActiveManifest()
+      .andThen((manifest) => {
+        return Result.combine([
+          retrieveAssertion(manifest, "succinct.bindings"),
+          retrieveAction(manifest, "succinct.capture"),
+        ]);
+      })
+      .andThen(([bindingsAssertion, captureAction]) => {
+        return ResultAsync.fromSafePromise(this.dataHash()).andThen(
+          (photoHash) => {
+            const normalizedCaptureAction = canonicalize(captureAction);
+            const clientData = computeClientData(
+              photoHash,
+              utf8ToBytes(normalizedCaptureAction),
+            );
 
-    const captureAction = retrieveAction(activeManifest, "succinct.capture");
-    const normalizedCaptureAction = canonicalize(captureAction);
-    const clientData = computeClientData(
-      photoHash,
-      utf8ToBytes(normalizedCaptureAction),
-    );
-
-    const publicKey = await validateAttestation(
-      bindingsAssertion.attestation,
-      bindingsAssertion.device_key_id,
-      bindingsAssertion.device_key_id,
-      bindingsAssertion.app_id,
-      production,
-      !production,
-    );
-
-    return await validateAssertion(
-      bindingsAssertion.assertion,
-      clientData,
-      publicKey,
-      bindingsAssertion.app_id,
-    );
+            return ResultAsync.fromSafePromise(
+              validateAttestation(
+                bindingsAssertion.attestation,
+                bindingsAssertion.device_key_id,
+                bindingsAssertion.device_key_id,
+                bindingsAssertion.app_id,
+                production,
+                !production,
+              ),
+            )
+              .andThen((r) => r)
+              .andThen((publicKey) =>
+                ResultAsync.fromSafePromise(
+                  validateAssertion(
+                    bindingsAssertion.assertion,
+                    clientData,
+                    publicKey,
+                    bindingsAssertion.app_id,
+                  ),
+                ),
+              )
+              .andThen((r) => r);
+          },
+        );
+      });
   }
 
   /**
@@ -102,35 +115,43 @@ export class VerifiableFile {
    * @param appId - The application identifier to include in the public inputs
    * @returns A promise that resolves to true if the proof is valid, false otherwise
    */
-  async verifyProof(appId: string): Promise<boolean> {
-    const activeManifest = await extractActiveManifest(this.file);
-    const proofAssertion = retrieveAssertion(activeManifest, "succinct.proof");
-    const fileBuffer = await this.file.arrayBuffer();
-    const photoHash = new Uint8Array(
-      computeHashFromBuffer(fileBuffer, this.file.type),
-    );
-    const appIdBytes = utf8ToBytes(appId);
-    const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
-    let publicInputs = concatBytes(photoHash, appIdBytes, appleRootCert);
+  verifyProof(appId: string): ResultAsync<boolean, Error> {
+    return this.extractActiveManifest()
+      .andThen((manifest) => retrieveAssertion(manifest, "succinct.proof"))
+      .andThen((proofAssertion) => {
+        return ResultAsync.fromSafePromise(this.dataHash()).andThen(
+          (photoHash) => {
+            const appIdBytes = utf8ToBytes(appId);
+            const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
+            let publicInputs = concatBytes(
+              photoHash,
+              appIdBytes,
+              appleRootCert,
+            );
 
-    return verify_groth16(
-      base64.decode(proofAssertion["data"]),
-      publicInputs,
-      proofAssertion["vk_hash"],
-    );
+            const isValid = verify_groth16(
+              base64.decode(proofAssertion["data"]),
+              publicInputs,
+              proofAssertion["vk_hash"],
+            );
+
+            return okAsync(isValid);
+          },
+        );
+      });
   }
 
   /**
    * Returns the file's content hash as recorded in the active C2PA manifest.
    * @returns The manifest data hash (base64-encoded string)
    */
-  async dataHash(): Promise<string> {
-    if (this.hash === undefined) {
+  async dataHash(): Promise<Uint8Array> {
+    if (this.cachedHash === undefined) {
       const fileBuffer = await this.file.arrayBuffer();
-      this.hash = computeHashFromBuffer(fileBuffer, this.file.type);
+      this.cachedHash = computeHashFromBuffer(fileBuffer, this.file.type);
     }
 
-    return base64.encode(new Uint8Array(this.hash));
+    return new Uint8Array(this.cachedHash);
   }
 
   /**
@@ -138,9 +159,10 @@ export class VerifiableFile {
    *
    * @returns A promise that resolves to the capture metadata containing when and parameters information
    */
-  async captureMetadata(): Promise<CaptureMetadata> {
-    const manifest = await extractActiveManifest(this.file);
-    return await retrieveAction(manifest, "succinct.capture");
+  captureMetadata(): ResultAsync<CaptureMetadata, Error> {
+    return this.extractActiveManifest().andThen((manifest) =>
+      retrieveAction<CaptureMetadata>(manifest, "succinct.capture"),
+    );
   }
 
   /**
@@ -152,61 +174,69 @@ export class VerifiableFile {
    *   - `InvalidManifest`: Manifest exists but lacks required assertions
    *   - `NoManifest`: No C2PA manifest found
    */
-  async authenticityStatus(): Promise<AuthenticityStatus> {
-    return extractActiveManifest(this.file)
-      .then((manifest) => {
-        try {
-          retrieveAssertion(manifest, "succinct.bindings");
-          return AuthenticityStatus.Bindings;
-        } catch {}
-        try {
-          retrieveAssertion(manifest, "succinct.proof");
-          return AuthenticityStatus.Proof;
-        } catch {}
+  authenticityStatus(): ResultAsync<AuthenticityStatus, Error> {
+    return this.extractActiveManifest().andThen((manifest) => {
+      if (retrieveAssertion(manifest, "succinct.bindings").isOk()) {
+        return okAsync(AuthenticityStatus.Bindings);
+      }
+      if (retrieveAssertion(manifest, "succinct.proof").isOk()) {
+        return okAsync(AuthenticityStatus.Proof);
+      }
 
-        return AuthenticityStatus.InvalidManifest;
-      })
-      .catch(() => AuthenticityStatus.NoManifest);
-  }
-}
-
-async function extractActiveManifest(file: File): Promise<Manifest> {
-  const reader = await c2pa.reader.fromBlob(file.type, file);
-
-  if (!reader) {
-    throw new Error("The provided file doesn't contain C2PA metadata");
+      return okAsync(AuthenticityStatus.InvalidManifest);
+    });
   }
 
-  let store = await reader.manifestStore();
-
-  if (!store.active_manifest) {
-    throw new Error("The provided file doesn't contain a C2PA manifest");
-  }
-
-  return store.manifests[store.active_manifest];
-}
-
-function retrieveAction(manifest: Manifest, label: string): any {
-  const actionsAssertion = retrieveAssertion(manifest, "c2pa.actions.v2");
-  for (const a of actionsAssertion.actions) {
-    if (a.action === label) {
-      return a;
+  extractActiveManifest(): ResultAsync<Manifest, Error> {
+    if (this.cachedActiveManifest) {
+      return okAsync(this.cachedActiveManifest);
     }
-  }
 
-  throw new Error(`The provided file doesn't contain a ${label} action`);
+    return ResultAsync.fromSafePromise(this.readerPromise)
+      .andThen((reader) => {
+        if (reader) return okAsync(reader);
+        else return errAsync(new Error("No C2PA metadata found"));
+      })
+      .map((reader) => reader.manifestStore())
+      .andThen((store) => {
+        if (store.active_manifest) {
+          this.cachedActiveManifest = store.manifests[store.active_manifest];
+          return okAsync(this.cachedActiveManifest);
+        } else return err(new Error("No active manifest found"));
+      });
+  }
 }
 
-function retrieveAssertion(manifest: Manifest, label: string): any {
+function retrieveAction<T = Record<string, any>>(
+  manifest: Manifest,
+  label: string,
+): Result<T, Error> {
+  return retrieveAssertion(manifest, "c2pa.actions.v2").andThen(
+    (actionsAssertion) => {
+      for (const a of actionsAssertion.actions) {
+        if (a.action === label) {
+          return ok(a);
+        }
+      }
+
+      return err(new Error(`Action ${label} not found`));
+    },
+  );
+}
+
+function retrieveAssertion(
+  manifest: Manifest,
+  label: string,
+): Result<Record<string, any>, Error> {
   if (manifest.assertions) {
     for (const a of manifest.assertions) {
       if (a.label === label) {
-        return a.data;
+        return ok(a.data as any);
       }
     }
   }
 
-  throw new Error(`The provided file doesn't contain a ${label} assertion`);
+  return err(new Error(`Assertion ${label} not found`));
 }
 
 function computeClientData(
@@ -225,7 +255,7 @@ async function validateAttestation(
   appId: string,
   production: boolean,
   leafCertOnly: boolean,
-): Promise<CryptoKey> {
+): Promise<Result<CryptoKey, Error>> {
   const decodedAttestation: any = decode(base64.decode(attestation));
 
   if (
@@ -234,7 +264,7 @@ async function validateAttestation(
     !decodedAttestation.attStmt?.receipt ||
     !decodedAttestation.authData
   ) {
-    throw new Error("Invalid attestation");
+    return errAsync(new Error("Invalid attestation"));
   }
 
   const { authData, attStmt } = decodedAttestation;
@@ -332,7 +362,7 @@ async function validateAttestation(
     }
   }
 
-  return cryptoPublicKey;
+  return ok(cryptoPublicKey);
 }
 
 async function validateAssertion(
@@ -340,7 +370,7 @@ async function validateAssertion(
   clientData: string,
   publicKey: CryptoKey,
   appId: string,
-): Promise<boolean> {
+): Promise<Result<boolean, Error>> {
   const decodedAssertion: any = decode(base64.decode(assertion));
   const { signature, authenticatorData } = decodedAssertion;
 
@@ -370,7 +400,7 @@ async function validateAssertion(
     throw new Error("App Id does not match");
   }
 
-  return true;
+  return ok(true);
 }
 
 function ecdsaDerToRaw(der: Uint8Array, size = 32): Uint8Array<ArrayBuffer> {

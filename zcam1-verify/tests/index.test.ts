@@ -15,7 +15,7 @@ describe("VerifiableFile", () => {
 
     const isValid = await verifiable.verifyBindings(false);
 
-    expect(isValid).toBe(true);
+    expect(isValid._unsafeUnwrap()).toBe(true);
   });
 
   it("proof verification", async () => {
@@ -30,7 +30,7 @@ describe("VerifiableFile", () => {
       "NLS5R4YCGX.com.anonymous.zcam1-e2e-example",
     );
 
-    expect(isValid).toBe(true);
+    expect(isValid._unsafeUnwrap()).toBe(true);
   });
 
   it("extract metadata", async () => {
@@ -41,7 +41,7 @@ describe("VerifiableFile", () => {
     });
     const verifiable = new VerifiableFile(file);
 
-    const metadata = await verifiable.captureMetadata();
+    const metadata = (await verifiable.captureMetadata())._unsafeUnwrap();
 
     expect(metadata.parameters.deviceMake).toBe("Apple");
     expect(metadata.parameters.deviceModel).toBe("iPhone 16");
@@ -57,7 +57,7 @@ describe("VerifiableFile", () => {
 
     const authStatus = await verifiable.authenticityStatus();
 
-    expect(authStatus).toBe(AuthenticityStatus.Bindings);
+    expect(authStatus._unsafeUnwrap()).toBe(AuthenticityStatus.Bindings);
   });
 
   it("authenticity status proof", async () => {
@@ -70,6 +70,6 @@ describe("VerifiableFile", () => {
 
     const authStatus = await verifiable.authenticityStatus();
 
-    expect(authStatus).toBe(AuthenticityStatus.Proof);
+    expect(authStatus._unsafeUnwrap()).toBe(AuthenticityStatus.Proof);
   });
 });
