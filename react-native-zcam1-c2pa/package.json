@@ -32,15 +32,22 @@
   "license": "MIT",
   "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
     "@react-native/babel-preset": "0.81.1",
     "@types/react": "^19.1.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "install": "^0.13.0",
     "npm": "^11.6.4",
+    "prettier": "^3.4.2",
     "react-native-builder-bob": "^0.40.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.21.0"
   },
   "dependencies": {
-    "prettier": "^3.7.3",
     "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "peerDependencies": {
@@ -57,7 +64,11 @@
     "preyalcpublish": "mv Zcam1C2paFramework.xcframework.excluded Zcam1C2paFramework.xcframework",
     "postyalcpublish": "mv Zcam1C2paFramework.xcframework Zcam1C2paFramework.xcframework.excluded",
     "postpublish": "if [ -e Zcam1C2paFramework.xcframework.excluded ]; then mv Zcam1C2paFramework.xcframework.excluded Zcam1C2paFramework.xcframework; fi",
-    "postinstall": "./scripts/download-framework.sh Zcam1C2paFramework.xcframework"
+    "postinstall": "./scripts/download-framework.sh Zcam1C2paFramework.xcframework",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "exports": {
     ".": {

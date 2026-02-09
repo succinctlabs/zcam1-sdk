@@ -1,24 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Image,
-  View,
-} from "react-native";
-import { Dirs, FileSystem, Util } from "react-native-file-access";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { createThumbnail } from "react-native-create-thumbnail";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
-import {
-  authenticityStatus,
-  AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+import { AuthenticityStatus, authenticityStatus } from "@succinctlabs/react-native-zcam1-c2pa";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { createThumbnail } from "react-native-create-thumbnail";
+import { Dirs, FileSystem, Util } from "react-native-file-access";
 
-export {
-  authenticityStatus,
-  AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+export { AuthenticityStatus, authenticityStatus } from "@succinctlabs/react-native-zcam1-c2pa";
 
 /**
  * Configuration for loading images from a private folder.
@@ -66,17 +54,14 @@ export interface ZImagePickerProps {
    * Sort order for images.
    * Defaults to 'oldest-first' (oldest images first in the list).
    */
-  sortOrder?: 'newest-first' | 'oldest-first';
+  sortOrder?: "newest-first" | "oldest-first";
 
   /**
    * Optional function to render a badge based on the authenticity status of an image.
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
    */
-  renderBadge?: (
-    uri: string,
-    status: AuthenticityStatus,
-  ) => React.ReactElement | null;
+  renderBadge?: (uri: string, status: AuthenticityStatus) => React.ReactElement | null;
 
   /**
    * Optional callback function that is called when an image is selected.
@@ -107,10 +92,7 @@ export interface ZImagePickerProps {
    * @param isSelected - Whether the image is currently selected.
    * @returns A React element to display as a selection overlay, or null to display nothing.
    */
-  renderSelectionOverlay?: (
-    uri: string,
-    isSelected: boolean,
-  ) => React.ReactElement | null;
+  renderSelectionOverlay?: (uri: string, isSelected: boolean) => React.ReactElement | null;
 }
 
 /**
@@ -130,22 +112,13 @@ const ZImageItem = ({
   isSelected,
 }: {
   uri: string;
-  renderBadge?: (
-    uri: string,
-    status: AuthenticityStatus,
-  ) => React.ReactElement | null;
-  renderSelectionOverlay?: (
-    uri: string,
-    isSelected: boolean,
-  ) => React.ReactElement | null;
+  renderBadge?: (uri: string, status: AuthenticityStatus) => React.ReactElement | null;
+  renderSelectionOverlay?: (uri: string, isSelected: boolean) => React.ReactElement | null;
   onSelect: (uri: string) => void;
   multiSelect?: boolean;
   isSelected?: boolean;
 }) => {
-  const [authStatus, setAuthStatus] = useRecyclingState(
-    AuthenticityStatus.Unknown,
-    [uri],
-  );
+  const [authStatus, setAuthStatus] = useRecyclingState(AuthenticityStatus.Unknown, [uri]);
   const [thumbnail, setThumbnail] = useRecyclingState(uri, [uri]);
 
   useEffect(() => {
@@ -189,14 +162,8 @@ const ZImageItem = ({
   }, [multiSelect, renderSelectionOverlay, uri, isSelected]);
 
   return (
-    <TouchableOpacity
-      style={styles.imageContainer}
-      onPress={() => onSelect(uri)}
-    >
-      <Image
-        style={styles.image}
-        source={{ uri: thumbnail }}
-      />
+    <TouchableOpacity style={styles.imageContainer} onPress={() => onSelect(uri)}>
+      <Image style={styles.image} source={{ uri: thumbnail }} />
       {multiSelect && isSelected && (
         <View
           style={{
@@ -256,9 +223,10 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             groupName: props.source.album,
           });
 
-          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
-          result.edges.sort((a, b) =>
-            sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp)
+          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          result.edges.sort(
+            (a, b) =>
+              sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp),
           );
 
           const photoUris = result.edges
@@ -280,10 +248,8 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
               return { uri, timestamp };
             });
 
-          const sortMultiplier = props.sortOrder === 'newest-first' ? -1 : 1;
-          photosWithTimestamps.sort((a, b) =>
-            sortMultiplier * (a.timestamp - b.timestamp)
-          );
+          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          photosWithTimestamps.sort((a, b) => sortMultiplier * (a.timestamp - b.timestamp));
 
           const photoUris = photosWithTimestamps.map((p) => p.uri);
           if (!cancelled) setPhotos(photoUris);
@@ -333,7 +299,13 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         />
       );
     },
-    [handleSelect, props.renderBadge, props.renderSelectionOverlay, props.multiSelect, props.selectedUris],
+    [
+      handleSelect,
+      props.renderBadge,
+      props.renderSelectionOverlay,
+      props.multiSelect,
+      props.selectedUris,
+    ],
   );
 
   return (

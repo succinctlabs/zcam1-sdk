@@ -1,6 +1,6 @@
+import { sha256 } from "@noble/hashes/sha2.js";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { base64 } from "@scure/base";
-import { sha256 } from "@noble/hashes/sha2.js";
 
 function stringToArray(s: string): Uint8Array {
   return new TextEncoder().encode(s);
@@ -17,16 +17,11 @@ export async function generateAppAttestAssertion(
 
   try {
     assertion = await generateHardwareSignatureWithAssertion(
-      base64.encode(new Uint8Array(dataHash)) +
-        "|" +
-        base64.encode(sha256(metadataBytes)),
+      base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes)),
       deviceKeyId,
     );
   } catch (error: any) {
-    if (
-      error?.code === "-1" ||
-      error?.message?.includes("UNSUPPORTED_SERVICE")
-    ) {
+    if (error?.code === "-1" || error?.message?.includes("UNSUPPORTED_SERVICE")) {
       console.warn(
         "[ZCAMs] Running in simulator - using mock attestation. This is for development only.",
       );

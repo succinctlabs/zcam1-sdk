@@ -3,6 +3,9 @@ name = "zcam1-proving-bindings"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 zcam1-proving-utils.workspace = true
 

@@ -5,7 +5,11 @@
   "main": "./lib/module/index.js",
   "scripts": {
     "build": "bob build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "repository": {
     "type": "git",
@@ -14,8 +18,16 @@
   "author": "leruaa",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.4.2",
     "react-native-builder-bob": "^0.40.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.21.0"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",

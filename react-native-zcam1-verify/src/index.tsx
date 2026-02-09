@@ -1,13 +1,14 @@
-import { base64 } from "@scure/base";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
+import { base64 } from "@scure/base";
 import {
   computeHash,
   extractManifest,
+  type ManifestInterface,
   PhotoMetadataInfo,
   VideoMetadataInfo,
-  type ManifestInterface,
 } from "@succinctlabs/react-native-zcam1-c2pa";
-import { verifyGroth16, verifyBindingsFromManifest } from "./verifier";
+
+import { verifyBindingsFromManifest, verifyGroth16 } from "./verifier";
 
 /**
  * Capture metadata extracted from the C2PA manifest.
@@ -94,7 +95,7 @@ function verifyProofFromManifest(
   path: string,
   appId: string,
 ): boolean {
-  let proof = activeManifest.proof();
+  const proof = activeManifest.proof();
 
   if (proof === undefined) {
     throw new Error("The proof was not found in the manifest");
@@ -104,9 +105,7 @@ function verifyProofFromManifest(
   const appIdBytes = utf8ToBytes(appId);
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 
-  let publicInputs = new Uint8Array(
-    hash.length + appIdBytes.length + appleRootCert.length,
-  );
+  const publicInputs = new Uint8Array(hash.length + appIdBytes.length + appleRootCert.length);
   publicInputs.set(hash);
   publicInputs.set(appIdBytes, hash.length);
   publicInputs.set(appleRootCert, hash.length + appIdBytes.length);

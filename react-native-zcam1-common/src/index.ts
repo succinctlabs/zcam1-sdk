@@ -1,15 +1,6 @@
-import {
-  generate,
-  getPublicKeyFixed,
-  type PublicKey,
-} from "@pagopa/io-react-native-crypto";
-import {
-  base64,
-  base64url,
-  base64nopad,
-  base64urlnopad,
-} from "@scure/base";
 import { sha1 } from "@noble/hashes/legacy.js";
+import { generate, getPublicKeyFixed, type PublicKey } from "@pagopa/io-react-native-crypto";
+import { base64, base64nopad, base64url, base64urlnopad } from "@scure/base";
 
 const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
 

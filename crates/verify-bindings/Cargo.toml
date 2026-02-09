@@ -3,6 +3,9 @@ name = "zcam1-verify-bindings"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 zcam1-ios.workspace = true
 base64ct.workspace = true
