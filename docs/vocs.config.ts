@@ -87,6 +87,7 @@ export default defineConfig({
           },
           {
             text: "Capture",
+            link: "/sdk/capture",
             collapsed: true,
             items: [
               {
@@ -149,6 +150,7 @@ export default defineConfig({
           },
           {
             text: "Prove",
+            link: "/sdk/prove",
             collapsed: true,
             items: [
               {
@@ -187,6 +189,7 @@ export default defineConfig({
           },
           {
             text: "Verify",
+            link: "/sdk/verify",
             collapsed: true,
             items: [
               {
@@ -217,6 +220,7 @@ export default defineConfig({
           },
           {
             text: "Picker",
+            link: "/sdk/picker",
             collapsed: true,
             items: [
               {
