@@ -335,6 +335,23 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
   }
 
   /**
+   * Get the supported exposure compensation range in EV units.
+   * Returns the device's min and max exposure target bias values.
+   * Use this to configure slider bounds for exposure UI controls.
+   */
+  async getExposureRange(): Promise<{ min: number; max: number }> {
+    return NativeZcam1Sdk.getExposureRange();
+  }
+
+  /**
+   * Reset exposure compensation to neutral (0 EV).
+   * Convenience method equivalent to setting the exposure prop to 0.
+   */
+  resetExposure(): void {
+    NativeZcam1Sdk.resetExposure();
+  }
+
+  /**
    * Focus at a point in the preview. Also adjusts exposure point if supported.
    * @param x Normalized x coordinate (0-1, left to right)
    * @param y Normalized y coordinate (0-1, top to bottom)
@@ -366,6 +383,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     switchOverFactors: number[];
     switchingBehavior: number;
     isVirtualDevice: boolean;
+    currentExposureBias: number;
+    minExposureBias: number;
+    maxExposureBias: number;
+    currentISO: number;
+    exposureDuration: number;
   }> {
     return NativeZcam1Sdk.getDeviceDiagnostics();
   }

@@ -1318,6 +1318,11 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
             "switchOverFactors": switchOverFactors,
             "switchingBehavior": switchingBehavior,
             "isVirtualDevice": !switchOverFactors.isEmpty,
+            "currentExposureBias": currentExposureBias,
+            "minExposureBias": device.minExposureTargetBias,
+            "maxExposureBias": device.maxExposureTargetBias,
+            "currentISO": device.iso,
+            "exposureDuration": CMTimeGetSeconds(device.exposureDuration),
         ]
     }
 
@@ -1514,6 +1519,23 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 print("[Zcam1] Failed to set exposure: \(error)")
             }
         }
+    }
+
+    /// Get the supported exposure compensation range in EV units.
+    /// Returns a dictionary with "min" and "max" keys.
+    public func getExposureRange() -> [String: Float] {
+        guard let device = videoInput?.device else {
+            return ["min": 0.0, "max": 0.0]
+        }
+        return [
+            "min": device.minExposureTargetBias,
+            "max": device.maxExposureTargetBias,
+        ]
+    }
+
+    /// Reset exposure compensation to neutral (0 EV).
+    public func resetExposure() {
+        setExposureCompensation(0.0)
     }
 
     /// Called by PhotoCaptureDelegate when a capture has fully completed so we can

@@ -262,6 +262,17 @@ export interface Spec extends TurboModule {
   hasUltraWideCamera(): Promise<boolean>;
 
   /**
+   * Get the supported exposure compensation range in EV units.
+   * Returns the device's min and max exposure target bias values.
+   */
+  getExposureRange(): Promise<{ min: number; max: number }>;
+
+  /**
+   * Reset exposure compensation to neutral (0 EV).
+   */
+  resetExposure(): void;
+
+  /**
    * Focus at a normalized point in the preview.
    * Also adjusts exposure point if supported.
    * @param x Normalized x coordinate (0-1, left to right)
@@ -282,6 +293,11 @@ export interface Spec extends TurboModule {
     switchOverFactors: number[];
     switchingBehavior: number;
     isVirtualDevice: boolean;
+    currentExposureBias: number;
+    minExposureBias: number;
+    maxExposureBias: number;
+    currentISO: number;
+    exposureDuration: number;
   }>;
 
   /**
