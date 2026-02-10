@@ -173,17 +173,39 @@ export class VerifiableFile {
    *   - `Proof`: File contains a proof assertion
    *   - `InvalidManifest`: Manifest exists but lacks required assertions
    */
-  authenticityStatus(): ResultAsync<AuthenticityStatus, Error> {
-    return this.extractActiveManifest().andThen((manifest) => {
-      if (retrieveAssertion(manifest, "succinct.bindings").isOk()) {
-        return okAsync(AuthenticityStatus.Bindings);
-      }
-      if (retrieveAssertion(manifest, "succinct.proof").isOk()) {
-        return okAsync(AuthenticityStatus.Proof);
-      }
+  async authenticityStatus(): Promise<AuthenticityStatus> {
+    const reader = await this.c2paReader();
 
-      return okAsync(AuthenticityStatus.InvalidManifest);
-    });
+    if (reader.isErr()) {
+      return AuthenticityStatus.NoManifest;
+    }
+
+    const activeManifest = await this.extractActiveManifest();
+
+    if (activeManifest.isErr()) {
+      return AuthenticityStatus.InvalidManifest;
+    }
+
+    if (retrieveAssertion(activeManifest.value, "succinct.bindings").isOk()) {
+      return AuthenticityStatus.Bindings;
+    }
+    if (retrieveAssertion(activeManifest.value, "succinct.proof").isOk()) {
+      return AuthenticityStatus.Proof;
+    }
+
+    return AuthenticityStatus.InvalidManifest;
+  }
+
+  bindings(): ResultAsync<Record<string, any>, Error> {
+    return this.extractActiveManifest().andThen((manifest) =>
+      retrieveAssertion(manifest, "succinct.bindings"),
+    );
+  }
+
+  proof(): ResultAsync<Record<string, any>, Error> {
+    return this.extractActiveManifest().andThen((manifest) =>
+      retrieveAssertion(manifest, "succinct.proof"),
+    );
   }
 
   /**

@@ -57,7 +57,7 @@ describe("VerifiableFile", () => {
 
     const authStatus = await verifiable.authenticityStatus();
 
-    expect(authStatus._unsafeUnwrap()).toBe(AuthenticityStatus.Bindings);
+    expect(authStatus).toBe(AuthenticityStatus.Bindings);
   });
 
   it("authenticity status proof", async () => {
@@ -70,6 +70,6 @@ describe("VerifiableFile", () => {
 
     const authStatus = await verifiable.authenticityStatus();
 
-    expect(authStatus._unsafeUnwrap()).toBe(AuthenticityStatus.Proof);
+    expect(authStatus).toBe(AuthenticityStatus.Proof);
   });
 });

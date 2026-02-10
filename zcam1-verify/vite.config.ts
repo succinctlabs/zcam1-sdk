@@ -22,7 +22,7 @@ export default defineConfig({
     rollupOptions: {
       // Keep peer deps bundled by default for browser-friendly output.
       // If you prefer externalizing, add dependencies here.
-      external: [],
+      external: ["neverthrow"],
     },
     sourcemap: true,
     target: "es2022",
