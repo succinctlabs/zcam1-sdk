@@ -149,7 +149,7 @@ function App() {
         </p>
 
         <p>
-          To get started, you can eith upload a ZCAM authentic photo or video,
+          To get started, you can either upload a ZCAM authentic photo or video,
           or use one of the example files below.
         </p>
 
