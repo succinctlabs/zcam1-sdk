@@ -41,11 +41,7 @@ impl Manifest {
     pub fn proof(&self) -> Option<Proof> {
         self.assertion_store.proof.clone()
     }
-}
 
-#[cfg(feature = "editor")]
-#[uniffi::export]
-impl Manifest {
     pub fn capture_metadata_action(&self) -> Result<Option<String>, C2paError> {
         let action = self.assertion_store.actions.get("succinct.capture");
 

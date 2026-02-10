@@ -46,7 +46,6 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     Ok(store)
 }
 
-#[cfg(feature = "editor")]
 pub fn extract_manifest_from_stream(
     format: &str,
     stream: impl Read + Seek + Send,
