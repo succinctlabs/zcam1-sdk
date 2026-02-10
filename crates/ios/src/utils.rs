@@ -20,7 +20,7 @@ pub fn b64_to_pem(b64: &str) -> String {
 // Decode base64 string into assertion object.
 pub fn decode_attestation(encoded: String) -> Result<AttestationObject, serde_json::Error> {
     // Somtimes attestation is padded with '=' and sometimes not.
-    let decoded = if encoded.ends_with("=") {
+    let decoded = if encoded.ends_with('=') {
         Base64::decode_vec(&encoded).expect("decoding error")
     } else {
         Base64Unpadded::decode_vec(&encoded).expect("decoding error")
@@ -67,7 +67,7 @@ pub fn decode_attestation(encoded: String) -> Result<AttestationObject, serde_js
 
 // Decode base64 string into assertion object.
 pub fn decode_assertion(encoded: String) -> Result<AssertionObject, serde_json::Error> {
-    let decoded = if encoded.ends_with("=") {
+    let decoded = if encoded.ends_with('=') {
         Base64::decode_vec(&encoded).expect("decoding error")
     } else {
         Base64Unpadded::decode_vec(&encoded).expect("decoding error")
@@ -101,6 +101,6 @@ pub fn decode_base64_to_bytes(encoded: &str) -> Result<Vec<u8>, base64ct::Error>
 
 // Decode ClientData.
 pub fn decode_client_data(encoded: String) -> Result<ClientData, serde_json::Error> {
-    let client_data: ClientData = serde_json::from_str(encoded.to_string().as_str())?;
+    let client_data: ClientData = serde_json::from_str(encoded.clone().as_str())?;
     Ok(client_data)
 }

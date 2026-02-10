@@ -3,6 +3,9 @@ name = "zcam1-ios"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 sp1-sdk = { workspace = true, optional = true }
 

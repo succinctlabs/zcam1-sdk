@@ -3,6 +3,9 @@ name = "zcam1-c2pa-utils"
 version = "0.1.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [dependencies]
 base64ct.workspace = true
 c2pa.workspace = true

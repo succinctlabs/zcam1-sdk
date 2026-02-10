@@ -1,4 +1,4 @@
-import { TurboModuleRegistry, type TurboModule } from "react-native";
+import { type TurboModule, TurboModuleRegistry } from "react-native";
 
 export type TakeNativePhotoFormat = "jpeg" | "dng";
 

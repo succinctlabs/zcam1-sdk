@@ -52,15 +52,11 @@ interface NativeModuleInterface {
 //
 // We use a getter here rather than simply `globalThis.NativeSp1UniffiVerifier` so that
 // if/when the startup sequence isn't just so, an empty value isn't inadvertantly cached.
-const getter: () => NativeModuleInterface = () =>
-  (globalThis as any).NativeSp1UniffiVerifier;
+const getter: () => NativeModuleInterface = () => (globalThis as any).NativeSp1UniffiVerifier;
 export default getter;
 
 // Structs and function types for calling back into Typescript from Rust.
-export type UniffiRustFutureContinuationCallback = (
-  data: bigint,
-  pollResult: number,
-) => void;
+export type UniffiRustFutureContinuationCallback = (data: bigint, pollResult: number) => void;
 type UniffiForeignFutureFree = (handle: bigint) => void;
 type UniffiCallbackInterfaceFree = (handle: bigint) => void;
 export type UniffiForeignFuture = {
