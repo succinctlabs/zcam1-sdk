@@ -1,0 +1,330 @@
+@import "tailwindcss";
+
+/* ABC Oracle Font Family */
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Thin.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-ThinItalic.woff2") format("woff2");
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-LightItalic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Book.woff2") format("woff2");
+  font-weight: 350;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-BookItalic.woff2") format("woff2");
+  font-weight: 350;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-RegularItalic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-MediumItalic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-BoldItalic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Heavy.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-HeavyItalic.woff2") format("woff2");
+  font-weight: 800;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-BlackItalic.woff2") format("woff2");
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-Ultra.woff2") format("woff2");
+  font-weight: 950;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("/fonts/ABCOracle-UltraItalic.woff2") format("woff2");
+  font-weight: 950;
+  font-style: italic;
+}
+
+/* ABC Oracle Triple Font Family */
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-ThinItalic.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-LightItalic.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Book.otf") format("opentype");
+  font-weight: 350;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-BookItalic.otf") format("opentype");
+  font-weight: 350;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-RegularItalic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-MediumItalic.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-BoldItalic.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Heavy.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-HeavyItalic.otf") format("opentype");
+  font-weight: 800;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-BlackItalic.otf") format("opentype");
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-Ultra.otf") format("opentype");
+  font-weight: 950;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "ABC Oracle Triple";
+  src: url("/fonts/ABCOracleTriple-UltraItalic.otf") format("opentype");
+  font-weight: 950;
+  font-style: italic;
+}
+
+/* ABC Viafont Font Family */
+@font-face {
+  font-family: "ABC Viafont";
+  src: url("/fonts/ABCViafont-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Ivory LL Font Family */
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-LightItalic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Ivory LL";
+  src: url("/fonts/IvoryLLWeb-MediumItalic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #010f22;
+  --text-title: #010f22;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-text-title: var(--text-title);
+  --font-oracle: "ABC Oracle", system-ui, sans-serif;
+  --font-oracle-triple: "ABC Oracle Triple", system-ui, sans-serif;
+  --font-viafont: "ABC Viafont", system-ui, sans-serif;
+  --font-ivory: "Ivory LL", Georgia, serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-oracle);
+}
+
+@plugin "@tailwindcss/typography";
