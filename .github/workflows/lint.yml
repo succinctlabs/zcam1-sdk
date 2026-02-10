@@ -20,9 +20,6 @@ jobs:
           - react-native-zcam1-prove
           - react-native-zcam1-verify
           - react-native-zcam1-picker
-        include:
-          - package: web-verifier
-            skip_format: true
 
     steps:
       - name: Checkout
@@ -40,7 +37,6 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        if: ${{ !matrix.skip_format }}
         working-directory: ${{ matrix.package }}
         run: npm run format:check
 
