@@ -1,5 +1,5 @@
 [workspace]
-members = ["backend", "crates/*"]
+members = ["crates/*"]
 resolver = "3"
 
 [workspace.lints.clippy]
@@ -14,7 +14,6 @@ missing_errors_doc = "allow"
 
 [workspace.lints.rust]
 unsafe_code = "warn"
-
 
 [workspace.dependencies]
 

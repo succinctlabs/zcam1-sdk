@@ -135,24 +135,15 @@ export function verifyPlonk(
 const stringConverter = {
   stringToBytes: (s: string) =>
     uniffiCaller.rustCall((status) =>
-      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_arraybuffer(
-        s,
-        status,
-      ),
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_arraybuffer(s, status),
     ),
   bytesToString: (ab: UniffiByteArray) =>
     uniffiCaller.rustCall((status) =>
-      nativeModule().ubrn_uniffi_internal_fn_func_ffi__arraybuffer_to_string(
-        ab,
-        status,
-      ),
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__arraybuffer_to_string(ab, status),
     ),
   stringByteLength: (s: string) =>
     uniffiCaller.rustCall((status) =>
-      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_byte_length(
-        s,
-        status,
-      ),
+      nativeModule().ubrn_uniffi_internal_fn_func_ffi__string_to_byte_length(s, status),
     ),
 };
 const FfiConverterString = uniffiCreateFfiConverterString(stringConverter);
@@ -302,26 +293,17 @@ function uniffiEnsureInitialized() {
       bindingsContractVersion,
     );
   }
-  if (
-    nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_compressed() !==
-    18206
-  ) {
+  if (nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_compressed() !== 18206) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_sp1_uniffi_verifier_checksum_func_verify_compressed",
     );
   }
-  if (
-    nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_groth16() !==
-    59355
-  ) {
+  if (nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_groth16() !== 59355) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_sp1_uniffi_verifier_checksum_func_verify_groth16",
     );
   }
-  if (
-    nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_plonk() !==
-    45965
-  ) {
+  if (nativeModule().ubrn_uniffi_sp1_uniffi_verifier_checksum_func_verify_plonk() !== 45965) {
     throw new UniffiInternalError.ApiChecksumMismatch(
       "uniffi_sp1_uniffi_verifier_checksum_func_verify_plonk",
     );
