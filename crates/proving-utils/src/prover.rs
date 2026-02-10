@@ -314,7 +314,7 @@ fn tokio_rt() -> &'static Runtime {
 }
 
 /// Runs a Tokio-requiring future on the global runtime and returns a Future
-/// that can be awaited from *any* executor (including UniFFI's).
+/// that can be awaited from *any* executor (including `UniFFI`'s).
 pub async fn run_on_tokio<F, T>(fut: F) -> T
 where
     F: std::future::Future<Output = T> + Send + 'static,

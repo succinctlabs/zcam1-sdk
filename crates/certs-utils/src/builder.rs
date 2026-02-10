@@ -81,7 +81,7 @@ impl CertChainBuilder<CaCert> {
         let spki = SubjectPublicKeyInfoOwned::from_der(spki_der.as_bytes())?;
 
         let validity = Validity::from_now(Duration::from_secs(365 * 24 * 3600))?;
-        let subject = Name::from_str(&format!("O={},CN={}", organization, subject_cn))?;
+        let subject = Name::from_str(&format!("O={organization},CN={subject_cn}"))?;
 
         let serial_number = SerialNumber::from(RngCore::next_u64(&mut OsRng));
 

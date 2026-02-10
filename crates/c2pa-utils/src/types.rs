@@ -107,8 +107,7 @@ impl Actions {
             a.as_object()
                 .and_then(|obj| obj.get("action"))
                 .and_then(|l| l.as_str())
-                .map(|l| l == label)
-                .unwrap_or_default()
+                .is_some_and(|l| l == label)
         })
     }
 }
