@@ -537,6 +537,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // Serial queue for all session operations
     private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session")
 
+    /// KVO observation for focus completion detection.
+    private var focusObservation: NSKeyValueObservation?
+
+    /// Fallback timer to revert to continuous auto-focus after tap-to-focus.
+    private var focusRevertTimer: DispatchWorkItem?
+
     // Keep strong references to in-flight delegates so they live until completion
     private var inFlightDelegates: [PhotoCaptureDelegate] = []
 
@@ -1044,6 +1050,15 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 if let currentInput = self.videoInput,
                     currentInput.device.position != position
                 {
+                    // Remove subject area change observer for old device.
+                    NotificationCenter.default.removeObserver(
+                        self,
+                        name: .AVCaptureDeviceSubjectAreaDidChange,
+                        object: currentInput.device
+                    )
+                    // Invalidate old focus KVO observation.
+                    self.focusObservation?.invalidate()
+
                     session.removeInput(currentInput)
                     self.videoInput = nil
                 }
@@ -1067,6 +1082,31 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                         session.addInput(input)
                         self.videoInput = input
                         self.currentPosition = position
+
+                        // Register subject area change observer for this device.
+                        NotificationCenter.default.addObserver(
+                            self,
+                            selector: #selector(self.subjectAreaDidChange),
+                            name: .AVCaptureDeviceSubjectAreaDidChange,
+                            object: device
+                        )
+
+                        // Observe focus completion via KVO.
+                        self.focusObservation?.invalidate()
+                        self.focusObservation = input.observe(
+                            \.device.isAdjustingFocus,
+                            options: [.old, .new]
+                        ) { [weak self] _, change in
+                            guard let self else { return }
+                            guard let oldValue = change.oldValue,
+                                  let newValue = change.newValue else { return }
+                            if oldValue == true, newValue == false {
+                                self.didCompleteFocusing()
+                            }
+                        }
+
+                        // Set initial continuous auto-focus and auto-exposure.
+                        self.resetFocusAndExposure(device: device)
                     } else {
                         throw NSError(
                             domain: "Zcam1CameraService",
@@ -1168,6 +1208,19 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         Zcam1MotionManager.shared.stopUpdates()
 
         sessionQueue.async {
+            // Clean up focus observers.
+            self.focusObservation?.invalidate()
+            self.focusObservation = nil
+            self.focusRevertTimer?.cancel()
+            self.focusRevertTimer = nil
+            if let device = self.videoInput?.device {
+                NotificationCenter.default.removeObserver(
+                    self,
+                    name: .AVCaptureDeviceSubjectAreaDidChange,
+                    object: device
+                )
+            }
+
             guard let session = self.captureSession, session.isRunning else { return }
             session.stopRunning()
         }
@@ -1357,6 +1410,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         sessionQueue.async {
             guard let device = self.videoInput?.device else { return }
             guard device.isFocusPointOfInterestSupported else { return }
+
+            // Cancel any pending revert timer.
+            self.focusRevertTimer?.cancel()
+
             do {
                 try device.lockForConfiguration()
                 device.focusPointOfInterest = point
@@ -1368,10 +1425,75 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     device.exposureMode = .autoExpose
                 }
 
+                // Monitor for scene changes so we can revert to continuous AF.
+                device.isSubjectAreaChangeMonitoringEnabled = true
+
                 device.unlockForConfiguration()
             } catch {
                 print("[Zcam1] Failed to focus: \(error)")
             }
+
+            // Schedule fallback revert to continuous AF after 5 seconds.
+            let revertWork = DispatchWorkItem { [weak self] in
+                self?.revertToContinuousAutoFocus()
+            }
+            self.focusRevertTimer = revertWork
+            self.sessionQueue.asyncAfter(deadline: .now() + 5.0, execute: revertWork)
+        }
+    }
+
+    /// Reset focus and exposure to continuous auto-focus at center.
+    /// Called on session startup, camera switch, and subject area change.
+    private func resetFocusAndExposure(device: AVCaptureDevice) {
+        do {
+            try device.lockForConfiguration()
+
+            // Reset focus to center with continuous auto-focus.
+            if device.isFocusPointOfInterestSupported {
+                device.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
+            }
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+
+            // Reset exposure to center with continuous auto-exposure.
+            if device.isExposurePointOfInterestSupported {
+                device.exposurePointOfInterest = CGPoint(x: 0.5, y: 0.5)
+            }
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+
+            // Disable monitoring until next tap-to-focus.
+            device.isSubjectAreaChangeMonitoringEnabled = false
+
+            device.unlockForConfiguration()
+        } catch {
+            print("[Zcam1] Failed to reset focus: \(error)")
+        }
+    }
+
+    /// Revert to continuous auto-focus (called by fallback timer or subject area change).
+    private func revertToContinuousAutoFocus() {
+        // Cancel any pending revert timer since we're reverting now.
+        self.focusRevertTimer?.cancel()
+        self.focusRevertTimer = nil
+
+        guard let device = self.videoInput?.device else { return }
+        resetFocusAndExposure(device: device)
+    }
+
+    /// Called via KVO when focus adjustment completes.
+    private func didCompleteFocusing() {
+        guard let device = self.videoInput?.device else { return }
+        let focusPoint = device.focusPointOfInterest
+        print("[Zcam1] Focus completed at point: (\(focusPoint.x), \(focusPoint.y))")
+    }
+
+    /// Called when the device detects a significant scene change after tap-to-focus.
+    @objc private func subjectAreaDidChange(notification: Notification) {
+        sessionQueue.async {
+            self.revertToContinuousAutoFocus()
         }
     }
 
