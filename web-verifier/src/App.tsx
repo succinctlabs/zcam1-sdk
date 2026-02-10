@@ -15,6 +15,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/20/solid";
 
 interface Bindings {
@@ -47,59 +48,69 @@ function App() {
 
   const [isValid, setIsValid] = useState<boolean | undefined>(undefined);
 
+  const handleFile = async (file: File) => {
+    const verifiableFile = new VerifiableFile(file);
+    const fileStatus = await verifiableFile.authenticityStatus();
+    const photoHash = await verifiableFile.dataHash();
+    const metadata = await verifiableFile.captureMetadata().unwrapOr(undefined);
+
+    setVerifiableFile(verifiableFile);
+    setProof(undefined);
+    setBindings(undefined);
+    setMetadata(metadata);
+    setFileStatus(fileStatus);
+    setPhotoHash(base64.encode(photoHash));
+    setIsValid(undefined);
+
+    switch (fileStatus) {
+      case AuthenticityStatus.Bindings:
+        setBindings(
+          await verifiableFile
+            .bindings()
+            .map((b) => {
+              return {
+                app_id: b["app_id"],
+                attestation: b["attestation"],
+                assertion: b["assertion"],
+                device_key_id: b["device_key_id"],
+              };
+            })
+            .unwrapOr(undefined),
+        );
+        break;
+      case AuthenticityStatus.Proof:
+        setProof(
+          await verifiableFile
+            .proof()
+            .map((p) => {
+              console.log("proof", p);
+              return {
+                data: p["data"],
+                vkHash: p["vk_hash"],
+              };
+            })
+            .unwrapOr(undefined),
+        );
+        break;
+    }
+  };
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
 
     if (file) {
-      const verifiableFile = new VerifiableFile(file);
-      const fileStatus = await verifiableFile.authenticityStatus();
-      const photoHash = await verifiableFile.dataHash();
-      const metadata = await verifiableFile
-        .captureMetadata()
-        .unwrapOr(undefined);
-
-      setVerifiableFile(verifiableFile);
-      setMetadata(metadata);
-      setFileStatus(fileStatus);
-      setPhotoHash(base64.encode(photoHash));
-      setIsValid(undefined);
-
-      switch (fileStatus) {
-        case AuthenticityStatus.Bindings:
-          setBindings(
-            await verifiableFile
-              .bindings()
-              .map((b) => {
-                return {
-                  app_id: b["app_id"],
-                  attestation: b["attestation"],
-                  assertion: b["assertion"],
-                  device_key_id: b["device_key_id"],
-                };
-              })
-              .unwrapOr(undefined),
-          );
-          break;
-        case AuthenticityStatus.Proof:
-          setProof(
-            await verifiableFile
-              .proof()
-              .map((p) => {
-                console.log("proof", p);
-                return {
-                  data: p["data"],
-                  vkHash: p["vk_hash"],
-                };
-              })
-              .unwrapOr(undefined),
-          );
-          break;
-      }
-
-      setIsValid(undefined);
+      await handleFile(file);
     }
+  };
+
+  const handleFileFetch = async (fileName: string) => {
+    const response = await fetch(fileName);
+
+    const blob = await response.blob();
+    const file = new File([blob], fileName, { type: blob.type });
+    await handleFile(file);
   };
 
   const handleVerify = async () => {
@@ -138,11 +149,43 @@ function App() {
         </p>
 
         <p>
-          To get started, please upload a ZCAM authentic photo or video below.
+          To get started, you can eith upload a ZCAM authentic photo or video,
+          or use one of the example files below.
         </p>
 
-        <div>
-          <input type="file" onChange={handleFileUpload} accept="*" />
+        <div className="grid grid-cols-2 ">
+          <div>
+            <h4>Upload a file...</h4>
+            <input type="file" onChange={handleFileUpload} accept="*" />
+          </div>
+          <div>
+            <h4>...or select one of the two samples below</h4>
+            <ul>
+              <li>
+                <span className="inline-flex items-center gap-1">
+                  <a
+                    href="#"
+                    onClick={() => handleFileFetch("with-bindings.jpg")}
+                  >
+                    With bindings
+                  </a>
+                  <a href="/with-bindings.jpg">
+                    <ArrowDownTrayIcon className="size-5" />
+                  </a>
+                </span>
+              </li>
+              <li>
+                <span className="inline-flex items-center gap-1">
+                  <a href="#" onClick={() => handleFileFetch("with-proof.jpg")}>
+                    With a proof
+                  </a>
+                  <a href="/with-proof.jpg">
+                    <ArrowDownTrayIcon className="size-5" />
+                  </a>
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {verifiableFile && (
