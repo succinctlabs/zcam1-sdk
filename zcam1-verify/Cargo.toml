@@ -1,0 +1,6 @@
+[workspace]
+members = ["rust_modules/wasm"]
+resolver = "3"
+
+[patch.crates-io]
+c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}

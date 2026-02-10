@@ -1,0 +1,56 @@
+---
+title: c2paReader
+description: Get the underlying C2PA Reader for a file
+---
+
+# c2paReader
+
+Returns the underlying C2PA Reader for the file. Use this for direct access to the C2PA manifest store when you need lower-level control.
+
+## Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const result = await verifiable.c2paReader();
+
+if (result.isOk()) {
+  const reader = result.value;
+  const store = reader.manifestStore();
+  console.log("Active manifest:", store.active_manifest);
+}
+```
+
+## Returns
+
+`ResultAsync<Reader, Error>` - The C2PA `Reader` instance, or an error if no C2PA metadata is found.
+
+## Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.c2paReader();
+
+  if (result.isOk()) {
+    const store = result.value.manifestStore();
+    console.log("Manifests:", Object.keys(store.manifests));
+  } else {
+    console.error("No C2PA metadata:", result.error.message);
+  }
+});
+```
+
+## Notes
+
+- The `Reader` type comes from `@contentauth/c2pa-web`
+- Returns an error if the file does not contain C2PA metadata
+- Use higher-level methods like [`verifyBindings()`](/sdk/verify-browser/verifyBindings) or [`verifyProof()`](/sdk/verify-browser/verifyProof) for standard verification workflows

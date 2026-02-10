@@ -1,0 +1,11 @@
+[package]
+name = "zcam1-wasm-bindings"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zcam1-c2pa-utils = { workspace = true }
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_wasm_bindings"

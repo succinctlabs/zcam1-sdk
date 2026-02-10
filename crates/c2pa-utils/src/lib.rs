@@ -28,7 +28,7 @@ uniffi::setup_scaffolding!();
 pub use manifest_editor::ManifestEditor;
 
 #[uniffi::export]
-#[cfg(feature = "io")]
+#[cfg(all(feature = "io", feature = "editor"))]
 pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
 
@@ -46,6 +46,7 @@ pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     Ok(store)
 }
 
+#[cfg(feature = "editor")]
 pub fn extract_manifest_from_stream(
     format: &str,
     stream: impl Read + Seek + Send,
@@ -64,7 +65,7 @@ pub fn format_from_path(path: &str) -> Option<String> {
     c2pa::format_from_path(path)
 }
 
-#[cfg(feature = "io")]
+#[cfg(all(feature = "io", feature = "editor"))]
 #[uniffi::export]
 pub async fn authenticity_status(path: &str) -> AuthenticityStatus {
     let path = path.to_string();
@@ -109,6 +110,13 @@ pub fn compute_hash(path: &str) -> Result<Vec<u8>, C2paError> {
     let file_size = file.metadata()?.len() as usize;
 
     compute_hash_from_stream(&mut file, file_size, &format)
+}
+
+#[uniffi::export]
+pub fn compute_hash_from_buffer(buffer: Vec<u8>, format: &str) -> Result<Vec<u8>, C2paError> {
+    let stream = Cursor::new(&buffer);
+
+    compute_hash_from_stream(stream, buffer.len(), format)
 }
 
 pub fn compute_hash_from_stream<S: Read + Seek + Send>(

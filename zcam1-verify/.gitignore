@@ -1,0 +1,4 @@
+node_modules
+rust_modules
+dist
+src/generated
