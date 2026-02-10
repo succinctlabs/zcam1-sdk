@@ -7,7 +7,6 @@ use std::{
 use c2pa::{assertions::DataHash, HashRange};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_json_canonicalizer::to_string;
 
 use crate::error::C2paError;
 
@@ -49,7 +48,7 @@ impl Manifest {
         let metadata_action = action
             .map(|a| {
                 let metadata_action = serde_json::from_value::<Action<MetadataInfo>>(a.clone())?;
-                to_string(&metadata_action)
+                serde_json_canonicalizer::to_string(&metadata_action)
             })
             .transpose()?;
 

@@ -1,0 +1,97 @@
+---
+title: VerifiableFile
+description: Class for verifying C2PA manifests and ZK proofs in the browser
+---
+
+# VerifiableFile
+
+Class for verifying C2PA manifests and ZK proofs in the browser. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+
+## Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+
+// Verify hardware-backed bindings (App Attest)
+const bindingsResult = await verifiable.verifyBindings(false);
+
+// Verify zero-knowledge proof
+const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+
+// Get capture metadata
+const metadataResult = await verifiable.captureMetadata();
+```
+
+## Constructor
+
+### new VerifiableFile(file)
+
+Creates a [`VerifiableFile`](/sdk/verify-browser/VerifiableFile) instance by extracting the C2PA manifest from the file.
+
+### file (required)
+
+- **Type:** `File`
+
+The file to verify.
+
+## Methods
+
+### verifyBindings(production)
+
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify-browser/verifyBindings).
+
+### verifyProof(appId)
+
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify-browser/verifyProof).
+
+### dataHash()
+
+Computes the content hash of the file. See [`dataHash`](/sdk/verify-browser/dataHash).
+
+### captureMetadata()
+
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify-browser/captureMetadata).
+
+### authenticityStatus()
+
+Determines the authenticity status of the file. See [`authenticityStatus`](/sdk/verify-browser/authenticityStatus).
+
+### c2paReader()
+
+Returns the underlying C2PA Reader. See [`c2paReader`](/sdk/verify-browser/c2paReader).
+
+## Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+
+  const bindingsResult = await verifiable.verifyBindings(false);
+  const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+  const metadataResult = await verifiable.captureMetadata();
+
+  if (bindingsResult.isOk() && proofResult.isOk()) {
+    console.log("Verified!");
+    if (metadataResult.isOk()) {
+      console.log("Captured:", metadataResult.value.when);
+    }
+  } else {
+    console.log("Verification failed");
+  }
+});
+```
+
+## Notes
+
+- All verification methods return `ResultAsync` from `neverthrow` for error handling
+- [`verifyProof()`](/sdk/verify-browser/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+- Use [`verifyBindings(false)`](/sdk/verify-browser/verifyBindings) for development, `verifyBindings(true)` for production

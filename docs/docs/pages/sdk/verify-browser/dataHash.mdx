@@ -1,0 +1,47 @@
+---
+title: dataHash
+description: Compute the content hash of a file
+---
+
+# dataHash
+
+Computes the content hash of the file. This hash is used as a public input to the zero-knowledge proof.
+
+## Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const hash: Uint8Array = await verifiable.dataHash();
+
+console.log("Content hash:", hash);
+```
+
+## Returns
+
+`Promise<Uint8Array>` - The file's content hash as a `Uint8Array`.
+
+## Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const hash = await verifiable.dataHash();
+
+  console.log("Hash:", Array.from(hash).map(b => b.toString(16).padStart(2, "0")).join(""));
+});
+```
+
+## Notes
+
+- The hash is computed from the file's actual content
+- This hash is used as a public input when verifying the zero-knowledge proof
+- Computed lazily on first access and cached for subsequent calls

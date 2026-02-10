@@ -16,9 +16,8 @@ uniffi.workspace = true
 
 async-trait = "0.1.89"
 futures = "0.3.31"
-pem = "3.0.6"
 security-framework = { version = "3.5.1", optional = true }
-serde_json_canonicalizer = "0.3.1"
+serde_json_canonicalizer = { version = "0.3.1" }
 
 [dev-dependencies]
 zcam1-c2pa-utils = { path = ".", features = ["io", "editor"] }
