@@ -19,7 +19,10 @@ pub fn public_key_uncompressed_hex(subject_b64_data: &str) -> Result<String, Err
 
 // Validate certificate chain.
 pub fn validate_certificate_path(cert_path: Vec<String>, leaf_cert_only: bool) -> bool {
-    assert!(cert_path.len() == cert_path.iter().collect::<HashSet<_>>().len(), "Duplicate certificates in certificate path.");
+    assert!(
+        cert_path.len() == cert_path.iter().collect::<HashSet<_>>().len(),
+        "Duplicate certificates in certificate path."
+    );
 
     let num_runs = if leaf_cert_only { 1 } else { cert_path.len() };
 
