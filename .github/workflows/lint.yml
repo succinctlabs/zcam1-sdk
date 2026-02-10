@@ -45,7 +45,7 @@ jobs:
         run: npm run lint
 
   rust:
-    name: Rust Format
+    name: Rust
     runs-on: ubuntu-latest
 
     steps:
@@ -55,7 +55,15 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+
+      - name: Clippy (platform-independent crates)
+        run: |
+          cargo clippy -p zcam1-certs-utils
+          cargo clippy -p zcam1-c2pa-utils --no-default-features --features io
