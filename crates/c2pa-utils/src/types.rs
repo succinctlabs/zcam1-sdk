@@ -172,7 +172,9 @@ pub struct PhotoMetadataInfo {
     depth_of_field: u32,
     focal_length: u32,
     authenticity_data: AuthenticityData,
+    #[serde(skip_serializing_if = "Option::is_none")]
     depth_data: Option<DepthData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     film_style: Option<FilmStyleInfo>,
 }
 
@@ -195,6 +197,7 @@ pub struct VideoMetadataInfo {
     audio_sample_rate: Option<u32>,
     audio_channels: Option<u32>,
     authenticity_data: AuthenticityData,
+    #[serde(skip_serializing_if = "Option::is_none")]
     film_style: Option<FilmStyleInfo>,
 }
 
