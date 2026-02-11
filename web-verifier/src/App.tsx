@@ -37,6 +37,7 @@ function App() {
   const [verifiableFile, setVerifiableFile] = useState<
     VerifiableFile | undefined
   >(undefined);
+  const [rawC2pa, setRawC2pa] = useState<string | undefined>(undefined);
 
   const [photoHash, setPhotoHash] = useState<string | undefined>(undefined);
   const [bindings, setBindings] = useState<Bindings | undefined>(undefined);
@@ -50,11 +51,16 @@ function App() {
 
   const handleFile = async (file: File) => {
     const verifiableFile = new VerifiableFile(file);
+    const reader = await verifiableFile.c2paReader().unwrapOr(undefined);
+    const manifestStore = await reader?.manifestStore();
     const fileStatus = await verifiableFile.authenticityStatus();
     const photoHash = await verifiableFile.dataHash();
     const metadata = await verifiableFile.captureMetadata().unwrapOr(undefined);
 
     setVerifiableFile(verifiableFile);
+    setRawC2pa(
+      manifestStore ? JSON.stringify(manifestStore, null, 2) : undefined,
+    );
     setProof(undefined);
     setBindings(undefined);
     setMetadata(metadata);
@@ -325,6 +331,14 @@ function App() {
                 <MetadataRows parameters={metadata.parameters} />
               </tbody>
             </table>
+          </Accordion>
+        )}
+
+        {rawC2pa && (
+          <Accordion title="C2PA Manifest Store">
+            <pre>
+              <code className="text-xs">{rawC2pa}</code>
+            </pre>
           </Accordion>
         )}
 
