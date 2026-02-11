@@ -144,7 +144,7 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="mb-20">
       <header className="flex items-center">
         <h1 className="mt-8 flex-1 text-pink-500">ZCAM Verifier</h1>
         <a href="https://www.succinct.xyz/">
@@ -174,12 +174,12 @@ function App() {
             <ul>
               <li>
                 <span className="inline-flex items-center gap-1">
-                  <a
-                    href="#"
+                  <button
+                    className="px-2 border border-solid border-pink-300 rounded"
                     onClick={() => handleFileFetch("with-bindings.jpg")}
                   >
                     With bindings
-                  </a>
+                  </button>
                   <a href="/with-bindings.jpg">
                     <ArrowDownTrayIcon className="size-5" />
                   </a>
@@ -187,9 +187,12 @@ function App() {
               </li>
               <li>
                 <span className="inline-flex items-center gap-1">
-                  <a href="#" onClick={() => handleFileFetch("with-proof.jpg")}>
-                    With a proof
-                  </a>
+                  <button
+                    className="px-2 border border-solid border-pink-300 rounded"
+                    onClick={() => handleFileFetch("with-proof.jpg")}
+                  >
+                    With a zero-knowledge proof
+                  </button>
                   <a href="/with-proof.jpg">
                     <ArrowDownTrayIcon className="size-5" />
                   </a>
@@ -290,7 +293,7 @@ function App() {
         )}
 
         {photoHash && (
-          <Accordion title="Asset Hash" defaultOpen={true}>
+          <Accordion title="Asset Hash">
             <p>
               The asset hash below (in base64 format) had been computed from the
               file bytes, excluding the C2PA manifest.{" "}
