@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AuthenticityStatus,
@@ -48,6 +48,11 @@ function App() {
   );
 
   const [isValid, setIsValid] = useState<boolean | undefined>(undefined);
+
+  const previewUrl = useMemo(() => {
+    if (!verifiableFile) return undefined;
+    return URL.createObjectURL(verifiableFile.file);
+  }, [verifiableFile]);
 
   const handleFile = async (file: File) => {
     const verifiableFile = new VerifiableFile(file);
@@ -264,6 +269,24 @@ function App() {
               )}
             </ul>
           </>
+        )}
+
+        {previewUrl && (
+          <Accordion title="Asset Preview">
+            {verifiableFile!.file.type.startsWith("video/") ? (
+              <video
+                controls
+                className="max-w-full max-h-96"
+                src={previewUrl}
+              />
+            ) : (
+              <img
+                className="max-w-full max-h-96"
+                src={previewUrl}
+                alt="Uploaded asset"
+              />
+            )}
+          </Accordion>
         )}
 
         {photoHash && (
