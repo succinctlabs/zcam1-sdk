@@ -1,0 +1,3 @@
+add-yalc-to-web-verifier:
+    yalc publish
+    cd ../web-verifier && yalc add @succinctlabs/zcam1-verify

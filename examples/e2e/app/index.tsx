@@ -98,7 +98,11 @@ export default function Home() {
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1 }}>
           {captureInfo ? (
-            <ZCamera ref={camera} captureInfo={captureInfo} />
+            <ZCamera
+              ref={camera}
+              captureInfo={captureInfo}
+              depthEnabled={true}
+            />
           ) : (
             <View
               style={{
