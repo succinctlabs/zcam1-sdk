@@ -223,6 +223,28 @@ static void ensureStaticStorageInitialized(void) {
 #endif
 }
 
+- (void)getExposureRange:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    NSDictionary *range = [[Zcam1CameraService shared] getExposureRange];
+    resolve(range);
+    return;
+  }
+#endif
+  resolve(@{@"min": @(0.0), @"max": @(0.0)});
+}
+
+- (void)resetExposure
+{
+#if __has_include("Zcam1Sdk-Swift.h")
+  if (@available(iOS 16.0, *)) {
+    [[Zcam1CameraService shared] resetExposure];
+  }
+#endif
+}
+
 - (void)getDeviceDiagnostics:(RCTPromiseResolveBlock)resolve
                       reject:(RCTPromiseRejectBlock)reject
 {

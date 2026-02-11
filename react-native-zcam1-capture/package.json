@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1-capture",
-  "version": "0.2.69",
+  "version": "0.2.70",
   "description": "ZCAM1 Capture SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
