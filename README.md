@@ -1,4 +1,4 @@
-# ZCAM1 Monorepo
+# ZCAM1 Monorepo 
 
 This repository hosts the ZCAM1 authenticity stack, combining a Rust backend, iOS components, and multiple React Native packages for capture, proof generation, and verification.
 
