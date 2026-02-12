@@ -5,7 +5,10 @@ import {
   prepareIntegrityToken,
   requestIntegrityToken,
 } from "@pagopa/io-react-native-integrity";
-import { getContentPublicKey, getSecureEnclaveKeyId } from "@succinctlabs/react-native-zcam1-common";
+import {
+  getContentPublicKey,
+  getSecureEnclaveKeyId,
+} from "@succinctlabs/react-native-zcam1-common";
 import { Platform } from "react-native";
 import EncryptedStorage from "react-native-encrypted-storage";
 
@@ -145,7 +148,10 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         const challenge = `${settings.appId}_${Date.now()}`;
         playIntegrityToken = await requestIntegrityToken(challenge);
       } catch (error: unknown) {
-        console.warn("[ZCAM] Play Integrity unavailable, continuing with Key Attestation only:", error);
+        console.warn(
+          "[ZCAM] Play Integrity unavailable, continuing with Key Attestation only:",
+          error,
+        );
         // Continue without Play Integrity - Key Attestation is still valid
       }
     }

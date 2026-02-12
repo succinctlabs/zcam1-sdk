@@ -13,10 +13,7 @@ import type {
  * @param assertion - The assertion (iOS) or signature (Android) from generateAppAttestAssertion()
  * @returns Platform-specific device bindings object
  */
-export function createDeviceBindings(
-  captureInfo: CaptureInfo,
-  assertion: string,
-): DeviceBindings {
+export function createDeviceBindings(captureInfo: CaptureInfo, assertion: string): DeviceBindings {
   if (captureInfo.platform === "ios") {
     return createIOSBindings(captureInfo.attestation, assertion);
   } else {

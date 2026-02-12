@@ -26,7 +26,8 @@ export async function generateAppAttestAssertion(
   deviceKeyId: string,
 ): Promise<string> {
   const metadataBytes = stringToArray(normalizedMetadata);
-  const message = base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes));
+  const message =
+    base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes));
 
   if (Platform.OS === "android") {
     // Android: Sign with hardware-backed key using SHA256withECDSA
