@@ -47,22 +47,23 @@ final class Zcam1MotionManager {
         motionManager.startAccelerometerUpdates(to: queue) { [weak self] data, _ in
             guard let self = self, let data = data else { return }
 
-            // Use 0.75g threshold with deadzone to prevent jitter at 45 degrees.
+            // Use 0.87g threshold (~60° tilt) to match native iOS camera sensitivity.
             // When neither axis exceeds the threshold, keep the current orientation.
             let x = data.acceleration.x
             let y = data.acceleration.y
 
+            let threshold = 0.87
             let newOrientation: AVCaptureVideoOrientation?
-            if x >= 0.75 {
+            if x >= threshold {
                 newOrientation = .landscapeLeft
-            } else if x <= -0.75 {
+            } else if x <= -threshold {
                 newOrientation = .landscapeRight
-            } else if y <= -0.75 {
+            } else if y <= -threshold {
                 newOrientation = .portrait
-            } else if y >= 0.75 {
+            } else if y >= threshold {
                 newOrientation = .portraitUpsideDown
             } else {
-                // Ambiguous angle (e.g. 45 degrees) — keep current orientation.
+                // Tilt not decisive enough — keep current orientation.
                 newOrientation = nil
             }
 
