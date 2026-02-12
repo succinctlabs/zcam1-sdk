@@ -10,3 +10,6 @@ yalc.lock
 docs/node_modules/
 
 .claude/
+
+# Git worktrees
+.worktrees/
