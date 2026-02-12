@@ -98,11 +98,11 @@ import { VerifiableFile } from "react-native-zcam1-verify";
 export function VerifyPhoto({ photoUri }: { photoUri: string }) {
   const handleVerify = () => {
     const file = new VerifiableFile(photoUri);
+    const appId = process.env.EXPO_PUBLIC_APP_ID!;
 
-    const hashValid = file.verifyHash();
-    const proofValid = file.verifyProof();
+    const proofValid = file.verifyProof(appId);
 
-    if (hashValid && proofValid) {
+    if (proofValid) {
       console.log("Photo is authentic!");
     } else {
       console.log("Verification failed");
@@ -154,7 +154,8 @@ function MainScreen() {
   const verify = () => {
     if (!provenPath) return;
     const file = new VerifiableFile(provenPath);
-    const isValid = file.verifyHash() && file.verifyProof();
+    const appId = process.env.EXPO_PUBLIC_APP_ID!;
+    const isValid = file.verifyHash() && file.verifyProof(appId);
     alert(isValid ? "Authentic!" : "Invalid");
   };
 

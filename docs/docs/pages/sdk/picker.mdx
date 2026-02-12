@@ -1,11 +1,11 @@
 # Picker SDK
 
-The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+The Picker SDK (`@succinctlabs/react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
 
 ## Installation
 
 ```bash
-npm i react-native-zcam1-picker
+npm i @succinctlabs/react-native-zcam1-picker
 cd ios && pod install
 ```
 
@@ -24,7 +24,7 @@ The Picker SDK:
 React component that renders a scrollable image grid.
 
 ```tsx
-import { ZImagePicker } from "react-native-zcam1-picker";
+import { ZImagePicker } from "@succinctlabs/react-native-zcam1-picker";
 
 <ZImagePicker
   source={{ path: "/path/to/folder" }}
@@ -54,7 +54,7 @@ import { ZImagePicker } from "react-native-zcam1-picker";
 Returns the app's private document directory path.
 
 ```tsx
-import { privateDirectory } from "react-native-zcam1-picker";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 const path = privateDirectory(); // e.g., /var/mobile/.../Documents
 ```
@@ -64,7 +64,7 @@ const path = privateDirectory(); // e.g., /var/mobile/.../Documents
 Enum indicating the C2PA status of an image.
 
 ```tsx
-import { AuthenticityStatus } from "react-native-zcam1-picker";
+import { AuthenticityStatus } from "@succinctlabs/react-native-zcam1-picker";
 
 AuthenticityStatus.Unknown        // Unable to determine
 AuthenticityStatus.NoManifest     // No C2PA manifest
@@ -76,7 +76,7 @@ AuthenticityStatus.Proof          // Has succinct.proof (verified)
 ## Basic Usage
 
 ```tsx
-import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+import { ZImagePicker, privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 export function PickerScreen() {
   const handleSelect = (uri: string) => {
@@ -98,7 +98,7 @@ Use `renderBadge` to display authenticity indicators:
 
 ```tsx
 import { Image, StyleSheet } from "react-native";
-import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
 
 const styles = StyleSheet.create({
   badge: {
@@ -149,8 +149,8 @@ export function PickerScreen() {
 ```tsx
 import { useState } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
-import { useProver } from "react-native-zcam1-prove";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "@succinctlabs/react-native-zcam1-picker";
+import { useProver } from "@succinctlabs/react-native-zcam1-prove";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 
 export function PickAndProveScreen() {
