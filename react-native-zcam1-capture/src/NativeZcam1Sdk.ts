@@ -331,5 +331,16 @@ export interface Spec extends TurboModule {
    * @param filePath Absolute filesystem path to the file.
    */
   previewFile(filePath: string): Promise<void>;
+
+  /**
+   * Sign data using a hardware-backed key from the Android Keystore.
+   * This method is only available on Android. On iOS, use the pagopa library's
+   * generateHardwareSignatureWithAssertion() instead.
+   *
+   * @param keyTag The alias/tag of the key in the Android Keystore
+   * @param data The string data to sign
+   * @returns Base64-encoded DER signature (SHA256withECDSA)
+   */
+  signWithHardwareKey(keyTag: string, data: string): Promise<string>;
 }
 export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");

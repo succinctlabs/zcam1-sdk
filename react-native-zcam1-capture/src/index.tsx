@@ -1,10 +1,15 @@
-import { generateHardwareKey, getAttestation } from "@pagopa/io-react-native-integrity";
 import {
-  type ECKey,
-  getContentPublicKey,
-  getSecureEnclaveKeyId,
-} from "@succinctlabs/react-native-zcam1-common";
+  generateHardwareKey,
+  getAttestation,
+  isPlayServicesAvailable,
+  prepareIntegrityToken,
+  requestIntegrityToken,
+} from "@pagopa/io-react-native-integrity";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "@succinctlabs/react-native-zcam1-common";
+import { Platform } from "react-native";
 import EncryptedStorage from "react-native-encrypted-storage";
+
+import type { AttestationPlatform, CaptureInfo, Settings } from "./types";
 
 export {
   buildSelfSignedCertificate,
@@ -54,23 +59,28 @@ export type {
 } from "./NativeZcam1Sdk";
 
 /**
- * Device registration information including keys, certificate chain, and attestation.
+ * Re-export types from types.ts for external consumers.
  */
-export type CaptureInfo = {
-  appId: string;
-  deviceKeyId: string;
-  contentPublicKey: ECKey;
-  contentKeyId: Uint8Array;
-  attestation: string;
-};
+export type {
+  AndroidDeviceBindings,
+  AttestationPlatform,
+  CaptureInfo,
+  DeviceBindings,
+  IOSDeviceBindings,
+  Settings,
+} from "./types";
+export { isAndroidBindings, isIOSBindings } from "./types";
 
 /**
- * Configuration settings for device initialization and backend communication.
+ * Device bindings helpers for creating platform-specific attestation structures.
  */
-export type Settings = {
-  appId: string;
-  production: boolean;
-};
+export {
+  createAndroidBindings,
+  createDeviceBindings,
+  createIOSBindings,
+  getBindingsPlatform,
+  serializeBindings,
+} from "./bindings";
 
 /**
  * Represents a captured photo with its original and processed file paths.
@@ -87,48 +97,88 @@ export class ZPhoto {
 
 /**
  * Initializes the device by generating keys, obtaining certificate chain, and registering with the backend.
+ * Supports both iOS (App Attest) and Android (Key Attestation + Play Integrity).
  * @param settings - Configuration settings for initialization
  * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
-  let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${settings.appId}`);
+  const platform: AttestationPlatform = Platform.OS as AttestationPlatform;
 
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
-    throw "Only EC public keys are supported";
+    throw new Error("Only EC public keys are supported");
   }
 
   const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  if (deviceKeyId == null) {
-    // Try to generate hardware key, but fall back to mock for simulator
-    try {
-      deviceKeyId = await generateHardwareKey();
-    } catch (error: unknown) {
-      // If running in simulator, hardware key generation is not supported
-      const err = error as { code?: string; message?: string } | undefined;
-      if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
-        console.warn(
-          "[ZCAM] Running in simulator - using mock device key. This is for development only.",
-        );
-        // Generate a mock device key for simulator testing
-        deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
-      } else {
-        throw error;
+  let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${settings.appId}`);
+  let attestation = deviceKeyId
+    ? await EncryptedStorage.getItem(`attestation-${deviceKeyId}`)
+    : null;
+  let playIntegrityToken: string | undefined;
+
+  if (platform === "android") {
+    // Android: Key Attestation + optional Play Integrity
+    const playServicesAvailable = await isPlayServicesAvailable();
+    if (!playServicesAvailable) {
+      throw new Error("Google Play Services unavailable");
+    }
+
+    // Use deterministic key alias for Android (pagopa creates key on getAttestation)
+    if (deviceKeyId == null) {
+      deviceKeyId = `zcam1_${settings.appId}_device_key`;
+      await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId);
+    }
+
+    // Get Key Attestation certificate chain
+    if (attestation == null) {
+      attestation = await getAttestation(deviceKeyId, deviceKeyId);
+      await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation);
+    }
+
+    // Optionally get Play Integrity token (requires GCP project number)
+    if (settings.gcpProjectNumber) {
+      try {
+        await prepareIntegrityToken(settings.gcpProjectNumber);
+        // Generate a simple challenge hash for the integrity token
+        const challenge = `${settings.appId}_${Date.now()}`;
+        playIntegrityToken = await requestIntegrityToken(challenge);
+      } catch (error: unknown) {
+        console.warn("[ZCAM] Play Integrity unavailable, continuing with Key Attestation only:", error);
+        // Continue without Play Integrity - Key Attestation is still valid
       }
     }
-    await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId);
+  } else {
+    // iOS: App Attest
+    if (deviceKeyId == null) {
+      try {
+        deviceKeyId = await generateHardwareKey();
+      } catch (error: unknown) {
+        const err = error as { code?: string; message?: string } | undefined;
+        if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
+          console.warn(
+            "[ZCAM] Running in simulator - using mock device key. This is for development only.",
+          );
+          deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+        } else {
+          throw error;
+        }
+      }
+      await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId);
+    }
+
+    if (attestation == null) {
+      attestation = await updateRegistration(deviceKeyId, settings);
+    }
   }
 
   if (deviceKeyId == null) {
-    throw "failed to generate a device key";
+    throw new Error("Failed to generate a device key");
   }
 
-  let attestation = await EncryptedStorage.getItem(`attestation-${deviceKeyId}`);
-
   if (attestation == null) {
-    attestation = await updateRegistration(deviceKeyId, settings);
+    throw new Error("Failed to obtain attestation");
   }
 
   return {
@@ -136,7 +186,9 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
     deviceKeyId,
     contentPublicKey,
     contentKeyId,
+    platform,
     attestation,
+    playIntegrityToken,
   };
 }
 

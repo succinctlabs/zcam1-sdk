@@ -396,6 +396,15 @@ static void ensureStaticStorageInitialized(void) {
 #endif
 }
 
+- (void)signWithHardwareKey:(NSString *)keyTag
+                       data:(NSString *)data
+                    resolve:(RCTPromiseResolveBlock)resolve
+                     reject:(RCTPromiseRejectBlock)reject
+{
+  // This method is Android-only. On iOS, use pagopa's generateHardwareSignatureWithAssertion() instead.
+  reject(@"PLATFORM_NOT_SUPPORTED", @"signWithHardwareKey is only available on Android. Use pagopa's generateHardwareSignatureWithAssertion() on iOS.", nil);
+}
+
 - (void)previewFile:(NSString *)filePath
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(RCTPromiseRejectBlock)reject
