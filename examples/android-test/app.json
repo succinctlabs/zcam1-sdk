@@ -20,7 +20,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.zcam1_android_test"
+      "package": "com.anonymous.zcam1_android_test",
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "output": "static",
@@ -40,7 +41,16 @@
           }
         }
       ],
-      ["expo-build-properties", { "ios": { "deploymentTarget": "16.0" } }]
+      ["expo-build-properties", {
+        "ios": { "deploymentTarget": "16.0" },
+        "android": {
+          "minSdkVersion": 24,
+          "compileSdkVersion": 35,
+          "targetSdkVersion": 34,
+          "ndkVersion": "27.1.12297006",
+          "newArchEnabled": true
+        }
+      }]
     ],
     "experiments": {
       "typedRoutes": true

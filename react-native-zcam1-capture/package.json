@@ -42,6 +42,7 @@
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@scure/base": "^2.0.0",
     "@succinctlabs/react-native-zcam1-c2pa": "^0.2.4",
+    "@succinctlabs/react-native-zcam1-capture": "file:.yalc/@succinctlabs/react-native-zcam1-capture",
     "@succinctlabs/react-native-zcam1-common": "^0.2.2",
     "jail-monkey": "^2.8.4",
     "react-native-encrypted-storage": "^4.0.0",

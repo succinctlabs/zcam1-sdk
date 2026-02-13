@@ -1,0 +1,16 @@
+# Android NDK cross-compilation configuration
+# Requires ANDROID_NDK_HOME environment variable and NDK toolchain on PATH
+# Prefer using cargo-ndk which handles linker resolution automatically
+#
+# To add NDK to PATH:
+#   export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$PATH"  # macOS
+#   export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"   # Linux
+
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android24-clang"
+
+[target.armv7-linux-androideabi]
+linker = "armv7a-linux-androideabi24-clang"
+
+[target.x86_64-linux-android]
+linker = "x86_64-linux-android24-clang"
