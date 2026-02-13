@@ -26,6 +26,9 @@ pub enum C2paError {
 
     #[error("The lock has been poisoned")]
     Poisoned,
+
+    #[error("{0}")]
+    Internal(String),
 }
 
 impl From<C2paError> for c2pa::Error {

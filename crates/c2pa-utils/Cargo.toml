@@ -16,8 +16,14 @@ uniffi.workspace = true
 
 async-trait = "0.1.89"
 futures = "0.3.31"
-security-framework = { version = "3.5.1", optional = true }
 serde_json_canonicalizer = { version = "0.3.1" }
+
+# Software signing (Android / non-Apple platforms)
+p256 = { version = "0.13", features = ["jwk", "ecdsa"], optional = true }
+zcam1-certs-utils = { workspace = true, optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+security-framework = { version = "3.5.1", optional = true }
 
 [dev-dependencies]
 zcam1-c2pa-utils = { path = ".", features = ["io", "editor"] }
@@ -32,3 +38,4 @@ p256 = { version = "0.13", features = ["jwk", "ecdsa"] }
 [features]
 io = ["c2pa/file_io"]
 editor = ["dep:security-framework"]
+software-signing = ["dep:p256", "dep:zcam1-certs-utils"]

@@ -5,6 +5,7 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.annotations.ReactModule
+import com.zcam1sdk.camera.Zcam1CameraService
 
 @ReactModule(name = NativeZcam1SdkSpec.NAME)
 class Zcam1SdkModule(reactContext: ReactApplicationContext) :
@@ -22,7 +23,12 @@ class Zcam1SdkModule(reactContext: ReactApplicationContext) :
     skipPostProcessing: Boolean,
     promise: Promise
   ) {
-    promise.reject("NOT_IMPLEMENTED", "takeNativePhoto not implemented on Android yet")
+    val service = Zcam1CameraService.activeInstance
+    if (service == null) {
+      promise.reject("CAMERA_ERROR", "Camera not active — add <Zcam1CameraView> to your layout first")
+      return
+    }
+    service.takePhoto(flash, promise)
   }
 
   // --- Video Recording ---
@@ -42,11 +48,12 @@ class Zcam1SdkModule(reactContext: ReactApplicationContext) :
   // --- Zoom ---
 
   override fun setZoom(factor: Double) {
-    // no-op stub
+    Zcam1CameraService.activeInstance?.setZoom(factor.toFloat())
   }
 
   override fun setZoomAnimated(factor: Double) {
-    // no-op stub
+    // Same as setZoom for now — CameraX doesn't have a built-in animated zoom
+    Zcam1CameraService.activeInstance?.setZoom(factor.toFloat())
   }
 
   override fun getMinZoom(promise: Promise) {
@@ -54,7 +61,12 @@ class Zcam1SdkModule(reactContext: ReactApplicationContext) :
   }
 
   override fun getMaxZoom(promise: Promise) {
-    promise.resolve(1.0)
+    val service = Zcam1CameraService.activeInstance
+    if (service == null) {
+      promise.resolve(1.0)
+      return
+    }
+    promise.resolve(service.getMaxZoom().toDouble())
   }
 
   override fun getSwitchOverZoomFactors(promise: Promise) {
@@ -81,16 +93,19 @@ class Zcam1SdkModule(reactContext: ReactApplicationContext) :
   // --- Focus ---
 
   override fun focusAtPoint(x: Double, y: Double) {
-    // no-op stub
+    Zcam1CameraService.activeInstance?.focusAtPoint(x.toFloat(), y.toFloat())
   }
 
   // --- Diagnostics ---
 
   override fun getDeviceDiagnostics(promise: Promise) {
+    val service = Zcam1CameraService.activeInstance
+    val maxZoom = service?.getMaxZoom()?.toDouble() ?: 1.0
+
     val map = Arguments.createMap()
-    map.putString("deviceType", "android-stub")
+    map.putString("deviceType", "android")
     map.putDouble("minZoom", 1.0)
-    map.putDouble("maxZoom", 1.0)
+    map.putDouble("maxZoom", maxZoom)
     map.putDouble("currentZoom", 1.0)
     map.putArray("switchOverFactors", Arguments.createArray())
     map.putDouble("switchingBehavior", 0.0)

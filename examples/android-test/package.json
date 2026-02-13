@@ -9,10 +9,12 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@succinctlabs/react-native-zcam1-c2pa": "file:.yalc/@succinctlabs/react-native-zcam1-c2pa",
     "@succinctlabs/react-native-zcam1-capture": "file:.yalc/@succinctlabs/react-native-zcam1-capture",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
     "expo-router": "~6.0.13",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",

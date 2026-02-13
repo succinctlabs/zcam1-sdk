@@ -1,7 +1,7 @@
 import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
-import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
+import { Platform, requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
@@ -693,11 +693,13 @@ async function embedBindings(
   const destinationPath =
     Dirs.CacheDir + `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-  const manifestEditor = new ManifestEditor(
-    originalPath,
-    captureInfo.contentKeyId.buffer as ArrayBuffer,
-    certChainPem,
-  );
+  // On Android, use a software P-256 key for C2PA manifest signing.
+  // Hardware attestation is included as a separate assertion.
+  // On Apple, use Secure Enclave signing via contentKeyId.
+  const manifestEditor =
+    Platform.OS === "android"
+      ? (ManifestEditor as any).newWithSoftwareKey(originalPath)
+      : new ManifestEditor(originalPath, captureInfo.contentKeyId.buffer as ArrayBuffer, certChainPem);
 
   // Add the "capture" action to the manifest.
   let normalizedMetadata = undefined;

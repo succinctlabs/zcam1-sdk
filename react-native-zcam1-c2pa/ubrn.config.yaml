@@ -1,0 +1,11 @@
+rust:
+  directory: ./..
+  manifestPath: crates/c2pa-bindings/Cargo.toml
+ios:
+  frameworkName: Zcam1C2paFramework
+android:
+  targets:
+    - arm64-v8a
+    - armeabi-v7a
+    - x86_64
+  apiLevel: 24
