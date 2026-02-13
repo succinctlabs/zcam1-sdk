@@ -8,6 +8,7 @@ add-yalc:
     cd examples/capture && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
     cd examples/prove && yalc add @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
     cd examples/e2e && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-picker @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
+    cd examples/android-test && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
 
 remove-yalc:
     cd react-native-zcam1-capture && yalc remove --all
@@ -18,6 +19,7 @@ remove-yalc:
     cd examples/capture && yalc remove --all
     cd examples/prove && yalc remove --all
     cd examples/e2e && yalc remove --all
+    cd examples/android-test && yalc remove --all
 
 run-capture-example:
     #!/usr/bin/env sh
@@ -38,6 +40,11 @@ run-e2e-example:
     #!/usr/bin/env sh
     cd examples/e2e
     npx expo prebuild && npx expo run:ios --device
+
+run-android-test:
+    #!/usr/bin/env sh
+    cd examples/android-test
+    npx expo prebuild --platform android && npx expo run:android
 
 publish $NPM_CONFIG_REGISTRY:
     cd react-native-zcam1-common && npm publish --access public

@@ -71,6 +71,7 @@
   "files": [
     "src",
     "lib",
+    "android",
     "ios",
     "!**/__tests__",
     "!**/__fixtures__",
