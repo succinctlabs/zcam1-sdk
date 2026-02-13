@@ -7,7 +7,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
-zcam1-c2pa-utils = { workspace = true, features = ["io", "editor"] }
+zcam1-c2pa-utils = { workspace = true, features = ["io", "editor", "software-signing"] }
 zcam1-certs-utils.workspace = true
 
 [lib]

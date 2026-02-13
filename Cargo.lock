@@ -8679,6 +8679,7 @@ dependencies = [
  "tokio",
  "uniffi",
  "zcam1-c2pa-utils",
+ "zcam1-certs-utils",
  "zcam1-common",
 ]
 

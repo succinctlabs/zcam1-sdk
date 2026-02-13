@@ -14,6 +14,7 @@
     "src",
     "lib",
     "scripts",
+    "android",
     "cpp",
     "ios",
     "!**/__tests__",
