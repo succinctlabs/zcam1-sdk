@@ -18,6 +18,7 @@ unsafe_code = "warn"
 [workspace.dependencies]
 
 # members
+zcam1-android = { path = "./crates/android" }
 zcam1-common = { path = "./crates/common" }
 zcam1-ios = { path = "./crates/ios" }
 zcam1-c2pa-utils = { path = "./crates/c2pa-utils" }

@@ -9,8 +9,11 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "@scure/base": "^2.0.0",
     "@succinctlabs/react-native-zcam1-c2pa": "file:.yalc/@succinctlabs/react-native-zcam1-c2pa",
     "@succinctlabs/react-native-zcam1-capture": "file:.yalc/@succinctlabs/react-native-zcam1-capture",
+    "@succinctlabs/react-native-zcam1-verify": "file:.yalc/@succinctlabs/react-native-zcam1-verify",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
     "expo-router": "~6.0.13",
