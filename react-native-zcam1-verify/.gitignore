@@ -6,6 +6,7 @@ node_modules/
 src/generated/
 rust_modules/
 Zcam1VerifyFramework.xcframework/
+android/src/main/jniLibs/
 cpp/
 ios/
 rust_modules/
