@@ -1,0 +1,17 @@
+rust:
+  directory: ./..
+  manifestPath: crates/verify-bindings/Cargo.toml
+turboModule:
+  entrypoint: src/verifier.tsx
+ios:
+  frameworkName: Zcam1VerifyFramework
+android:
+  targets:
+    - arm64-v8a
+    - armeabi-v7a
+    - x86_64
+  apiLevel: 24
+  cargoExtras:
+    - --no-default-features
+    - --features
+    - android-verify
