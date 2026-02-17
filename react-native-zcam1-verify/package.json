@@ -40,7 +40,7 @@
     "preyalcpublish": "mv Zcam1VerifyFramework.xcframework.excluded Zcam1VerifyFramework.xcframework",
     "postyalcpublish": "mv Zcam1VerifyFramework.xcframework Zcam1VerifyFramework.xcframework.excluded",
     "postpublish": "if [ -e Zcam1VerifyFramework.xcframework.excluded ]; then mv Zcam1VerifyFramework.xcframework.excluded Zcam1VerifyFramework.xcframework; fi",
-    "postinstall": "./scripts/download-framework.sh Zcam1VerifyFramework.xcframework",
+    "postinstall": "./scripts/download-framework.sh Zcam1VerifyFramework.xcframework && ./scripts/download-jnilibs.sh zcam1-verify",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
