@@ -8654,6 +8654,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-android"
+version = "0.1.0"
+dependencies = [
+ "base64ct",
+ "der",
+ "der-parser 9.0.0",
+ "ecdsa",
+ "hex",
+ "p256",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.17",
+ "x509-cert",
+ "x509-verify",
+]
+
+[[package]]
 name = "zcam1-c2pa-bindings"
 version = "0.1.0"
 dependencies = [
@@ -8776,6 +8795,7 @@ dependencies = [
  "sp1-uniffi-verifier",
  "thiserror 2.0.17",
  "uniffi",
+ "zcam1-android",
  "zcam1-ios",
 ]
 

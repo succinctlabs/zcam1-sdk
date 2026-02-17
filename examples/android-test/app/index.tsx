@@ -24,9 +24,11 @@ import {
 } from "@succinctlabs/react-native-zcam1-capture";
 import {
   extractManifest,
-  authenticityStatus,
-  AuthenticityStatus,
+  computeHash,
 } from "@succinctlabs/react-native-zcam1-c2pa";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import { sha256 } from "@noble/hashes/sha2";
+import { base64 } from "@scure/base";
 
 const Zcam1CameraView = requireNativeComponent<any>("Zcam1CameraView");
 
@@ -341,21 +343,39 @@ export default function Index() {
       );
       addLog(`  Metadata added (${normalizedMetadata.length} chars)`);
 
-      // Step 4: Add device bindings assertion
-      addLog("  Step 4: Adding bindings assertion...");
+      // Step 4: Compute photo hash and sign with device key
+      addLog("  Step 4: Computing photo hash...");
+      const photoHashBuffer = computeHash(originalPath);
+      const photoHashBytes = new Uint8Array(photoHashBuffer);
+      const photoHashB64 = base64.encode(photoHashBytes);
+      addLog(`  Photo hash: ${photoHashB64.substring(0, 24)}...`);
+
+      // Step 5: Compute metadata hash and create client data
+      addLog("  Step 5: Signing with device key...");
+      const metadataHashBytes = sha256(new TextEncoder().encode(normalizedMetadata));
+      const metadataHashB64 = base64.encode(metadataHashBytes);
+      const clientData = `${photoHashB64}|${metadataHashB64}`;
+      addLog(`  Client data: ${clientData.substring(0, 40)}...`);
+
+      // Step 6: Sign client data with hardware-backed device key
+      const assertion = await signWithDeviceKey(captureInfo.deviceKeyId, clientData);
+      addLog(`  Assertion signed (${assertion.length} chars)`);
+
+      // Step 7: Add device bindings assertion with real signature
+      addLog("  Step 7: Adding bindings assertion...");
       manifestEditor.addAssertion(
         "succinct.bindings",
         JSON.stringify({
           app_id: captureInfo.appId,
           device_key_id: captureInfo.deviceKeyId,
           attestation: captureInfo.attestation,
-          assertion: "ANDROID_TEST_ASSERTION",
+          assertion: assertion,
         }),
       );
       addLog("  Bindings assertion added!");
 
-      // Step 5: Embed manifest to file
-      addLog("  Step 5: Embedding C2PA manifest...");
+      // Step 8: Embed manifest to file
+      addLog("  Step 8: Embedding C2PA manifest...");
       const format = c2pa.formatFromPath(originalPath);
       const destPath = originalPath.replace(".jpg", "_signed.jpg");
       await manifestEditor.embedManifestToFile(destPath, format);
@@ -440,36 +460,39 @@ export default function Index() {
 
   const [verifyResult, setVerifyResult] = useState<string | null>(null);
 
-  const verifySignedPhoto = useCallback(async () => {
+  const verifySignedPhoto = useCallback(() => {
     if (!signedPhotoPath) {
       addLog("No signed photo to verify");
       return;
     }
     try {
-      addLog("Verifying C2PA manifest...");
-      const status = await authenticityStatus(signedPhotoPath);
-      const statusName = AuthenticityStatus[status];
-      setVerifyResult(statusName);
-      addLog(`Verification result: ${statusName}`);
+      addLog("M7: Cryptographic verification...");
 
-      switch (status) {
-        case AuthenticityStatus.Bindings:
-          addLog("  Photo has device bindings (attestation present)");
-          break;
-        case AuthenticityStatus.Proof:
-          addLog("  Photo has ZK proof attached");
-          break;
-        case AuthenticityStatus.NoManifest:
-          addLog("  No C2PA manifest found in file");
-          break;
-        case AuthenticityStatus.InvalidManifest:
-          addLog("  C2PA manifest is INVALID");
-          break;
-        case AuthenticityStatus.Unknown:
-          addLog("  Status unknown");
-          break;
+      // Create VerifiableFile — extracts C2PA manifest
+      addLog("  Creating VerifiableFile...");
+      const file = new VerifiableFile(signedPhotoPath);
+      addLog("  Manifest extracted!");
+
+      // Verify device bindings (attestation chain + signature)
+      addLog("  Verifying device bindings...");
+      const bindingsValid = file.verifyBindings(false, APP_ID);
+      addLog(`  Bindings valid: ${bindingsValid}`);
+
+      // Get data hash
+      const dataHash = file.dataHash();
+      addLog(`  Data hash: ${dataHash ? dataHash.substring(0, 32) + "..." : "N/A"}`);
+
+      // Get capture metadata
+      const metadata = file.captureMetadata();
+      if (metadata) {
+        addLog(`  Capture action: ${metadata.action}`);
+        addLog(`  Capture time: ${metadata.when}`);
       }
+
+      setVerifyResult(bindingsValid ? "VERIFIED" : "FAILED");
+      addLog(`M7: Verification ${bindingsValid ? "PASSED" : "FAILED"}!`);
     } catch (e: any) {
+      setVerifyResult("ERROR");
       addLog(`Verification FAILED: ${e.message || e}`);
       console.error("Verify error:", e);
     }
@@ -680,7 +703,7 @@ export default function Index() {
               <Text style={styles.sectionTitle}>M7: Manifest & Verification</Text>
               {verifyResult && (
                 <View style={{
-                  backgroundColor: verifyResult === "Bindings" || verifyResult === "Proof" ? "#E8F5E9" : "#FFF3E0",
+                  backgroundColor: verifyResult === "VERIFIED" ? "#E8F5E9" : "#FFEBEE",
                   padding: 12,
                   borderRadius: 8,
                   marginBottom: 8,
@@ -689,15 +712,11 @@ export default function Index() {
                     Status: {verifyResult}
                   </Text>
                   <Text style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                    {verifyResult === "Bindings"
-                      ? "Valid C2PA manifest with device attestation"
-                      : verifyResult === "Proof"
-                        ? "Valid C2PA manifest with ZK proof"
-                        : verifyResult === "InvalidManifest"
-                          ? "C2PA manifest found but invalid"
-                          : verifyResult === "NoManifest"
-                            ? "No C2PA manifest in file"
-                            : "Unknown status"}
+                    {verifyResult === "VERIFIED"
+                      ? "Attestation chain + signature cryptographically verified"
+                      : verifyResult === "FAILED"
+                        ? "Cryptographic verification failed"
+                        : "Verification error — check log"}
                   </Text>
                 </View>
               )}

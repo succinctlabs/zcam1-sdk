@@ -7,7 +7,6 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-zcam1-ios.workspace = true
 base64ct.workspace = true
 serde.workspace = true
 sha2.workspace = true
@@ -15,6 +14,15 @@ uniffi.workspace = true
 thiserror.workspace = true
 
 sp1-uniffi-verifier = { git = "https://github.com/succinctlabs/example-sp1-wasm-verifier", branch = "aurelien/bump-sp1" }
+
+# Platform-specific attestation verification
+zcam1-ios = { workspace = true, optional = true }
+zcam1-android = { workspace = true, optional = true }
+
+[features]
+default = ["apple-verify"]
+apple-verify = ["dep:zcam1-ios"]
+android-verify = ["dep:zcam1-android"]
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]

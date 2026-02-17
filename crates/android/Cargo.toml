@@ -1,0 +1,27 @@
+[package]
+name = "zcam1-android"
+version = "0.1.0"
+edition = "2024"
+description = "Android Key Attestation validation for ZCAM1"
+
+[lints]
+workspace = true
+
+[dependencies]
+base64ct = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+sha2 = { version = "0.10", default-features = false }
+x509-cert = "0.2"
+der = "0.7"
+der-parser = "9.0.0"
+p256 = { version = "0.13", features = ["ecdsa"] }
+ecdsa = { version = "0.16", features = ["verifying"] }
+x509-verify = { version = "0.4.5", features = ["p256", "p384", "rsa", "x509", "pem"] }
+
+[dev-dependencies]
+p256 = { version = "0.13", features = ["ecdsa"] }
+rand_core = { version = "0.6", features = ["getrandom"] }

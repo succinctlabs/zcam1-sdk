@@ -1,5 +1,6 @@
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { base64 } from "@scure/base";
+import { Platform } from "react-native";
 import {
   computeHash,
   extractManifest,
@@ -8,7 +9,10 @@ import {
   VideoMetadataInfo,
 } from "@succinctlabs/react-native-zcam1-c2pa";
 
-import { verifyBindingsFromManifest, verifyGroth16 } from "./verifier";
+// Import all exports from verifier — available functions depend on build platform.
+// Apple builds have: verifyBindingsFromManifest, verifyGroth16
+// Android builds have: verifyAndroidBindingsFromManifest, verifyGroth16
+import * as verifier from "./verifier";
 
 /**
  * Capture metadata extracted from the C2PA manifest.
@@ -43,19 +47,34 @@ export class VerifiableFile {
   }
 
   /**
-   * Verifies the manifest's bindings (e.g., App Attest).
+   * Verifies the manifest's bindings.
+   * On iOS: validates Apple App Attest attestation + assertion.
+   * On Android: validates Android Key Attestation chain + ECDSA signature.
    */
-  verifyBindings(appAttestProduction: boolean): boolean {
+  verifyBindings(production: boolean, packageName?: string): boolean {
     if (this.hash === undefined) {
       this.hash = computeHash(this.path);
     }
 
-    return verifyBindingsFromManifest(
-      this.activeManifest.bindings()!,
-      this.activeManifest.captureMetadataAction()!,
-      this.hash,
-      appAttestProduction,
-    );
+    const bindings = this.activeManifest.bindings()!;
+    const metadata = this.activeManifest.captureMetadataAction()!;
+
+    if (Platform.OS === "android") {
+      const fn = (verifier as any).verifyAndroidBindingsFromManifest;
+      if (!fn) {
+        throw new Error("Android verify bindings not available");
+      }
+      if (!packageName) {
+        throw new Error("packageName is required for Android verification");
+      }
+      return fn(bindings, metadata, this.hash, packageName, production);
+    }
+
+    const fn = (verifier as any).verifyBindingsFromManifest;
+    if (!fn) {
+      throw new Error("Apple verify bindings not available");
+    }
+    return fn(bindings, metadata, this.hash, production);
   }
 
   /**
@@ -75,7 +94,7 @@ export class VerifiableFile {
       this.hash = computeHash(this.path);
     }
 
-    return base64.encode(new Uint8Array(this.hash));
+    return base64.encode(new Uint8Array(this.hash!));
   }
 
   /**
@@ -99,6 +118,11 @@ function verifyProofFromManifest(
 
   if (proof === undefined) {
     throw new Error("The proof was not found in the manifest");
+  }
+
+  const verifyGroth16 = (verifier as any).verifyGroth16;
+  if (!verifyGroth16) {
+    throw new Error("Groth16 verifier not available on this platform");
   }
 
   const hash = new Uint8Array(computeHash(path));
