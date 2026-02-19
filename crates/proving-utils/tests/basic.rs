@@ -1,4 +1,4 @@
-use sp1_sdk::{ Prover, env::EnvProver};
+use sp1_sdk::{Prover, env::EnvProver};
 use zcam1_ios::AuthInputs;
 use zcam1_proving_utils::IOS_AUTHENCITY_ELF;
 
@@ -11,7 +11,7 @@ async fn execute_in_sp1_test() {
         app_attest_production: false,
     };
 
-    let prover = EnvProver::new();
+    let prover = EnvProver::new().await;
 
     prover
         .execute(IOS_AUTHENCITY_ELF, inputs.into())
