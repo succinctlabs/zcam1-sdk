@@ -535,8 +535,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // When true, zoom may be restricted on dual-camera devices.
     private var depthEnabledAtSessionLevel: Bool = false
 
-    // Serial queue for all session operations
-    private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session")
+    // Serial queue for all session operations.
+    // Uses .userInteractive QoS so zoom updates are not deprioritized relative to frame delivery.
+    private let sessionQueue = DispatchQueue(label: "com.anonymous.zcam1poc.camera.session", qos: .userInteractive)
 
     /// KVO observation for focus completion detection.
     private var focusObservation: NSKeyValueObservation?
@@ -553,6 +554,11 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     // Thread safety: recordingStateLock guards the reference; writerQueue guards internal mutations.
     private var recordingState: AssetWriterRecordingState?
     private let recordingStateLock = NSLock()
+
+    /// Fast boolean to avoid lock overhead on every frame when not recording.
+    /// Checked in captureOutput before calling writeVideoSampleBuffer.
+    /// Set to true when recording starts, false when recording stops.
+    public private(set) var isRecordingActive: Bool = false
 
     /// Returns true if video recording is currently active.
     /// Thread-safe: uses recordingStateLock to protect access.
@@ -1254,6 +1260,32 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 device.unlockForConfiguration()
             } catch {
                 print("[Zcam1] Failed to set zoom: \(error)")
+            }
+        }
+    }
+
+    /// Set zoom factor with smooth hardware-interpolated animation.
+    /// Uses AVCaptureDevice.ramp(toVideoZoomFactor:withRate:) for smooth transitions,
+    /// especially across lens switchover points on virtual devices.
+    /// Recommended for continuous gestures (pinch-to-zoom, slider).
+    /// - Parameter factor: Target device zoom factor (use getMinZoom/getMaxZoom for valid range).
+    public func setZoomAnimated(_ factor: CGFloat) {
+        sessionQueue.async {
+            guard let device = self.videoInput?.device else { return }
+            do {
+                try device.lockForConfiguration()
+                let minZoom = device.minAvailableVideoZoomFactor
+                let maxZoom = min(device.maxAvailableVideoZoomFactor, 20.0)
+                let clampedZoom = min(max(factor, minZoom), maxZoom)
+
+                // Use hardware ramp for smooth interpolated zoom.
+                // Rate of 100 provides fast response while smoothing out gesture jitter.
+                device.ramp(toVideoZoomFactor: clampedZoom, withRate: 100.0)
+
+                self.currentZoom = clampedZoom
+                device.unlockForConfiguration()
+            } catch {
+                print("[Zcam1] Failed to set animated zoom: \(error)")
             }
         }
     }
@@ -2101,10 +2133,13 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                                 state.isRecording = true
                             }
 
-                            // Set recordingState with lock protection
+                            // Set recordingState with lock protection.
                             self.recordingStateLock.lock()
                             self.recordingState = state
                             self.recordingStateLock.unlock()
+
+                            // Set fast boolean for per-frame check in captureOutput.
+                            self.isRecordingActive = true
 
                             print("[Zcam1CameraService] AVAssetWriter recording started (no preview flash)")
 
@@ -2296,8 +2331,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     return
                 }
 
-                // Mark as not recording to stop accepting new samples
+                // Mark as not recording to stop accepting new samples.
                 state.isRecording = false
+                self.isRecordingActive = false
 
                 print("[Zcam1CameraService] Stopping AVAssetWriter recording...")
 
@@ -2451,6 +2487,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     /// Applies film style filters if a custom film style chain is active.
     /// Thread-safe: recordingStateLock guards reference access; writerQueue serializes writes.
     public func writeVideoSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
+        // Fast path: skip lock acquisition when not recording.
+        guard isRecordingActive else { return }
+
         // Lock to safely read the recordingState reference.
         recordingStateLock.lock()
         let state = recordingState
@@ -2522,6 +2561,42 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 } else {
                     state.videoFrameCount += 1
                 }
+            }
+        }
+    }
+
+    /// Writes a pre-filtered pixel buffer to the asset writer, skipping film style application.
+    /// Used when the preview pipeline has already applied film styles, avoiding double processing.
+    public func writeVideoSampleBufferPrefiltered(_ sampleBuffer: CMSampleBuffer, filteredPixelBuffer: CVPixelBuffer) {
+        guard isRecordingActive else { return }
+
+        recordingStateLock.lock()
+        let state = recordingState
+        recordingStateLock.unlock()
+        guard let state = state else { return }
+
+        state.writerQueue.async {
+            guard state.isRecording else { return }
+
+            let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
+            // Start the session on first video frame.
+            if !state.hasStartedSession {
+                state.assetWriter.startSession(atSourceTime: timestamp)
+                state.hasStartedSession = true
+                state.startTime = timestamp
+                print("[Zcam1CameraService] Asset writer session started at \(timestamp.seconds)")
+            }
+
+            guard state.videoInput.isReadyForMoreMediaData else { return }
+
+            // Write the pre-filtered pixel buffer directly, no film style application needed.
+            if !state.pixelBufferAdaptor.append(filteredPixelBuffer, withPresentationTime: timestamp) {
+                if let error = state.assetWriter.error {
+                    print("[Zcam1CameraService] Prefiltered video append failed: \(error)")
+                }
+            } else {
+                state.videoFrameCount += 1
             }
         }
     }
@@ -2642,6 +2717,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// For smooth pinch-to-zoom, use setZoomAnimated via the TurboModule instead.
     public var zoom: CGFloat = 1.0 {
         didSet {
+            // Skip if the value hasn't meaningfully changed.
+            // During gestures, zoom is set directly via TurboModule; the prop
+            // sync from throttled React state arrives later with the same value.
+            guard abs(zoom - oldValue) > 0.001 else { return }
             Zcam1CameraService.shared.setZoom(zoom)
         }
     }
@@ -2707,7 +2786,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// Token for this view's motion manager listener, used for cleanup in deinit.
     private var orientationListenerToken: Int?
 
-    // Preview rendering - single UIImageView for all frames (filtered or not)
+    // Preview rendering - UIImageView for film style frames, preview layer for normal mode.
     private let previewImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
@@ -2715,7 +2794,16 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         return iv
     }()
 
-    // Video processing
+    /// Hardware-accelerated preview layer used when no film style is active.
+    /// Provides 60fps rendering with native zoom interpolation and zero CPU involvement.
+    private var previewLayer: AVCaptureVideoPreviewLayer?
+
+    /// Tracks whether the preview layer is currently the active display mechanism.
+    /// When true, captureOutput skips UIImageView updates (only feeds recording).
+    /// When false, falls back to UIImageView pipeline for film style rendering.
+    private var isUsingPreviewLayer: Bool = false
+
+    // Video processing.
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilmStyleEnum: Zcam1CameraFilmStyle = .normal
@@ -2739,7 +2827,15 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private func commonInit() {
         backgroundColor = .black
 
-        // Add preview image view as the only preview mechanism.
+        // Create the hardware-accelerated preview layer (used in normal mode).
+        // Inserted at sublayer index 0 so the UIImageView can overlay it when film styles are active.
+        let layer = AVCaptureVideoPreviewLayer()
+        layer.videoGravity = .resizeAspectFill
+        layer.frame = bounds
+        self.layer.insertSublayer(layer, at: 0)
+        self.previewLayer = layer
+
+        // Add preview image view (used when film styles are active).
         previewImageView.frame = bounds
         previewImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(previewImageView)
@@ -2759,11 +2855,13 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let token = orientationListenerToken {
             Zcam1MotionManager.shared.removeListener(token)
         }
+        previewLayer?.removeFromSuperlayer()
     }
 
     public override func layoutSubviews() {
         super.layoutSubviews()
         previewImageView.frame = bounds
+        previewLayer?.frame = bounds
     }
 
     // MARK: - Film Style Resolution
@@ -2778,6 +2876,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             currentCustomFilmStyles = filmStyles
             currentFilmStyleEnum = .normal
             Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
+            updatePreviewMode()
             return
         }
 
@@ -2789,6 +2888,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             currentCustomFilmStyles = filmStyles
             currentFilmStyleEnum = .normal
             Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
+            updatePreviewMode()
             return
         }
 
@@ -2796,6 +2896,37 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         currentCustomFilmStyles = nil
         currentFilmStyleEnum = .normal
         Zcam1CameraService.shared.setFilmStyle(.normal)
+        updatePreviewMode()
+    }
+
+    // MARK: - Preview Mode Switching
+
+    /// Switch between hardware preview layer (normal mode) and UIImageView (film style mode).
+    /// When no film style is active, the preview layer provides 60fps hardware-accelerated
+    /// rendering with native zoom interpolation. When a film style is active, the UIImageView
+    /// pipeline is used to apply Harbeth filters per frame.
+    private func updatePreviewMode() {
+        let hasFilmStyle = currentCustomFilmStyles != nil
+
+        if hasFilmStyle {
+            // Film style active: use UIImageView pipeline, hide preview layer.
+            isUsingPreviewLayer = false
+            previewLayer?.isHidden = true
+            previewImageView.isHidden = false
+            print("[Zcam1CameraView] Preview mode: UIImageView (film style active)")
+        } else {
+            // Normal mode: use hardware preview layer, hide UIImageView.
+            isUsingPreviewLayer = true
+            previewImageView.isHidden = true
+            previewImageView.image = nil  // Release memory.
+            previewLayer?.isHidden = false
+
+            // Attach session to preview layer if available.
+            if let session = Zcam1CameraService.shared.captureSession {
+                previewLayer?.session = session
+            }
+            print("[Zcam1CameraView] Preview mode: AVCaptureVideoPreviewLayer (hardware-accelerated)")
+        }
     }
 
     // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -2810,9 +2941,21 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Forward sample buffer to service for recording (if active).
-        // This enables AVAssetWriter-based recording without any preview flash.
-        Zcam1CameraService.shared.writeVideoSampleBuffer(sampleBuffer)
+        let isRecording = Zcam1CameraService.shared.isRecordingActive
+        let customFilmStyles = currentCustomFilmStyles
+
+        // When using hardware preview layer and not recording, skip everything.
+        // The preview layer renders directly from the session with zero CPU involvement.
+        if isUsingPreviewLayer && !isRecording {
+            return
+        }
+
+        // When using preview layer but recording without film styles, forward frames
+        // to the writer directly (no software rendering needed for preview).
+        if isUsingPreviewLayer && isRecording && customFilmStyles == nil {
+            Zcam1CameraService.shared.writeVideoSampleBuffer(sampleBuffer)
+            return
+        }
 
         frameCount += 1
         if frameCount == 1 {
@@ -2824,6 +2967,45 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             return
         }
+
+        // When recording with film styles, apply the filter once on the pixel buffer
+        // and reuse the result for both recording and preview, avoiding double processing.
+        if isRecording, let filmStyles = customFilmStyles, !filmStyles.isEmpty {
+            if let filteredBuffer = Zcam1CameraFilmStyle.apply(
+                filmStyles: filmStyles,
+                to: pixelBuffer,
+                orientation: .up
+            ) {
+                // Send pre-filtered buffer to the writer (skips film style in writer).
+                Zcam1CameraService.shared.writeVideoSampleBufferPrefiltered(sampleBuffer, filteredPixelBuffer: filteredBuffer)
+
+                // Also render the filtered buffer to preview if not using preview layer.
+                if !isUsingPreviewLayer {
+                    let ciImage = CIImage(cvPixelBuffer: filteredBuffer)
+                    if let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) {
+                        let isFront = position.lowercased() == "front"
+                        let orientation: UIImage.Orientation = isFront ? .rightMirrored : .right
+                        let displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self = self, !self.isReconfiguring else { return }
+                            self.previewImageView.image = displayImage
+                        }
+                    }
+                }
+            } else {
+                // Fallback: filter failed, forward unfiltered to writer.
+                Zcam1CameraService.shared.writeVideoSampleBuffer(sampleBuffer)
+            }
+            return
+        }
+
+        // Not recording with film styles — use the standard paths.
+        if isRecording {
+            Zcam1CameraService.shared.writeVideoSampleBuffer(sampleBuffer)
+        }
+
+        // If using preview layer, no software rendering needed.
+        guard !isUsingPreviewLayer else { return }
 
         // Convert pixel buffer to UIImage.
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
@@ -2842,9 +3024,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
 
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 
-        // Apply film style if needed.
-        if let customFilmStyles = currentCustomFilmStyles {
-            displayImage = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: displayImage)
+        // Apply film style if needed (preview only, not recording).
+        if let filmStyles = customFilmStyles {
+            displayImage = Zcam1CameraFilmStyle.apply(filmStyles: filmStyles, to: displayImage)
         }
 
         // Update UI on main thread, but double-check we're not reconfiguring.
@@ -2881,6 +3063,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
 
             // Start the session.
             self.updateRunningState()
+
+            // Attach session to preview layer and toggle preview mode.
+            self.updatePreviewMode()
         }
     }
 
