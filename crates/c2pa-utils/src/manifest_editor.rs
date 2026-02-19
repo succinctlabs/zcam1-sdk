@@ -18,6 +18,9 @@ use crate::{
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 use crate::signing::sign_with_enclave;
 
+#[cfg(all(feature = "android-signing", target_os = "android"))]
+use crate::android_signing::sign_with_android_keystore;
+
 #[cfg(feature = "software-signing")]
 use base64ct::{Base64UrlUnpadded, Encoding};
 #[cfg(feature = "software-signing")]
@@ -37,38 +40,56 @@ pub struct ManifestEditor {
 impl ManifestEditor {
     #[uniffi::constructor(name = "new")]
     pub fn new(path: &str, key_tag: Vec<u8>, certs: &str) -> Self {
+        Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
+
+        let mut builder = Builder::new();
+
+        builder
+            .definition
+            .claim_generator_info
+            .push(ClaimGeneratorInfo::new("ZCAM1"));
+        builder.definition.vendor = Some("Succinct".to_string());
+
         #[cfg(any(target_os = "macos", target_os = "ios"))]
-        {
-            Settings::from_toml(include_str!("../c2pa_settings.toml")).unwrap();
+        let signer = CallbackSigner::new(
+            move |_context, data: &[u8]| {
+                sign_with_enclave(&key_tag, data)
+                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+            },
+            SigningAlg::Es256,
+            certs,
+        );
 
-            let mut builder = Builder::new();
-
-            builder
-                .definition
-                .claim_generator_info
-                .push(ClaimGeneratorInfo::new("ZCAM1"));
-            builder.definition.vendor = Some("Succinct".to_string());
-
-            let signer = CallbackSigner::new(
+        #[cfg(all(feature = "android-signing", target_os = "android"))]
+        let signer = {
+            let key_alias = String::from_utf8_lossy(&key_tag).to_string();
+            CallbackSigner::new(
                 move |_context, data: &[u8]| {
-                    sign_with_enclave(&key_tag, data)
+                    sign_with_android_keystore(&key_alias, data)
                         .map_err(|err| c2pa::Error::InternalError(err.to_string()))
                 },
                 SigningAlg::Es256,
                 certs,
-            );
+            )
+        };
 
-            Self {
-                builder: Arc::new(RwLock::new(builder)),
-                source_file_path: path.to_string(),
-                signer: Box::new(signer),
-            }
+        #[cfg(not(any(
+            any(target_os = "macos", target_os = "ios"),
+            all(feature = "android-signing", target_os = "android"),
+        )))]
+        {
+            let _ = (path, key_tag, certs, builder);
+            panic!("ManifestEditor::new() requires Secure Enclave (Apple) or android-signing feature (Android)")
         }
 
-        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-        {
-            let _ = (path, key_tag, certs);
-            panic!("ManifestEditor::new() with Secure Enclave signing is only available on Apple platforms")
+        #[cfg(any(
+            any(target_os = "macos", target_os = "ios"),
+            all(feature = "android-signing", target_os = "android"),
+        ))]
+        Self {
+            builder: Arc::new(RwLock::new(builder)),
+            source_file_path: path.to_string(),
+            signer: Box::new(signer),
         }
     }
 
@@ -78,25 +99,44 @@ impl ManifestEditor {
     #[uniffi::constructor()]
     pub fn from_manifest(path: &str, key_tag: Vec<u8>, certs: &str) -> Result<Self, C2paError> {
         #[cfg(any(target_os = "macos", target_os = "ios"))]
-        {
-            let signer = CallbackSigner::new(
+        let signer = CallbackSigner::new(
+            move |_context, data: &[u8]| {
+                sign_with_enclave(&key_tag, data)
+                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+            },
+            SigningAlg::Es256,
+            certs,
+        );
+
+        #[cfg(all(feature = "android-signing", target_os = "android"))]
+        let signer = {
+            let key_alias = String::from_utf8_lossy(&key_tag).to_string();
+            CallbackSigner::new(
                 move |_context, data: &[u8]| {
-                    sign_with_enclave(&key_tag, data)
+                    sign_with_android_keystore(&key_alias, data)
                         .map_err(|err| c2pa::Error::InternalError(err.to_string()))
                 },
                 SigningAlg::Es256,
                 certs,
-            );
+            )
+        };
 
-            let store = extract_manifest(path)?;
-
-            Self::from_file_and_manifest_with_signer(path, &store.active_manifest()?, signer)
+        #[cfg(not(any(
+            any(target_os = "macos", target_os = "ios"),
+            all(feature = "android-signing", target_os = "android"),
+        )))]
+        {
+            let _ = (key_tag, certs);
+            return Err(C2paError::Internal("ManifestEditor::from_manifest() requires Secure Enclave (Apple) or android-signing feature (Android)".to_string()));
         }
 
-        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+        #[cfg(any(
+            any(target_os = "macos", target_os = "ios"),
+            all(feature = "android-signing", target_os = "android"),
+        ))]
         {
-            let _ = (path, key_tag, certs);
-            Err(C2paError::Internal("ManifestEditor::from_manifest() with Secure Enclave signing is only available on Apple platforms".to_string()))
+            let store = extract_manifest(path)?;
+            Self::from_file_and_manifest_with_signer(path, &store.active_manifest()?, signer)
         }
     }
 

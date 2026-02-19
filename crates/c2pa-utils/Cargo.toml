@@ -25,6 +25,9 @@ zcam1-certs-utils = { workspace = true, optional = true }
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 security-framework = { version = "3.5.1", optional = true }
 
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "0.21", optional = true }
+
 [dev-dependencies]
 zcam1-c2pa-utils = { path = ".", features = ["io", "editor"] }
 zcam1-common.workspace = true
@@ -38,4 +41,5 @@ p256 = { version = "0.13", features = ["jwk", "ecdsa"] }
 [features]
 io = ["c2pa/file_io"]
 editor = ["dep:security-framework"]
+android-signing = ["dep:jni"]
 software-signing = ["dep:p256", "dep:zcam1-certs-utils"]

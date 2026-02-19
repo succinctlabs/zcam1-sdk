@@ -1,6 +1,8 @@
 use sha2::{Digest, Sha256};
 
-use crate::certificate::{decode_certificate_chain, extract_public_key_hex, validate_certificate_chain};
+use crate::certificate::{
+    decode_certificate_chain, extract_public_key_hex, validate_certificate_chain,
+};
 use crate::error::Error;
 use crate::extension::{extract_package_name, parse_key_description};
 use crate::types::KeyAttestationResult;
@@ -171,9 +173,8 @@ mod tests {
     #[test]
     fn test_ec_root_missing_extension() {
         // Same test with the EC P-384 root cert
-        let root_cert =
-            x509_cert::Certificate::from_pem(crate::constants::GOOGLE_HARDWARE_ROOT_EC)
-                .expect("Google EC root cert should parse");
+        let root_cert = x509_cert::Certificate::from_pem(crate::constants::GOOGLE_HARDWARE_ROOT_EC)
+            .expect("Google EC root cert should parse");
         let root_der = root_cert.to_der().expect("should encode to DER");
 
         let attestation = make_pagopa_attestation(&root_der);

@@ -1,7 +1,7 @@
 use base64ct::{Base64, Encoding};
 use ecdsa::signature::Verifier;
-use p256::ecdsa::{Signature, VerifyingKey};
 use p256::PublicKey;
+use p256::ecdsa::{Signature, VerifyingKey};
 use sha2::{Digest, Sha256};
 
 use crate::error::Error;
@@ -20,11 +20,9 @@ pub fn verify_signature(
     message: &str,
     public_key_hex: &str,
 ) -> Result<bool, Error> {
-    let signature_bytes =
-        Base64::decode_vec(signature_b64).map_err(|_| Error::SignatureInvalid)?;
+    let signature_bytes = Base64::decode_vec(signature_b64).map_err(|_| Error::SignatureInvalid)?;
 
-    let signature =
-        Signature::from_der(&signature_bytes).map_err(|_| Error::SignatureInvalid)?;
+    let signature = Signature::from_der(&signature_bytes).map_err(|_| Error::SignatureInvalid)?;
 
     let public_key_bytes =
         hex::decode(public_key_hex).map_err(|e| Error::PublicKeyError(format!("{e}")))?;

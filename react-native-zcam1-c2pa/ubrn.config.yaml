@@ -9,3 +9,5 @@ android:
     - armeabi-v7a
     - x86_64
   apiLevel: 24
+  features:
+    - android-signing
