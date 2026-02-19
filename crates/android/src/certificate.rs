@@ -2,7 +2,10 @@ use std::sync::LazyLock;
 
 use base64ct::{Base64, Encoding};
 use x509_cert::Certificate;
-use x509_verify::{VerifyingKey, der::{Decode, DecodePem}};
+use x509_verify::{
+    VerifyingKey,
+    der::{Decode, DecodePem},
+};
 
 use crate::constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_SOFTWARE_ROOT};
 use crate::error::Error;

@@ -1,10 +1,13 @@
-use der_parser::asn1_rs::{Any, Class, Enumerated, FromDer, Integer, OctetString, Sequence};
+use der_parser::asn1_rs::{
+    Any, Boolean, Class, Enumerated, FromDer, Integer, OctetString, Sequence,
+};
 use x509_cert::Certificate;
 
 use crate::constants::KEY_ATTESTATION_OID_BYTES;
 use crate::error::{Error, SecurityLevel};
 use crate::types::{
-    AttestationApplicationId, AuthorizationList, KeyDescription, PackageInfo,
+    AttestationApplicationId, AuthorizationList, KeyDescription, PackageInfo, RootOfTrust,
+    VerifiedBootState,
 };
 
 /// Extract and parse the Key Attestation extension from a certificate.
@@ -117,11 +120,17 @@ fn parse_authorization_list(data: &[u8]) -> Result<AuthorizationList, Error> {
                 3 => auth_list.key_size = Some(parse_inner_integer(inner)?),
                 5 => auth_list.digest = Some(parse_set_of_integer(inner)?),
                 10 => auth_list.ec_curve = Some(parse_inner_integer(inner)?),
+                701 => auth_list.creation_date_time = Some(parse_inner_integer(inner)?),
                 702 => auth_list.origin = Some(parse_inner_integer(inner)?),
+                704 => auth_list.root_of_trust = Some(parse_root_of_trust(inner)?),
+                705 => auth_list.os_version = Some(parse_inner_integer(inner)?),
+                706 => auth_list.os_patch_level = Some(parse_inner_integer(inner)?),
                 709 => {
                     auth_list.attestation_application_id =
                         Some(parse_tag_709_application_id(inner)?);
                 }
+                718 => auth_list.vendor_patch_level = Some(parse_inner_integer(inner)?),
+                719 => auth_list.boot_patch_level = Some(parse_inner_integer(inner)?),
                 _ => { /* skip unknown tags */ }
             }
         }
@@ -137,6 +146,53 @@ fn parse_authorization_list(data: &[u8]) -> Result<AuthorizationList, Error> {
 fn parse_inner_integer(data: &[u8]) -> Result<i64, Error> {
     let (_, int) = Integer::from_der(data).map_err(|e| err(format!("inner INTEGER: {e}")))?;
     integer_to_i64(&int)
+}
+
+/// Parse tag 704: RootOfTrust SEQUENCE from EXPLICIT tagged data.
+///
+/// ```asn1
+/// RootOfTrust ::= SEQUENCE {
+///     verifiedBootKey    OCTET STRING,
+///     deviceLocked       BOOLEAN,
+///     verifiedBootState  VerifiedBootState (ENUMERATED),
+///     verifiedBootHash   OCTET STRING,   -- optional, present on attestation version >= 2
+/// }
+/// ```
+fn parse_root_of_trust(data: &[u8]) -> Result<RootOfTrust, Error> {
+    let (_, seq) =
+        Sequence::from_der(data).map_err(|e| err(format!("RootOfTrust SEQUENCE: {e}")))?;
+    let inner = seq.content.as_ref();
+
+    // verifiedBootKey: OCTET STRING
+    let (inner, boot_key) =
+        OctetString::from_der(inner).map_err(|e| err(format!("verifiedBootKey: {e}")))?;
+
+    // deviceLocked: BOOLEAN
+    let (inner, locked) =
+        Boolean::from_der(inner).map_err(|e| err(format!("deviceLocked: {e}")))?;
+
+    // verifiedBootState: ENUMERATED
+    let (inner, boot_state_enum) =
+        Enumerated::from_der(inner).map_err(|e| err(format!("verifiedBootState: {e}")))?;
+
+    let verified_boot_state = VerifiedBootState::from_i64(i64::from(boot_state_enum.0))
+        .ok_or_else(|| err(format!("invalid VerifiedBootState: {}", boot_state_enum.0)))?;
+
+    // verifiedBootHash: OCTET STRING (optional, may not be present on older attestation versions)
+    let verified_boot_hash = if !inner.is_empty() {
+        let (_, hash) =
+            OctetString::from_der(inner).map_err(|e| err(format!("verifiedBootHash: {e}")))?;
+        hash.as_ref().to_vec()
+    } else {
+        Vec::new()
+    };
+
+    Ok(RootOfTrust {
+        verified_boot_key: boot_key.as_ref().to_vec(),
+        device_locked: locked.bool(),
+        verified_boot_state,
+        verified_boot_hash,
+    })
 }
 
 /// Parse a SET OF INTEGER from EXPLICIT tagged data.
@@ -250,8 +306,7 @@ pub fn extract_package_name(key_desc: &KeyDescription) -> Option<String> {
 
 fn security_level_from_enumerated(e: &Enumerated) -> Result<SecurityLevel, Error> {
     let val = i64::from(e.0);
-    SecurityLevel::from_i64(val)
-        .ok_or_else(|| err(format!("invalid SecurityLevel value: {val}")))
+    SecurityLevel::from_i64(val).ok_or_else(|| err(format!("invalid SecurityLevel value: {val}")))
 }
 
 fn integer_to_i64(int: &Integer) -> Result<i64, Error> {
@@ -425,8 +480,14 @@ mod tests {
         let kd = result.ok();
         assert!(kd.is_some());
         let kd = kd.as_ref();
-        assert_eq!(kd.map(|k| &k.attestation_challenge[..]), Some(&challenge[..]));
-        assert_eq!(kd.map(|k| k.attestation_security_level), Some(SecurityLevel::TrustedEnvironment));
+        assert_eq!(
+            kd.map(|k| &k.attestation_challenge[..]),
+            Some(&challenge[..])
+        );
+        assert_eq!(
+            kd.map(|k| k.attestation_security_level),
+            Some(SecurityLevel::TrustedEnvironment)
+        );
         assert_eq!(kd.map(|k| k.attestation_version), Some(300));
     }
 
@@ -441,7 +502,10 @@ mod tests {
         let kd = result.ok();
         assert!(kd.is_some());
         let kd = kd.as_ref();
-        assert_eq!(kd.map(|k| k.attestation_security_level), Some(SecurityLevel::StrongBox));
+        assert_eq!(
+            kd.map(|k| k.attestation_security_level),
+            Some(SecurityLevel::StrongBox)
+        );
 
         let pkg = kd.and_then(extract_package_name);
         assert_eq!(pkg.as_deref(), Some("com.anonymous.zcam1"));
@@ -453,7 +517,10 @@ mod tests {
         let result = parse_key_description_asn1(&der);
         assert!(result.is_ok());
         let kd = result.ok();
-        assert_eq!(kd.map(|k| k.attestation_security_level), Some(SecurityLevel::Software));
+        assert_eq!(
+            kd.map(|k| k.attestation_security_level),
+            Some(SecurityLevel::Software)
+        );
     }
 
     #[test]
@@ -488,7 +555,10 @@ mod tests {
             hardware_enforced: AuthorizationList::default(),
         };
 
-        assert_eq!(extract_package_name(&kd), Some("com.example.app".to_string()));
+        assert_eq!(
+            extract_package_name(&kd),
+            Some("com.example.app".to_string())
+        );
     }
 
     #[test]
@@ -511,5 +581,138 @@ mod tests {
     fn test_parse_invalid_bytes() {
         let result = parse_key_description_asn1(&[0xFF, 0xFF]);
         assert!(result.is_err());
+    }
+
+    /// Build a RootOfTrust SEQUENCE for testing.
+    fn build_root_of_trust(
+        boot_key: &[u8],
+        locked: bool,
+        boot_state: u32,
+        boot_hash: &[u8],
+    ) -> Vec<u8> {
+        let mut inner = Vec::new();
+        append_octet_string(&mut inner, boot_key);
+        // BOOLEAN: tag 0x01, length 0x01, value
+        inner.push(0x01);
+        inner.push(0x01);
+        inner.push(if locked { 0xFF } else { 0x00 });
+        // ENUMERATED: tag 0x0A, length 0x01, value
+        append_enumerated(&mut inner, boot_state);
+        append_octet_string(&mut inner, boot_hash);
+        wrap_sequence(&inner)
+    }
+
+    /// Build an AuthorizationList containing specific tags for testing.
+    fn build_authorization_list_with_tags(tags: &[(u32, Vec<u8>)]) -> Vec<u8> {
+        let mut inner = Vec::new();
+        for (tag_num, content) in tags {
+            let tagged = wrap_explicit_tag(*tag_num, content);
+            inner.extend_from_slice(&tagged);
+        }
+        wrap_sequence(&inner)
+    }
+
+    /// Build a DER INTEGER value (without explicit tag wrapping).
+    fn build_integer_der(value: i64) -> Vec<u8> {
+        let mut buf = Vec::new();
+        append_integer(&mut buf, value);
+        buf
+    }
+
+    #[test]
+    fn test_parse_root_of_trust() {
+        let boot_key = [0xAA; 32];
+        let boot_hash = [0xBB; 32];
+        let rot_bytes = build_root_of_trust(&boot_key, true, 0, &boot_hash);
+
+        let result = parse_root_of_trust(&rot_bytes);
+        assert!(result.is_ok(), "parse_root_of_trust failed: {result:?}");
+        let rot = result.unwrap();
+
+        assert_eq!(rot.verified_boot_key, boot_key);
+        assert!(rot.device_locked);
+        assert_eq!(rot.verified_boot_state, VerifiedBootState::Verified);
+        assert!(rot.verified_boot_state.is_verified());
+        assert_eq!(rot.verified_boot_hash, boot_hash);
+    }
+
+    #[test]
+    fn test_parse_root_of_trust_unlocked() {
+        let rot_bytes = build_root_of_trust(&[0x00; 32], false, 2, &[0x00; 32]);
+        let rot = parse_root_of_trust(&rot_bytes).unwrap();
+
+        assert!(!rot.device_locked);
+        assert_eq!(rot.verified_boot_state, VerifiedBootState::Unverified);
+        assert!(!rot.verified_boot_state.is_verified());
+    }
+
+    #[test]
+    fn test_parse_authorization_list_new_tags() {
+        let creation_time: i64 = 1_700_000_000_000; // ms since epoch
+        let os_version: i64 = 140_000; // Android 14
+        let os_patch: i64 = 202_601; // Jan 2026
+        let vendor_patch: i64 = 20_260_115; // 2026-01-15
+        let boot_patch: i64 = 20_260_105; // 2026-01-05
+
+        let boot_key = [0xCC; 32];
+        let boot_hash = [0xDD; 32];
+        let rot_bytes = build_root_of_trust(&boot_key, true, 0, &boot_hash);
+
+        let tags = vec![
+            (701, build_integer_der(creation_time)),
+            (704, rot_bytes),
+            (705, build_integer_der(os_version)),
+            (706, build_integer_der(os_patch)),
+            (718, build_integer_der(vendor_patch)),
+            (719, build_integer_der(boot_patch)),
+        ];
+
+        let auth_list_bytes = build_authorization_list_with_tags(&tags);
+        // Parse just the inner content (strip the outer SEQUENCE wrapper)
+        let (_, seq) = Sequence::from_der(&auth_list_bytes).unwrap();
+        let result = parse_authorization_list(seq.content.as_ref());
+        assert!(result.is_ok(), "parse failed: {result:?}");
+        let auth = result.unwrap();
+
+        assert_eq!(auth.creation_date_time, Some(creation_time));
+        assert_eq!(auth.os_version, Some(os_version));
+        assert_eq!(auth.os_patch_level, Some(os_patch));
+        assert_eq!(auth.vendor_patch_level, Some(vendor_patch));
+        assert_eq!(auth.boot_patch_level, Some(boot_patch));
+
+        let rot = auth.root_of_trust.unwrap();
+        assert_eq!(rot.verified_boot_key, boot_key);
+        assert!(rot.device_locked);
+        assert!(rot.verified_boot_state.is_verified());
+        assert_eq!(rot.verified_boot_hash, boot_hash);
+    }
+
+    #[test]
+    fn test_verified_boot_state_display() {
+        assert_eq!(VerifiedBootState::Verified.to_string(), "Verified");
+        assert_eq!(VerifiedBootState::SelfSigned.to_string(), "SelfSigned");
+        assert_eq!(VerifiedBootState::Unverified.to_string(), "Unverified");
+        assert_eq!(VerifiedBootState::Failed.to_string(), "Failed");
+    }
+
+    #[test]
+    fn test_verified_boot_state_from_i64() {
+        assert_eq!(
+            VerifiedBootState::from_i64(0),
+            Some(VerifiedBootState::Verified)
+        );
+        assert_eq!(
+            VerifiedBootState::from_i64(1),
+            Some(VerifiedBootState::SelfSigned)
+        );
+        assert_eq!(
+            VerifiedBootState::from_i64(2),
+            Some(VerifiedBootState::Unverified)
+        );
+        assert_eq!(
+            VerifiedBootState::from_i64(3),
+            Some(VerifiedBootState::Failed)
+        );
+        assert_eq!(VerifiedBootState::from_i64(99), None);
     }
 }

@@ -557,7 +557,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const tiff = metadata["{TIFF}"] ?? {};
 
     const when = tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
-    const deviceMake = tiff.Make || "Apple";
+    const deviceMake = tiff.Make || (Platform.OS === "android" ? "Android" : "Apple");
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
     const isJailBroken = JailMonkey.isJailBroken();
@@ -570,9 +570,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         deviceMake: deviceMake,
         deviceModel: deviceModel,
         softwareVersion: softwareVersion,
-        xResolution: exif.PixelXDimension,
-        yResolution: exif.PixelYDimension,
-        orientation: metadata.Orientation,
+        xResolution: exif.PixelXDimension ?? result.width,
+        yResolution: exif.PixelYDimension ?? result.height,
+        orientation: metadata.Orientation ?? result.orientation,
         iso: exif.ISOSpeedRatings?.toString(),
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
@@ -663,13 +663,18 @@ async function embedBindings(
   const destinationPath =
     Dirs.CacheDir + `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-  // On Android, use a software P-256 key for C2PA manifest signing.
-  // Hardware attestation is included as a separate assertion.
-  // On Apple, use Secure Enclave signing via contentKeyId.
-  const manifestEditor =
+  // On Android, pass the KeyStore alias so Rust signs via JNI.
+  // On iOS, pass the contentKeyId (SHA1 of public key) so Rust signs via Secure Enclave.
+  const keyTag =
     Platform.OS === "android"
-      ? (ManifestEditor as any).newWithSoftwareKey(originalPath)
-      : new ManifestEditor(originalPath, captureInfo.contentKeyId.buffer as ArrayBuffer, certChainPem);
+      ? new TextEncoder().encode("ZCAM1_CONTENT_KEY_TAG")
+      : captureInfo.contentKeyId;
+
+  const manifestEditor = new ManifestEditor(
+    originalPath,
+    keyTag.buffer as ArrayBuffer,
+    certChainPem,
+  );
 
   // Add the "capture" action to the manifest.
   let normalizedMetadata = undefined;
