@@ -159,6 +159,13 @@ export interface ZCameraProps {
    */
   depthEnabled?: boolean;
   /**
+   * Camera mode controlling the AVCaptureSession preset.
+   * - "photo": uses .photo preset for smooth hardware zoom across lens switchovers.
+   * - "video": uses .high preset for proper video recording support.
+   * @default "photo"
+   */
+  mode?: "photo" | "video";
+  /**
    * Callback fired when the device physical orientation changes.
    * Uses accelerometer data to detect orientation even when iOS orientation lock is enabled.
    * @param orientation The new physical orientation of the device.
@@ -202,6 +209,7 @@ type NativeCameraViewProps = {
   filmStyleOverrides?: Record<string, FilmStyleEffect[]>;
   customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
+  mode?: "photo" | "video";
   onOrientationChange?: (event: { nativeEvent: { orientation: string } }) => void;
 };
 
@@ -607,6 +615,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       filmStyleOverrides,
       customFilmStyles,
       depthEnabled = false,
+      mode = "photo",
       onOrientationChange,
       style,
     } = this.props;
@@ -631,6 +640,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         filmStyleOverrides={mergedFilmStyleOverrides}
         customFilmStyles={customFilmStyles}
         depthEnabled={depthEnabled}
+        mode={mode}
         onOrientationChange={
           onOrientationChange
             ? (event) => onOrientationChange(event.nativeEvent.orientation as DeviceOrientation)

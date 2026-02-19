@@ -1027,15 +1027,21 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     @nonobjc public func configureSessionIfNeeded(
         position: AVCaptureDevice.Position,
         depthEnabled: Bool = false,
+        usePhotoPreset: Bool = false,
         completion: @escaping (Error?) -> Void
     ) {
         sessionQueue.async {
-            // Early return if session is already configured correctly for the requested position and depth setting.
+            // Select preset based on mode:
+            // - .photo: smooth hardware zoom across lens switchovers (photo mode).
+            // - .high: required for video recording support (video mode).
+            let desiredPreset: AVCaptureSession.Preset = usePhotoPreset ? .photo : .high
+
+            // Early return if session is already configured correctly for the requested settings.
             if let session = self.captureSession,
                 let currentInput = self.videoInput,
                 currentInput.device.position == position,
                 session.outputs.contains(self.photoOutput),
-                session.sessionPreset == .high,
+                session.sessionPreset == desiredPreset,
                 self.depthEnabledAtSessionLevel == depthEnabled
             {
                 DispatchQueue.main.async {
@@ -1048,10 +1054,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 let session = self.captureSession ?? AVCaptureSession()
                 session.beginConfiguration()
                 self.didPrewarmDepth = false
-                // Use .high preset to support both photo and video capture.
-                // This avoids session reconfiguration when starting video recording,
-                // which would cause dark initial frames while ISP adjusts.
-                session.sessionPreset = .high
+                session.sessionPreset = desiredPreset
 
                 // Remove existing input if position changed
                 if let currentInput = self.videoInput,
@@ -1145,8 +1148,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 // See setupAudioForRecording() which is called when recording begins.
 
                 // Configure photo output for maximum resolution.
-                // This is critical because we use .high session preset for video preview,
-                // but still want full-resolution photos (12MP instead of 2MP).
+                // This is critical when using .high session preset (video mode),
+                // to ensure full-resolution photos (12MP instead of 2MP).
                 if let device = self.videoInput?.device {
                     // Find the highest resolution format available for photos.
                     let maxDimensions = device.activeFormat.supportedMaxPhotoDimensions
@@ -1970,7 +1973,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     position = .back
                 }
 
-                self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel) { error in
+                // Always use .high preset for recording, regardless of current mode.
+                self.configureSessionIfNeeded(position: position, depthEnabled: self.depthEnabledAtSessionLevel, usePhotoPreset: false) { error in
                     if let error = error {
                         completion(nil, error as NSError)
                         return
@@ -2779,6 +2783,21 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
     }
 
+    /// Camera mode: "photo" or "video".
+    /// Controls the AVCaptureSession preset:
+    /// - "photo": uses .photo preset for smooth hardware zoom across lens switchovers.
+    /// - "video": uses .high preset for proper video recording support.
+    public var mode: String = "photo" {
+        didSet {
+            guard oldValue != mode else { return }
+            // Do not reconfigure while recording — video always needs .high.
+            guard !Zcam1CameraService.shared.isRecordingActive else { return }
+            print("[Zcam1CameraView] mode changed: \(oldValue) -> \(mode)")
+            isReconfiguring = true
+            reconfigureSession()
+        }
+    }
+
     /// Callback fired when device physical orientation changes.
     /// Sends a dictionary with "orientation" key ("portrait", "landscapeLeft", "landscapeRight", "portraitUpsideDown").
     public var onOrientationChange: (([String: Any]) -> Void)?
@@ -3051,8 +3070,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         let svc = Zcam1CameraService.shared
         let positionEnum: AVCaptureDevice.Position =
             position.lowercased() == "front" ? .front : .back
+        let usePhotoPreset = mode.lowercased() == "photo"
 
-        svc.configureSessionIfNeeded(position: positionEnum, depthEnabled: depthEnabled) { [weak self] error in
+        svc.configureSessionIfNeeded(position: positionEnum, depthEnabled: depthEnabled, usePhotoPreset: usePhotoPreset) { [weak self] error in
             guard let self = self, error == nil else { return }
 
             // Apply camera settings.
