@@ -27,9 +27,10 @@ import {
   IosProvingClient,
   type IosProvingClientInterface,
   ProofRequestStatus,
+  ProverNetworkMode,
 } from "./proving";
 
-export { FulfillmentStatus, IosProvingClient } from "./proving";
+export { FulfillmentStatus, IosProvingClient, ProverNetworkMode } from "./proving";
 export {
   AuthenticityStatus,
   authenticityStatus,
@@ -41,9 +42,14 @@ export {
  * Configuration settings for backend communication.
  */
 export type Settings = {
+  /** Private key used to authenticate with the prover network. If omitted, a mock prover is used. */
   privateKey?: string;
+  /** Certificate chain used to sign C2PA manifests. If omitted, a self signed certificate chain.is build using default values */
   certChain?: SelfSignedCertChain | ExistingCertChain;
+  /** Whether to target the production environment. */
   production: boolean;
+  /** Prover network mode (mainnet or reserved capacity). Defaults to `Reserved`. */
+  proverNetworkMode?: ProverNetworkMode;
 };
 
 /**
@@ -77,7 +83,8 @@ async function createProvingClient(
   }
 
   if (settings.privateKey) {
-    client = new IosProvingClient(settings.privateKey, onInitialized);
+    const proverNetworkMode = settings.proverNetworkMode ?? ProverNetworkMode.Reserved;
+    client = new IosProvingClient(settings.privateKey, onInitialized, proverNetworkMode);
   } else {
     client = IosProvingClient.mock(onInitialized);
   }
