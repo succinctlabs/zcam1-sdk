@@ -1,8 +1,4 @@
-use sp1_sdk::{
-    NetworkProver, ProveRequest, Prover, SP1Stdin,
-    env::EnvProver,
-    network::{NetworkMode, get_default_rpc_url_for_mode, signer::NetworkSigner},
-};
+use sp1_sdk::{ Prover, env::EnvProver};
 use zcam1_ios::AuthInputs;
 use zcam1_proving_utils::IOS_AUTHENCITY_ELF;
 
@@ -14,6 +10,8 @@ async fn execute_in_sp1_test() {
         format: "image/jpeg".to_string(),
         app_attest_production: false,
     };
+
+    let prover = EnvProver::new();
 
     prover
         .execute(IOS_AUTHENCITY_ELF, inputs.into())
