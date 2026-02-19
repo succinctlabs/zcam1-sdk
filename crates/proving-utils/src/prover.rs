@@ -11,21 +11,21 @@ use alloy_primitives::B256;
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{
-    CpuProver, HashableKey, NetworkProver, NetworkSigner, Prover, SP1ProofWithPublicValues,
-    SP1ProvingKey, SP1Stdin, SP1VerifyingKey, include_elf,
+    Elf, HashableKey, MockProver, NetworkProver, ProveRequest, Prover, ProverClient, ProvingKey,
+    SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin, SP1VerifyingKey, include_elf,
     network::{
-        NetworkMode, get_default_rpc_url_for_mode,
-        proto::types::FulfillmentStatus as Sp1FulfillmentStatus,
+        FulfillmentStrategy, NetworkMode, get_default_rpc_url_for_mode,
+        proto::types::FulfillmentStatus as Sp1FulfillmentStatus, signer::NetworkSigner,
     },
 };
-use tokio::{runtime::Runtime, sync::oneshot};
+use tokio::{runtime::Runtime, sync::oneshot, time::sleep};
 use zcam1_ios::AuthInputs;
 
 use crate::error::Error;
 
-pub const IOS_AUTHENCITY_ELF: &[u8] = include_elf!("authenticity-ios");
+pub const IOS_AUTHENCITY_ELF: Elf = include_elf!("authenticity-ios");
 pub const IOS_AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/vk.bin");
-pub const MOCK_ELF: &[u8] = include_elf!("mock");
+pub const MOCK_ELF: Elf = include_elf!("mock");
 
 #[uniffi::export(callback_interface)]
 pub trait Initialized: Send + Sync {
@@ -86,15 +86,15 @@ where
         let cloned_prover = prover.clone();
         let cloned_vk_hash = vk_hash.clone();
 
-        thread::spawn(move || {
-            let prover = CpuProver::mock();
-            let (pk, vk) = prover.setup(MOCK_ELF);
+        tokio_rt().spawn(async move {
+            let prover = ProverClient::builder().mock().build().await;
+            let pk = prover.setup(MOCK_ELF).await.unwrap();
+            let _ = cloned_vk_hash.set(pk.verifying_key().bytes32());
             let _ = cloned_prover.set(EitherProver::Mock {
                 prover: Box::new(prover),
                 pk: Box::new(pk),
                 proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
             });
-            let _ = cloned_vk_hash.set(vk.bytes32());
 
             if let Some(callback) = callback {
                 callback.initialized();
@@ -136,8 +136,8 @@ impl ProvingClient<AuthInputs> {
         let cloned_prover = prover.clone();
         let cloned_vk_hash = vk_hash.clone();
 
-        thread::spawn(move || {
-            let prover = NetworkProver::new(signer, &rpc_url, NetworkMode::Reserved);
+        tokio_rt().spawn(async move {
+            let prover = NetworkProver::new(signer, &rpc_url, NetworkMode::Reserved).await;
             let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
             let _ = cloned_vk_hash.set(vk.bytes32());
             let _ = cloned_prover.set(EitherProver::Network {
@@ -164,7 +164,7 @@ enum EitherProver {
         vk: Box<SP1VerifyingKey>,
     },
     Mock {
-        prover: Box<CpuProver>,
+        prover: Box<MockProver>,
         pk: Box<SP1ProvingKey>,
         proof_requests: Mutex<LruCache<String, (Instant, SP1ProofWithPublicValues)>>,
     },
@@ -176,12 +176,14 @@ impl EitherProver {
             EitherProver::Network { prover, vk } => {
                 let prover = prover.clone();
                 let vk = vk.clone();
+                let pk = SP1ProvingKey::new(*vk, IOS_AUTHENCITY_ELF);
 
                 run_on_tokio(async move {
                     prover
-                        .prove_from_vk(&vk, IOS_AUTHENCITY_ELF, &stdin)
+                        .prove(&pk, stdin)
                         .groth16()
-                        .request_async()
+                        .strategy(FulfillmentStrategy::Reserved)
+                        .request()
                         .await
                         .map(|id| id.to_string())
                         .map_err(|err| Error::Sp1(format!("{err:#?}")))
@@ -194,18 +196,20 @@ impl EitherProver {
                 proof_requests,
             } => {
                 let id = B256::random().to_string();
-                let mut proof_requests = proof_requests.lock().unwrap();
 
                 let proof = prover
-                    .prove(pk, &stdin)
+                    .prove(pk, stdin)
                     .groth16()
-                    .run()
+                    .await
                     .map_err(|err| Error::Sp1(err.to_string()))?;
 
                 let fulfilled_instant =
                     Instant::now().checked_add(Duration::from_secs(10)).unwrap();
 
-                proof_requests.put(id.clone(), (fulfilled_instant, proof));
+                proof_requests
+                    .lock()
+                    .unwrap()
+                    .put(id.clone(), (fulfilled_instant, proof));
 
                 Ok(id)
             }

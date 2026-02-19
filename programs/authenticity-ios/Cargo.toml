@@ -10,8 +10,8 @@ zcam1-c2pa-utils = { path = "../../crates/c2pa-utils" }
 
 base64ct = "1.6.0"
 sha2 = "0.10.9"
-sp1-zkvm = "5.2.4"
+sp1-zkvm = "6.0.0"
 
 [patch.crates-io]
-sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", tag = "patch-sha2-0.10.9-sp1-4.0.0" }
+sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", tag = "patch-sha2-0.10.9-sp1-6.0.0" }
 c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}
