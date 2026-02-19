@@ -8,6 +8,9 @@ zcam1-c2pa-utils = { workspace = true, features = ["io", "editor", "software-sig
 zcam1-certs-utils.workspace = true
 zcam1-verify-utils.workspace = true
 
+[features]
+android-signing = ["zcam1-c2pa-utils/android-signing"]
+
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
 name = "zcam1_bindings"

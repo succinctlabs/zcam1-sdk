@@ -9,7 +9,7 @@ pub mod types;
 pub use error::{Error, SecurityLevel};
 pub use key_attestation::validate_key_attestation;
 pub use signature::{verify_message_binding, verify_signature};
-pub use types::{KeyAttestationResult, KeyDescription};
+pub use types::{KeyAttestationResult, KeyDescription, RootOfTrust, VerifiedBootState};
 
 /// Convenience function to validate all Android attestation artifacts in one call.
 ///

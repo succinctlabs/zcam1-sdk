@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -9,7 +9,6 @@ import {
   Alert,
   PermissionsAndroid,
   Image,
-  requireNativeComponent,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { TurboModuleRegistry } from "react-native";
@@ -21,22 +20,19 @@ import {
   getDevicePublicKey,
   isDeviceKeyStrongboxBacked,
   checkPlayServicesAvailable,
+  getZCamera,
 } from "@succinctlabs/react-native-zcam1-capture";
-import {
-  extractManifest,
-  computeHash,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+import { extractManifest } from "@succinctlabs/react-native-zcam1-c2pa";
 import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
-import { sha256 } from "@noble/hashes/sha2";
-import { base64 } from "@scure/base";
 
-const Zcam1CameraView = requireNativeComponent<any>("Zcam1CameraView");
+const ZCamera = getZCamera();
 
 const APP_ID = "com.anonymous.zcam1_android_test";
 
 export default function Index() {
   const [log, setLog] = useState<string[]>([]);
   const [captureInfo, setCaptureInfo] = useState<CaptureInfo | null>(null);
+  const cameraRef = useRef<InstanceType<typeof ZCamera>>(null);
 
   const addLog = useCallback((message: string) => {
     setLog((prev) => [
@@ -230,11 +226,9 @@ export default function Index() {
     }
   }, [addLog]);
 
-  // --- M5: Camera Preview & Capture ---
+  // --- M5/M6: Camera + Capture & Sign ---
 
-  const [cameraPermission, setCameraPermission] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [signedPhotoPath, setSignedPhotoPath] = useState<string | null>(null);
 
   const requestCameraPermission = useCallback(async () => {
@@ -248,7 +242,6 @@ export default function Index() {
         },
       );
       const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
-      setCameraPermission(isGranted);
       addLog(`Camera permission: ${isGranted ? "GRANTED" : "DENIED"}`);
       if (isGranted) {
         setShowCamera(true);
@@ -258,137 +251,23 @@ export default function Index() {
     }
   }, [addLog]);
 
-  const takePhoto = useCallback(async () => {
-    try {
-      addLog("Taking photo...");
-      const mod = TurboModuleRegistry.get("Zcam1Sdk") as any;
-      if (!mod) {
-        addLog("ERROR: Zcam1Sdk module not found");
-        return;
-      }
-      const result = await mod.takeNativePhoto(
-        "jpeg",   // format
-        "back",   // position
-        "off",    // flash
-        false,    // includeDepthData
-        "4:3",    // aspectRatio
-        "auto",   // orientation
-        false,    // skipPostProcessing
-      );
-      addLog(`Photo captured!`);
-      addLog(`  Path: ${result.filePath}`);
-      addLog(`  Format: ${result.format}`);
-      addLog(`  Size: ${result.width}x${result.height}`);
-      addLog(`  Orientation: ${result.orientation}`);
-      setPhotoPath(result.filePath);
-    } catch (e: any) {
-      addLog(`Photo capture FAILED: ${e.code || ""} ${e.message}`);
-    }
-  }, [addLog]);
-
-  // --- M6: Capture + C2PA Sign ---
-
-  const testCaptureAndSign = useCallback(async () => {
-    if (!captureInfo) {
-      addLog("Run initCapture first");
+  const captureAndSign = useCallback(async () => {
+    if (!cameraRef.current) {
+      addLog("Camera not ready");
       return;
     }
     try {
-      addLog("M6: Starting capture + C2PA sign...");
-
-      // Step 1: Take photo
-      addLog("  Step 1: Taking photo...");
-      const mod = TurboModuleRegistry.get("Zcam1Sdk") as any;
-      if (!mod) {
-        addLog("ERROR: Zcam1Sdk module not found");
-        return;
-      }
-      const result = await mod.takeNativePhoto(
-        "jpeg", "back", "off", false, "4:3", "auto", false,
-      );
-      addLog(`  Photo captured: ${result.width}x${result.height}`);
-      const originalPath = result.filePath;
-
-      // Step 2: Create ManifestEditor with software key
-      addLog("  Step 2: Creating ManifestEditor (software key)...");
-      const c2pa = require("@succinctlabs/react-native-zcam1-c2pa");
-      const ManifestEditor = c2pa.ManifestEditor;
-
-      const manifestEditor = ManifestEditor.newWithSoftwareKey(originalPath);
-      addLog("  ManifestEditor created!");
-
-      // Step 3: Add photo metadata action
-      addLog("  Step 3: Adding photo metadata...");
-      const when = new Date().toISOString().replace("T", " ").split(".")[0];
-      const normalizedMetadata = manifestEditor.addPhotoMetadataAction(
-        {
-          deviceMake: "Samsung",
-          deviceModel: "Android Test Device",
-          softwareVersion: "ZCAM1 Android Test",
-          xResolution: result.width || 4032,
-          yResolution: result.height || 3024,
-          orientation: 1,
-          iso: "100",
-          exposureTime: 0,
-          depthOfField: 0,
-          focalLength: 0,
-          authenticityData: {
-            isJailBroken: false,
-            isLocationSpoofingAvailable: false,
-          },
-          depthData: undefined,
-          filmStyle: undefined,
-        },
-        when,
-      );
-      addLog(`  Metadata added (${normalizedMetadata.length} chars)`);
-
-      // Step 4: Compute photo hash and sign with device key
-      addLog("  Step 4: Computing photo hash...");
-      const photoHashBuffer = computeHash(originalPath);
-      const photoHashBytes = new Uint8Array(photoHashBuffer);
-      const photoHashB64 = base64.encode(photoHashBytes);
-      addLog(`  Photo hash: ${photoHashB64.substring(0, 24)}...`);
-
-      // Step 5: Compute metadata hash and create client data
-      addLog("  Step 5: Signing with device key...");
-      const metadataHashBytes = sha256(new TextEncoder().encode(normalizedMetadata));
-      const metadataHashB64 = base64.encode(metadataHashBytes);
-      const clientData = `${photoHashB64}|${metadataHashB64}`;
-      addLog(`  Client data: ${clientData.substring(0, 40)}...`);
-
-      // Step 6: Sign client data with hardware-backed device key
-      const assertion = await signWithDeviceKey(captureInfo.deviceKeyId, clientData);
-      addLog(`  Assertion signed (${assertion.length} chars)`);
-
-      // Step 7: Add device bindings assertion with real signature
-      addLog("  Step 7: Adding bindings assertion...");
-      manifestEditor.addAssertion(
-        "succinct.bindings",
-        JSON.stringify({
-          app_id: captureInfo.appId,
-          device_key_id: captureInfo.deviceKeyId,
-          attestation: captureInfo.attestation,
-          assertion: assertion,
-        }),
-      );
-      addLog("  Bindings assertion added!");
-
-      // Step 8: Embed manifest to file
-      addLog("  Step 8: Embedding C2PA manifest...");
-      const format = c2pa.formatFromPath(originalPath);
-      const destPath = originalPath.replace(".jpg", "_signed.jpg");
-      await manifestEditor.embedManifestToFile(destPath, format);
-      addLog("  C2PA manifest embedded!");
-      addLog(`  Signed file: ${destPath}`);
-
-      setSignedPhotoPath(destPath);
-      addLog("M6: Capture + Sign COMPLETE!");
+      addLog("Capture & Sign: Taking photo via ZCamera...");
+      const photo = await cameraRef.current.takePhoto();
+      addLog(`  Original: ${photo.originalPath}`);
+      addLog(`  Signed:   ${photo.path}`);
+      setSignedPhotoPath(photo.path);
+      addLog("Capture & Sign COMPLETE!");
     } catch (e: any) {
-      addLog(`M6 FAILED: ${e.code || ""} ${e.message || e}`);
-      console.error("M6 error:", e);
+      addLog(`Capture & Sign FAILED: ${e.code || ""} ${e.message || e}`);
+      console.error("Capture & Sign error:", e);
     }
-  }, [addLog, captureInfo]);
+  }, [addLog]);
 
   // --- M6b: Share Signed Photo ---
 
@@ -594,9 +473,9 @@ export default function Index() {
             </Pressable>
           </View>
 
-          {/* M5 */}
+          {/* M5/M6: Camera + Capture & Sign */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>M5: Camera Preview & Capture</Text>
+            <Text style={styles.sectionTitle}>M5/M6: Camera + Capture & Sign</Text>
             {!showCamera ? (
               <Pressable
                 style={[styles.button, { backgroundColor: "#FF2D55" }]}
@@ -604,96 +483,70 @@ export default function Index() {
               >
                 <Text style={styles.buttonText}>Open Camera</Text>
               </Pressable>
+            ) : !captureInfo ? (
+              <Text style={{ color: "#999", fontStyle: "italic" }}>
+                Run initCapture() first, then open camera
+              </Text>
             ) : (
               <>
                 <View style={{ height: 300, borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
-                  <Zcam1CameraView
+                  <ZCamera
+                    ref={cameraRef}
                     style={{ flex: 1 }}
-                    cameraType="back"
-                    flashMode="off"
-                    zoom={1.0}
+                    position="back"
+                    captureInfo={captureInfo}
                   />
                 </View>
                 <View style={styles.buttonRow}>
                   <Pressable
-                    style={[styles.button, { backgroundColor: "#FF2D55" }]}
-                    onPress={takePhoto}
+                    style={[styles.button, { backgroundColor: "#E91E63" }]}
+                    onPress={captureAndSign}
                   >
-                    <Text style={styles.buttonText}>Take Photo</Text>
+                    <Text style={styles.buttonText}>Capture & Sign</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.button, { backgroundColor: "#8E8E93" }]}
-                    onPress={() => { setShowCamera(false); setPhotoPath(null); }}
+                    onPress={() => { setShowCamera(false); }}
                   >
                     <Text style={styles.buttonText}>Close</Text>
                   </Pressable>
                 </View>
-                {photoPath && (
+                {signedPhotoPath && (
                   <View style={{ marginTop: 8, alignItems: "center" }}>
                     <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
-                      Last capture:
+                      C2PA signed photo:
                     </Text>
                     <Image
-                      source={{ uri: `file://${photoPath}` }}
+                      source={{ uri: `file://${signedPhotoPath}` }}
                       style={{ width: 200, height: 150, borderRadius: 8 }}
                       resizeMode="cover"
                     />
                     <Text style={{ fontSize: 10, color: "#999", marginTop: 4 }} numberOfLines={1}>
-                      {photoPath}
+                      {signedPhotoPath}
                     </Text>
+                    <View style={[styles.buttonRow, { marginTop: 8 }]}>
+                      <Pressable
+                        style={[styles.button, { backgroundColor: "#5856D6" }]}
+                        onPress={shareSignedPhoto}
+                      >
+                        <Text style={styles.buttonText}>Share</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.button, { backgroundColor: "#FF9500" }]}
+                        onPress={viewManifest}
+                      >
+                        <Text style={styles.buttonText}>View Manifest</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.button, { backgroundColor: "#34C759" }]}
+                        onPress={verifySignedPhoto}
+                      >
+                        <Text style={styles.buttonText}>Verify</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 )}
               </>
-            )}
-          </View>
-
-          {/* M6: Capture + C2PA Sign */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>M6: Capture + C2PA Sign</Text>
-            <Pressable
-              style={[
-                styles.button,
-                { backgroundColor: "#E91E63" },
-                (!showCamera || !hasKey) && styles.buttonDisabled,
-              ]}
-              onPress={testCaptureAndSign}
-            >
-              <Text style={styles.buttonText}>Capture & Sign</Text>
-            </Pressable>
-            {signedPhotoPath && (
-              <View style={{ marginTop: 8, alignItems: "center" }}>
-                <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
-                  C2PA signed photo:
-                </Text>
-                <Image
-                  source={{ uri: `file://${signedPhotoPath}` }}
-                  style={{ width: 200, height: 150, borderRadius: 8 }}
-                  resizeMode="cover"
-                />
-                <Text style={{ fontSize: 10, color: "#999", marginTop: 4 }} numberOfLines={1}>
-                  {signedPhotoPath}
-                </Text>
-                <View style={[styles.buttonRow, { marginTop: 8 }]}>
-                  <Pressable
-                    style={[styles.button, { backgroundColor: "#5856D6" }]}
-                    onPress={shareSignedPhoto}
-                  >
-                    <Text style={styles.buttonText}>Share</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.button, { backgroundColor: "#FF9500" }]}
-                    onPress={viewManifest}
-                  >
-                    <Text style={styles.buttonText}>View Manifest</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.button, { backgroundColor: "#34C759" }]}
-                    onPress={verifySignedPhoto}
-                  >
-                    <Text style={styles.buttonText}>Verify</Text>
-                  </Pressable>
-                </View>
-              </View>
             )}
           </View>
 
