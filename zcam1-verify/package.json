@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/zcam1-verify",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "ZCAM1 Verify SDK for browser",
   "type": "module",
   "main": "dist/index.js",
@@ -36,7 +36,7 @@
     "@noble/hashes": "^2.0.1",
     "@peculiar/x509": "^1.14.3",
     "@scure/base": "^2.0.0",
-    "@succinctlabs/sp1-wasm-verifier": "^5.0.6",
+    "@succinctlabs/sp1-wasm-verifier": "^6.0.0",
     "asn1js": "^3.0.7",
     "cbor2": "^2.2.1",
     "json-canonicalize": "^2.0.0",
