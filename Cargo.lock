@@ -318,7 +318,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "alloy-sol-types",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -2893,7 +2893,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3639,7 +3639,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -4328,7 +4328,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5308,7 +5308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "once_cell",
@@ -5328,7 +5328,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.114",
@@ -5371,7 +5371,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls 0.23.36",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -5408,9 +5408,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5959,7 +5959,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6596,7 +6596,6 @@ checksum = "7a2ae44ef20feb57a68b23d846850f861394c2e02dc425a50098ae8c90267589"
 [[package]]
 name = "slop-air"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-air",
 ]
@@ -6604,7 +6603,6 @@ dependencies = [
 [[package]]
 name = "slop-algebra"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "itertools 0.14.0",
  "p3-field",
@@ -6614,7 +6612,6 @@ dependencies = [
 [[package]]
 name = "slop-alloc"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "serde",
  "slop-algebra",
@@ -6624,7 +6621,6 @@ dependencies = [
 [[package]]
 name = "slop-baby-bear"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "lazy_static",
  "p3-baby-bear",
@@ -6638,7 +6634,6 @@ dependencies = [
 [[package]]
 name = "slop-basefold"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "itertools 0.14.0",
@@ -6660,7 +6655,6 @@ dependencies = [
 [[package]]
 name = "slop-basefold-prover"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "itertools 0.14.0",
@@ -6686,7 +6680,6 @@ dependencies = [
 [[package]]
 name = "slop-bn254"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "ff 0.13.1",
  "p3-bn254-fr",
@@ -6701,7 +6694,6 @@ dependencies = [
 [[package]]
 name = "slop-challenger"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "futures",
  "p3-challenger",
@@ -6713,7 +6705,6 @@ dependencies = [
 [[package]]
 name = "slop-commit"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-commit",
  "serde",
@@ -6723,7 +6714,6 @@ dependencies = [
 [[package]]
 name = "slop-dft"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-dft",
  "serde",
@@ -6736,7 +6726,6 @@ dependencies = [
 [[package]]
 name = "slop-fri"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-fri",
 ]
@@ -6744,7 +6733,6 @@ dependencies = [
 [[package]]
 name = "slop-futures"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "crossbeam",
  "futures",
@@ -6758,7 +6746,6 @@ dependencies = [
 [[package]]
 name = "slop-jagged"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "futures",
@@ -6791,7 +6778,6 @@ dependencies = [
 [[package]]
 name = "slop-keccak-air"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-keccak-air",
 ]
@@ -6799,7 +6785,6 @@ dependencies = [
 [[package]]
 name = "slop-koala-bear"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "lazy_static",
  "p3-koala-bear",
@@ -6813,7 +6798,6 @@ dependencies = [
 [[package]]
 name = "slop-matrix"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-matrix",
 ]
@@ -6821,7 +6805,6 @@ dependencies = [
 [[package]]
 name = "slop-maybe-rayon"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-maybe-rayon",
 ]
@@ -6829,7 +6812,6 @@ dependencies = [
 [[package]]
 name = "slop-merkle-tree"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "ff 0.13.1",
@@ -6855,7 +6837,6 @@ dependencies = [
 [[package]]
 name = "slop-multilinear"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "futures",
@@ -6875,7 +6856,6 @@ dependencies = [
 [[package]]
 name = "slop-poseidon2"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-poseidon2",
 ]
@@ -6883,7 +6863,6 @@ dependencies = [
 [[package]]
 name = "slop-primitives"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "slop-algebra",
 ]
@@ -6891,7 +6870,6 @@ dependencies = [
 [[package]]
 name = "slop-stacked"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "futures",
@@ -6913,7 +6891,6 @@ dependencies = [
 [[package]]
 name = "slop-sumcheck"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "futures",
  "itertools 0.14.0",
@@ -6930,7 +6907,6 @@ dependencies = [
 [[package]]
 name = "slop-symmetric"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-symmetric",
 ]
@@ -6938,7 +6914,6 @@ dependencies = [
 [[package]]
 name = "slop-tensor"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "arrayvec",
  "derive-where",
@@ -6957,7 +6932,6 @@ dependencies = [
 [[package]]
 name = "slop-uni-stark"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-uni-stark",
 ]
@@ -6965,7 +6939,6 @@ dependencies = [
 [[package]]
 name = "slop-utils"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "p3-util",
  "tracing-forest",
@@ -6975,7 +6948,6 @@ dependencies = [
 [[package]]
 name = "slop-whir"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "derive-where",
  "futures",
@@ -7070,7 +7042,6 @@ dependencies = [
 [[package]]
 name = "sp1-build"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "anyhow",
  "cargo_metadata 0.18.1",
@@ -7083,7 +7054,6 @@ dependencies = [
 [[package]]
 name = "sp1-core-executor"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -7122,7 +7092,6 @@ dependencies = [
 [[package]]
 name = "sp1-core-machine"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -7166,29 +7135,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp1-cuda"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
-dependencies = [
- "bincode",
- "bytes",
- "reqwest",
- "serde",
- "serde_json",
- "sp1-core-executor",
- "sp1-core-machine",
- "sp1-primitives",
- "sp1-prover",
- "sp1-prover-types",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "sp1-curves"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "cfg-if",
  "dashu",
@@ -7208,7 +7156,6 @@ dependencies = [
 [[package]]
 name = "sp1-derive"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7218,7 +7165,6 @@ dependencies = [
 [[package]]
 name = "sp1-hypercube"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "arrayref",
  "deepsize2",
@@ -7265,7 +7211,6 @@ dependencies = [
 [[package]]
 name = "sp1-jit"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "dynasmrt",
  "hashbrown 0.14.5",
@@ -7277,9 +7222,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp1-network"
+version = "6.0.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-signer",
+ "alloy-signer-aws",
+ "alloy-signer-local",
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-kms",
+ "backoff",
+ "bincode",
+ "cfg-if",
+ "eventsource-stream",
+ "futures",
+ "hex",
+ "k256",
+ "prost",
+ "reqwest",
+ "reqwest-middleware",
+ "rustls 0.23.36",
+ "serde",
+ "sp1-build",
+ "sp1-core-executor",
+ "sp1-core-machine",
+ "sp1-prover",
+ "sp1-prover-types",
+ "sp1-sdk-types",
+ "thiserror 1.0.69",
+ "tokio",
+ "tonic",
+ "tracing",
+ "twirp-rs",
+ "zstd",
+]
+
+[[package]]
 name = "sp1-primitives"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "bincode",
  "blake3",
@@ -7302,7 +7284,6 @@ dependencies = [
 [[package]]
 name = "sp1-prover"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "anyhow",
  "bincode",
@@ -7365,7 +7346,6 @@ dependencies = [
 [[package]]
 name = "sp1-prover-types"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -7385,7 +7365,6 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-circuit"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "bincode",
  "itertools 0.14.0",
@@ -7424,7 +7403,6 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-compiler"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "backtrace",
  "cfg-if",
@@ -7444,7 +7422,6 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-executor"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "backtrace",
  "cfg-if",
@@ -7467,7 +7444,6 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-gnark-ffi"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "anyhow",
  "bincode",
@@ -7491,7 +7467,6 @@ dependencies = [
 [[package]]
 name = "sp1-recursion-machine"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "itertools 0.14.0",
  "rand 0.8.5",
@@ -7511,64 +7486,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp1-sdk"
+name = "sp1-sdk-types"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
- "alloy-primitives",
- "alloy-signer",
- "alloy-signer-aws",
- "alloy-signer-local",
  "anyhow",
  "async-trait",
- "aws-config",
- "aws-sdk-kms",
- "backoff",
  "bincode",
- "cfg-if",
- "dirs",
- "eventsource-stream",
  "futures",
  "hex",
- "indicatif",
  "itertools 0.14.0",
- "k256",
  "num-bigint 0.4.6",
- "prost",
- "reqwest",
- "reqwest-middleware",
- "rustls 0.23.36",
  "serde",
- "sha2",
  "slop-algebra",
  "slop-alloc",
  "slop-basefold",
  "slop-commit",
  "slop-jagged",
- "slop-merkle-tree",
  "slop-multilinear",
- "slop-stacked",
  "slop-sumcheck",
  "slop-tensor",
  "sp1-build",
  "sp1-core-executor",
  "sp1-core-machine",
- "sp1-cuda",
  "sp1-hypercube",
  "sp1-primitives",
  "sp1-prover",
- "sp1-prover-types",
  "sp1-recursion-executor",
- "sp1-recursion-gnark-ffi",
  "sp1-verifier",
- "strum",
- "tempfile",
  "thiserror 1.0.69",
- "tokio",
- "tonic",
  "tracing",
- "twirp-rs",
- "zstd",
 ]
 
 [[package]]
@@ -7585,7 +7531,6 @@ dependencies = [
 [[package]]
 name = "sp1-verifier"
 version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
 dependencies = [
  "bincode",
  "blake3",
@@ -7819,7 +7764,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -9374,7 +9319,6 @@ dependencies = [
  "rcgen",
  "serde",
  "serde_json",
- "sp1-sdk",
  "spki",
  "thiserror 2.0.17",
  "tracing",
@@ -9397,7 +9341,7 @@ dependencies = [
  "serde_cbor 0.10.2",
  "serde_json",
  "sha2",
- "sp1-sdk",
+ "sp1-sdk-types",
  "thiserror 2.0.17",
  "x509-cert",
  "x509-verify",
@@ -9421,8 +9365,9 @@ dependencies = [
  "lru 0.16.3",
  "serde",
  "sp1-build",
+ "sp1-network",
  "sp1-prover",
- "sp1-sdk",
+ "sp1-sdk-types",
  "thiserror 2.0.17",
  "tokio",
  "uniffi",
@@ -9625,3 +9570,7 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "sp1-sdk"
+version = "6.0.0"

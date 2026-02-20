@@ -17,7 +17,7 @@
     "@react-navigation/drawer": "^7.7.9",
     "@succinctlabs/react-native-zcam1-capture": "^0.2.73",
     "@succinctlabs/react-native-zcam1-picker": "^0.2.3",
-    "@succinctlabs/react-native-zcam1-prove": "^0.2.5",
+    "@succinctlabs/react-native-zcam1-prove": "file:.yalc/@succinctlabs/react-native-zcam1-prove",
     "@succinctlabs/react-native-zcam1-verify": "^0.2.4",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",

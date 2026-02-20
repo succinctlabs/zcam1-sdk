@@ -10,8 +10,6 @@ workspace = true
 # Members
 zcam1-ios.workspace = true
 
-sp1-sdk.workspace = true
-
 base64ct.workspace = true
 eyre.workspace = true
 getrandom.workspace = true

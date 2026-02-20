@@ -25,11 +25,20 @@ zcam1-certs-utils = { path = "./crates/certs-utils" }
 zcam1-proving-utils = { path = "./crates/proving-utils" }
 
 # sp1
-sp1-build = "6.0.0"
-sp1-sdk = "6.0.0"
-sp1-prover = "6.0.0"
-sp1-zkvm = "6.0.0"
-sp1-verifier = "6.0.0"
+#sp1-build = "6.0.0"
+#sp1-sdk = "6.0.0"
+#sp1-network = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-prover = "6.0.0"
+#sp1-sdk-types = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-zkvm = "6.0.0"
+#sp1-verifier = "6.0.0"
+sp1-build = { path = "../sp1/crates/build" }
+sp1-sdk = { path = "../sp1/crates/sdk" }
+sp1-sdk-types = { path = "../sp1/crates/sdk-types" }
+sp1-network = { path = "../sp1/crates/network" }
+sp1-prover = { path = "../sp1/crates/prover" }
+sp1-verifier = { path = "../sp1/crates/verifier" }
+
 
 # misc
 base64ct = "1.6.0"
@@ -46,14 +55,18 @@ thiserror = "2.0.17"
 uniffi = { version = "=0.29.3", features = [ "cli" ] }
 
 [patch.crates-io]
-sp1-build = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-tls" }
-sp1-sdk = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-tls" }
-sp1-prover = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-tls" }
-sp1-verifier = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/ios-tls" }
+#sp1-build = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-sdk = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-sdk-types = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-network = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-prover = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
+#sp1-verifier = { git = "https://github.com/succinctlabs/sp1", branch = "aurelien/extract-sp1-network-crate" }
 
 c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}
 
-# sp1-build = { path = "../sp1/crates/build" }
-# sp1-sdk = { path = "../sp1/crates/sdk" }
-# sp1-prover = { path = "../sp1/crates/prover" }
-# sp1-verifier = { path = "../sp1/crates/verifier" }
+sp1-build = { path = "../sp1/crates/build" }
+sp1-sdk = { path = "../sp1/crates/sdk" }
+sp1-sdk-types = { path = "../sp1/crates/sdk-types" }
+sp1-network = { path = "../sp1/crates/network" }
+sp1-prover = { path = "../sp1/crates/prover" }
+sp1-verifier = { path = "../sp1/crates/verifier" }
