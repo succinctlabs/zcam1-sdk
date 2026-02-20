@@ -83,7 +83,7 @@ async function createProvingClient(
   }
 
   if (settings.privateKey) {
-    const proverNetworkMode = settings.proverNetworkMode ?? ProverNetworkMode.Reserved;
+    const proverNetworkMode = settings.proverNetworkMode ?? ProverNetworkMode.Mainnet;
     client = new IosProvingClient(settings.privateKey, onInitialized, proverNetworkMode);
   } else {
     client = IosProvingClient.mock(onInitialized);

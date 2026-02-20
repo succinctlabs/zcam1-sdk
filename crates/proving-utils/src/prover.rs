@@ -30,9 +30,9 @@ pub const MOCK_ELF: Elf = include_elf!("mock");
 #[derive(Debug, Default, uniffi::Enum)]
 pub enum ProverNetworkMode {
     /// Mainnet network using auction-based proving.
+    #[default]
     Mainnet,
     /// Reserved capacity network for hosted/reserved proving.
-    #[default]
     Reserved,
 }
 
