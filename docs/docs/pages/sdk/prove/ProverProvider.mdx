@@ -26,9 +26,10 @@ Configuration for the proving client.
 
 ```tsx
 type Settings = {
-  production: boolean;          // false for dev, true for production  
-  privateKey?: string;          // SP1 prover network private key (optional)
-  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+  production: boolean;                                   // false for dev, true for production
+  privateKey?: string;                                   // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain;  // Certificate chain (optional)
+  proverNetworkMode?: ProverNetworkMode;                 // Prover network mode (optional, defaults to Mainnet)
 }
 ```
 
@@ -37,6 +38,7 @@ type Settings = {
 - **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
 - **`privateKey`** (`string`, optional) - SP1 prover network private key. If not provided, uses a mock prover
 - **`certChain`** (`SelfSignedCertChain | ExistingCertChain`, optional) - Certificate chain for C2PA signing. If not provided, generates self-signed certificate
+- **`proverNetworkMode`** (`ProverNetworkMode`, optional) - Selects the prover network: `Mainnet` (auction-based) or `Reserved` (reserved capacity). Defaults to `Mainnet`
 
 See [Settings type reference](/sdk/prove/types#settings) for details.
 
