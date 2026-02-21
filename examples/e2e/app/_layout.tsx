@@ -3,6 +3,7 @@ import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import {
+  ProverNetworkMode,
   ProverProvider,
   ProvingClient,
 } from "@succinctlabs/react-native-zcam1-prove";
@@ -47,7 +48,11 @@ export default function Layout() {
 
   return (
     <ProverProvider
-      settings={{ privateKey, production: false }}
+      settings={{
+        privateKey,
+        production: false,
+        proverNetworkMode: ProverNetworkMode.Reserved,
+      }}
       onFulfilled={onFulfilled}
     >
       <Drawer>

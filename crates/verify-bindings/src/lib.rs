@@ -23,7 +23,7 @@ pub struct DeviceBindings {
 pub fn verify_bindings_from_manifest(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
-    photo_hash: Vec<u8>,
+    photo_hash: &[u8],
     production: bool,
 ) -> Result<bool, VerifyError> {
     if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
@@ -33,7 +33,7 @@ pub fn verify_bindings_from_manifest(
     let metadata_hash = Sha256::digest(normalized_metadata.as_bytes());
     let client_data = format!(
         "{}|{}",
-        Base64::encode_string(&photo_hash),
+        Base64::encode_string(photo_hash),
         Base64::encode_string(&metadata_hash)
     );
 

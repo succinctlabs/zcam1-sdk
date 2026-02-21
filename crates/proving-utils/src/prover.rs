@@ -3,7 +3,6 @@ use std::{
     num::NonZeroUsize,
     str::FromStr,
     sync::{Arc, Mutex, OnceLock},
-    thread,
     time::{Duration, Instant},
 };
 
@@ -14,11 +13,11 @@ use sp1_sdk::{
     Elf, HashableKey, MockProver, NetworkProver, ProveRequest, Prover, ProverClient, ProvingKey,
     SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin, SP1VerifyingKey, include_elf,
     network::{
-        FulfillmentStrategy, NetworkMode, get_default_rpc_url_for_mode,
+        NetworkMode, get_default_rpc_url_for_mode,
         proto::types::FulfillmentStatus as Sp1FulfillmentStatus, signer::NetworkSigner,
     },
 };
-use tokio::{runtime::Runtime, sync::oneshot, time::sleep};
+use tokio::{runtime::Runtime, sync::oneshot};
 use zcam1_ios::AuthInputs;
 
 use crate::error::Error;
@@ -26,6 +25,25 @@ use crate::error::Error;
 pub const IOS_AUTHENCITY_ELF: Elf = include_elf!("authenticity-ios");
 pub const IOS_AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/vk.bin");
 pub const MOCK_ELF: Elf = include_elf!("mock");
+
+/// Selects which prover network to connect to.
+#[derive(Debug, Default, uniffi::Enum)]
+pub enum ProverNetworkMode {
+    /// Mainnet network using auction-based proving.
+    #[default]
+    Mainnet,
+    /// Reserved capacity network for hosted/reserved proving.
+    Reserved,
+}
+
+impl From<ProverNetworkMode> for NetworkMode {
+    fn from(value: ProverNetworkMode) -> Self {
+        match value {
+            ProverNetworkMode::Mainnet => NetworkMode::Mainnet,
+            ProverNetworkMode::Reserved => NetworkMode::Reserved,
+        }
+    }
+}
 
 #[uniffi::export(callback_interface)]
 pub trait Initialized: Send + Sync {
@@ -38,8 +56,12 @@ pub struct IosProvingClient(ProvingClient<AuthInputs>);
 #[uniffi::export]
 impl IosProvingClient {
     #[uniffi::constructor(default(callback = None))]
-    pub fn new(private_key: String, callback: Option<Box<dyn Initialized>>) -> Self {
-        Self(ProvingClient::ios(private_key, callback))
+    pub fn new(
+        private_key: &str,
+        callback: Option<Box<dyn Initialized>>,
+        network_mode: Option<ProverNetworkMode>,
+    ) -> Self {
+        Self(ProvingClient::ios(private_key, callback, network_mode))
     }
 
     #[uniffi::constructor(default(callback = None))]
@@ -127,8 +149,13 @@ where
 }
 
 impl ProvingClient<AuthInputs> {
-    pub fn ios(private_key: String, callback: Option<Box<dyn Initialized>>) -> Self {
-        let rpc_url = get_default_rpc_url_for_mode(NetworkMode::Reserved);
+    pub fn ios(
+        private_key: &str,
+        callback: Option<Box<dyn Initialized>>,
+        network_mode: Option<ProverNetworkMode>,
+    ) -> Self {
+        let network_mode = network_mode.unwrap_or_default().into();
+        let rpc_url = get_default_rpc_url_for_mode(network_mode);
         let signer = NetworkSigner::local(&private_key).unwrap();
 
         let prover = Arc::new(OnceLock::new());
@@ -137,7 +164,7 @@ impl ProvingClient<AuthInputs> {
         let cloned_vk_hash = vk_hash.clone();
 
         tokio_rt().spawn(async move {
-            let prover = NetworkProver::new(signer, &rpc_url, NetworkMode::Reserved).await;
+            let prover = NetworkProver::new(signer, &rpc_url, network_mode).await;
             let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
             let _ = cloned_vk_hash.set(vk.bytes32());
             let _ = cloned_prover.set(EitherProver::Network {
@@ -182,7 +209,7 @@ impl EitherProver {
                     prover
                         .prove(&pk, stdin)
                         .groth16()
-                        .strategy(FulfillmentStrategy::Reserved)
+                        .strategy(prover.default_fulfillment_strategy())
                         .request()
                         .await
                         .map(|id| id.to_string())

@@ -13,9 +13,10 @@ Configuration for the proving client.
 
 ```tsx
 type Settings = {
-  production: boolean;          // false for dev, true for production
-  privateKey?: string;          // SP1 prover network private key (optional)
-  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+  production: boolean;                                   // false for dev, true for production
+  privateKey?: string;                                   // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain;  // Certificate chain (optional)
+  proverNetworkMode?: ProverNetworkMode;                 // Prover network mode (optional, defaults to Mainnet)
 }
 ```
 
@@ -150,6 +151,22 @@ enum FulfillmentStatus {
 - [`ProofRequestStatus`](#proofre queststatus) - Indicates current status
 - [`ProofRequestContextValue`](#proofrequestcontextvalue) - Exposed via hook
 - [`waitAndEmbedProof`](/sdk/prove/waitAndEmbedProof) - Polls until `Fulfilled` or `Unfulfillable`
+
+---
+
+## ProverNetworkMode
+
+Enum selecting which prover network to connect to.
+
+```tsx
+enum ProverNetworkMode {
+  Mainnet,   // Auction-based proving on the mainnet network
+  Reserved,  // Reserved capacity network for hosted/reserved proving
+}
+```
+
+**Used by:**
+- [`Settings`](#settings) - `proverNetworkMode` field (defaults to `Mainnet`)
 
 ---
 
