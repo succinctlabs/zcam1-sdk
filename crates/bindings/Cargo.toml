@@ -1,0 +1,13 @@
+[package]
+name = "zcam1-bindings"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zcam1-c2pa-utils = { workspace = true, features = ["io", "editor"] }
+zcam1-certs-utils.workspace = true
+zcam1-verify-utils.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "zcam1_bindings"

@@ -1,15 +1,4 @@
 import { base64 } from "@scure/base";
-import {
-  buildSelfSignedCertificate,
-  ExistingCertChain,
-  formatFromPath,
-  ManifestEditor,
-  SelfSignedCertChain,
-} from "@succinctlabs/react-native-zcam1-c2pa";
-import {
-  getContentPublicKey,
-  getSecureEnclaveKeyId,
-} from "@succinctlabs/react-native-zcam1-common";
 import React, {
   createContext,
   useContext,
@@ -20,7 +9,6 @@ import React, {
   useState,
 } from "react";
 import { Dirs, Util } from "react-native-file-access";
-
 import {
   FulfillmentStatus,
   type Initialized,
@@ -28,15 +16,18 @@ import {
   type IosProvingClientInterface,
   ProofRequestStatus,
   ProverNetworkMode,
-} from "./proving";
+} from "./bindings";
 
-export { FulfillmentStatus, IosProvingClient, ProverNetworkMode } from "./proving";
-export {
-  AuthenticityStatus,
-  authenticityStatus,
+import {
   buildSelfSignedCertificate,
+  formatFromPath,
+  ManifestEditor,
   SelfSignedCertChain,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+  ExistingCertChain,
+} from "../bindings";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "../common";
+
+export { ProverNetworkMode } from "./bindings";
 
 /**
  * Configuration settings for backend communication.
@@ -79,17 +70,31 @@ async function createProvingClient(
   } else {
     console.warn("[ZCAM1] Using a self signed certificate");
 
-    certChainPem = buildSelfSignedCertificate(contentPublicKey, settings.certChain);
+    certChainPem = buildSelfSignedCertificate(
+      contentPublicKey,
+      settings.certChain,
+    );
   }
 
   if (settings.privateKey) {
-    const proverNetworkMode = settings.proverNetworkMode ?? ProverNetworkMode.Mainnet;
-    client = new IosProvingClient(settings.privateKey, onInitialized, proverNetworkMode);
+    const proverNetworkMode =
+      settings.proverNetworkMode ?? ProverNetworkMode.Mainnet;
+    client = new IosProvingClient(
+      settings.privateKey,
+      onInitialized,
+      proverNetworkMode,
+    );
   } else {
     client = IosProvingClient.mock(onInitialized);
   }
 
-  return new ProvingClient(client, contentKeyId, certChainPem, settings.production, onProofRequest);
+  return new ProvingClient(
+    client,
+    contentKeyId,
+    certChainPem,
+    settings.production,
+    onProofRequest,
+  );
 }
 
 export type ProverContextValue = {
@@ -168,11 +173,16 @@ export function ProverProvider({
   onFulfilled,
   onUnfulfillable,
 }: ProverProviderProps) {
-  const [provingClient, setProvingClient] = useState<ProvingClient | null>(null);
+  const [provingClient, setProvingClient] = useState<ProvingClient | null>(
+    null,
+  );
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const [provingTasks, dispatchProvingTasks] = useReducer(provingTasksReducer, {});
+  const [provingTasks, dispatchProvingTasks] = useReducer(
+    provingTasksReducer,
+    {},
+  );
 
   const provingTasksRef = useRef<ProvingTasksState>({});
 
@@ -182,11 +192,17 @@ export function ProverProvider({
   }, [provingTasks]);
 
   const dispatchProvingTasksSync = (action: ProvingTasksAction) => {
-    provingTasksRef.current = provingTasksReducer(provingTasksRef.current, action);
+    provingTasksRef.current = provingTasksReducer(
+      provingTasksRef.current,
+      action,
+    );
     dispatchProvingTasks(action);
   };
 
-  const provingTasksCount = useMemo(() => Object.keys(provingTasks).length, [provingTasks]);
+  const provingTasksCount = useMemo(
+    () => Object.keys(provingTasks).length,
+    [provingTasks],
+  );
 
   // Initialize proving client
   useEffect(() => {
@@ -265,12 +281,22 @@ export function ProverProvider({
 
             if (onFulfilled) {
               if (!status.proof) {
-                console.warn("[ZCAM1] Fulfilled proof request returned no proof bytes", requestId);
+                console.warn(
+                  "[ZCAM1] Fulfilled proof request returned no proof bytes",
+                  requestId,
+                );
               } else {
-                onFulfilled(requestId, task.photoPath, status.proof, provingClient);
+                onFulfilled(
+                  requestId,
+                  task.photoPath,
+                  status.proof,
+                  provingClient,
+                );
               }
             }
-          } else if (status.fulfillmentStatus === FulfillmentStatus.Unfulfillable) {
+          } else if (
+            status.fulfillmentStatus === FulfillmentStatus.Unfulfillable
+          ) {
             dispatchProvingTasksSync({ type: "removed", requestId });
 
             if (onUnfulfillable) {
@@ -310,7 +336,9 @@ export function ProverProvider({
     [provingClient, provingTasks, provingTasksCount, isInitializing, error],
   );
 
-  return <ProverContext.Provider value={value}>{children}</ProverContext.Provider>;
+  return (
+    <ProverContext.Provider value={value}>{children}</ProverContext.Provider>
+  );
 }
 
 export function useProver(): ProverContextValue {
@@ -321,10 +349,11 @@ export function useProver(): ProverContextValue {
   return ctx;
 }
 
-export function useProofRequestStatus(requestId: string | null): ProofRequestContextValue {
-  const [fulfillementStatus, setFulfillementStatus] = useState<FulfillmentStatus>(
-    FulfillmentStatus.UnspecifiedFulfillmentStatus,
-  );
+export function useProofRequestStatus(
+  requestId: string | null,
+): ProofRequestContextValue {
+  const [fulfillementStatus, setFulfillementStatus] =
+    useState<FulfillmentStatus>(FulfillmentStatus.UnspecifiedFulfillmentStatus);
   const [proof, setProof] = useState<ArrayBuffer | undefined>(undefined);
   const { provingClient, isInitializing, error } = useProver();
 
@@ -471,7 +500,8 @@ export class ProvingClient {
     );
 
     const destinationPath =
-      Dirs.CacheDir + `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+      Dirs.CacheDir +
+      `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
     // Embed the manifest to the photo
     await manifestEditor.embedManifestToFile(destinationPath, format);
@@ -481,6 +511,7 @@ export class ProvingClient {
 
   async waitAndEmbedProof(originalPath: string): Promise<string> {
     const requestId = await this.requestProof(originalPath);
+    console.log(`Request ID: ${requestId}`);
     const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
     while (true) {

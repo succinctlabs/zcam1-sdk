@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
-import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 export default function RootLayout() {
   return (
     <ProverProvider settings={{ production: false }}>

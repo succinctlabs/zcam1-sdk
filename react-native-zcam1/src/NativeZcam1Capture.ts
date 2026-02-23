@@ -332,4 +332,4 @@ export interface Spec extends TurboModule {
    */
   previewFile(filePath: string): Promise<void>;
 }
-export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Sdk");
+export default TurboModuleRegistry.getEnforcing<Spec>("Zcam1Capture");

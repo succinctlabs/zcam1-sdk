@@ -1,0 +1,118 @@
+{
+  "name": "@succinctlabs/react-native-zcam1",
+  "version": "0.2.0",
+  "description": "ZCAM1 SDK",
+  "main": "./lib/module/index.js",
+  "codegenConfig": {
+    "name": "Zcam1SdkSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/succinctlabs/zcam1-sdk.git"
+  },
+  "author": "leruaa",
+  "license": "MIT",
+  "homepage": "https://github.com/succinctlabs/zcam1-sdk#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@react-native/babel-preset": "0.81.1",
+    "@types/react": "^19.1.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.8.1",
+    "react-native-builder-bob": "^0.40.17",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0"
+  },
+  "create-react-native-library": {
+    "languages": "kotlin-objc",
+    "type": "turbo-module",
+    "version": "0.54.8"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "@pagopa/io-react-native-crypto": "^1.2.4",
+    "@pagopa/io-react-native-integrity": "^0.3.2",
+    "@react-native-camera-roll/camera-roll": "^7.10.2",
+    "@scure/base": "^2.0.0",
+    "@shopify/flash-list": "^2.2.0",
+    "jail-monkey": "^2.8.5",
+    "react-native-create-thumbnail": "^2.2.0",
+    "react-native-encrypted-storage": "^4.0.0",
+    "react-native-file-access": "^3.2.0",
+    "uniffi-bindgen-react-native": "^0.29.3-1"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-native": ">=0.81"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./proving": {
+      "source": "./lib/module/proving/index.ts",
+      "types": "./lib/typescript/src/proving/index.d.ts",
+      "default": "./lib/module/proving/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "types": "./lib/typescript/src/index.d.ts",
+  "scripts": {
+    "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
+    "ubrn:ios:proving": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --config ubrn.config.proving.yaml --and-generate",
+    "ubrn:android": "ubrn build android --and-generate",
+    "ubrn:web": "ubrn build web",
+    "clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/generated/",
+    "build": "bob build",
+    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded; fi",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework",
+    "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded",
+    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework; fi"
+  },
+  "files": [
+    "src",
+    "lib",
+    "cpp",
+    "ios",
+    "scripts",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "*.podspec",
+    "Zcam1Framework.xcframework",
+    "Zcam1ProvingFramework.xcframework",
+    "app.plugin.js",
+    "turbo.json"
+  ],
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      "typescript"
+    ]
+  },
+  "eslintIgnore": [
+    "node_modules/",
+    "lib/"
+  ]
+}

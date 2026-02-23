@@ -1,15 +1,14 @@
-import { generateHardwareKey, getAttestation } from "@pagopa/io-react-native-integrity";
+import {
+  generateHardwareKey,
+  getAttestation,
+} from "@pagopa/io-react-native-integrity";
+import EncryptedStorage from "react-native-encrypted-storage";
 import {
   type ECKey,
   getContentPublicKey,
   getSecureEnclaveKeyId,
-} from "@succinctlabs/react-native-zcam1-common";
-import EncryptedStorage from "react-native-encrypted-storage";
-
-export {
-  buildSelfSignedCertificate,
-  SelfSignedCertChain,
-} from "@succinctlabs/react-native-zcam1-c2pa";
+} from "./common";
+export { buildSelfSignedCertificate, SelfSignedCertChain } from "./bindings";
 
 /**
  * Camera component for capturing photos with secure enclave integration.
@@ -24,7 +23,7 @@ export {
   ZCamera,
 } from "./camera";
 
-import NativeZcam1Sdk from "./NativeZcam1Sdk";
+import NativeZcam1Capture from "./NativeZcam1Capture";
 
 /**
  * Present a native full-screen preview for any file using iOS QLPreviewController.
@@ -32,7 +31,7 @@ import NativeZcam1Sdk from "./NativeZcam1Sdk";
  * @param filePath Absolute filesystem path to the file.
  */
 export async function previewFile(filePath: string): Promise<void> {
-  return NativeZcam1Sdk.previewFile(filePath);
+  return NativeZcam1Capture.previewFile(filePath);
 }
 
 /**
@@ -43,7 +42,7 @@ export {
   type DeviceOrientation,
   type FlashMode,
   type Orientation,
-} from "./NativeZcam1Sdk";
+} from "./NativeZcam1Capture";
 
 /**
  * Native video recording results.
@@ -51,7 +50,7 @@ export {
 export type {
   StartNativeVideoRecordingResult,
   StopNativeVideoRecordingResult,
-} from "./NativeZcam1Sdk";
+} from "./NativeZcam1Capture";
 
 /**
  * Device registration information including keys, certificate chain, and attestation.
@@ -91,7 +90,9 @@ export class ZPhoto {
  * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
-  let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${settings.appId}`);
+  let deviceKeyId = await EncryptedStorage.getItem(
+    `deviceKeyId-${settings.appId}`,
+  );
 
   const contentPublicKey = await getContentPublicKey();
 
@@ -118,14 +119,19 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         throw error;
       }
     }
-    await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId);
+    await EncryptedStorage.setItem(
+      `deviceKeyId-${settings.appId}`,
+      deviceKeyId,
+    );
   }
 
   if (deviceKeyId == null) {
     throw "failed to generate a device key";
   }
 
-  let attestation = await EncryptedStorage.getItem(`attestation-${deviceKeyId}`);
+  let attestation = await EncryptedStorage.getItem(
+    `attestation-${deviceKeyId}`,
+  );
 
   if (attestation == null) {
     attestation = await updateRegistration(deviceKeyId, settings);
@@ -146,7 +152,10 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
  * @param settings - Configuration settings for registration
  * @returns Attestation data and challenge
  */
-export async function updateRegistration(keyId: string, _settings: Settings): Promise<string> {
+export async function updateRegistration(
+  keyId: string,
+  _settings: Settings,
+): Promise<string> {
   // Try to get real attestation, but fall back to mock for simulator
   let attestation: string;
   try {

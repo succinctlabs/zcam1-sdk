@@ -1,10 +1,8 @@
-#import "Zcam1Sdk.h"
+#import "Zcam1Capture.h"
 #import <Security/Security.h>
 #import <AVFoundation/AVFoundation.h>
 #import <QuickLook/QuickLook.h>
-#if __has_include("Zcam1Sdk-Swift.h")
 #import "Zcam1Sdk-Swift.h"
-#endif
 #import <React/RCTBridgeModule.h>
 
 // Static storage for pending promise callbacks - stored outside the instance to ensure they survive.
@@ -57,17 +55,17 @@ static void ensureStaticStorageInitialized(void) {
 }
 @end
 
-@implementation Zcam1Sdk
+@implementation Zcam1Capture
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
 {
-    return std::make_shared<facebook::react::NativeZcam1SdkSpecJSI>(params);
+    return std::make_shared<facebook::react::NativeZcam1CaptureSpecJSI>(params);
 }
 
 + (NSString *)moduleName
 {
-  return @"Zcam1Sdk";
+  return @"Zcam1Capture";
 }
 
 

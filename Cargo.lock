@@ -9317,6 +9317,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-bindings"
+version = "0.1.0"
+dependencies = [
+ "zcam1-c2pa-utils",
+ "zcam1-certs-utils",
+ "zcam1-verify-utils",
+]
+
+[[package]]
 name = "zcam1-c2pa-bindings"
 version = "0.1.0"
 dependencies = [
@@ -9447,9 +9456,12 @@ name = "zcam1-verify-utils"
 version = "0.1.0"
 dependencies = [
  "base64ct",
+ "sha2",
  "sp1-verifier",
  "thiserror 2.0.17",
+ "uniffi",
  "zcam1-c2pa-utils",
+ "zcam1-ios",
 ]
 
 [[package]]
