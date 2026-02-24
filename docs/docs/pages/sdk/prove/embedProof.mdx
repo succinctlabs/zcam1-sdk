@@ -36,7 +36,7 @@ Path to the new photo with `succinct.proof` embedded in its C2PA manifest.
 
 ```tsx
 import { useEffect, useState } from "react";
-import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProvePhoto({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();

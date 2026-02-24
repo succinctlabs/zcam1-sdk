@@ -20,7 +20,7 @@ const supportsDepth = await camera.current?.isDepthSupported();
 ```tsx
 import { useEffect, useState } from "react";
 import { Button, Text } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraWithDepth({ captureInfo }) {
   const camera = useRef<ZCamera>(null);

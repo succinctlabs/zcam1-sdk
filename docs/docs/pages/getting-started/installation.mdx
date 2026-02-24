@@ -26,24 +26,21 @@ Xcode is required for iOS development. Install it from the Mac App Store.
 
 ## Installing Packages
 
-The ZCAM SDK is divided into standalone packages. Install only what you need:
+The ZCAM SDK is available as a single package:
 
 ```bash
-# Full flow (capture, prove, verify)
-npm i @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1
 
 # Install native dependencies
 cd ios && pod install
 ```
 
-Individual packages:
+The package provides the following functionality:
 
-| Package | Purpose |
-|---------|---------|
-| `@succinctlabs/react-native-zcam1-capture` | Take photos with C2PA manifests |
-| `@succinctlabs/react-native-zcam1-prove` | Generate ZK proofs for photos |
-| `@succinctlabs/react-native-zcam1-verify` | Verify photo authenticity |
-| `@succinctlabs/react-native-zcam1-picker` | Image picker with authenticity badges |
+| Import path | Purpose |
+|-------------|---------|
+| `@succinctlabs/react-native-zcam1` | Camera capture, verification, image picker, and C2PA utilities |
+| `@succinctlabs/react-native-zcam1/proving` | ZK proof generation |
 
 :::warning
 The UniFFI bindings are built during `npm install`. This can take several minutes on first install.

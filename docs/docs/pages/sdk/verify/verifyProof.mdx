@@ -10,7 +10,7 @@ Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. C
 ## Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const appId = process.env.EXPO_PUBLIC_APP_ID!;
@@ -39,7 +39,7 @@ The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Mu
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function ProofVerificationScreen() {

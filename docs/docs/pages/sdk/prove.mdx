@@ -1,11 +1,11 @@
 # Prove SDK
 
-The Prove SDK (`@succinctlabs/react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+The Prove SDK (`@succinctlabs/react-native-zcam1/proving`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
 
 ## Installation
 
 ```bash
-npm i @succinctlabs/react-native-zcam1-prove
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -24,7 +24,7 @@ The Prove SDK:
 React context provider that initializes the proving client. Wrap your app with this component.
 
 ```tsx
-import { ProverProvider } from "@succinctlabs/react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 
 function App() {
   return (
@@ -47,7 +47,7 @@ function App() {
 Hook to access the proving client from within `ProverProvider`.
 
 ```tsx
-import { useProver } from "@succinctlabs/react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton() {
   const { provingClient, isInitializing, error } = useProver();
@@ -71,7 +71,7 @@ function ProveButton() {
 Hook to poll the status of a specific proof request.
 
 ```tsx
-import { useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1-prove";
+import { useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProofStatus({ requestId }: { requestId: string }) {
   const { proof, fulfillementStatus, isInitializing, error } = useProofRequestStatus(requestId);
@@ -117,7 +117,7 @@ const requestId = await provingClient.requestProof(photoUri);
 Gets the current status of a proof request.
 
 ```tsx
-import { FulfillmentStatus } from "@succinctlabs/react-native-zcam1-prove";
+import { FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 const status = await provingClient.getProofStatus(requestId);
 
@@ -179,7 +179,7 @@ const provenPath = await provingClient.waitAndEmbedProof(photoUri);
 ```tsx
 import { useState } from "react";
 import { View, Button, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { useProver } from "@succinctlabs/react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
 
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
 Combine with `ZImagePicker` to show which photos need proving:
 
 ```tsx
-import { ZImagePicker, AuthenticityStatus } from "@succinctlabs/react-native-zcam1-picker";
-import { useProver } from "@succinctlabs/react-native-zcam1-prove";
+import { ZImagePicker, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function PickerScreen() {
   const { provingClient } = useProver();
@@ -291,7 +291,7 @@ function PickerScreen() {
 For better user experience, use the two-step approach to show progress:
 
 ```tsx
-import { useProver, useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1-prove";
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveWithProgress({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();

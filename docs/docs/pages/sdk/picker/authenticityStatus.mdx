@@ -5,7 +5,7 @@ Check the authenticity status of a photo by analyzing its C2PA manifest.
 ## Usage
 
 ```tsx
-import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+import { authenticityStatus, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 const status = await authenticityStatus(photoUri);
 
@@ -41,7 +41,7 @@ enum AuthenticityStatus {
 ```tsx
 import { useState } from "react";
 import { Button, Text } from "react-native";
-import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+import { authenticityStatus, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 function PhotoStatus({ photoUri }: { photoUri: string }) {
   const [status, setStatus] = useState<AuthenticityStatus>();
@@ -80,5 +80,5 @@ function PhotoStatus({ photoUri }: { photoUri: string }) {
 - Quickly checks for presence of `succinct.bindings` or `succinct.proof`
 - Does not perform full cryptographic verification (use `verify()` for that)
 - Useful for UI indicators and filtering
-- Re-exports from `@succinctlabs/react-native-zcam1-c2pa`
+- Re-exports from `@succinctlabs/react-native-zcam1`
 

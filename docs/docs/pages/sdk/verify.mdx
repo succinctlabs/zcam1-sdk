@@ -1,11 +1,11 @@
 # Verify SDK
 
-The Verify SDK (`@succinctlabs/react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+The Verify SDK (`@succinctlabs/react-native-zcam1`) validates the authenticity of C2PA-signed photos with embedded proofs.
 
 ## Installation
 
 ```bash
-npm i @succinctlabs/react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -26,7 +26,7 @@ The Verify SDK:
 Class for verifying photo authenticity.
 
 ```tsx
-import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 const file = new VerifiableFile(photoUri);
 ```
@@ -79,7 +79,7 @@ const hash: string | undefined = file.dataHash();
 Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
 
 ```tsx
-import { CaptureMetadata } from "@succinctlabs/react-native-zcam1-verify";
+import { CaptureMetadata } from "@succinctlabs/react-native-zcam1";
 
 const metadata: CaptureMetadata | null = file.captureMetadata();
 ```
@@ -131,7 +131,7 @@ const metadata: CaptureMetadata | null = file.captureMetadata();
 import { useState } from "react";
 import { View, Button, Text, StyleSheet } from "react-native";
 import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
-import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 type VerificationResult = {
   hashValid: boolean;
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
 Create a reusable verification function:
 
 ```tsx
-import { VerifiableFile } from "@succinctlabs/react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export type VerificationStatus =
   | { status: "authentic" }

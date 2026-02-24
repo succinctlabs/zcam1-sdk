@@ -5,7 +5,7 @@ Hook to access the proving client from within `ProverProvider`.
 ## Usage
 
 ```tsx
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton() {
   const { provingClient, isInitializing, error } = useProver();
@@ -43,7 +43,7 @@ See [ProverContextValue type reference](/sdk/prove/types#provercontextvalue) for
 ```tsx
 import { useState } from "react";
 import { Button, Text, ActivityIndicator } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { launchImageLibrary } from "react-native-image-picker";
 
 function ProveScreen() {

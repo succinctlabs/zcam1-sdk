@@ -5,7 +5,7 @@ Initializes the device by generating hardware-backed keys and App Attest attesta
 ## Usage
 
 ```tsx
-import { initCapture } from "@succinctlabs/react-native-zcam1-capture";
+import { initCapture } from "@succinctlabs/react-native-zcam1";
 
 const captureInfo = await initCapture({
   appId: "TEAM_ID.com.example.app",
@@ -55,7 +55,7 @@ Pass this to [`ZCamera`](/sdk/capture/ZCamera) as the `captureInfo` prop. See [C
 
 ```tsx
 import { useEffect, useState } from "react";
-import { initCapture, type CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function App() {
   const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();

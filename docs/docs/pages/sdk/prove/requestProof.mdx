@@ -30,7 +30,7 @@ Request ID for polling proof status with `getProofStatus()` or `useProofRequestS
 ```tsx
 import { useState } from "react";
 import { Button, Text } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();

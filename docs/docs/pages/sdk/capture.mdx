@@ -1,11 +1,11 @@
 # Capture SDK
 
-The Capture SDK (`@succinctlabs/react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+The Capture SDK (`@succinctlabs/react-native-zcam1`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
 
 ## Installation
 
 ```bash
-npm i @succinctlabs/react-native-zcam1-capture
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -24,7 +24,7 @@ The Capture SDK:
 Initializes device keys and attestation. Call once on app startup. Requires network access.
 
 ```tsx
-import { initCapture, CaptureInfo, Settings } from "@succinctlabs/react-native-zcam1-capture";
+import { initCapture, CaptureInfo, Settings } from "@succinctlabs/react-native-zcam1";
 
 const settings: Settings = {
   appId: "TEAM_ID.com.example.app",
@@ -51,7 +51,7 @@ React component that renders the native camera preview.
 
 ```tsx
 import { useRef } from "react";
-import { ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1-capture";
+import { ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -108,7 +108,7 @@ console.log(photo.path);         // C2PA-signed photo path
 import { useEffect, useRef, useState } from "react";
 import { View, Button, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 import { FileSystem, Dirs } from "react-native-file-access";
 
 export function CaptureScreen() {

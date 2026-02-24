@@ -25,7 +25,7 @@ Device zoom factor. Use `getMinZoom()` and `getMaxZoom()` to determine valid ran
 ```tsx
 import { useRef } from "react";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraWithPinchZoom({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
