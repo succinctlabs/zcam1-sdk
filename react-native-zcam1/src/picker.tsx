@@ -2,13 +2,7 @@ import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import { AuthenticityStatus, authenticityStatus } from "./bindings";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Dimensions,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { createThumbnail } from "react-native-create-thumbnail";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
 
@@ -65,10 +59,7 @@ export interface ZImagePickerProps {
    * @param status - The authenticity status of the image.
    * @returns A React element to display as a badge, or null to display nothing.
    */
-  renderBadge?: (
-    uri: string,
-    status: AuthenticityStatus,
-  ) => React.ReactElement | null;
+  renderBadge?: (uri: string, status: AuthenticityStatus) => React.ReactElement | null;
 
   /**
    * Optional callback function that is called when an image is selected.
@@ -99,10 +90,7 @@ export interface ZImagePickerProps {
    * @param isSelected - Whether the image is currently selected.
    * @returns A React element to display as a selection overlay, or null to display nothing.
    */
-  renderSelectionOverlay?: (
-    uri: string,
-    isSelected: boolean,
-  ) => React.ReactElement | null;
+  renderSelectionOverlay?: (uri: string, isSelected: boolean) => React.ReactElement | null;
 }
 
 /**
@@ -122,22 +110,13 @@ const ZImageItem = ({
   isSelected,
 }: {
   uri: string;
-  renderBadge?: (
-    uri: string,
-    status: AuthenticityStatus,
-  ) => React.ReactElement | null;
-  renderSelectionOverlay?: (
-    uri: string,
-    isSelected: boolean,
-  ) => React.ReactElement | null;
+  renderBadge?: (uri: string, status: AuthenticityStatus) => React.ReactElement | null;
+  renderSelectionOverlay?: (uri: string, isSelected: boolean) => React.ReactElement | null;
   onSelect: (uri: string) => void;
   multiSelect?: boolean;
   isSelected?: boolean;
 }) => {
-  const [authStatus, setAuthStatus] = useRecyclingState(
-    AuthenticityStatus.Unknown,
-    [uri],
-  );
+  const [authStatus, setAuthStatus] = useRecyclingState(AuthenticityStatus.Unknown, [uri]);
   const [thumbnail, setThumbnail] = useRecyclingState(uri, [uri]);
 
   useEffect(() => {
@@ -181,10 +160,7 @@ const ZImageItem = ({
   }, [multiSelect, renderSelectionOverlay, uri, isSelected]);
 
   return (
-    <TouchableOpacity
-      style={styles.imageContainer}
-      onPress={() => onSelect(uri)}
-    >
+    <TouchableOpacity style={styles.imageContainer} onPress={() => onSelect(uri)}>
       <Image style={styles.image} source={{ uri: thumbnail }} />
       {multiSelect && isSelected && (
         <View
@@ -248,8 +224,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
           const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
           result.edges.sort(
             (a, b) =>
-              sortMultiplier *
-              (a.node.modificationTimestamp - b.node.modificationTimestamp),
+              sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp),
           );
 
           const photoUris = result.edges
@@ -267,16 +242,12 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
               const uri = `file://${f.path}`;
               // Parse timestamp from ZCAM filename: "zcam-1768552335459-random.jpg"
               const match = f.filename.match(/^zcam-(\d+)-/);
-              const timestamp = match?.[1]
-                ? parseInt(match[1], 10)
-                : f.lastModified;
+              const timestamp = match?.[1] ? parseInt(match[1], 10) : f.lastModified;
               return { uri, timestamp };
             });
 
           const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
-          photosWithTimestamps.sort(
-            (a, b) => sortMultiplier * (a.timestamp - b.timestamp),
-          );
+          photosWithTimestamps.sort((a, b) => sortMultiplier * (a.timestamp - b.timestamp));
 
           const photoUris = photosWithTimestamps.map((p) => p.uri);
           if (!cancelled) setPhotos(photoUris);
@@ -309,18 +280,12 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
         props.onSelect?.(uri);
       }
     },
-    [
-      props.multiSelect,
-      props.selectedUris,
-      props.onSelectionChange,
-      props.onSelect,
-    ],
+    [props.multiSelect, props.selectedUris, props.onSelectionChange, props.onSelect],
   );
 
   const renderItem = useCallback(
     ({ item }: { item: string }) => {
-      const isSelected =
-        props.multiSelect && props.selectedUris?.includes(item);
+      const isSelected = props.multiSelect && props.selectedUris?.includes(item);
       return (
         <ZImageItem
           uri={item}

@@ -105,9 +105,7 @@ function verifyProofFromManifest(
   const appIdBytes = utf8ToBytes(appId);
   const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
 
-  const publicInputs = new Uint8Array(
-    hash.length + appIdBytes.length + appleRootCert.length,
-  );
+  const publicInputs = new Uint8Array(hash.length + appIdBytes.length + appleRootCert.length);
   publicInputs.set(hash);
   publicInputs.set(appIdBytes, hash.length);
   publicInputs.set(appleRootCert, hash.length + appIdBytes.length);

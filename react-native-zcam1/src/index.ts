@@ -17,11 +17,7 @@ export { privateDirectory, ZImagePicker } from "./picker";
 
 export { initCapture } from "./capture";
 
-export type {
-  CaptureInfo,
-  CameraFilmStyle,
-  DeviceOrientation,
-} from "./capture";
+export type { CaptureInfo, CameraFilmStyle, DeviceOrientation } from "./capture";
 
 export { VerifiableFile, type CaptureMetadata } from "./verify";
 

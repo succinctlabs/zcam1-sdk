@@ -1,10 +1,6 @@
 import JailMonkey from "jail-monkey";
 import React from "react";
-import {
-  requireNativeComponent,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
 import {
   buildSelfSignedCertificate,
@@ -208,17 +204,14 @@ type NativeCameraViewProps = {
   filmStyleOverrides?: Record<string, FilmStyleEffect[]>;
   customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
-  onOrientationChange?: (event: {
-    nativeEvent: { orientation: string };
-  }) => void;
+  onOrientationChange?: (event: { nativeEvent: { orientation: string } }) => void;
 };
 
 /**
  * Native Swift-backed camera preview view.
  * You must implement a matching iOS view manager named "Zcam1CameraView".
  */
-const Zcam1CameraView =
-  requireNativeComponent<NativeCameraViewProps>("Zcam1CameraView");
+const Zcam1CameraView = requireNativeComponent<NativeCameraViewProps>("Zcam1CameraView");
 
 /**
  * React wrapper around the native Swift camera.
@@ -273,11 +266,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         recipe: string;
       }
     | undefined {
-    const {
-      filmStyle = "normal",
-      filmStyleOverrides,
-      customFilmStyles,
-    } = this.props;
+    const { filmStyle = "normal", filmStyleOverrides, customFilmStyles } = this.props;
 
     // Determine the source of the active film style.
     const isOverride = filmStyleOverrides?.[filmStyle] !== undefined;
@@ -448,9 +437,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     options?: { maxDurationSeconds?: number },
   ): Promise<StartNativeVideoRecordingResult> {
     if (this.recordingInProgress) {
-      throw new Error(
-        "Video recording is already in progress. Call stopVideoRecording() first.",
-      );
+      throw new Error("Video recording is already in progress. Call stopVideoRecording() first.");
     }
 
     this.recordingInProgress = true;
@@ -476,9 +463,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    */
   async stopVideoRecording(): Promise<StopNativeVideoRecordingResult> {
     if (!this.recordingInProgress) {
-      throw new Error(
-        "No video recording is in progress. Call startVideoRecording() first.",
-      );
+      throw new Error("No video recording is in progress. Call startVideoRecording() first.");
     }
 
     try {
@@ -536,17 +521,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
    *   }): Promise<{ path: string; metadata?: any }>
    */
   async takePhoto(options: TakePhotoOptions = {}): Promise<ZPhoto> {
-    const format: CaptureFormat =
-      options.format ?? this.props.captureFormat ?? "jpeg";
+    const format: CaptureFormat = options.format ?? this.props.captureFormat ?? "jpeg";
     const flash: FlashMode = options.flash ?? "off";
     const includeDepthData: boolean = options.includeDepthData ?? false;
     const aspectRatio: AspectRatio = options.aspectRatio ?? "4:3";
     const orientation: Orientation = options.orientation ?? "auto";
 
-    console.log(
-      "[ZCamera] takePhoto: calling native with includeDepthData =",
-      includeDepthData,
-    );
+    console.log("[ZCamera] takePhoto: calling native with includeDepthData =", includeDepthData);
 
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
@@ -567,9 +548,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     });
 
     if (!result || !result.filePath) {
-      throw new Error(
-        "Native camera capture did not return a valid file path.",
-      );
+      throw new Error("Native camera capture did not return a valid file path.");
     }
 
     const originalPath = result.filePath;
@@ -579,8 +558,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const exif = metadata["{Exif}"] ?? {};
     const tiff = metadata["{TIFF}"] ?? {};
 
-    const when =
-      tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
+    const when = tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
     const deviceMake = tiff.Make || "Apple";
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
@@ -657,10 +635,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         depthEnabled={depthEnabled}
         onOrientationChange={
           onOrientationChange
-            ? (event) =>
-                onOrientationChange(
-                  event.nativeEvent.orientation as DeviceOrientation,
-                )
+            ? (event) => onOrientationChange(event.nativeEvent.orientation as DeviceOrientation)
             : undefined
         }
       />
@@ -688,8 +663,7 @@ async function embedBindings(
   }
 
   const destinationPath =
-    Dirs.CacheDir +
-    `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+    Dirs.CacheDir + `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
   const manifestEditor = new ManifestEditor(
     originalPath,
@@ -700,16 +674,10 @@ async function embedBindings(
   // Add the "capture" action to the manifest.
   let normalizedMetadata = undefined;
   if (format.indexOf("video") < 0) {
-    normalizedMetadata = manifestEditor.addPhotoMetadataAction(
-      metadata as PhotoMetadataInfo,
-      when,
-    );
+    normalizedMetadata = manifestEditor.addPhotoMetadataAction(metadata as PhotoMetadataInfo, when);
   } else {
     console.log("Metadata", metadata);
-    normalizedMetadata = manifestEditor.addVideoMetadataAction(
-      metadata as VideoMetadataInfo,
-      when,
-    );
+    normalizedMetadata = manifestEditor.addVideoMetadataAction(metadata as VideoMetadataInfo, when);
   }
 
   const assertion = await generateAppAttestAssertion(
