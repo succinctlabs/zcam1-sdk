@@ -1,5 +1,6 @@
 export {
   buildSelfSignedCertificate,
+  extractManifest,
   SelfSignedCertChain,
   authenticityStatus,
   AuthenticityStatus,
@@ -14,7 +15,13 @@ export { ZCamera } from "./camera";
 
 export { privateDirectory, ZImagePicker } from "./picker";
 
-export { initCapture, type CaptureInfo } from "./capture";
+export { initCapture } from "./capture";
+
+export type {
+  CaptureInfo,
+  CameraFilmStyle,
+  DeviceOrientation,
+} from "./capture";
 
 export { VerifiableFile, type CaptureMetadata } from "./verify";
 

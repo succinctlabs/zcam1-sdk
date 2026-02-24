@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
