@@ -1,0 +1,4 @@
+src/bindings.tsx
+src/NativeZcam1Sdk.ts
+src/NativeZcam1Capture.ts
+src/proving/NativeZcam1Proving.ts
