@@ -1,6 +1,0 @@
-add-yalc-to-e2e:
-    yalc publish
-    cd ../examples/e2e && yalc add @succinctlabs/react-native-zcam1-verify
-
-publish $NPM_CONFIG_REGISTRY:
-    npm publish --access public

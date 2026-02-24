@@ -5,7 +5,6 @@ use sp1_prover::worker::SP1LightNode;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     build_program("../../programs/authenticity-ios");
-    build_program("../../programs/mock");
 
     let program_dir = std::path::Path::new("../../programs/authenticity-ios");
     let metadata_file = program_dir.join("Cargo.toml");
