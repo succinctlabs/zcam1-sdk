@@ -1,10 +1,11 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
-import { AuthenticityStatus, authenticityStatus } from "./bindings";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { createThumbnail } from "react-native-create-thumbnail";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
+
+import { AuthenticityStatus, authenticityStatus } from "./bindings";
 
 /**
  * Configuration for loading images from a private folder.
@@ -132,7 +133,7 @@ const ZImageItem = ({
     return () => {
       active = false;
     };
-  }, [uri]);
+  }, [uri, setAuthStatus]);
 
   useEffect(() => {
     const buildThumbnail = async () => {
@@ -147,7 +148,7 @@ const ZImageItem = ({
     };
 
     buildThumbnail();
-  }, [uri]);
+  }, [uri, setThumbnail]);
 
   const badge = useMemo(() => {
     return renderBadge ? renderBadge(uri, authStatus) : null;
@@ -201,27 +202,39 @@ const ZImageItem = ({
  * ```
  */
 export const ZImagePicker = (props: ZImagePickerProps) => {
+  const {
+    multiSelect,
+    selectedUris,
+    onSelectionChange,
+    onSelect,
+    renderBadge,
+    renderSelectionOverlay,
+    renderFromBottom,
+    refreshToken,
+    sortOrder,
+    source,
+  } = props;
   const [photos, setPhotos] = useState<string[]>([]);
 
   const sourceKey = useMemo(() => {
-    if ("album" in props.source) return `album:${props.source.album ?? ""}`;
-    else if ("path" in props.source) return `path:${props.source.path}`;
+    if ("album" in source) return `album:${source.album ?? ""}`;
+    else if ("path" in source) return `path:${source.path}`;
     else return "unknown";
-  }, [props.source]);
+  }, [source]);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
       try {
-        if ("album" in props.source) {
+        if ("album" in source) {
           const result = await CameraRoll.getPhotos({
             first: 20,
             groupTypes: "Album",
-            groupName: props.source.album,
+            groupName: source.album,
           });
 
-          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          const sortMultiplier = sortOrder === "newest-first" ? -1 : 1;
           result.edges.sort(
             (a, b) =>
               sortMultiplier * (a.node.modificationTimestamp - b.node.modificationTimestamp),
@@ -232,8 +245,8 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
             .filter((path) => path !== null);
 
           if (!cancelled) setPhotos(photoUris);
-        } else if ("path" in props.source) {
-          const photoFiles = await FileSystem.statDir(props.source.path);
+        } else if ("path" in source) {
+          const photoFiles = await FileSystem.statDir(source.path);
 
           const photosWithTimestamps = photoFiles
             .filter((f) => f.type === "file")
@@ -246,7 +259,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
               return { uri, timestamp };
             });
 
-          const sortMultiplier = props.sortOrder === "newest-first" ? -1 : 1;
+          const sortMultiplier = sortOrder === "newest-first" ? -1 : 1;
           photosWithTimestamps.sort((a, b) => sortMultiplier * (a.timestamp - b.timestamp));
 
           const photoUris = photosWithTimestamps.map((p) => p.uri);
@@ -263,47 +276,41 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
     return () => {
       cancelled = true;
     };
-  }, [sourceKey, props.refreshToken]);
+  }, [sourceKey, refreshToken, sortOrder, source]);
 
   const handleSelect = useCallback(
     (uri: string) => {
-      if (props.multiSelect) {
+      if (multiSelect) {
         // Multi-select mode: toggle selection.
-        const currentSelection = props.selectedUris ?? [];
+        const currentSelection = selectedUris ?? [];
         const isSelected = currentSelection.includes(uri);
         const newSelection = isSelected
           ? currentSelection.filter((u) => u !== uri)
           : [...currentSelection, uri];
-        props.onSelectionChange?.(newSelection);
+        onSelectionChange?.(newSelection);
       } else {
         // Single-select mode: call onSelect callback.
-        props.onSelect?.(uri);
+        onSelect?.(uri);
       }
     },
-    [props.multiSelect, props.selectedUris, props.onSelectionChange, props.onSelect],
+    [multiSelect, selectedUris, onSelectionChange, onSelect],
   );
 
   const renderItem = useCallback(
     ({ item }: { item: string }) => {
-      const isSelected = props.multiSelect && props.selectedUris?.includes(item);
+      const isSelected = multiSelect && selectedUris?.includes(item);
       return (
         <ZImageItem
           uri={item}
           onSelect={handleSelect}
-          renderBadge={props.renderBadge}
-          renderSelectionOverlay={props.renderSelectionOverlay}
-          multiSelect={props.multiSelect}
+          renderBadge={renderBadge}
+          renderSelectionOverlay={renderSelectionOverlay}
+          multiSelect={multiSelect}
           isSelected={isSelected}
         />
       );
     },
-    [
-      handleSelect,
-      props.renderBadge,
-      props.renderSelectionOverlay,
-      props.multiSelect,
-      props.selectedUris,
-    ],
+    [handleSelect, renderBadge, renderSelectionOverlay, multiSelect, selectedUris],
   );
 
   return (
@@ -314,7 +321,7 @@ export const ZImagePicker = (props: ZImagePickerProps) => {
       numColumns={3}
       keyExtractor={(uri) => uri}
       maintainVisibleContentPosition={{
-        startRenderingFromBottom: props.renderFromBottom ?? false,
+        startRenderingFromBottom: renderFromBottom ?? false,
       }}
     />
   );

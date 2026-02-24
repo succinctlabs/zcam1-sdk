@@ -1,10 +1,10 @@
 export {
+  AuthenticityStatus,
+  authenticityStatus,
   buildSelfSignedCertificate,
   extractManifest,
-  SelfSignedCertChain,
-  authenticityStatus,
-  AuthenticityStatus,
   PhotoMetadataInfo,
+  SelfSignedCertChain,
   VideoMetadataInfo,
 } from "./bindings";
 
@@ -12,14 +12,10 @@ export {
  * Camera component for capturing photos with secure enclave integration.
  */
 export { ZCamera } from "./camera";
-
-export { privateDirectory, ZImagePicker } from "./picker";
-
+export type { CameraFilmStyle, CaptureInfo, DeviceOrientation } from "./capture";
 export { initCapture } from "./capture";
-
-export type { CaptureInfo, CameraFilmStyle, DeviceOrientation } from "./capture";
-
-export { VerifiableFile, type CaptureMetadata } from "./verify";
+export { privateDirectory, ZImagePicker } from "./picker";
+export { type CaptureMetadata, VerifiableFile } from "./verify";
 
 /**
  * Flash mode for photo capture.

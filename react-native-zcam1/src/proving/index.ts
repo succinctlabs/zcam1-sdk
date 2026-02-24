@@ -1,9 +1,8 @@
-export { IosProvingClient, FulfillmentStatus } from "./bindings";
-
+export { FulfillmentStatus, IosProvingClient } from "./bindings";
 export {
+  ProverNetworkMode,
   ProverProvider,
   ProvingClient,
-  useProver,
   useProofRequestStatus,
-  ProverNetworkMode,
+  useProver,
 } from "./prove";

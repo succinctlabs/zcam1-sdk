@@ -1,5 +1,6 @@
 import { generateHardwareKey, getAttestation } from "@pagopa/io-react-native-integrity";
 import EncryptedStorage from "react-native-encrypted-storage";
+
 import { type ECKey, getContentPublicKey, getSecureEnclaveKeyId } from "./common";
 export { buildSelfSignedCertificate, SelfSignedCertChain } from "./bindings";
 

@@ -9,6 +9,15 @@ import React, {
   useState,
 } from "react";
 import { Dirs, Util } from "react-native-file-access";
+
+import {
+  buildSelfSignedCertificate,
+  ExistingCertChain,
+  formatFromPath,
+  ManifestEditor,
+  SelfSignedCertChain,
+} from "../bindings";
+import { getContentPublicKey, getSecureEnclaveKeyId } from "../common";
 import {
   FulfillmentStatus,
   type Initialized,
@@ -17,15 +26,6 @@ import {
   ProofRequestStatus,
   ProverNetworkMode,
 } from "./bindings";
-
-import {
-  buildSelfSignedCertificate,
-  formatFromPath,
-  ManifestEditor,
-  SelfSignedCertChain,
-  ExistingCertChain,
-} from "../bindings";
-import { getContentPublicKey, getSecureEnclaveKeyId } from "../common";
 
 export { ProverNetworkMode } from "./bindings";
 

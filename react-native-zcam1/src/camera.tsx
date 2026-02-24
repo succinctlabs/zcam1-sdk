@@ -2,6 +2,7 @@ import JailMonkey from "jail-monkey";
 import React from "react";
 import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
+
 import {
   buildSelfSignedCertificate,
   computeHash,
@@ -14,7 +15,6 @@ import {
   type VideoMetadataInfo,
 } from "./bindings";
 import { type CaptureInfo, ZPhoto } from "./capture";
-import { generateAppAttestAssertion } from "./utils";
 import NativeZcam1Sdk, {
   type AspectRatio,
   type DeviceOrientation,
@@ -23,6 +23,7 @@ import NativeZcam1Sdk, {
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Capture";
+import { generateAppAttestAssertion } from "./utils";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 

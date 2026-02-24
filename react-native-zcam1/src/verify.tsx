@@ -1,13 +1,14 @@
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { base64 } from "@scure/base";
+
 import {
   computeHash,
   extractManifest,
   type ManifestInterface,
   PhotoMetadataInfo,
-  VideoMetadataInfo,
   verifyBindingsFromManifest,
   verifyGroth16,
+  VideoMetadataInfo,
 } from "./bindings";
 
 /**
