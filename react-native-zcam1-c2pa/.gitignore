@@ -8,6 +8,7 @@ ios/C2PA/C2PAC.xcframework/
 src/generated/
 rust_modules/
 Zcam1C2paFramework.xcframework/
+android/src/main/jniLibs/
 cpp/
 ios/
 

@@ -1,6 +1,9 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { base64 } from "@scure/base";
+import { Platform } from "react-native";
+
+import { signWithDeviceKey } from ".";
 
 function stringToArray(s: string): Uint8Array {
   return new TextEncoder().encode(s);
@@ -11,15 +14,19 @@ export async function generateAppAttestAssertion(
   normalizedMetadata: string,
   deviceKeyId: string,
 ): Promise<string> {
-  let assertion: string;
-
   const metadataBytes = stringToArray(normalizedMetadata);
+  const clientData =
+    base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes));
 
+  if (Platform.OS === "android") {
+    // Android: sign directly with hardware-backed ECDSA key via Android KeyStore.
+    // Returns a base64-encoded DER ECDSA signature.
+    return signWithDeviceKey(deviceKeyId, clientData);
+  }
+
+  // iOS: use App Attest assertion via Secure Enclave
   try {
-    assertion = await generateHardwareSignatureWithAssertion(
-      base64.encode(new Uint8Array(dataHash)) + "|" + base64.encode(sha256(metadataBytes)),
-      deviceKeyId,
-    );
+    return await generateHardwareSignatureWithAssertion(clientData, deviceKeyId);
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string } | undefined;
     if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
@@ -28,11 +35,8 @@ export async function generateAppAttestAssertion(
       );
       // Use a mock attestation for simulator testing
       // In production, this would need to be rejected by the backend
-      assertion = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
-    } else {
-      throw error;
+      return `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
     }
+    throw error;
   }
-
-  return assertion;
 }

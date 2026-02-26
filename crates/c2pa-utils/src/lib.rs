@@ -19,8 +19,11 @@ pub mod types;
 #[cfg(feature = "editor")]
 mod manifest_editor;
 
-#[cfg(feature = "editor")]
+#[cfg(all(feature = "editor", any(target_os = "macos", target_os = "ios")))]
 mod signing;
+
+#[cfg(all(feature = "android-signing", target_os = "android"))]
+mod android_signing;
 
 uniffi::setup_scaffolding!();
 

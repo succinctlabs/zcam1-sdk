@@ -1,0 +1,35 @@
+{
+  "name": "zcam1-android-test",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "@scure/base": "^2.0.0",
+    "@succinctlabs/react-native-zcam1-c2pa": "file:.yalc/@succinctlabs/react-native-zcam1-c2pa",
+    "@succinctlabs/react-native-zcam1-capture": "file:.yalc/@succinctlabs/react-native-zcam1-capture",
+    "@succinctlabs/react-native-zcam1-verify": "file:.yalc/@succinctlabs/react-native-zcam1-verify",
+    "expo": "~54.0.20",
+    "expo-build-properties": "^1.0.9",
+    "expo-router": "~6.0.13",
+    "expo-sharing": "~14.0.8",
+    "expo-splash-screen": "~31.0.10",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "~0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
