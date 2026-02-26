@@ -59,7 +59,7 @@
       "default": "./lib/module/index.js"
     },
     "./proving": {
-      "source": "./lib/module/proving/index.ts",
+      "source": "./src/proving/index.ts",
       "types": "./lib/typescript/src/proving/index.d.ts",
       "default": "./lib/module/proving/index.js"
     },
