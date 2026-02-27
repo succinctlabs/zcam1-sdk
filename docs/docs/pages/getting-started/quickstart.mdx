@@ -8,7 +8,7 @@ Wrap your app with the `ProverProvider` to enable proof generation:
 
 ```tsx
 // App.tsx or _layout.tsx
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ Initialize the capture SDK and use the `ZCamera` component:
 ```tsx
 import { useEffect, useRef, useState } from "react";
 import { Button, View } from "react-native";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 export function CaptureScreen() {
   const camera = useRef<ZCamera>(null);
@@ -65,7 +65,7 @@ export function CaptureScreen() {
 Use the `useProver` hook to access the proving client:
 
 ```tsx
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 
 export function ProvePhoto({ photoUri }: { photoUri: string }) {
@@ -93,7 +93,7 @@ export function ProvePhoto({ photoUri }: { photoUri: string }) {
 Use the `VerifiableFile` class to verify authenticity:
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export function VerifyPhoto({ photoUri }: { photoUri: string }) {
   const handleVerify = () => {
@@ -120,9 +120,8 @@ Here's a minimal app combining all three steps:
 ```tsx
 import { useState, useRef, useEffect } from "react";
 import { View, Button, Text } from "react-native";
-import { ProverProvider, useProver } from "react-native-zcam1-prove";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { ProverProvider, useProver } from "@succinctlabs/react-native-zcam1/proving";
+import { initCapture, ZCamera, CaptureInfo, VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 function MainScreen() {
   const camera = useRef<ZCamera>(null);

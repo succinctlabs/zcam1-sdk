@@ -1,0 +1,10 @@
+name: Zcam1-Sdk
+rust:
+  directory: ./..
+  manifestPath: crates/bindings/Cargo.toml
+turboModule:
+  entrypoint: src/bindings.tsx
+ios:
+  frameworkName: Zcam1Framework
+noOverwrite:
+  - "Zcam1Sdk.podspec"

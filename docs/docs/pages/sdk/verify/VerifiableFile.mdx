@@ -10,7 +10,7 @@ Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifes
 ## Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 
@@ -59,7 +59,7 @@ Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/v
 ```tsx
 import { useState } from 'react';
 import { View, Button, Text, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function VerificationScreen() {

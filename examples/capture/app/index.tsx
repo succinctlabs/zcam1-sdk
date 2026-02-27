@@ -6,7 +6,7 @@ import {
   CaptureInfo,
   initCapture,
   ZCamera,
-} from "@succinctlabs/react-native-zcam1-capture";
+} from "@succinctlabs/react-native-zcam1";
 
 export default function Index() {
   const camera = useRef<ZCamera>(null);

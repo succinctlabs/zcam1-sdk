@@ -9,11 +9,11 @@ workspace = true
 [dependencies]
 serde_json.workspace = true
 thiserror.workspace = true
+uniffi.workspace = true
 
 der = "0.7"
 p256 = { version = "0.13", features = ["jwk", "ecdsa", "pkcs8"] }
 rcgen = "0.14.5"
 sha2 = { version = "0.10", features = ["oid"] }
 spki = { version = "0.7", features = ["pem", "alloc"] }
-uniffi = { version = "=0.29.3", features = [ "cli" ] }
 x509-cert = { version = "0.2", features = ["builder", "pem"] }

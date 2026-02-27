@@ -10,7 +10,7 @@ Returns the file's content hash as recorded in the active C2PA manifest. This ha
 ## Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const hash = verifiable.dataHash();
@@ -27,7 +27,7 @@ console.log('Content hash:', hash);
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function HashDisplayScreen() {

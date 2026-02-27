@@ -5,7 +5,7 @@ Hook to poll the status of a specific proof request.
 ## Usage
 
 ```tsx
-import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProofStatus({ requestId }: { requestId: string }) {
   const { proof, fulfillementStatus, error } = useProofRequestStatus(requestId);
@@ -56,7 +56,7 @@ import {
   useProver,
   useProofRequestStatus,
   FulfillmentStatus
-} from "react-native-zcam1-prove";
+} from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveWithProgress({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();

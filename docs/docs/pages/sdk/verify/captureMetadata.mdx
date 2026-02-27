@@ -10,7 +10,7 @@ Returns the capture metadata from the C2PA manifest. Contains device info and ca
 ## Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const metadata = verifiable.captureMetadata();
@@ -31,7 +31,7 @@ if (metadata) {
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, ScrollView, StyleSheet } from 'react-native';
-import { VerifiableFile, type CaptureMetadata } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile, type CaptureMetadata } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function MetadataDisplayScreen() {

@@ -1,3 +1,6 @@
 add-yalc-to-web-verifier:
     yalc publish
     cd ../web-verifier && yalc add @succinctlabs/zcam1-verify
+
+publish $NPM_CONFIG_REGISTRY:
+    npm publish --access public

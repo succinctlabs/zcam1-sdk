@@ -10,7 +10,7 @@ Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryp
 ## Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 
@@ -38,7 +38,7 @@ Whether to verify against production App Attest environment. Use `false` for dev
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function BindingsVerificationScreen() {

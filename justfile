@@ -1,22 +1,14 @@
 add-yalc:
-    cd react-native-zcam1-common && yalc publish
-    cd react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-capture && yalc add @succinctlabs/react-native-zcam1-common @succinctlabs/react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-prove && yalc add @succinctlabs/react-native-zcam1-common @succinctlabs/react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-verify && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
-    cd react-native-zcam1-picker && yalc add @succinctlabs/react-native-zcam1-c2pa && yalc publish
-    cd examples/capture && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
-    cd examples/prove && yalc add @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
-    cd examples/e2e && yalc add @succinctlabs/react-native-zcam1-capture @succinctlabs/react-native-zcam1-prove @succinctlabs/react-native-zcam1-picker @succinctlabs/react-native-zcam1-c2pa @succinctlabs/react-native-zcam1-common
+    cd react-native-zcam1 && yalc publish
+    cd examples/capture && yalc add @succinctlabs/react-native-zcam1
+    cd examples/prove && yalc add @succinctlabs/react-native-zcam1
+    cd examples/e2e && yalc add @succinctlabs/react-native-zcam1
 
 remove-yalc:
-    cd react-native-zcam1-capture && yalc remove --all
-    cd react-native-zcam1-prove && yalc remove --all
-    cd react-native-zcam1-verify && yalc remove --all
-    cd react-native-zcam1-picker && yalc remove --all
-    cd react-native-zcam1-c2pa && yalc remove --all
+    cd react-native-zcam1 && yalc remove --all
     cd examples/capture && yalc remove --all
     cd examples/prove && yalc remove --all
+    cd examples/verify && yalc remove --all
     cd examples/e2e && yalc remove --all
 
 run-capture-example:
@@ -40,30 +32,13 @@ run-e2e-example:
     npx expo prebuild && npx expo run:ios --device
 
 publish $NPM_CONFIG_REGISTRY:
-    cd react-native-zcam1-common && npm publish --access public
-    cd react-native-zcam1-c2pa && npm publish --access public
-    cd react-native-zcam1-capture && npm publish --access public
-    cd react-native-zcam1-prove && npm publish --access public
-    cd react-native-zcam1-verify && npm publish --access public
-    cd react-native-zcam1-picker && npm publish --access public
+    cd react-native-zcam1 && npm publish --access public
 
 clean:
-    cd react-native-zcam1-c2pa && npm run clean
-    cd react-native-zcam1-prove && npm run clean
-    cd react-native-zcam1-verify && npm run clean
+    cd react-native-zcam1 && npm run clean
 
-lint-all:
-    cd react-native-zcam1-common && npm run lint
-    cd react-native-zcam1-c2pa && npm run lint
-    cd react-native-zcam1-capture && npm run lint
-    cd react-native-zcam1-prove && npm run lint
-    cd react-native-zcam1-verify && npm run lint
-    cd react-native-zcam1-picker && npm run lint
+lint:
+    cd react-native-zcam1 && npm run lint
 
-format-all:
-    cd react-native-zcam1-common && npm run format
-    cd react-native-zcam1-c2pa && npm run format
-    cd react-native-zcam1-capture && npm run format
-    cd react-native-zcam1-prove && npm run format
-    cd react-native-zcam1-verify && npm run format
-    cd react-native-zcam1-picker && npm run format
+format:
+    cd react-native-zcam1 && npm run format

@@ -24,7 +24,7 @@ The ZCAM SDK integrates into the claim landing flow:
 2. **Camera Integration**: Inject the `<ZCamera>` component into the claim flow where users must photograph their vehicle:
    - The SDK provides camera preview functionality
    - Call `takePhoto()` to capture a verifiable photo
-3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to attach zero-knowledge proofs:
+3. **Proof Generation** (Optional): Use `@succinctlabs/react-native-zcam1/proving` to attach zero-knowledge proofs:
    - Use `waitAndEmbedProof()` to generate and embed proofs
    - This provides additional cryptographic guarantees and privacy
 4. **Claim Submission**: When the user completes the claim flow, attach verifiable photos to the claim filing and upload to the insurance company's backend
@@ -34,7 +34,7 @@ The ZCAM SDK integrates into the claim landing flow:
 On the insurance company's backend, verification is integrated into the automated claim triage process:
 
 1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
-   - Integrate `react-native-zcam1-verify` (or server-side equivalent) into the backend
+   - Integrate `@succinctlabs/react-native-zcam1` (or server-side equivalent) into the backend
    - For each photo, call `verifyHash()` and `verifyProof()` methods
    - Check that the photo was taken using the insurance company's app
 2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:

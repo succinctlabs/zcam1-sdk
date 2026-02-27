@@ -20,7 +20,7 @@ const hasUltraWide = await camera.current?.hasUltraWideCamera();
 ```tsx
 import { useEffect, useState } from "react";
 import { Text } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraInfo({ captureInfo }) {
   const camera = useRef<ZCamera>(null);

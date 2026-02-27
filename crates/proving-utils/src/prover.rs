@@ -10,8 +10,9 @@ use alloy_primitives::B256;
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{
-    Elf, HashableKey, MockProver, NetworkProver, ProveRequest, Prover, ProverClient, ProvingKey,
-    SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin, SP1VerifyingKey, include_elf,
+    Elf, HashableKey, NetworkProver, ProveRequest, Prover, SP1_CIRCUIT_VERSION,
+    SP1ProofWithPublicValues, SP1ProvingKey, SP1PublicValues, SP1Stdin, SP1VerifyingKey,
+    include_elf,
     network::{
         NetworkMode, get_default_rpc_url_for_mode,
         proto::types::FulfillmentStatus as Sp1FulfillmentStatus, signer::NetworkSigner,
@@ -24,7 +25,6 @@ use crate::error::Error;
 
 pub const IOS_AUTHENCITY_ELF: Elf = include_elf!("authenticity-ios");
 pub const IOS_AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/vk.bin");
-pub const MOCK_ELF: Elf = include_elf!("mock");
 
 /// Selects which prover network to connect to.
 #[derive(Debug, Default, uniffi::Enum)]
@@ -109,12 +109,10 @@ where
         let cloned_vk_hash = vk_hash.clone();
 
         tokio_rt().spawn(async move {
-            let prover = ProverClient::builder().mock().build().await;
-            let pk = prover.setup(MOCK_ELF).await.unwrap();
-            let _ = cloned_vk_hash.set(pk.verifying_key().bytes32());
+            let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
+            let _ = cloned_vk_hash.set(vk.bytes32());
             let _ = cloned_prover.set(EitherProver::Mock {
-                prover: Box::new(prover),
-                pk: Box::new(pk),
+                vk: Box::new(vk),
                 proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
             });
 
@@ -191,8 +189,7 @@ enum EitherProver {
         vk: Box<SP1VerifyingKey>,
     },
     Mock {
-        prover: Box<MockProver>,
-        pk: Box<SP1ProvingKey>,
+        vk: Box<SP1VerifyingKey>,
         proof_requests: Mutex<LruCache<String, (Instant, SP1ProofWithPublicValues)>>,
     },
 }
@@ -217,18 +214,15 @@ impl EitherProver {
                 })
                 .await
             }
-            EitherProver::Mock {
-                prover,
-                pk,
-                proof_requests,
-            } => {
+            EitherProver::Mock { vk, proof_requests } => {
                 let id = B256::random().to_string();
 
-                let proof = prover
-                    .prove(pk, stdin)
-                    .groth16()
-                    .await
-                    .map_err(|err| Error::Sp1(err.to_string()))?;
+                let proof = SP1ProofWithPublicValues::create_mock_proof(
+                    &vk,
+                    SP1PublicValues::default(),
+                    sp1_sdk::SP1ProofMode::Groth16,
+                    SP1_CIRCUIT_VERSION,
+                );
 
                 let fulfilled_instant =
                     Instant::now().checked_add(Duration::from_secs(10)).unwrap();
@@ -266,8 +260,7 @@ impl EitherProver {
                 .await
             }
             EitherProver::Mock {
-                prover: _,
-                pk: _,
+                vk: _,
                 proof_requests,
             } => {
                 let proof_requests = proof_requests.lock().unwrap();

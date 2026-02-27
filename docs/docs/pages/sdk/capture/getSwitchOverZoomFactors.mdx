@@ -57,7 +57,7 @@ Returns `[]` - No lens switching, all zoom is digital.
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Slider } from 'react-native';
-import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+import { ZCamera } from '@succinctlabs/react-native-zcam1';
 
 function CameraWithZoomIndicators({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -126,7 +126,7 @@ function CameraWithZoomIndicators({ captureInfo }) {
 ```tsx
 import { useRef, useState } from 'react';
 import { Button, View } from 'react-native';
-import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+import { ZCamera } from '@succinctlabs/react-native-zcam1';
 
 function CameraWithLensButtons({ captureInfo }) {
   const camera = useRef<ZCamera>(null);

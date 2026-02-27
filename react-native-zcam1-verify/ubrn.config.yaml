@@ -1,7 +1,0 @@
-rust:
-  directory: ./..
-  manifestPath: crates/verify-bindings/Cargo.toml
-turboModule:
-  entrypoint: src/verifier.tsx
-ios:
-  frameworkName: Zcam1VerifyFramework

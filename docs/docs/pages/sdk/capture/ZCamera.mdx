@@ -6,7 +6,7 @@ React component that renders a native iOS camera preview with hardware-backed C2
 
 ```tsx
 import { useRef } from "react";
-import { ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+import { ZCamera, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -287,7 +287,7 @@ const ranges = await camera.current?.getDepthSupportedZoomRanges();
 import { useEffect, useRef, useState } from "react";
 import { View, Button, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { initCapture, ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 export function CaptureScreen() {
   const camera = useRef<ZCamera>(null);

@@ -4,13 +4,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
-  authenticityStatus,
   useProver,
-} from "@succinctlabs/react-native-zcam1-prove";
+} from "@succinctlabs/react-native-zcam1/proving";
 import {
+  authenticityStatus,
   ZImagePicker,
   AuthenticityStatus,
-} from "@succinctlabs/react-native-zcam1-picker";
+} from "@succinctlabs/react-native-zcam1";
 import { useCallback, useEffect, useState } from "react";
 
 type BadgeProps = {

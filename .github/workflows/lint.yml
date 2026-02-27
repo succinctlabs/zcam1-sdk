@@ -14,12 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - react-native-zcam1-capture
-          - react-native-zcam1-common
-          - react-native-zcam1-c2pa
-          - react-native-zcam1-prove
-          - react-native-zcam1-verify
-          - react-native-zcam1-picker
+          - react-native-zcam1
 
     steps:
       - name: Checkout
