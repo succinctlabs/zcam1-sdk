@@ -83,7 +83,7 @@ pub struct Claim {
     pub signature: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Deserialize)]
 pub struct AssertionStore {
     #[serde(rename = "succinct.bindings")]
     pub device_bindings: Option<DeviceBindings>,
@@ -95,7 +95,7 @@ pub struct AssertionStore {
     pub hash: Option<Arc<DataHash>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Actions {
     actions: Vec<Value>,
 }
@@ -229,7 +229,7 @@ pub struct DepthDataStatistics {
     sample_stride: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, uniffi::Record)]
 pub struct DeviceBindings {
     pub app_id: String,
     pub device_key_id: String,
@@ -237,7 +237,7 @@ pub struct DeviceBindings {
     pub assertion: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, uniffi::Record)]
 pub struct Proof {
     pub data: String,
     pub vk_hash: String,

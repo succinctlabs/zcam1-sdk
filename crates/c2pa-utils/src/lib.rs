@@ -28,7 +28,7 @@ uniffi::setup_scaffolding!();
 pub use manifest_editor::ManifestEditor;
 
 #[uniffi::export]
-#[cfg(all(feature = "io", feature = "editor"))]
+#[cfg(feature = "io")]
 pub fn extract_manifest(path: &str) -> Result<ManifestStore, C2paError> {
     let reader = Reader::from_file(path.replace("file://", ""))?;
 
