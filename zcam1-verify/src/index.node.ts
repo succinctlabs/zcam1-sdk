@@ -1,12 +1,13 @@
-import { createC2pa, Manifest, Reader } from "@contentauth/c2pa-web";
-
-import wasmSrc from "@contentauth/c2pa-web/resources/c2pa.wasm?url";
+import { Reader } from "@contentauth/c2pa-node";
+import type { Manifest } from "@contentauth/c2pa-types";
+import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 import {
   computeHashFromBuffer,
   AuthenticityStatus,
   uniffiInitAsync,
-} from "./bindings";
+} from "./bindings.node";
 import init from "@succinctlabs/sp1-wasm-verifier";
 import {
   CaptureMetadata,
@@ -15,39 +16,45 @@ import {
   verifyBindingsAssertion,
   verifyProofAssertion,
 } from "./core";
-import { err, errAsync, okAsync, Result, ResultAsync } from "neverthrow";
+import { errAsync, okAsync, Result, ResultAsync } from "neverthrow";
 
 export {
   PhotoMetadataInfo,
   VideoMetadataInfo,
   AuthenticityStatus,
-} from "./bindings";
+} from "./bindings.node";
 
 export type { CaptureMetadata } from "./core";
 
-const c2pa = await createC2pa({ wasmSrc });
-
 await uniffiInitAsync();
-await init();
 
-export class VerifiableFile {
-  file: File;
-  readerPromise: Promise<Reader | null>;
+// Node.js fetch does not support file:// URLs, so we load the WASM bytes
+// directly from disk using createRequire to resolve the package path.
+const _require = createRequire(import.meta.url);
+const sp1WasmBytes = readFileSync(
+  _require.resolve("@succinctlabs/sp1-wasm-verifier/sp1_wasm_verifier_bg.wasm"),
+);
+await init({ module_or_path: sp1WasmBytes });
+
+export class VerifiableBuffer {
+  buffer: Buffer;
+  mimeType: string;
   cachedActiveManifest: Manifest | undefined;
   cachedHash: ArrayBuffer | undefined;
 
   /**
-   * Creates a VerifiableFile instance by extracting the C2PA manifest from the file.
-   * @param file - The file to verify
+   * Creates a VerifiableBuffer instance for Node.js C2PA manifest extraction.
+   * @param buffer - The file data as a Node.js Buffer
+   * @param mimeType - The MIME type of the file (e.g. "image/jpeg")
    */
-  constructor(file: File) {
-    this.file = file;
-    this.readerPromise = c2pa.reader.fromBlob(file.type, file);
+  constructor(buffer: Buffer, mimeType: string) {
+    this.buffer = buffer;
+    this.mimeType = mimeType;
   }
 
   /**
    * Verifies the bindings assertion in a C2PA manifest by validating the attestation
-   * and assertion against the photo hash and capture action metadata.
+   * and assertion against the data hash and capture action metadata.
    *
    * @param production - Whether to use production or development Apple App Attestation GUID
    * @returns true if the bindings are valid, or an error
@@ -93,13 +100,17 @@ export class VerifiableFile {
   }
 
   /**
-   * Computes the content hash of the file.
-   * @returns The file's content hash as a Uint8Array
+   * Computes the content hash of the buffer.
+   * @returns The content hash as a Uint8Array
    */
   async dataHash(): Promise<Uint8Array> {
     if (this.cachedHash === undefined) {
-      const fileBuffer = await this.file.arrayBuffer();
-      this.cachedHash = computeHashFromBuffer(fileBuffer, this.file.type);
+      // buffer.buffer may be a SharedArrayBuffer; copy to plain ArrayBuffer
+      const ab = this.buffer.buffer.slice(
+        this.buffer.byteOffset,
+        this.buffer.byteOffset + this.buffer.byteLength,
+      ) as ArrayBuffer;
+      this.cachedHash = computeHashFromBuffer(ab, this.mimeType);
     }
 
     return new Uint8Array(this.cachedHash);
@@ -117,30 +128,31 @@ export class VerifiableFile {
   }
 
   /**
-   * Determines the authenticity status of the file based on its C2PA manifest.
+   * Determines the authenticity status of the buffer based on its C2PA manifest.
    *
-   * @returns The file's authenticity status:
-   *   - `Bindings`: File contains a bindings assertion
-   *   - `Proof`: File contains a proof assertion
+   * @returns The buffer's authenticity status:
+   *   - `Bindings`: Contains a bindings assertion
+   *   - `Proof`: Contains a proof assertion
    *   - `InvalidManifest`: Manifest exists but lacks required assertions
+   *   - `NoManifest`: No C2PA metadata found
    */
   async authenticityStatus(): Promise<AuthenticityStatus> {
-    const reader = await this.c2paReader();
-
-    if (reader.isErr()) {
-      return AuthenticityStatus.NoManifest;
-    }
-
     const activeManifest = await this.extractActiveManifest();
 
     if (activeManifest.isErr()) {
+      const msg = activeManifest.error.message;
+      if (msg === "No C2PA metadata found") {
+        return AuthenticityStatus.NoManifest;
+      }
       return AuthenticityStatus.InvalidManifest;
     }
 
-    if (retrieveAssertion(activeManifest.value, "succinct.bindings").isOk()) {
+    const manifest = activeManifest.value;
+
+    if (retrieveAssertion(manifest, "succinct.bindings").isOk()) {
       return AuthenticityStatus.Bindings;
     }
-    if (retrieveAssertion(activeManifest.value, "succinct.proof").isOk()) {
+    if (retrieveAssertion(manifest, "succinct.proof").isOk()) {
       return AuthenticityStatus.Proof;
     }
 
@@ -159,29 +171,22 @@ export class VerifiableFile {
     );
   }
 
-  /**
-   * Returns the underlying C2PA Reader for the file.
-   * @returns The C2PA Reader, or an error if no C2PA metadata is found
-   */
-  c2paReader(): ResultAsync<Reader, Error> {
-    return ResultAsync.fromSafePromise(this.readerPromise).andThen((reader) => {
-      if (reader) return okAsync(reader);
-      else return errAsync(new Error("No C2PA metadata found"));
-    });
-  }
-
   private extractActiveManifest(): ResultAsync<Manifest, Error> {
     if (this.cachedActiveManifest) {
       return okAsync(this.cachedActiveManifest);
     }
 
-    return this.c2paReader()
-      .map((reader) => reader.manifestStore())
-      .andThen((store) => {
-        if (store.active_manifest) {
-          this.cachedActiveManifest = store.manifests[store.active_manifest];
-          return okAsync(this.cachedActiveManifest);
-        } else return err(new Error("No active manifest found"));
-      });
+    return ResultAsync.fromSafePromise(
+      Reader.fromAsset({ buffer: this.buffer, mimeType: this.mimeType }),
+    ).andThen((reader) => {
+      if (!reader) return errAsync(new Error("No C2PA metadata found"));
+
+      const store = reader.json();
+      if (!store.active_manifest)
+        return errAsync(new Error("No active manifest found"));
+
+      this.cachedActiveManifest = store.manifests[store.active_manifest];
+      return okAsync(this.cachedActiveManifest);
+    });
   }
 }

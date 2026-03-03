@@ -1,19 +1,32 @@
 {
   "name": "@succinctlabs/zcam1-verify",
-  "version": "0.1.5",
-  "description": "ZCAM1 Verify SDK for browser",
+  "version": "0.1.6",
+  "description": "ZCAM1 Verify SDK for browser and Node.js",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "browser": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": {
+        "types": "./dist/index.node.d.ts",
+        "default": "./dist/index.node.js"
+      }
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "ubrn:web": "ubrn build web --and-generate",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.config.node.ts",
     "dev": "vite dev",
     "preview": "vite preview",
     "test": "vitest --browser=chromium --run",
+    "test:node": "vitest --config vitest.config.node.ts --run",
     "test:watch": "vitest",
     "test:browser": "vitest --browser=chromium --run",
     "prepack": "npm run ubrn:web -- --release && npm run build"
@@ -31,6 +44,9 @@
   "peerDependencies": {
     "neverthrow": "^8.2.0"
   },
+  "optionalDependencies": {
+    "@contentauth/c2pa-node": "^0.5.1"
+  },
   "dependencies": {
     "@contentauth/c2pa-web": "^0.5.7",
     "@noble/hashes": "^2.0.1",
@@ -44,6 +60,7 @@
     "uniffi-bindgen-react-native": "^0.29.3-1"
   },
   "devDependencies": {
+    "@types/node": "^25.3.3",
     "@vitest/browser": "^1.6.1",
     "jsdom": "^28.0.0",
     "playwright": "^1.46.0",
