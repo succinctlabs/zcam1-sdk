@@ -1,0 +1,84 @@
+---
+title: verifyProof
+description: Verify the zero-knowledge proof in a C2PA manifest
+---
+
+# verifyProof
+
+Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
+
+## Usage
+
+```tsx
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
+
+const verifiable = new VerifiableFile(photoPath);
+const appId = process.env.EXPO_PUBLIC_APP_ID!;
+
+const isValid = verifiable.verifyProof(appId);
+```
+
+## Parameters
+
+### appId (required)
+
+- **Type:** `string`
+
+The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Must match the `appId` used during [`initCapture()`](/sdk/capture/initCapture).
+
+## Returns
+
+`boolean` - `true` if the proof is valid, `false` otherwise.
+
+## Throws
+
+- Throws an error if the manifest doesn't contain a `succinct.proof` assertion
+
+## Example
+
+```tsx
+import { useState } from 'react';
+import { Button, Text, View, StyleSheet } from 'react-native';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
+import { launchImageLibrary } from 'react-native-image-picker';
+
+function ProofVerificationScreen() {
+  const [result, setResult] = useState<string>('');
+
+  const verifyProof = async () => {
+    const response = await launchImageLibrary({ mediaType: 'photo' });
+    const uri = response.assets?.[0]?.uri;
+    
+    if (!uri) return;
+
+    try {
+      const verifiable = new VerifiableFile(uri);
+      const appId = process.env.EXPO_PUBLIC_APP_ID!;
+      const isValid = verifiable.verifyProof(appId);
+      
+      if (isValid) {
+        setResult('✓ Zero-knowledge proof verified!');
+      } else {
+        setResult('✗ Proof verification failed');
+      }
+    } catch (error: any) {
+      setResult(`Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="Verify Proof" onPress={verifyProof} />
+      {result && <Text style={styles.result}>{result}</Text>}
+    </View>
+  );
+}
+```
+
+## Notes
+
+- Requires the photo to have been proven using the [Prove SDK](/sdk/prove)
+- The `appId` parameter must match the value used during [`initCapture()`](/sdk/capture/initCapture)
+- Verifies the Groth16 proof using the embedded verification key hash
+- Public inputs include the photo hash, app ID, and Apple root certificate
+

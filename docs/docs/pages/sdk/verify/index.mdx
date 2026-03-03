@@ -1,6 +1,6 @@
-# Verify Browser SDK
+# Verify Web/Node.js SDK
 
-The Verify Browser SDK (`@succinctlabs/zcam1-verify`) validates the authenticity of C2PA-signed photos and videos in the browser.
+The Verify SDK (`@succinctlabs/zcam1-verify`) validates the authenticity of C2PA-signed photos and videos in the browser and Node.js.
 
 ## Installation
 
@@ -10,7 +10,7 @@ npm i @succinctlabs/zcam1-verify
 
 ## Core Concepts
 
-The Verify Browser SDK:
+The Verify Web/Node.js SDK:
 - Extracts C2PA manifests from photos and videos
 - Computes the file content hash
 - Validates bindings (Apple App Attest signatures) for files with `succinct.bindings`
@@ -20,84 +20,23 @@ The Verify Browser SDK:
 
 ## API Reference
 
-### `VerifiableFile`
+### Classes
 
-Class for verifying file authenticity.
+- [VerifiableFile](./VerifiableFile) — Main class for verifying C2PA-signed files in the browser
+- [VerifiableBuffer](./VerifiableBuffer) — Main class for verifying C2PA-signed files in Node.js
 
-```ts
-import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+### Methods
 
-const file = new VerifiableFile(inputFile);
-```
+- [authenticityStatus](./authenticityStatus) — Determine the authenticity status of a file
+- [verifyBindings](./verifyBindings) — Verify the hardware-backed Apple App Attest signature
+- [verifyProof](./verifyProof) — Verify the zero-knowledge proof
+- [captureMetadata](./captureMetadata) — Extract capture metadata (device info, camera settings)
+- [c2paReader](./c2paReader) — Access the underlying C2PA reader
+- [dataHash](./dataHash) — Compute the content hash of a file
 
-**Constructor:**
-- `file` - A `File` object to verify
+### Types
 
-### `VerifiableFile.verifyBindings()`
-
-Verifies the Apple App Attest bindings for files that have `succinct.bindings` but haven't been proven yet.
-
-```ts
-const result = await file.verifyBindings(production);
-```
-
-**Parameters:**
-- `production` - `true` if the file was captured in production mode, `false` for development
-
-**Returns:** `ResultAsync<boolean, Error>` - `true` if the bindings are valid, or an error
-
-### `VerifiableFile.verifyProof()`
-
-Validates the embedded ZK proof against the file hash and Apple Root CA.
-
-```ts
-const result = await file.verifyProof(appId);
-```
-
-**Parameters:**
-- `appId` - The app ID in format `TEAM_ID.BUNDLE_ID`
-
-**Returns:** `ResultAsync<boolean, Error>` - `true` if the proof is valid, `false` otherwise
-
-### `VerifiableFile.dataHash()`
-
-Computes the content hash of the file.
-
-```ts
-const hash: Uint8Array = await file.dataHash();
-```
-
-**Returns:** `Promise<Uint8Array>` - The file's content hash
-
-### `VerifiableFile.captureMetadata()`
-
-Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
-
-```ts
-const result = await file.captureMetadata();
-```
-
-**Returns:** `ResultAsync<CaptureMetadata, Error>` - The capture metadata object, or an error if not present
-
-### `VerifiableFile.authenticityStatus()`
-
-Determines the authenticity status of the file based on its C2PA manifest.
-
-```ts
-const result = await file.authenticityStatus();
-```
-
-**Returns:** `ResultAsync<AuthenticityStatus, Error>` - The file's authenticity status
-
-### `VerifiableFile.c2paReader()`
-
-Returns the underlying C2PA Reader for the file.
-
-```ts
-const result = await file.c2paReader();
-```
-
-**Returns:** `ResultAsync<Reader, Error>` - The C2PA Reader, or an error if no C2PA metadata is found
+- [Types](./types) — Type definitions (AuthenticityStatus, CaptureMetadata, etc.)
 
 ## Complete Example
 
