@@ -8,7 +8,7 @@ workspace = true
 
 [dependencies]
 # Members
-zcam1-c2pa-utils = { workspace = true }
+zcam1-c2pa-utils = { workspace = true, features = ["io"] }
 zcam1-ios.workspace = true
 
 # sp1
@@ -18,7 +18,3 @@ base64ct.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
-
-[features]
-default = ["io"]
-io = ["zcam1-c2pa-utils/io"]
