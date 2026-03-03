@@ -1,0 +1,14 @@
+{
+  "name": "node-verifier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "node index.js"
+  },
+  "dependencies": {
+    "@contentauth/c2pa-node": "^0.5.1",
+    "@succinctlabs/zcam1-verify": "^0.1.6",
+    "neverthrow": "^8.2.0"
+  }
+}
