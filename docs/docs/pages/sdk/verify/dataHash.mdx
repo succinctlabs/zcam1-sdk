@@ -1,71 +1,47 @@
 ---
 title: dataHash
-description: Get the content hash from a C2PA manifest
+description: Compute the content hash of a file
 ---
 
 # dataHash
 
-Returns the file's content hash as recorded in the active C2PA manifest. This hash is used as a public input to the zero-knowledge proof.
+Computes the content hash of the file. This hash is used as a public input to the zero-knowledge proof.
 
 ## Usage
 
-```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-const verifiable = new VerifiableFile(photoPath);
-const hash = verifiable.dataHash();
+const verifiable = new VerifiableFile(file);
+const hash: Uint8Array = await verifiable.dataHash();
 
-console.log('Content hash:', hash);
+console.log("Content hash:", hash);
 ```
 
 ## Returns
 
-`string | undefined` - The manifest data hash (base64-encoded string), or `undefined` if not available.
+`Promise<Uint8Array>` - The file's content hash as a `Uint8Array`.
 
 ## Example
 
-```tsx
-import { useState } from 'react';
-import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
-import { launchImageLibrary } from 'react-native-image-picker';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-function HashDisplayScreen() {
-  const [hash, setHash] = useState<string>('');
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
 
-  const getHash = async () => {
-    const response = await launchImageLibrary({ mediaType: 'photo' });
-    const uri = response.assets?.[0]?.uri;
-    
-    if (!uri) return;
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
 
-    try {
-      const verifiable = new VerifiableFile(uri);
-      const photoHash = verifiable.dataHash();
-      
-      if (photoHash) {
-        setHash(`Hash: ${photoHash.substring(0, 32)}...`);
-      } else {
-        setHash('No hash available');
-      }
-    } catch (error: any) {
-      setHash(`Error: ${error.message}`);
-    }
-  };
+  const verifiable = new VerifiableFile(file);
+  const hash = await verifiable.dataHash();
 
-  return (
-    <View style={styles.container}>
-      <Button title="Get Photo Hash" onPress={getHash} />
-      {hash && <Text style={styles.hash}>{hash}</Text>}
-    </View>
-  );
-}
+  console.log("Hash:", Array.from(hash).map(b => b.toString(16).padStart(2, "0")).join(""));
+});
 ```
 
 ## Notes
 
-- The hash is computed from the photo's actual file content
+- The hash is computed from the file's actual content
 - This hash is used as a public input when verifying the zero-knowledge proof
-- The hash is base64-encoded for readability and compatibility
 - Computed lazily on first access and cached for subsequent calls
-

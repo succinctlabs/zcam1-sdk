@@ -1,18 +1,21 @@
 ---
-title: VerifiableFile
-description: Class for verifying C2PA manifests and ZK proofs in the browser
+title: VerifiableBuffer
+description: Class for verifying C2PA manifests and ZK proofs in Node.js
 ---
 
-# VerifiableFile
+# VerifiableBuffer
 
-Class for verifying C2PA manifests and ZK proofs in the browser. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+Class for verifying C2PA manifests and ZK proofs in Node.js. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
 
 ## Usage
 
 ```ts
-import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+import { VerifiableBuffer } from "@succinctlabs/zcam1-verify";
+import { readFileSync } from "node:fs";
 
-const verifiable = new VerifiableFile(file);
+const buffer = readFileSync(filePath);
+
+const verifiable = new VerifiableBuffer(buffer, "image/jpeg");
 
 // Verify hardware-backed bindings (App Attest)
 const bindingsResult = await verifiable.verifyBindings(false);
@@ -26,15 +29,20 @@ const metadataResult = await verifiable.captureMetadata();
 
 ## Constructor
 
-### new VerifiableFile(file)
+### new VerifiableBuffer(buffer, format)
 
-Creates a [`VerifiableFile`](/sdk/verify/VerifiableFile) instance by extracting the C2PA manifest from the file.
+Creates a [`VerifiableBuffer`](/sdk/verify/VerifiableBuffer) instance by extracting the C2PA manifest from the file.
 
-### file (required)
+### buffer (required)
 
-- **Type:** `File`
+- **Type:** `Buffer`
 
-The file to verify.
+The file data as a Node.js Buffer
+
+### type (required)
+
+- **Type:** `string`
+The MIME type of the file (e.g. "image/jpeg")
 
 ## Methods
 

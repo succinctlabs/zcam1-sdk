@@ -9,13 +9,13 @@ Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. C
 
 ## Usage
 
-```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-const verifiable = new VerifiableFile(photoPath);
-const appId = process.env.EXPO_PUBLIC_APP_ID!;
+const verifiable = new VerifiableFile(file);
+const appId = "TEAM_ID.com.example.app";
 
-const isValid = verifiable.verifyProof(appId);
+const result = await verifiable.verifyProof(appId);
 ```
 
 ## Parameters
@@ -28,57 +28,34 @@ The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Mu
 
 ## Returns
 
-`boolean` - `true` if the proof is valid, `false` otherwise.
-
-## Throws
-
-- Throws an error if the manifest doesn't contain a `succinct.proof` assertion
+`ResultAsync<boolean, Error>` - `true` if the proof is valid, `false` otherwise.
 
 ## Example
 
-```tsx
-import { useState } from 'react';
-import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
-import { launchImageLibrary } from 'react-native-image-picker';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-function ProofVerificationScreen() {
-  const [result, setResult] = useState<string>('');
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
 
-  const verifyProof = async () => {
-    const response = await launchImageLibrary({ mediaType: 'photo' });
-    const uri = response.assets?.[0]?.uri;
-    
-    if (!uri) return;
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
 
-    try {
-      const verifiable = new VerifiableFile(uri);
-      const appId = process.env.EXPO_PUBLIC_APP_ID!;
-      const isValid = verifiable.verifyProof(appId);
-      
-      if (isValid) {
-        setResult('✓ Zero-knowledge proof verified!');
-      } else {
-        setResult('✗ Proof verification failed');
-      }
-    } catch (error: any) {
-      setResult(`Error: ${error.message}`);
-    }
-  };
+  const verifiable = new VerifiableFile(file);
+  const appId = "TEAM_ID.com.example.app";
+  const result = await verifiable.verifyProof(appId);
 
-  return (
-    <View style={styles.container}>
-      <Button title="Verify Proof" onPress={verifyProof} />
-      {result && <Text style={styles.result}>{result}</Text>}
-    </View>
-  );
-}
+  if (result.isOk() && result.value) {
+    console.log("Zero-knowledge proof verified!");
+  } else {
+    console.log("Proof verification failed");
+  }
+});
 ```
 
 ## Notes
 
-- Requires the photo to have been proven using the [Prove SDK](/sdk/prove)
+- Requires the file to have been proven using the [Prove SDK](/sdk/prove)
 - The `appId` parameter must match the value used during [`initCapture()`](/sdk/capture/initCapture)
 - Verifies the Groth16 proof using the embedded verification key hash
-- Public inputs include the photo hash, app ID, and Apple root certificate
-
+- Public inputs include the file hash, app ID, and Apple root certificate
