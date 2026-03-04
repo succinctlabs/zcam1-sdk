@@ -186,7 +186,38 @@ export default defineConfig({
             ],
           },
           {
-            text: "Verify",
+            text: "Verify (React Native)",
+            collapsed: true,
+            items: [
+              {
+                text: "VerifiableFile",
+                link: "/sdk/verify-react-native/VerifiableFile",
+              },
+              {
+                text: "verifyBindings",
+                link: "/sdk/verify-react-native/verifyBindings",
+              },
+              {
+                text: "verifyProof",
+                link: "/sdk/verify-react-native/verifyProof",
+              },
+              {
+                text: "dataHash",
+                link: "/sdk/verify-react-native/dataHash",
+              },
+              {
+                text: "captureMetadata",
+                link: "/sdk/verify-react-native/captureMetadata",
+              },
+              {
+                text: "Types",
+                link: "/sdk/verify-react-native/types",
+              },
+            ],
+          },
+          {
+            text: "Verify (Web/Node.js)",
+            link: "/sdk/verify",
             collapsed: true,
             items: [
               {
@@ -210,47 +241,16 @@ export default defineConfig({
                 link: "/sdk/verify/captureMetadata",
               },
               {
-                text: "Types",
-                link: "/sdk/verify/types",
-              },
-            ],
-          },
-          {
-            text: "Verify (browser)",
-            link: "/sdk/verify-browser",
-            collapsed: true,
-            items: [
-              {
-                text: "VerifiableFile",
-                link: "/sdk/verify-browser/VerifiableFile",
-              },
-              {
-                text: "verifyBindings",
-                link: "/sdk/verify-browser/verifyBindings",
-              },
-              {
-                text: "verifyProof",
-                link: "/sdk/verify-browser/verifyProof",
-              },
-              {
-                text: "dataHash",
-                link: "/sdk/verify-browser/dataHash",
-              },
-              {
-                text: "captureMetadata",
-                link: "/sdk/verify-browser/captureMetadata",
-              },
-              {
                 text: "authenticityStatus",
-                link: "/sdk/verify-browser/authenticityStatus",
+                link: "/sdk/verify/authenticityStatus",
               },
               {
                 text: "c2paReader",
-                link: "/sdk/verify-browser/c2paReader",
+                link: "/sdk/verify/c2paReader",
               },
               {
                 text: "Types",
-                link: "/sdk/verify-browser/types",
+                link: "/sdk/verify/types",
               },
             ],
           },

@@ -9,21 +9,21 @@ Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryp
 
 ## Usage
 
-```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-const verifiable = new VerifiableFile(photoPath);
+const verifiable = new VerifiableFile(file);
 
 // For development/testing
-const isValid = verifiable.verifyBindings(false);
+const result = await verifiable.verifyBindings(false);
 
 // For production
-const isValid = verifiable.verifyBindings(true);
+const result = await verifiable.verifyBindings(true);
 ```
 
 ## Parameters
 
-### appAttestProduction (required)
+### production (required)
 
 - **Type:** `boolean`
 
@@ -31,52 +31,33 @@ Whether to verify against production App Attest environment. Use `false` for dev
 
 ## Returns
 
-`boolean` - `true` if bindings are valid, `false` otherwise.
+`ResultAsync<boolean, Error>` - `true` if bindings are valid, or an error.
 
 ## Example
 
-```tsx
-import { useState } from 'react';
-import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
-import { launchImageLibrary } from 'react-native-image-picker';
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
 
-function BindingsVerificationScreen() {
-  const [result, setResult] = useState<string>('');
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
 
-  const verifyBindings = async () => {
-    const response = await launchImageLibrary({ mediaType: 'photo' });
-    const uri = response.assets?.[0]?.uri;
-    
-    if (!uri) return;
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
 
-    try {
-      const verifiable = new VerifiableFile(uri);
-      const isValid = verifiable.verifyBindings(false); // Use false for dev
-      
-      if (isValid) {
-        setResult('✓ Hardware bindings verified!');
-      } else {
-        setResult('✗ Bindings verification failed');
-      }
-    } catch (error: any) {
-      setResult(`Error: ${error.message}`);
-    }
-  };
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.verifyBindings(false); // Use false for dev
 
-  return (
-    <View style={styles.container}>
-      <Button title="Verify Bindings" onPress={verifyBindings} />
-      {result && <Text style={styles.result}>{result}</Text>}
-    </View>
-  );
-}
+  if (result.isOk() && result.value) {
+    console.log("Hardware bindings verified!");
+  } else {
+    console.log("Bindings verification failed");
+  }
+});
 ```
 
 ## Notes
 
 - Verifies the App Attest attestation embedded in the C2PA manifest
-- The `appAttestProduction` parameter must match the environment where the photo was captured
-- Photos captured with [`ZCamera`](/sdk/capture/ZCamera) include hardware-backed bindings automatically
+- The `production` parameter must match the environment where the file was captured
+- Files captured with [`ZCamera`](/sdk/capture/ZCamera) include hardware-backed bindings automatically
 - Bindings verify the authenticity of the device and key material used during capture
-
