@@ -1134,6 +1134,16 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     }
                 }
 
+                // Mirror front camera photos to match the preview (native iOS selfie behavior).
+                // The photo output has a separate AVCaptureConnection from the video data output,
+                // so mirroring must be configured independently on each.
+                if let photoConnection = self.photoOutput.connection(with: .video),
+                   photoConnection.isVideoMirroringSupported {
+                    photoConnection.automaticallyAdjustsVideoMirroring = false
+                    photoConnection.isVideoMirrored = (position == .front)
+                    print("[Zcam1CameraService] photo output mirrored=\(photoConnection.isVideoMirrored) for position=\(position == .front ? "front" : "back")")
+                }
+
                 // Audio input/output setup is deferred until recording starts.
                 // This avoids triggering microphone permission prompts during camera preview.
                 // See setupAudioForRecording() which is called when recording begins.
@@ -1862,10 +1872,19 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     // Set the capture connection orientation so EXIF metadata is correct.
                     // This is the key step that makes landscape photos display correctly.
                     let resolvedOrientation = orientationEnum.resolveToVideoOrientation()
-                    if let connection = self.photoOutput.connection(with: .video),
-                       connection.isVideoOrientationSupported {
-                        connection.videoOrientation = resolvedOrientation
-                        print("[Zcam1CameraService] takePhoto: set videoOrientation=\(orientationToString(resolvedOrientation))")
+                    if let connection = self.photoOutput.connection(with: .video) {
+                        if connection.isVideoOrientationSupported {
+                            connection.videoOrientation = resolvedOrientation
+                            print("[Zcam1CameraService] takePhoto: set videoOrientation=\(orientationToString(resolvedOrientation))")
+                        }
+                        // Mirror front camera photos to match the preview (native iOS selfie behavior).
+                        // Without this, the saved photo is a "true" capture (not mirrored), which
+                        // doesn't match what the user saw in the mirrored preview.
+                        if connection.isVideoMirroringSupported {
+                            connection.automaticallyAdjustsVideoMirroring = false
+                            connection.isVideoMirrored = (self.currentPosition == .front)
+                            print("[Zcam1CameraService] takePhoto: set isVideoMirrored=\(connection.isVideoMirrored) for position=\(self.currentPosition == .front ? "front" : "back")")
+                        }
                     }
 
                     // Create delegate to handle capture and keep it alive until completion.
@@ -2834,11 +2853,16 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         // Create UIImage with fixed portrait orientation for display.
         // The app UI is portrait-locked, so the preview frame is always taller than wide.
         // Camera sensor buffers always arrive in landscape (native sensor orientation),
-        // so we always rotate 90° CW (.right) to fit the portrait frame.
-        // Orientation-aware rotation only applies to photo capture and video recording,
-        // NOT to the live preview.
+        // so we rotate to fit the portrait frame.
+        //
+        // Back camera: .right (90° CW) maps the landscape-right sensor to portrait.
+        // Front camera: .left (90° CCW) because the mirrored pixel buffer from
+        // isVideoMirrored on the AVCaptureConnection changes the effective sensor
+        // orientation. Using .right would display upside-down; .rightMirrored would
+        // fix orientation but cancel out the mirror. .left gives correct orientation
+        // while preserving the connection-level mirror for a natural selfie view.
         let isFront = position.lowercased() == "front"
-        let imageOrientation: UIImage.Orientation = isFront ? .rightMirrored : .right
+        let imageOrientation: UIImage.Orientation = isFront ? .left : .right
 
         var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
 
