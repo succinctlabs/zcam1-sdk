@@ -39,7 +39,7 @@ jobs:
           cd react-native-zcam1
           npm ci
           # npm version ${{ github.event.inputs.version }}
-          npm prepack # TODO: replace by publish
+          npm run prepack # TODO: replace by publish
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
