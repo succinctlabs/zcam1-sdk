@@ -15,7 +15,7 @@
     "@react-native-camera-roll/camera-roll": "^7.10.2",
     "@react-native-documents/picker": "^11.0.3",
     "@react-navigation/drawer": "^7.7.9",
-    "@succinctlabs/react-native-zcam1": "^0.2.0",
+    "@succinctlabs/react-native-zcam1": "^0.2.5",
     "expo": "~54.0.20",
     "expo-build-properties": "^1.0.9",
     "expo-constants": "~18.0.10",

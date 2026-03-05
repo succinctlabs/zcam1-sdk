@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -40,6 +40,7 @@
     "@pagopa/io-react-native-crypto": "^1.2.4",
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@react-native-camera-roll/camera-roll": "^7.10.2",
+    "@react-native-community/geolocation": "^3.4.0",
     "@scure/base": "^2.0.0",
     "@shopify/flash-list": "^2.2.0",
     "jail-monkey": "^2.8.5",
@@ -81,7 +82,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework",
     "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded",
-    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework; fi"
+    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework; fi"
   },
   "files": [
     "src",
