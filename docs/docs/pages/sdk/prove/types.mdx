@@ -60,6 +60,8 @@ type ProverContextValue = {
   provingClient: ProvingClient | null;     // The proving client instance
   provingTasks: ProvingTasksState;         // Active proof requests
   provingTasksCount: number;               // Number of active requests
+  isInitializing: boolean;                 // Whether proving client is initializing
+  error: unknown;                          // Any initialization error
 }
 ```
 

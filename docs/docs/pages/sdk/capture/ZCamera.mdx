@@ -254,6 +254,11 @@ type DeviceDiagnostics = {
   switchOverFactors: number[]; // Lens switch points
   switchingBehavior: number;   // AVFoundation switching behavior
   isVirtualDevice: boolean;    // Whether device is virtual (multi-camera)
+  currentExposureBias: number; // Current exposure compensation (EV)
+  minExposureBias: number;     // Min supported exposure compensation
+  maxExposureBias: number;     // Max supported exposure compensation
+  currentISO: number;          // Current ISO value
+  exposureDuration: number;    // Current exposure duration (seconds)
 }
 ```
 

@@ -40,7 +40,7 @@ export type Settings = {
   certChain?: SelfSignedCertChain | ExistingCertChain;
   /** Whether to target the production environment. */
   production: boolean;
-  /** Prover network mode (mainnet or reserved capacity). Defaults to `Reserved`. */
+  /** Prover network mode (mainnet or reserved capacity). Defaults to `Mainnet`. */
   proverNetworkMode?: ProverNetworkMode;
 };
 

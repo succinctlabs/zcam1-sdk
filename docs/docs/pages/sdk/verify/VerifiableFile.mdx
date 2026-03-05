@@ -62,6 +62,14 @@ Determines the authenticity status of the file. See [`authenticityStatus`](/sdk/
 
 Returns the underlying C2PA Reader. See [`c2paReader`](/sdk/verify/c2paReader).
 
+### bindings()
+
+Returns the raw `succinct.bindings` assertion data. Returns `ResultAsync<Record<string, any>, Error>`.
+
+### proof()
+
+Returns the raw `succinct.proof` assertion data. Returns `ResultAsync<Record<string, any>, Error>`.
+
 ## Example
 
 ```ts
