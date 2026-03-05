@@ -2632,6 +2632,7 @@ private class MetalPreviewView: MTKView, MTKViewDelegate {
     private var ciContext: CIContext?
     private var commandQueue: MTLCommandQueue?
     private var currentImage: CIImage?
+    private let colorSpace = CGColorSpaceCreateDeviceRGB()
 
     init() {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -2658,10 +2659,12 @@ private class MetalPreviewView: MTKView, MTKViewDelegate {
         fatalError("init(coder:) not supported")
     }
 
-    /// Render a CIImage to the Metal drawable. Can be called from any thread.
+    /// Render a CIImage to the Metal drawable. Safe to call from any thread.
     func render(_ image: CIImage) {
         currentImage = image
-        draw()
+        DispatchQueue.main.async { [weak self] in
+            self?.draw()
+        }
     }
 
     /// Clear the preview (e.g., during camera position switch).
@@ -2711,7 +2714,7 @@ private class MetalPreviewView: MTKView, MTKViewDelegate {
             to: drawable.texture,
             commandBuffer: commandBuffer,
             bounds: bounds,
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+            colorSpace: colorSpace
         )
 
         commandBuffer.present(drawable)
@@ -2831,7 +2834,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilmStyleEnum: Zcam1CameraFilmStyle = .normal
-    private var currentCIFilters: [CIFilter]?
+    private var currentFilmStyleRecipe: [[String: Any]]?
     private var frameCount: Int = 0
 
     // Flag to skip frames during camera reconfiguration to avoid showing incorrectly mirrored frames.
@@ -2886,8 +2889,8 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let overrides = filmStyleOverrides as? [String: [[String: Any]]],
            let recipe = overrides[filmStyle] {
             print("[Zcam1CameraView] Using film style override for '\(filmStyle)'")
-            // CIFilters for preview (GPU-only, no readback).
-            currentCIFilters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
+            // Store recipe for per-frame CIFilter creation on the capture queue (thread-safe).
+            currentFilmStyleRecipe = recipe
             // Harbeth chain for capture/recording via the service.
             let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
@@ -2899,7 +2902,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let custom = customFilmStyles as? [String: [[String: Any]]],
            let recipe = custom[filmStyle] {
             print("[Zcam1CameraView] Using custom film style '\(filmStyle)'")
-            currentCIFilters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
+            currentFilmStyleRecipe = recipe
             let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
             Zcam1CameraService.shared.setCustomFilmStyles(harbethFilters)
@@ -2907,7 +2910,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
 
         // Fall back to no film style (JS SDK provides all built-in recipes via filmStyleOverrides).
-        currentCIFilters = nil
+        currentFilmStyleRecipe = nil
         currentFilmStyleEnum = .normal
         Zcam1CameraService.shared.setFilmStyle(.normal)
     }
@@ -2951,7 +2954,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         ciImage = ciImage.oriented(isFront ? .left : .right)
 
         // Apply film style CIFilters if configured (GPU pipeline, lazy evaluation).
-        if let filters = currentCIFilters {
+        // Filters are created fresh per-frame from the stored recipe to avoid cross-thread
+        // mutation of CIFilter instances (recipe is set on main thread, read here on capture queue).
+        if let recipe = currentFilmStyleRecipe {
+            let filters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
             ciImage = Zcam1CameraFilmStyle.applyCIFilters(filters, to: ciImage)
         }
 
