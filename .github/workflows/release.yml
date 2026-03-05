@@ -37,7 +37,7 @@ jobs:
 
       - name: "Install SP1 toolchain"
         run: |
-          sp1up
+          sp1up --token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout repository
         uses: actions/checkout@v4
