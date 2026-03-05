@@ -21,10 +21,9 @@ import {
   VerifiableFile,
   PhotoMetadataInfo,
   VideoMetadataInfo,
-  type CaptureMetadata
+  type CaptureMetadata,
 } from "@succinctlabs/react-native-zcam1";
-import { useCallback, useEffect, useMemo, useState
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
 import { Util } from "react-native-file-access";
@@ -100,6 +99,11 @@ function CaptureInfo({
         <Text style={styles.metadataRow}>
           Captured: {formatDate(metadata.when)}
         </Text>
+        {params.trustedTimestamp && (
+          <Text style={styles.metadataRow}>
+            Trusted capture time: {formatDate(Number(params.trustedTimestamp))}
+          </Text>
+        )}
         <Text style={styles.metadataRow}>
           Is jail broken: {params.authenticityData.isJailBroken ? "Yes" : "No"}
         </Text>
@@ -107,11 +111,30 @@ function CaptureInfo({
           Is location spoofing possible:{" "}
           {params.authenticityData.isLocationSpoofingAvailable ? "Yes" : "No"}
         </Text>
-
         {isVideo ? (
           <VideoCaptureInfo metadata={params as VideoMetadataInfo} />
         ) : (
           <PhotoCaptureInfo metadata={params as PhotoMetadataInfo} />
+        )}
+        {params.location && (
+          <View style={styles.metadataSection}>
+            <Text style={styles.sectionTitle}>Location data</Text>
+            <Text style={styles.metadataRow}>
+              Latitude: {params.location.latitude}
+            </Text>
+            <Text style={styles.metadataRow}>
+              Longitude: {params.location.longitude}
+            </Text>
+            <Text style={styles.metadataRow}>
+              Altitude: {params.location.altitude}
+            </Text>
+            <Text style={styles.metadataRow}>
+              Accuracy: {params.location.accuracy}
+            </Text>
+            <Text style={styles.metadataRow}>
+              Altitude accuracy: {params.location.altitudeAccuracy}
+            </Text>
+          </View>
         )}
       </View>
     </View>
@@ -428,7 +451,7 @@ function ShareArtifact({ uri }: { uri: string }) {
 }
 
 // Format capture date - handle various formats
-const formatDate = (when: string) => {
+const formatDate = (when: string | number) => {
   const date = new Date(when);
   if (!isNaN(date.getTime())) {
     return date.toLocaleString();

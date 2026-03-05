@@ -1,14 +1,17 @@
+import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
 import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
+  AuthenticityData,
   buildSelfSignedCertificate,
   computeHash,
   DepthData,
   ExistingCertChain,
   formatFromPath,
+  LocationInfo,
   ManifestEditor,
   type PhotoMetadataInfo,
   SelfSignedCertChain,
@@ -153,6 +156,10 @@ export interface ZCameraProps {
    * Use with `filmStyle` prop by casting the custom name: `filmStyle={"myStyle" as CameraFilmStyle}`.
    */
   customFilmStyles?: Record<string, FilmStyleRecipe>;
+
+  captureTimestampEnabled?: boolean;
+  captureLocationEnabled?: boolean;
+
   /**
    * Enable depth data capture at session level.
    * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
@@ -472,6 +479,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
       const isJailBroken = JailMonkey.isJailBroken();
       const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
+      const location = await retrieveLocationData(
+        this.props.captureTimestampEnabled,
+        this.props.captureLocationEnabled,
+      );
+      const authenticityData: AuthenticityData = {
+        isJailBroken,
+        isLocationSpoofingAvailable,
+        isLocationAvailable: location.isLocationAvailable,
+        locationRetrievalStatus: location.locationRetrievalStatus,
+      };
 
       result.filePath = await embedBindings(
         result.filePath,
@@ -492,11 +509,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           audioCodec: result.audioCodec,
           audioSampleRate: result.audioSampleRate,
           audioChannels: result.audioChannels,
-          authenticityData: {
-            isJailBroken,
-            isLocationSpoofingAvailable,
-          },
+          authenticityData,
           filmStyle: this.resolveFilmStyleInfo(),
+          trustedTimestamp: location.trustedTimestamp,
+          location: location.coords,
         },
         this.props.captureInfo,
         this.certChainPem,
@@ -555,6 +571,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const softwareVersion = tiff.Software || "Unknown";
     const isJailBroken = JailMonkey.isJailBroken();
     const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
+    const location = await retrieveLocationData(
+      this.props.captureTimestampEnabled,
+      this.props.captureLocationEnabled,
+    );
+    const authenticityData: AuthenticityData = {
+      isJailBroken,
+      isLocationSpoofingAvailable,
+      isLocationAvailable: location.isLocationAvailable,
+      locationRetrievalStatus: location.locationRetrievalStatus,
+    };
 
     const destinationPath = await embedBindings(
       originalPath,
@@ -570,12 +596,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
-        authenticityData: {
-          isJailBroken,
-          isLocationSpoofingAvailable,
-        },
+        authenticityData,
         depthData: result.depthData as DepthData | undefined,
         filmStyle: this.resolveFilmStyleInfo(),
+        trustedTimestamp: location.trustedTimestamp,
+        location: location.coords,
       },
       this.props.captureInfo,
       this.certChainPem,
@@ -691,4 +716,62 @@ async function embedBindings(
   await manifestEditor.embedManifestToFile(destinationPath, format);
 
   return destinationPath;
+}
+
+type LocationData = {
+  coords: LocationInfo | undefined;
+  trustedTimestamp: bigint | undefined;
+  isLocationAvailable: boolean | undefined;
+  locationRetrievalStatus: string | undefined;
+};
+
+function retrieveLocationData(
+  captureTimestampEnabled: boolean | undefined,
+  captureLocationEnabled: boolean | undefined,
+): Promise<LocationData> {
+  if (!captureTimestampEnabled && !captureLocationEnabled) {
+    return Promise.resolve({
+      coords: undefined,
+      trustedTimestamp: undefined,
+      isLocationAvailable: undefined,
+      locationRetrievalStatus: undefined,
+    });
+  }
+
+  return new Promise((resolve) => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          coords: captureLocationEnabled
+            ? {
+                latitude: position.coords.latitude.toFixed(6),
+                longitude: position.coords.longitude.toFixed(6),
+                altitude: position.coords.altitude?.toFixed(6),
+                accuracy: position.coords.accuracy.toFixed(6),
+                altitudeAccuracy: position.coords.altitudeAccuracy?.toFixed(6),
+              }
+            : undefined,
+          trustedTimestamp: captureTimestampEnabled
+            ? BigInt(Math.trunc(position.timestamp))
+            : undefined,
+          isLocationAvailable: true,
+          locationRetrievalStatus: undefined,
+        });
+      },
+      (error) => {
+        console.warn(`[ZCAM1] failed to retrieve GPS location data: ${error.message}`);
+        resolve({
+          coords: undefined,
+          trustedTimestamp: undefined,
+          isLocationAvailable: false,
+          locationRetrievalStatus: error.message,
+        });
+      },
+      {
+        timeout: 1000, // 1 second
+        maximumAge: 60 * 1000, // 1 minute
+        enableHighAccuracy: true,
+      },
+    );
+  });
 }
