@@ -2,7 +2,7 @@
 
 This repository hosts the ZCAM1 authenticity stack, combining iOS components, a React Native SDK, and browser-based verification tools for capture, proof generation, and verification.
 
-**Platform:** iOS (Android coming soon) | **Docs:** [zcamdocs.succinct.tools](https://zcamdocs.succinct.tools/)
+**Platform:** iOS (Android coming soon) | **Docs:** [zcamdocs.succinct.tools](https://zcam-sdk.succinct.xyz/)
 
 ## Top‑Level Layout
 
