@@ -34,14 +34,14 @@ jobs:
           git tag v${{ github.event.inputs.version }}
           git push origin v${{ github.event.inputs.version }}
 
-      - name: Publish react-native-zcam1-c2pa
+      - name: Publish react-native-zcam1
         run: |
-          cd react-native-zcam1-c2pa
+          cd react-native-zcam1
           npm ci
           # npm version ${{ github.event.inputs.version }}
-          # npm publish
-          npm run ubrn:ios
-          zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
+          npm prepack # TODO: replace by publish
+          zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
+          zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
       - name: Add the framework to the GitHub Release
         uses: softprops/action-gh-release@v1
@@ -49,7 +49,8 @@ jobs:
           tag_name: v${{ github.event.inputs.version }}
           draft: true
           files: |
-            react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
+            react-native-zcam1/Zcam1Framework.xcframework.zip
+            react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
 
       - name: Finalize the GitHub Release
         uses: softprops/action-gh-release@v1
