@@ -6,6 +6,7 @@ import { createThumbnail } from "react-native-create-thumbnail";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
 
 import { AuthenticityStatus, authenticityStatus } from "./bindings";
+import { stripFileProtocol } from "./utils";
 
 /**
  * Configuration for loading images from a private folder.
@@ -141,7 +142,7 @@ const ZImageItem = ({
 
       if (ext === "mov" || ext === "mp4") {
         const thumbnail = await createThumbnail({
-          url: uri.replace("file://", ""),
+          url: stripFileProtocol(uri),
         });
         setThumbnail(thumbnail.path);
       }

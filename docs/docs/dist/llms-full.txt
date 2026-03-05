@@ -27,7 +27,7 @@ The ZCAM SDK integrates into the claim landing flow:
 2. **Camera Integration**: Inject the `<ZCamera>` component into the claim flow where users must photograph their vehicle:
    * The SDK provides camera preview functionality
    * Call `takePhoto()` to capture a verifiable photo
-3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to attach zero-knowledge proofs:
+3. **Proof Generation** (Optional): Use `@succinctlabs/react-native-zcam1/proving` to attach zero-knowledge proofs:
    * Use `waitAndEmbedProof()` to generate and embed proofs
    * This provides additional cryptographic guarantees and privacy
 4. **Claim Submission**: When the user completes the claim flow, attach verifiable photos to the claim filing and upload to the insurance company's backend
@@ -37,8 +37,8 @@ The ZCAM SDK integrates into the claim landing flow:
 On the insurance company's backend, verification is integrated into the automated claim triage process:
 
 1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
-   * Integrate `react-native-zcam1-verify` (or server-side equivalent) into the backend
-   * For each photo, call `verifyHash()` and `verifyProof()` methods
+   * Integrate `@succinctlabs/react-native-zcam1` (or server-side equivalent) into the backend
+   * For each photo, call `verifyBindings()` or `verifyProof()` to validate authenticity
    * Check that the photo was taken using the insurance company's app
 2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:
    * Verify location data matches the claim location
@@ -73,11 +73,11 @@ The news platform integrates ZCAM SDK in two places:
 The news platform builds a specialized camera app for reporters using the ZCAM SDK:
 
 1. **Installation**: Setup the SDK using the [installation guide](/getting-started/installation)
-2. **Camera Setup**: Use `react-native-zcam1-capture` to initialize the camera:
+2. **Camera Setup**: Use `@succinctlabs/react-native-zcam1` to initialize the camera:
    * Call `initCapture()` to initialize device keys and attestation
    * Use the `<ZCamera>` component to render the camera preview
    * Call `takePhoto()` to capture a photo with verifiable bindings
-3. **Proof Generation** (Optional): Use `react-native-zcam1-prove` to generate zero-knowledge proofs:
+3. **Proof Generation** (Optional): Use `@succinctlabs/react-native-zcam1/proving` to generate zero-knowledge proofs:
    * Wrap your app with `ProverProvider` and use the `useProver()` hook
    * Call `waitAndEmbedProof()` to generate and embed the proof, or use `requestProof()` + `useProofRequestStatus()` for progress tracking
 4. **Upload**: Upload the photo to the news platform's backend for use in articles
@@ -89,9 +89,9 @@ On the news platform's website, articles display verifiable photos with verifica
 1. **Photo Display**: Photos embedded in articles include C2PA content credentials
    * Users with C2PA browser extensions can automatically see content credentials
    * The platform can display verification status badges
-2. **Client-Side Verification**: Integrate `react-native-zcam1-verify` (or web equivalent) to enable verification:
+2. **Client-Side Verification**: Integrate `@succinctlabs/react-native-zcam1` (or web equivalent) to enable verification:
    * Add a "Verify Photo" button for each photo in articles
-   * Call `verifyHash()` and `verifyProof()` methods to validate authenticity
+   * Call `verifyBindings()` or `verifyProof()` to validate authenticity
    * Display verification results to readers (e.g., "✓ Verified Authentic")
 3. **Metadata Display**: Show readers metadata from the C2PA manifest:
    * Capture timestamp, device information, app identifier
@@ -358,12 +358,12 @@ These committed values allow verifiers to confirm the proof corresponds to a spe
 
 ## Capture SDK
 
-The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+The Capture SDK (`@succinctlabs/react-native-zcam1`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
 
 ### Installation
 
 ```bash
-npm i react-native-zcam1-capture
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -380,10 +380,10 @@ The Capture SDK:
 
 #### `initCapture(settings)`
 
-Initializes device keys and attestation. Call once on app startup.
+Initializes device keys and attestation. Call once on app startup. Requires network access.
 
 ```tsx
-import { initCapture, CaptureInfo, Settings } from "react-native-zcam1-capture";
+import { initCapture, CaptureInfo, Settings } from "@succinctlabs/react-native-zcam1";
 
 const settings: Settings = {
   appId: "TEAM_ID.com.example.app",
@@ -412,7 +412,7 @@ React component that renders the native camera preview.
 
 ```tsx
 import { useRef } from "react";
-import { ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -441,11 +441,25 @@ function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
 Captures a photo and returns a signed `ZPhoto`.
 
 ```tsx
-const photo = await camera.current?.takePhoto();
+const photo = await camera.current?.takePhoto({
+  format: "jpeg",
+  flash: "off",
+  includeDepthData: false,
+  aspectRatio: "4:3",
+  orientation: "auto",
+});
 
 console.log(photo.originalPath); // Raw capture path
 console.log(photo.path);         // C2PA-signed photo path
 ```
+
+**Parameters:**
+
+* `options.format` - `"jpeg"` or `"dng"` (default: `"jpeg"`)
+* `options.flash` - `"off"`, `"on"`, or `"auto"` (default: `"off"`)
+* `options.includeDepthData` - Include depth data when supported (default: `false`)
+* `options.aspectRatio` - `"4:3"`, `"16:9"`, or `"1:1"` (default: `"4:3"`)
+* `options.orientation` - `"auto"`, `"portrait"`, or `"landscape"` (default: `"auto"`)
 
 **Returns:** `ZPhoto` with:
 
@@ -458,7 +472,7 @@ console.log(photo.path);         // C2PA-signed photo path
 import { useEffect, useRef, useState } from "react";
 import { View, Button, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 import { FileSystem, Dirs } from "react-native-file-access";
 
 export function CaptureScreen() {
@@ -516,6 +530,7 @@ const styles = StyleSheet.create({
 ### Notes
 
 * `initCapture()` generates Secure Enclave keys on first call; subsequent calls load existing keys
+* `initCapture()` requires network access
 * App Attest only works on physical devices; the SDK uses mock values in simulators
 * The captured photo at `photo.path` contains a C2PA manifest with `succinct.bindings`—this is required for proof generation
 
@@ -527,17 +542,7 @@ The ZCAM1 SDK provides React Native components and hooks for capturing, proving,
 ### Installation
 
 ```bash
-# Capture SDK
-npm install @succinctlabs/react-native-zcam1-capture
-
-# Prove SDK  
-npm install @succinctlabs/react-native-zcam1-prove
-
-# Verify SDK
-npm install @succinctlabs/react-native-zcam1-verify
-
-# Picker SDK
-npm install @succinctlabs/react-native-zcam1-picker
+npm install @succinctlabs/react-native-zcam1
 ```
 
 ### Actions
@@ -561,11 +566,11 @@ npm install @succinctlabs/react-native-zcam1-picker
 | [embedProof](/sdk/prove/embedProof)                               | Embed a generated proof into a photo                        |
 | [waitAndEmbedProof](/sdk/prove/waitAndEmbedProof)                 | Request, wait for, and embed proof in one step              |
 | **Verify Actions**                                                |                                                             |
-| [VerifiableFile](/sdk/verify/VerifiableFile)                      | Class for verifying C2PA manifests and ZK proofs            |
-| [verifyBindings](/sdk/verify/verifyBindings)                      | Verify hardware-backed bindings in a C2PA manifest          |
-| [verifyProof](/sdk/verify/verifyProof)                            | Verify zero-knowledge proof in a C2PA manifest              |
-| [dataHash](/sdk/verify/dataHash)                                  | Get the content hash from a C2PA manifest                   |
-| [captureMetadata](/sdk/verify/captureMetadata)                    | Get capture metadata from a C2PA manifest                   |
+| [VerifiableFile](/sdk/verify-react-native/VerifiableFile)         | Class for verifying C2PA manifests and ZK proofs            |
+| [verifyBindings](/sdk/verify-react-native/verifyBindings)         | Verify hardware-backed bindings in a C2PA manifest          |
+| [verifyProof](/sdk/verify-react-native/verifyProof)               | Verify zero-knowledge proof in a C2PA manifest              |
+| [dataHash](/sdk/verify-react-native/dataHash)                     | Get the content hash from a C2PA manifest                   |
+| [captureMetadata](/sdk/verify-react-native/captureMetadata)       | Get capture metadata from a C2PA manifest                   |
 | **Picker Actions**                                                |                                                             |
 | [ZImagePicker](/sdk/picker/ZImagePicker)                          | React component for picking photos with authenticity badges |
 | [privateDirectory](/sdk/picker/privateDirectory)                  | Get the path to the app's private document directory        |
@@ -575,17 +580,17 @@ npm install @succinctlabs/react-native-zcam1-picker
 
 * [Capture Types](/sdk/capture/types) - Types for the Capture SDK
 * [Prove Types](/sdk/prove/types) - Types for the Prove SDK
-* [Verify Types](/sdk/verify/types) - Types for the Verify SDK
+* [Verify Types](/sdk/verify-react-native/types) - Types for the Verify SDK
 
 
 ## Picker SDK
 
-The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+The Picker SDK (`@succinctlabs/react-native-zcam1`) provides an image picker component with built-in authenticity status badges.
 
 ### Installation
 
 ```bash
-npm i react-native-zcam1-picker
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -605,7 +610,7 @@ The Picker SDK:
 React component that renders a scrollable image grid.
 
 ```tsx
-import { ZImagePicker } from "react-native-zcam1-picker";
+import { ZImagePicker } from "@succinctlabs/react-native-zcam1";
 
 <ZImagePicker
   source={{ path: "/path/to/folder" }}
@@ -638,7 +643,7 @@ import { ZImagePicker } from "react-native-zcam1-picker";
 Returns the app's private document directory path.
 
 ```tsx
-import { privateDirectory } from "react-native-zcam1-picker";
+import { privateDirectory } from "@succinctlabs/react-native-zcam1";
 
 const path = privateDirectory(); // e.g., /var/mobile/.../Documents
 ```
@@ -648,7 +653,7 @@ const path = privateDirectory(); // e.g., /var/mobile/.../Documents
 Enum indicating the C2PA status of an image.
 
 ```tsx
-import { AuthenticityStatus } from "react-native-zcam1-picker";
+import { AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 AuthenticityStatus.Unknown        // Unable to determine
 AuthenticityStatus.NoManifest     // No C2PA manifest
@@ -660,7 +665,7 @@ AuthenticityStatus.Proof          // Has succinct.proof (verified)
 ### Basic Usage
 
 ```tsx
-import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+import { ZImagePicker, privateDirectory } from "@succinctlabs/react-native-zcam1";
 
 export function PickerScreen() {
   const handleSelect = (uri: string) => {
@@ -682,7 +687,7 @@ Use `renderBadge` to display authenticity indicators:
 
 ```tsx
 import { Image, StyleSheet } from "react-native";
-import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "@succinctlabs/react-native-zcam1";
 
 const styles = StyleSheet.create({
   badge: {
@@ -733,8 +738,8 @@ export function PickerScreen() {
 ```tsx
 import { useState } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { ZImagePicker, AuthenticityStatus, privateDirectory } from "react-native-zcam1-picker";
-import { useProver } from "react-native-zcam1-prove";
+import { ZImagePicker, AuthenticityStatus, privateDirectory } from "@succinctlabs/react-native-zcam1";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 
 export function PickAndProveScreen() {
@@ -834,12 +839,12 @@ For older versions:
 
 ## Prove SDK
 
-The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+The Prove SDK (`@succinctlabs/react-native-zcam1/proving`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
 
 ### Installation
 
 ```bash
-npm i react-native-zcam1-prove
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -859,7 +864,7 @@ The Prove SDK:
 React context provider that initializes the proving client. Wrap your app with this component.
 
 ```tsx
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 
 function App() {
   return (
@@ -883,7 +888,7 @@ function App() {
 Hook to access the proving client from within `ProverProvider`.
 
 ```tsx
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton() {
   const { provingClient, isInitializing, error } = useProver();
@@ -908,7 +913,7 @@ function ProveButton() {
 Hook to poll the status of a specific proof request.
 
 ```tsx
-import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProofStatus({ requestId }: { requestId: string }) {
   const { proof, fulfillementStatus, isInitializing, error } = useProofRequestStatus(requestId);
@@ -957,7 +962,7 @@ const requestId = await provingClient.requestProof(photoUri);
 Gets the current status of a proof request.
 
 ```tsx
-import { FulfillmentStatus } from "react-native-zcam1-prove";
+import { FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 const status = await provingClient.getProofStatus(requestId);
 
@@ -1024,9 +1029,9 @@ const provenPath = await provingClient.waitAndEmbedProof(photoUri);
 ```tsx
 import { useState } from "react";
 import { View, Button, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import { launchImageLibrary } from "react-native-image-picker";
+import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
 
 export function ProveScreen() {
   const { provingClient, isInitializing } = useProver();
@@ -1101,8 +1106,8 @@ const styles = StyleSheet.create({
 Combine with `ZImagePicker` to show which photos need proving:
 
 ```tsx
-import { ZImagePicker, AuthenticityStatus } from "react-native-zcam1-picker";
-import { useProver } from "react-native-zcam1-prove";
+import { ZImagePicker, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function PickerScreen() {
   const { provingClient } = useProver();
@@ -1136,7 +1141,7 @@ function PickerScreen() {
 For better user experience, use the two-step approach to show progress:
 
 ```tsx
-import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveWithProgress({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();
@@ -1189,12 +1194,12 @@ function ProveWithProgress({ photoUri }: { photoUri: string }) {
 
 ## Verify SDK
 
-The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+The Verify SDK (`@succinctlabs/react-native-zcam1`) validates the authenticity of C2PA-signed photos with embedded proofs.
 
 ### Installation
 
 ```bash
-npm i react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1
 cd ios && pod install
 ```
 
@@ -1216,7 +1221,7 @@ The Verify SDK:
 Class for verifying photo authenticity.
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 const file = new VerifiableFile(photoUri);
 ```
@@ -1224,16 +1229,6 @@ const file = new VerifiableFile(photoUri);
 **Constructor:**
 
 * `uriOrPath` - File path or URI to the photo
-
-#### `VerifiableFile.verifyHash()`
-
-Checks that the photo's content hash matches the hash recorded in the C2PA manifest.
-
-```tsx
-const isHashValid: boolean = file.verifyHash();
-```
-
-**Returns:** `true` if the file contents haven't been tampered with
 
 #### `VerifiableFile.verifyBindings()`
 
@@ -1252,6 +1247,10 @@ const isBindingsValid: boolean = file.verifyBindings(appAttestProduction);
 **Note:** This method works for photos with `succinct.bindings`. For photos with `succinct.proof`, use `verifyProof()` instead.
 
 #### `VerifiableFile.verifyProof()`
+
+**Parameters:**
+
+* `appId` - The app identifier
 
 Validates the embedded ZK proof against the photo hash and Apple Root CA.
 
@@ -1278,7 +1277,7 @@ const hash: string | undefined = file.dataHash();
 Returns the capture metadata from the C2PA manifest, containing device info and camera settings recorded at capture time.
 
 ```tsx
-import { CaptureMetadata } from "react-native-zcam1-verify";
+import { CaptureMetadata } from "@succinctlabs/react-native-zcam1";
 
 const metadata: CaptureMetadata | null = file.captureMetadata();
 ```
@@ -1289,26 +1288,52 @@ const metadata: CaptureMetadata | null = file.captureMetadata();
 
 * `action` - The capture action type
 * `when` - Timestamp of capture
-* `parameters` - Device and camera settings:
-  * `device_make`, `device_model`
-  * `software_version`
-  * `x_resolution`, `y_resolution`
-  * `orientation`
-  * `iso`, `exposure_time`
-  * `focal_length`, `depth_of_field`
+* `parameters` - Photo or video capture settings:
+  * **Photo fields:**
+    * `deviceMake`, `deviceModel`
+    * `softwareVersion`
+    * `xResolution`, `yResolution`
+    * `orientation`
+    * `iso`, `exposureTime`
+    * `focalLength`, `depthOfField`
+    * `authenticityData`:
+      * `isJailBroken`
+      * `isLocationSpoofingAvailable`
+    * `depthData` (when available):
+      * `width`, `height`
+      * `pixelFormat`
+      * `accuracy`
+      * `statistics`:
+        * `min`, `max`, `mean`, `stdDev`
+        * `validPixelCount`, `sampleStride`
+  * **Video fields:**
+    * `deviceMake`, `deviceModel`
+    * `softwareVersion`
+    * `format`
+    * `hasAudio`
+    * `durationSeconds`
+    * `fileSizeBytes`
+    * `width`, `height`
+    * `rotationDegrees`
+    * `frameRate`
+    * `videoCodec`
+    * `audioCodec`
+    * `audioSampleRate`
+    * `audioChannels`
+    * `authenticityData`:
+      * `isJailBroken`
+      * `isLocationSpoofingAvailable`
 
 ### Complete Example
 
 ```tsx
 import { useState } from "react";
 import { View, Button, Text, StyleSheet } from "react-native";
-import { launchImageLibrary } from "react-native-image-picker";
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 type VerificationResult = {
-  hashValid: boolean;
   proofValid: boolean;
-  authentic: boolean;
 };
 
 export function VerifyScreen() {
@@ -1329,15 +1354,9 @@ export function VerifyScreen() {
 
     try {
       const file = new VerifiableFile(asset.uri);
+      const proofValid = file.verifyProof("TEAM_ID.com.example.app");
 
-      const hashValid = file.verifyHash();
-      const proofValid = file.verifyProof();
-
-      setResult({
-        hashValid,
-        proofValid,
-        authentic: hashValid && proofValid,
-      });
+      setResult({ proofValid });
     } catch (err: any) {
       setError(err.message);
     }
@@ -1350,9 +1369,8 @@ export function VerifyScreen() {
       {result && (
         <View style={styles.result}>
           <Text style={styles.title}>
-            {result.authentic ? "✓ Authentic" : "✗ Not Authentic"}
+            {result.proofValid ? "✓ Authentic" : "✗ Not Authentic"}
           </Text>
-          <Text>Hash Valid: {result.hashValid ? "Yes" : "No"}</Text>
           <Text>Proof Valid: {result.proofValid ? "Yes" : "No"}</Text>
         </View>
       )}
@@ -1375,30 +1393,25 @@ const styles = StyleSheet.create({
 Create a reusable verification function:
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export type VerificationStatus =
   | { status: "authentic" }
-  | { status: "invalid_hash" }
   | { status: "invalid_proof" }
   | { status: "no_manifest" }
   | { status: "error"; message: string };
 
-export function verifyPhoto(uri: string): VerificationStatus {
+export function verifyPhoto(uri: string, appId: string): VerificationStatus {
   try {
     const file = new VerifiableFile(uri);
 
-    if (!file.verifyHash()) {
-      return { status: "invalid_hash" };
-    }
-
-    if (!file.verifyProof()) {
+    if (!file.verifyProof(appId)) {
       return { status: "invalid_proof" };
     }
 
     return { status: "authentic" };
   } catch (error: any) {
-    if (error.message?.includes("no manifest")) {
+    if (error.message?.includes("no manifest") || error.message?.includes("not found")) {
       return { status: "no_manifest" };
     }
     return { status: "error", message: error.message };
@@ -1408,25 +1421,22 @@ export function verifyPhoto(uri: string): VerificationStatus {
 
 ### What Verification Checks
 
-| Check              | What It Validates                                                     | Use Case                                                      |
-| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `verifyHash()`     | Photo bytes match the SHA-256 hash in the C2PA manifest               | Always use this first to check file integrity                 |
-| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
-| `verifyProof()`    | ZK proof is valid and chains to the Apple Root CA                     | For photos with `succinct.proof` (after proof generation)     |
+| Check                        | What It Validates                                                     | Use Case                                                      |
+| ---------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `verifyBindings(production)` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
+| `verifyProof(appId)`         | ZK proof is valid and chains to the Apple Root CA                     | For photos with `succinct.proof` (after proof generation)     |
+
+Both methods internally compute and verify the file's content hash against the C2PA manifest.
 
 **Verification Flow:**
 
 For photos with `succinct.bindings`:
 
-1. Call `verifyHash()` to check file integrity
-2. Call `verifyBindings()` to verify the Apple App Attest signature
+* Call `verifyBindings(production)` to verify the Apple App Attest signature and file integrity
 
 For photos with `succinct.proof`:
 
-1. Call `verifyHash()` to check file integrity
-2. Call `verifyProof()` to verify the ZK proof
-
-Both hash and bindings/proof checks must pass for a photo to be considered authentic.
+* Call `verifyProof(appId)` to verify the ZK proof and file integrity
 
 ### Notes
 
@@ -1446,7 +1456,7 @@ Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifes
 ### Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 
@@ -1464,7 +1474,7 @@ const metadata = verifiable.captureMetadata();
 
 #### new VerifiableFile(path)
 
-Creates a [`VerifiableFile`](/sdk/verify/VerifiableFile) instance by extracting the C2PA manifest from the file.
+Creates a [`VerifiableFile`](/sdk/verify-react-native/VerifiableFile) instance by extracting the C2PA manifest from the file.
 
 #### path (required)
 
@@ -1476,26 +1486,26 @@ Path to the file to verify.
 
 #### verifyBindings(appAttestProduction)
 
-Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify/verifyBindings).
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify-react-native/verifyBindings).
 
 #### verifyProof(appId)
 
-Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify/verifyProof).
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify-react-native/verifyProof).
 
 #### dataHash()
 
-Gets the content hash from the C2PA manifest. See [`dataHash`](/sdk/verify/dataHash).
+Gets the content hash from the C2PA manifest. See [`dataHash`](/sdk/verify-react-native/dataHash).
 
 #### captureMetadata()
 
-Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify/captureMetadata).
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify-react-native/captureMetadata).
 
 ### Example
 
 ```tsx
 import { useState } from 'react';
 import { View, Button, Text, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function VerificationScreen() {
@@ -1536,8 +1546,8 @@ function VerificationScreen() {
 ### Notes
 
 * Constructor throws an error if the file doesn't have a C2PA manifest
-* [`verifyProof()`](/sdk/verify/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
-* Use [`verifyBindings(false)`](/sdk/verify/verifyBindings) for development, `verifyBindings(true)` for production
+* [`verifyProof()`](/sdk/verify-react-native/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+* Use [`verifyBindings(false)`](/sdk/verify-react-native/verifyBindings) for development, `verifyBindings(true)` for production
 
 
 ## captureMetadata
@@ -1547,7 +1557,7 @@ Returns the capture metadata from the C2PA manifest. Contains device info and ca
 ### Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const metadata = verifiable.captureMetadata();
@@ -1561,14 +1571,14 @@ if (metadata) {
 
 ### Returns
 
-[`CaptureMetadata`](/sdk/verify/types#capturemetadata) `| null` - The capture metadata object, or `null` if not present in the manifest.
+[`CaptureMetadata`](/sdk/verify-react-native/types#capturemetadata) `| null` - The capture metadata object, or `null` if not present in the manifest.
 
 ### Example
 
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, ScrollView, StyleSheet } from 'react-native';
-import { VerifiableFile, type CaptureMetadata } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile, type CaptureMetadata } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function MetadataDisplayScreen() {
@@ -1616,6 +1626,7 @@ function MetadataDisplayScreen() {
 * For photos, `parameters` is of type `PhotoMetadataInfo`
 * For videos, `parameters` is of type `VideoMetadataInfo`
 * All timestamps are in ISO 8601 format
+* If a non-default [film style](/sdk/capture/types#camerafilmstyle) was applied at capture time, `parameters.filmStyle` contains the style name, source, and full recipe (see [`FilmStyleInfo`](/sdk/verify-react-native/types#filmstyleinfo))
 
 
 ## dataHash
@@ -1625,7 +1636,7 @@ Returns the file's content hash as recorded in the active C2PA manifest. This ha
 ### Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const hash = verifiable.dataHash();
@@ -1642,7 +1653,7 @@ console.log('Content hash:', hash);
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function HashDisplayScreen() {
@@ -1703,7 +1714,7 @@ Capture metadata extracted from the C2PA manifest. Contains device info and came
 
 **Used by:**
 
-* [`VerifiableFile.captureMetadata()`](/sdk/verify/captureMetadata) - Returns capture metadata from the C2PA manifest
+* [`VerifiableFile.captureMetadata()`](/sdk/verify-react-native/captureMetadata) - Returns capture metadata from the C2PA manifest
 
 ### PhotoMetadataInfo
 
@@ -1721,6 +1732,7 @@ interface PhotoMetadataInfo {
   focalLength: number;                // Focal length in millimeters
   authenticityData: AuthenticityData; // Device security status
   depthData?: DepthData;              // Depth map information (optional)
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
 }
 ```
 
@@ -1746,6 +1758,7 @@ interface VideoMetadataInfo {
   audioSampleRate?: number;           // Audio sample rate in Hz (optional)
   audioChannels?: number;             // Number of audio channels (optional)
   authenticityData: AuthenticityData; // Device security status
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
 }
 ```
 
@@ -1761,7 +1774,7 @@ interface ManifestInterface {
 }
 ```
 
-Interface representing the active C2PA manifest extracted from a file. This is the underlying C2PA manifest object from the `@succinctlabs/react-native-zcam1-c2pa` package.
+Interface representing the active C2PA manifest extracted from a file. This is the underlying C2PA manifest object from the `@succinctlabs/react-native-zcam1` package.
 
 ### AuthenticityData
 
@@ -1803,6 +1816,24 @@ interface DepthDataStatistics {
 
 Statistical information about depth values in a depth map.
 
+### FilmStyleInfo
+
+```typescript
+interface FilmStyleInfo {
+  name: string;    // Film style name (e.g., "mellow", "nostalgic", "bw", or a custom name)
+  source: string;  // How the style was defined: "builtin", "override", or "custom"
+  recipe: string;  // JSON-encoded array of FilmStyleEffect objects applied at capture
+}
+```
+
+Film style (filter) information recorded at capture time. Present when a non-default film style was applied.
+
+* **`builtin`** — A standard preset (`mellow`, `nostalgic`, `bw`) used without modification.
+* **`override`** — A built-in preset whose recipe was overridden via `filmStyleOverrides`.
+* **`custom`** — An app-defined style registered via `customFilmStyles`.
+
+The `recipe` field is a JSON string that can be parsed into a [`FilmStyleRecipe`](/sdk/capture/types#filmstylerecipe) (an array of [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) objects).
+
 ### APPLE\_ROOT\_CERT
 
 ```typescript
@@ -1819,7 +1850,7 @@ Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryp
 ### Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 
@@ -1847,7 +1878,7 @@ Whether to verify against production App Attest environment. Use `false` for dev
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function BindingsVerificationScreen() {
@@ -1897,7 +1928,7 @@ Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. C
 ### Usage
 
 ```tsx
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 
 const verifiable = new VerifiableFile(photoPath);
 const appId = process.env.EXPO_PUBLIC_APP_ID!;
@@ -1926,7 +1957,7 @@ The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Mu
 ```tsx
 import { useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import { VerifiableFile } from '@succinctlabs/react-native-zcam1-verify';
+import { VerifiableFile } from '@succinctlabs/react-native-zcam1';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 function ProofVerificationScreen() {
@@ -1970,6 +2001,781 @@ function ProofVerificationScreen() {
 * Public inputs include the photo hash, app ID, and Apple root certificate
 
 
+## VerifiableBuffer
+
+Class for verifying C2PA manifests and ZK proofs in Node.js. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+
+### Usage
+
+```ts
+import { VerifiableBuffer } from "@succinctlabs/zcam1-verify";
+import { readFileSync } from "node:fs";
+
+const buffer = readFileSync(filePath);
+
+const verifiable = new VerifiableBuffer(buffer, "image/jpeg");
+
+// Verify hardware-backed bindings (App Attest)
+const bindingsResult = await verifiable.verifyBindings(false);
+
+// Verify zero-knowledge proof
+const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+
+// Get capture metadata
+const metadataResult = await verifiable.captureMetadata();
+```
+
+### Constructor
+
+#### new VerifiableBuffer(buffer, format)
+
+Creates a [`VerifiableBuffer`](/sdk/verify/VerifiableBuffer) instance by extracting the C2PA manifest from the file.
+
+#### buffer (required)
+
+* **Type:** `Buffer`
+
+The file data as a Node.js Buffer
+
+#### type (required)
+
+* **Type:** `string`
+  The MIME type of the file (e.g. "image/jpeg")
+
+### Methods
+
+#### verifyBindings(production)
+
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify/verifyBindings).
+
+#### verifyProof(appId)
+
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify/verifyProof).
+
+#### dataHash()
+
+Computes the content hash of the file. See [`dataHash`](/sdk/verify/dataHash).
+
+#### captureMetadata()
+
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify/captureMetadata).
+
+#### authenticityStatus()
+
+Determines the authenticity status of the file. See [`authenticityStatus`](/sdk/verify/authenticityStatus).
+
+#### c2paReader()
+
+Returns the underlying C2PA Reader. See [`c2paReader`](/sdk/verify/c2paReader).
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+
+  const bindingsResult = await verifiable.verifyBindings(false);
+  const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+  const metadataResult = await verifiable.captureMetadata();
+
+  if (bindingsResult.isOk() && proofResult.isOk()) {
+    console.log("Verified!");
+    if (metadataResult.isOk()) {
+      console.log("Captured:", metadataResult.value.when);
+    }
+  } else {
+    console.log("Verification failed");
+  }
+});
+```
+
+### Notes
+
+* All verification methods return `ResultAsync` from `neverthrow` for error handling
+* [`verifyProof()`](/sdk/verify/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+* Use [`verifyBindings(false)`](/sdk/verify/verifyBindings) for development, `verifyBindings(true)` for production
+
+
+## VerifiableFile
+
+Class for verifying C2PA manifests and ZK proofs in the browser. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+
+// Verify hardware-backed bindings (App Attest)
+const bindingsResult = await verifiable.verifyBindings(false);
+
+// Verify zero-knowledge proof
+const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+
+// Get capture metadata
+const metadataResult = await verifiable.captureMetadata();
+```
+
+### Constructor
+
+#### new VerifiableFile(file)
+
+Creates a [`VerifiableFile`](/sdk/verify/VerifiableFile) instance by extracting the C2PA manifest from the file.
+
+#### file (required)
+
+* **Type:** `File`
+
+The file to verify.
+
+### Methods
+
+#### verifyBindings(production)
+
+Verifies the hardware-backed bindings in the C2PA manifest. See [`verifyBindings`](/sdk/verify/verifyBindings).
+
+#### verifyProof(appId)
+
+Verifies the zero-knowledge proof in the C2PA manifest. See [`verifyProof`](/sdk/verify/verifyProof).
+
+#### dataHash()
+
+Computes the content hash of the file. See [`dataHash`](/sdk/verify/dataHash).
+
+#### captureMetadata()
+
+Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/verify/captureMetadata).
+
+#### authenticityStatus()
+
+Determines the authenticity status of the file. See [`authenticityStatus`](/sdk/verify/authenticityStatus).
+
+#### c2paReader()
+
+Returns the underlying C2PA Reader. See [`c2paReader`](/sdk/verify/c2paReader).
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+
+  const bindingsResult = await verifiable.verifyBindings(false);
+  const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+  const metadataResult = await verifiable.captureMetadata();
+
+  if (bindingsResult.isOk() && proofResult.isOk()) {
+    console.log("Verified!");
+    if (metadataResult.isOk()) {
+      console.log("Captured:", metadataResult.value.when);
+    }
+  } else {
+    console.log("Verification failed");
+  }
+});
+```
+
+### Notes
+
+* All verification methods return `ResultAsync` from `neverthrow` for error handling
+* [`verifyProof()`](/sdk/verify/verifyProof) requires the same `appId` used during [`initCapture()`](/sdk/capture/initCapture)
+* Use [`verifyBindings(false)`](/sdk/verify/verifyBindings) for development, `verifyBindings(true)` for production
+
+
+## authenticityStatus
+
+Determines the authenticity status of the file based on its C2PA manifest. Use this to decide which verification method to call.
+
+### Usage
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const result = await verifiable.authenticityStatus();
+
+if (result.isOk()) {
+  switch (result.value) {
+    case AuthenticityStatus.Bindings:
+      // File has hardware-backed bindings, use verifyBindings()
+      break;
+    case AuthenticityStatus.Proof:
+      // File has a ZK proof, use verifyProof()
+      break;
+    case AuthenticityStatus.InvalidManifest:
+      // Manifest exists but lacks required assertions
+      break;
+  }
+}
+```
+
+### Returns
+
+`ResultAsync<AuthenticityStatus, Error>` - The file's authenticity status:
+
+* `AuthenticityStatus.Bindings` - File contains a bindings assertion
+* `AuthenticityStatus.Proof` - File contains a proof assertion
+* `AuthenticityStatus.InvalidManifest` - Manifest exists but lacks required assertions
+
+Returns an error if no C2PA manifest is found.
+
+### Example
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.authenticityStatus();
+
+  if (result.isErr()) {
+    console.log("No valid C2PA manifest found");
+    return;
+  }
+
+  switch (result.value) {
+    case AuthenticityStatus.Bindings:
+      console.log("File has hardware-backed bindings");
+      break;
+    case AuthenticityStatus.Proof:
+      console.log("File has a ZK proof");
+      break;
+    case AuthenticityStatus.InvalidManifest:
+      console.log("Invalid manifest");
+      break;
+  }
+});
+```
+
+### Notes
+
+* Use this method to determine which verification method to call
+* Files with `succinct.bindings` should be verified with [`verifyBindings()`](/sdk/verify/verifyBindings)
+* Files with `succinct.proof` should be verified with [`verifyProof()`](/sdk/verify/verifyProof)
+
+
+## c2paReader
+
+Returns the underlying C2PA Reader for the file. Use this for direct access to the C2PA manifest store when you need lower-level control.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const result = await verifiable.c2paReader();
+
+if (result.isOk()) {
+  const reader = result.value;
+  const store = reader.manifestStore();
+  console.log("Active manifest:", store.active_manifest);
+}
+```
+
+### Returns
+
+`ResultAsync<Reader, Error>` - The C2PA `Reader` instance, or an error if no C2PA metadata is found.
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.c2paReader();
+
+  if (result.isOk()) {
+    const store = result.value.manifestStore();
+    console.log("Manifests:", Object.keys(store.manifests));
+  } else {
+    console.error("No C2PA metadata:", result.error.message);
+  }
+});
+```
+
+### Notes
+
+* The `Reader` type comes from `@contentauth/c2pa-web`
+* Returns an error if the file does not contain C2PA metadata
+* Use higher-level methods like [`verifyBindings()`](/sdk/verify/verifyBindings) or [`verifyProof()`](/sdk/verify/verifyProof) for standard verification workflows
+
+
+## captureMetadata
+
+Returns the capture metadata from the C2PA manifest. Contains device info and camera settings recorded at capture time.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const result = await verifiable.captureMetadata();
+
+if (result.isOk()) {
+  console.log("Captured at:", result.value.when);
+  console.log("Parameters:", result.value.parameters);
+}
+```
+
+### Returns
+
+`ResultAsync<`[`CaptureMetadata`](/sdk/verify/types#capturemetadata)`, Error>` - The capture metadata object, or an error if not present in the manifest.
+
+### Example
+
+```ts
+import { VerifiableFile, type CaptureMetadata } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.captureMetadata();
+
+  if (result.isOk()) {
+    const metadata = result.value;
+    console.log("Captured:", new Date(metadata.when).toLocaleString());
+    console.log("Parameters:", JSON.stringify(metadata.parameters, null, 2));
+  } else {
+    console.error("Error:", result.error.message);
+  }
+});
+```
+
+### Notes
+
+* Returns an error if the C2PA manifest doesn't contain capture metadata
+* The `parameters` field contains detailed device and camera information
+* For photos, `parameters` is of type `PhotoMetadataInfo`
+* For videos, `parameters` is of type `VideoMetadataInfo`
+* All timestamps are in ISO 8601 format
+
+
+## dataHash
+
+Computes the content hash of the file. This hash is used as a public input to the zero-knowledge proof.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const hash: Uint8Array = await verifiable.dataHash();
+
+console.log("Content hash:", hash);
+```
+
+### Returns
+
+`Promise<Uint8Array>` - The file's content hash as a `Uint8Array`.
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const hash = await verifiable.dataHash();
+
+  console.log("Hash:", Array.from(hash).map(b => b.toString(16).padStart(2, "0")).join(""));
+});
+```
+
+### Notes
+
+* The hash is computed from the file's actual content
+* This hash is used as a public input when verifying the zero-knowledge proof
+* Computed lazily on first access and cached for subsequent calls
+
+
+## Verify Web/Node.js SDK
+
+The Verify SDK (`@succinctlabs/zcam1-verify`) validates the authenticity of C2PA-signed photos and videos in the browser and Node.js.
+
+### Installation
+
+```bash
+npm i @succinctlabs/zcam1-verify
+```
+
+### Core Concepts
+
+The Verify Web/Node.js SDK:
+
+* Extracts C2PA manifests from photos and videos
+* Computes the file content hash
+* Validates bindings (Apple App Attest signatures) for files with `succinct.bindings`
+* Validates ZK proofs against a pinned Apple Root CA for files with `succinct.proof`
+* Extracts capture metadata (device info, camera settings, etc.)
+* Confirms the file was captured on a genuine iOS device
+
+### API Reference
+
+#### Classes
+
+* [VerifiableFile](./VerifiableFile) — Main class for verifying C2PA-signed files in the browser
+* [VerifiableBuffer](./VerifiableBuffer) — Main class for verifying C2PA-signed files in Node.js
+
+#### Methods
+
+* [authenticityStatus](./authenticityStatus) — Determine the authenticity status of a file
+* [verifyBindings](./verifyBindings) — Verify the hardware-backed Apple App Attest signature
+* [verifyProof](./verifyProof) — Verify the zero-knowledge proof
+* [captureMetadata](./captureMetadata) — Extract capture metadata (device info, camera settings)
+* [c2paReader](./c2paReader) — Access the underlying C2PA reader
+* [dataHash](./dataHash) — Compute the content hash of a file
+
+#### Types
+
+* [Types](./types) — Type definitions (AuthenticityStatus, CaptureMetadata, etc.)
+
+### Complete Example
+
+```ts
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+
+  const statusResult = await verifiable.authenticityStatus();
+
+  if (statusResult.isErr()) {
+    console.error("No valid manifest found");
+    return;
+  }
+
+  const status = statusResult.value;
+
+  if (status === AuthenticityStatus.Bindings) {
+    const bindingsResult = await verifiable.verifyBindings(true);
+    console.log("Bindings valid:", bindingsResult.isOk() && bindingsResult.value);
+  } else if (status === AuthenticityStatus.Proof) {
+    const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+    console.log("Proof valid:", proofResult.isOk() && proofResult.value);
+  } else {
+    console.log("Invalid manifest");
+  }
+
+  const metadataResult = await verifiable.captureMetadata();
+  if (metadataResult.isOk()) {
+    console.log("Captured at:", metadataResult.value.when);
+    console.log("Parameters:", metadataResult.value.parameters);
+  }
+});
+```
+
+### What Verification Checks
+
+| Check              | What It Validates                                                    | Use Case                                                     |
+| ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the file hash | For files with `succinct.bindings` (before proof generation) |
+| `verifyProof()`    | ZK proof is valid and chains to the Apple Root CA                    | For files with `succinct.proof` (after proof generation)     |
+
+**Verification Flow:**
+
+For files with `succinct.bindings`:
+
+1. Call `verifyBindings()` to verify the Apple App Attest signature
+
+For files with `succinct.proof`:
+
+1. Call `verifyProof()` to verify the ZK proof
+
+### Notes
+
+* All verification methods use `ResultAsync` from `neverthrow` for error handling
+* Use `verifyBindings()` for files with `succinct.bindings` (before proof generation)
+* Use `verifyProof()` for files with `succinct.proof` (after proof generation)
+* Files with only `succinct.bindings` will fail `verifyProof()` (they haven't been proven yet)
+* The Apple Root CA is pinned in the SDK; proofs must chain to this root
+* `captureMetadata()` provides access to device and camera settings recorded at capture time
+
+
+## Verify Browser Types
+
+Type definitions used throughout the Verify Browser SDK.
+
+### CaptureMetadata
+
+```typescript
+interface CaptureMetadata {
+  when: string;                                      // ISO 8601 timestamp of when the photo/video was captured
+  parameters: PhotoMetadataInfo | VideoMetadataInfo; // Detailed camera settings and device information
+}
+```
+
+Capture metadata extracted from the C2PA manifest. Contains device info and camera settings at capture time.
+
+**Used by:**
+
+* [`VerifiableFile.captureMetadata()`](/sdk/verify/captureMetadata) - Returns capture metadata from the C2PA manifest
+
+### PhotoMetadataInfo
+
+```typescript
+interface PhotoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  xResolution: number;                // Horizontal resolution in pixels
+  yResolution: number;                // Vertical resolution in pixels
+  orientation: number;                // EXIF orientation value
+  iso: string;                        // ISO sensitivity setting
+  exposureTime: number;               // Exposure time in microseconds
+  depthOfField: number;               // Depth of field in millimeters
+  focalLength: number;                // Focal length in millimeters
+  authenticityData: AuthenticityData; // Device security status
+  depthData?: DepthData;              // Depth map information (optional)
+}
+```
+
+Detailed metadata for photos captured with the camera.
+
+### VideoMetadataInfo
+
+```typescript
+interface VideoMetadataInfo {
+  deviceMake: string;                 // Device manufacturer (e.g., "Apple")
+  deviceModel: string;                // Device model (e.g., "iPhone 15 Pro")
+  softwareVersion: string;            // iOS version (e.g., "17.4.1")
+  format: string;                     // Video container format (e.g., "mov")
+  hasAudio: boolean;                  // Whether the video includes an audio track
+  durationSeconds: number;            // Video duration in seconds
+  fileSizeBytes: number;              // File size in bytes
+  width: number;                      // Video width in pixels
+  height: number;                     // Video height in pixels
+  rotationDegrees: number;            // Video rotation (0, 90, 180, or 270)
+  frameRate: number;                  // Video frame rate (fps)
+  videoCodec?: string;                // Video codec identifier (optional)
+  audioCodec?: string;                // Audio codec identifier (optional)
+  audioSampleRate?: number;           // Audio sample rate in Hz (optional)
+  audioChannels?: number;             // Number of audio channels (optional)
+  authenticityData: AuthenticityData; // Device security status
+}
+```
+
+Detailed metadata for videos recorded with the camera.
+
+### AuthenticityStatus
+
+```typescript
+enum AuthenticityStatus {
+  Unknown,
+  NoManifest,
+  InvalidManifest,
+  Bindings,
+  Proof,
+}
+```
+
+Enum representing the authenticity status of a file based on its C2PA manifest contents.
+
+**Used by:**
+
+* [`VerifiableFile.authenticityStatus()`](/sdk/verify/authenticityStatus) - Determines the file's authenticity status
+
+### AuthenticityData
+
+```typescript
+interface AuthenticityData {
+  isJailBroken: boolean;              // Whether the device was jailbroken at capture time
+  isLocationSpoofingAvailable: boolean; // Whether location spoofing was detected
+}
+```
+
+Device security status information captured at the time of photo/video creation.
+
+### DepthData
+
+```typescript
+interface DepthData {
+  width: number;                      // Width of the depth map in pixels
+  height: number;                     // Height of the depth map in pixels
+  pixelFormat: string;                // Pixel format (e.g., "kCVPixelFormatType_DepthFloat32")
+  statistics: DepthDataStatistics;    // Statistical information about depth values
+  accuracy: string;                   // Accuracy level (e.g., "relative", "absolute")
+}
+```
+
+Depth map information captured alongside a photo (only present in photos captured with depth data enabled).
+
+### DepthDataStatistics
+
+```typescript
+interface DepthDataStatistics {
+  min: string;             // Minimum depth value
+  max: string;             // Maximum depth value
+  mean: string;            // Mean depth value
+  stdDev: string;          // Standard deviation
+  validPixelCount: number; // Number of pixels with valid depth data
+  sampleStride: number;    // Stride used when sampling for statistics
+}
+```
+
+Statistical information about depth values in a depth map.
+
+
+## verifyBindings
+
+Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryptographic integrity of the hardware-backed assertion.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+
+// For development/testing
+const result = await verifiable.verifyBindings(false);
+
+// For production
+const result = await verifiable.verifyBindings(true);
+```
+
+### Parameters
+
+#### production (required)
+
+* **Type:** `boolean`
+
+Whether to verify against production App Attest environment. Use `false` for development/testing, `true` for production.
+
+### Returns
+
+`ResultAsync<boolean, Error>` - `true` if bindings are valid, or an error.
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const result = await verifiable.verifyBindings(false); // Use false for dev
+
+  if (result.isOk() && result.value) {
+    console.log("Hardware bindings verified!");
+  } else {
+    console.log("Bindings verification failed");
+  }
+});
+```
+
+### Notes
+
+* Verifies the App Attest attestation embedded in the C2PA manifest
+* The `production` parameter must match the environment where the file was captured
+* Files captured with [`ZCamera`](/sdk/capture/ZCamera) include hardware-backed bindings automatically
+* Bindings verify the authenticity of the device and key material used during capture
+
+
+## verifyProof
+
+Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
+
+### Usage
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const verifiable = new VerifiableFile(file);
+const appId = "TEAM_ID.com.example.app";
+
+const result = await verifiable.verifyProof(appId);
+```
+
+### Parameters
+
+#### appId (required)
+
+* **Type:** `string`
+
+The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Must match the `appId` used during [`initCapture()`](/sdk/capture/initCapture).
+
+### Returns
+
+`ResultAsync<boolean, Error>` - `true` if the proof is valid, `false` otherwise.
+
+### Example
+
+```ts
+import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+
+const input = document.querySelector<HTMLInputElement>("#file-input")!;
+
+input.addEventListener("change", async () => {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const verifiable = new VerifiableFile(file);
+  const appId = "TEAM_ID.com.example.app";
+  const result = await verifiable.verifyProof(appId);
+
+  if (result.isOk() && result.value) {
+    console.log("Zero-knowledge proof verified!");
+  } else {
+    console.log("Proof verification failed");
+  }
+});
+```
+
+### Notes
+
+* Requires the file to have been proven using the [Prove SDK](/sdk/prove)
+* The `appId` parameter must match the value used during [`initCapture()`](/sdk/capture/initCapture)
+* Verifies the Groth16 proof using the embedded verification key hash
+* Public inputs include the file hash, app ID, and Apple root certificate
+
+
 ## ProverProvider
 
 React context provider that initializes the proving client for ZK proof generation.
@@ -1977,7 +2783,7 @@ React context provider that initializes the proving client for ZK proof generati
 ### Usage
 
 ```tsx
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 
 function App() {
   return (
@@ -1998,9 +2804,10 @@ Configuration for the proving client.
 
 ```tsx
 type Settings = {
-  production: boolean;          // false for dev, true for production  
-  privateKey?: string;          // SP1 prover network private key (optional)
-  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+  production: boolean;                                   // false for dev, true for production
+  privateKey?: string;                                   // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain;  // Certificate chain (optional)
+  proverNetworkMode?: ProverNetworkMode;                 // Prover network mode (optional, defaults to Mainnet)
 }
 ```
 
@@ -2009,6 +2816,7 @@ type Settings = {
 * **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
 * **`privateKey`** (`string`, optional) - SP1 prover network private key. If not provided, uses a mock prover
 * **`certChain`** (`SelfSignedCertChain | ExistingCertChain`, optional) - Certificate chain for C2PA signing. If not provided, generates self-signed certificate
+* **`proverNetworkMode`** (`ProverNetworkMode`, optional) - Selects the prover network: `Mainnet` (auction-based) or `Reserved` (reserved capacity). Defaults to `Mainnet`
 
 See [Settings type reference](/sdk/prove/types#settings) for details.
 
@@ -2029,7 +2837,7 @@ Callback when a proof request cannot be fulfilled.
 ### Example
 
 ```tsx
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 import { FileSystem, Dirs } from "react-native-file-access";
 
 function App() {
@@ -2112,7 +2920,7 @@ Path to the new photo with `succinct.proof` embedded in its C2PA manifest.
 
 ```tsx
 import { useEffect, useState } from "react";
-import { useProver, useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProver, useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProvePhoto({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();
@@ -2264,7 +3072,7 @@ Request ID for polling proof status with `getProofStatus()` or `useProofRequestS
 ```tsx
 import { useState } from "react";
 import { Button, Text } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();
@@ -2309,9 +3117,10 @@ Configuration for the proving client.
 
 ```tsx
 type Settings = {
-  production: boolean;          // false for dev, true for production
-  privateKey?: string;          // SP1 prover network private key (optional)
-  certChain?: SelfSignedCertChain | ExistingCertChain; // Certificate chain (optional)
+  production: boolean;                                   // false for dev, true for production
+  privateKey?: string;                                   // SP1 prover network private key (optional)
+  certChain?: SelfSignedCertChain | ExistingCertChain;  // Certificate chain (optional)
+  proverNetworkMode?: ProverNetworkMode;                 // Prover network mode (optional, defaults to Mainnet)
 }
 ```
 
@@ -2456,6 +3265,23 @@ enum FulfillmentStatus {
 
 ***
 
+### ProverNetworkMode
+
+Enum selecting which prover network to connect to.
+
+```tsx
+enum ProverNetworkMode {
+  Mainnet,   // Auction-based proving on the mainnet network
+  Reserved,  // Reserved capacity network for hosted/reserved proving
+}
+```
+
+**Used by:**
+
+* [`Settings`](#settings) - `proverNetworkMode` field (defaults to `Mainnet`)
+
+***
+
 ### SelfSignedCertChain
 
 Self-signed certificate chain configuration (re-exported from C2PA package).
@@ -2515,7 +3341,7 @@ Hook to poll the status of a specific proof request.
 ### Usage
 
 ```tsx
-import { useProofRequestStatus, FulfillmentStatus } from "react-native-zcam1-prove";
+import { useProofRequestStatus, FulfillmentStatus } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProofStatus({ requestId }: { requestId: string }) {
   const { proof, fulfillementStatus, error } = useProofRequestStatus(requestId);
@@ -2566,7 +3392,7 @@ import {
   useProver,
   useProofRequestStatus,
   FulfillmentStatus
-} from "react-native-zcam1-prove";
+} from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveWithProgress({ photoUri }: { photoUri: string }) {
   const { provingClient } = useProver();
@@ -2643,7 +3469,7 @@ Hook to access the proving client from within `ProverProvider`.
 ### Usage
 
 ```tsx
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 
 function ProveButton() {
   const { provingClient, isInitializing, error } = useProver();
@@ -2681,7 +3507,7 @@ See [ProverContextValue type reference](/sdk/prove/types#provercontextvalue) for
 ```tsx
 import { useState } from "react";
 import { Button, Text, ActivityIndicator } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { launchImageLibrary } from "react-native-image-picker";
 
 function ProveScreen() {
@@ -2763,7 +3589,7 @@ Path to the new photo with `succinct.proof` embedded.
 ```tsx
 import { useState } from "react";
 import { Button, Text, ActivityIndicator } from "react-native";
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { launchImageLibrary } from "react-native-image-picker";
 
 function QuickProveScreen() {
@@ -2825,7 +3651,7 @@ React component that displays a grid of images with authenticity status badges.
 ### Usage
 
 ```tsx
-import { ZImagePicker, privateDirectory, AuthenticityStatus } from "react-native-zcam1-picker";
+import { ZImagePicker, privateDirectory, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 function PickerScreen() {
   return (
@@ -2937,7 +3763,7 @@ Function to render a selection overlay in multi-select mode.
 ### Examples
 
 ```tsx
-import { ZImagePicker, privateDirectory } from "react-native-zcam1-picker";
+import { ZImagePicker, privateDirectory } from "@succinctlabs/react-native-zcam1";
 
 <ZImagePicker
   source={{ path: privateDirectory() }}
@@ -2961,7 +3787,7 @@ Check the authenticity status of a photo by analyzing its C2PA manifest.
 ### Usage
 
 ```tsx
-import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+import { authenticityStatus, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 const status = await authenticityStatus(photoUri);
 
@@ -2997,7 +3823,7 @@ enum AuthenticityStatus {
 ```tsx
 import { useState } from "react";
 import { Button, Text } from "react-native";
-import { authenticityStatus, AuthenticityStatus } from "react-native-zcam1-picker";
+import { authenticityStatus, AuthenticityStatus } from "@succinctlabs/react-native-zcam1";
 
 function PhotoStatus({ photoUri }: { photoUri: string }) {
   const [status, setStatus] = useState<AuthenticityStatus>();
@@ -3036,7 +3862,7 @@ function PhotoStatus({ photoUri }: { photoUri: string }) {
 * Quickly checks for presence of `succinct.bindings` or `succinct.proof`
 * Does not perform full cryptographic verification (use `verify()` for that)
 * Useful for UI indicators and filtering
-* Re-exports from `@succinctlabs/react-native-zcam1-c2pa`
+* Re-exports from `@succinctlabs/react-native-zcam1`
 
 
 ## privateDirectory
@@ -3046,7 +3872,7 @@ Returns the path to the app's private document directory. This is the recommende
 ### Usage
 
 ```tsx
-import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
+import { privateDirectory } from '@succinctlabs/react-native-zcam1';
 
 const privatePath = privateDirectory();
 console.log('Private directory:', privatePath);
@@ -3059,8 +3885,8 @@ console.log('Private directory:', privatePath);
 ### Example
 
 ```tsx
-import { privateDirectory } from '@succinctlabs/react-native-zcam1-picker';
-import { ZImagePicker } from '@succinctlabs/react-native-zcam1-picker';
+import { privateDirectory } from '@succinctlabs/react-native-zcam1';
+import { ZImagePicker } from '@succinctlabs/react-native-zcam1';
 
 function GalleryScreen() {
   const privatePath = privateDirectory();
@@ -3091,7 +3917,7 @@ React component that renders a native iOS camera preview with hardware-backed C2
 
 ```tsx
 import { useRef } from "react";
-import { ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+import { ZCamera, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }: { captureInfo: CaptureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3164,12 +3990,54 @@ Whether torch (flashlight) is enabled during preview.
 
 Exposure compensation in EV units.
 
-#### filter
+#### filmStyle
 
-* **Type:** [`CameraFilter`](/sdk/capture/types#camerafilter)
+* **Type:** [`CameraFilmStyle`](/sdk/capture/types#camerafilmstyle) | `string`
 * **Default:** `"normal"`
 
-Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vivid"`, `"warm"`, `"cool"`.
+Film style preset to apply to camera. You can specify a built-in option or a custom film style you defined in `customFilmStyles`.
+
+#### filmStyleOverrides
+
+* **Type:** `Partial<Record<CameraFilmStyle, FilmStyleRecipe>>`
+* **Optional**
+
+Override built-in film style presets with custom recipes. When a preset name is used with `filmStyle` prop and an override exists, the custom recipe is applied instead.
+
+```tsx
+<ZCamera
+  filmStyle="mellow"
+  filmStyleOverrides={{
+    mellow: [
+      { type: "whiteBalance", config: { temperature: 7000, tint: 30 } },
+      { type: "saturation", value: 1.3 },
+      { type: "contrast", value: 0.85 },
+    ]
+  }}
+/>
+```
+
+#### customFilmStyles
+
+* **Type:** `Record<string, FilmStyleRecipe>`
+* **Optional**
+
+Define additional custom film styles by name. Reference them using the `filmStyle` prop.
+
+```tsx
+<ZCamera
+  filmStyle={"myVintage" as CameraFilmStyle}
+  customFilmStyles={{
+    myVintage: [
+      { type: "whiteBalance", config: { temperature: 6800 } },
+      { type: "vibrance", value: 0.6 },
+      { type: "highlightShadow", config: { highlights: 0.2, shadows: 0.5 } },
+    ]
+  }}
+/>
+```
+
+See [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) for all available effect types.
 
 #### depthEnabled
 
@@ -3177,6 +4045,25 @@ Filter preset to apply to preview and captured photos. Options: `"normal"`, `"vi
 * **Default:** `false`
 
 Enable depth data capture at session level. When `true`, depth data can be captured but zoom may be restricted on dual-camera devices.
+
+#### onOrientationChange
+
+* **Type:** `(orientation: DeviceOrientation) => void`
+* **Optional**
+
+Callback fired when the device physical orientation changes. Uses accelerometer data, so it works even when iOS orientation lock is enabled. Useful for rotating UI controls to match the device orientation.
+
+```tsx
+<ZCamera
+  captureInfo={captureInfo}
+  onOrientationChange={(orientation) => {
+    // orientation: "portrait" | "landscapeLeft" | "landscapeRight" | "portraitUpsideDown"
+    console.log("Device orientation:", orientation);
+  }}
+/>
+```
+
+See [`DeviceOrientation`](/sdk/capture/types#deviceorientation) for the type definition.
 
 #### certChain
 
@@ -3312,7 +4199,7 @@ const ranges = await camera.current?.getDepthSupportedZoomRanges();
 import { useEffect, useRef, useState } from "react";
 import { View, Button, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { initCapture, ZCamera, type CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 export function CaptureScreen() {
   const camera = useRef<ZCamera>(null);
@@ -3338,7 +4225,7 @@ export function CaptureScreen() {
         ref={camera} 
         captureInfo={captureInfo} 
         style={styles.camera}
-        filter="vivid"
+        filmStyle="mellow"
         zoom={2.0}
       />
       <View style={styles.controls}>
@@ -3388,7 +4275,7 @@ Normalized y coordinate (0-1, top to bottom).
 
 ```tsx
 import { TouchableWithoutFeedback, View } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3441,7 +4328,7 @@ Maximum zoom factor, capped at 15x for better user experience.
 
 ```tsx
 import { Slider } from "@react-native-community/slider";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraWithZoomSlider({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3500,7 +4387,7 @@ Minimum zoom factor. For devices with ultra-wide lens, this is typically `1.0` (
 
 ```tsx
 import { useEffect, useState } from "react";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraScreen({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3590,7 +4477,7 @@ Returns `[]` - No lens switching, all zoom is digital.
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Slider } from 'react-native';
-import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+import { ZCamera } from '@succinctlabs/react-native-zcam1';
 
 function CameraWithZoomIndicators({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3659,7 +4546,7 @@ function CameraWithZoomIndicators({ captureInfo }) {
 ```tsx
 import { useRef, useState } from 'react';
 import { Button, View } from 'react-native';
-import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+import { ZCamera } from '@succinctlabs/react-native-zcam1';
 
 function CameraWithLensButtons({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3723,7 +4610,7 @@ const hasUltraWide = await camera.current?.hasUltraWideCamera();
 ```tsx
 import { useEffect, useState } from "react";
 import { Text } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraInfo({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3774,7 +4661,7 @@ Initializes the device by generating hardware-backed keys and App Attest attesta
 ### Usage
 
 ```tsx
-import { initCapture } from "@succinctlabs/react-native-zcam1-capture";
+import { initCapture } from "@succinctlabs/react-native-zcam1";
 
 const captureInfo = await initCapture({
   appId: "TEAM_ID.com.example.app",
@@ -3824,7 +4711,7 @@ Pass this to [`ZCamera`](/sdk/capture/ZCamera) as the `captureInfo` prop. See [C
 
 ```tsx
 import { useEffect, useState } from "react";
-import { initCapture, type CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, type CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 function App() {
   const [captureInfo, setCaptureInfo] = useState<CaptureInfo>();
@@ -3873,7 +4760,7 @@ const supportsDepth = await camera.current?.isDepthSupported();
 ```tsx
 import { useEffect, useState } from "react";
 import { Button, Text } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraWithDepth({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -3946,7 +4833,7 @@ Resolves when the preview is dismissed.
 
 ```tsx
 import { Button } from "react-native";
-import { previewFile } from "react-native-zcam1-capture";
+import { previewFile } from "@succinctlabs/react-native-zcam1";
 
 function PhotoViewer({ photoPath }: { photoPath: string }) {
   const handlePreview = async () => {
@@ -4003,7 +4890,7 @@ Device zoom factor. Use `getMinZoom()` and `getMaxZoom()` to determine valid ran
 ```tsx
 import { useRef } from "react";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 
 function CameraWithPinchZoom({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -4078,7 +4965,7 @@ type StartNativeVideoRecordingResult = {
 ```tsx
 import { useRef, useState } from 'react';
 import { View, Button, Text } from 'react-native';
-import { ZCamera } from '@succinctlabs/react-native-zcam1-capture';
+import { ZCamera } from '@succinctlabs/react-native-zcam1';
 
 function VideoRecorder({ captureInfo }) {
   const camera = useRef<ZCamera>(null);
@@ -4258,7 +5145,7 @@ The `path` property contains a C2PA manifest with hardware-backed attestation re
 ```tsx
 import { useRef } from "react";
 import { Button } from "react-native";
-import { ZCamera } from "react-native-zcam1-capture";
+import { ZCamera } from "@succinctlabs/react-native-zcam1";
 import { FileSystem, Dirs } from "react-native-file-access";
 
 function CameraScreen({ captureInfo }) {
@@ -4376,22 +5263,92 @@ type TakePhotoOptions = {
 
 ***
 
-### CameraFilter
+### CameraFilmStyle
 
-Filter preset for camera preview and captured photos.
+Film style preset for camera. When a non-default film style is applied, the style name, source, and full recipe are embedded in the C2PA metadata (see [`FilmStyleInfo`](/sdk/verify-react-native/types#filmstyleinfo)).
 
 ```tsx
-type CameraFilter = "normal" | "vivid" | "warm" | "cool"
+type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw"
 ```
-
-* **`normal`** - No filter (default)
-* **`vivid`** - Enhanced saturation and vibrance
-* **`warm`** - Warmer color temperature (orange/yellow tones)
-* **`cool`** - Cooler color temperature (blue tones)
 
 **Used by:**
 
-* [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filter` prop
+* [`ZCamera`](/sdk/capture/ZCamera) - Accepts as `filmStyle` prop
+
+***
+
+### FilmStyleEffect
+
+Individual film style effect that can be combined into a custom recipe.
+
+```tsx
+type FilmStyleEffect =
+  | { type: "whiteBalance"; config: WhiteBalanceConfig }
+  | { type: "saturation"; value: number }
+  | { type: "contrast"; value: number }
+  | { type: "brightness"; value: number }
+  | { type: "hue"; value: number }
+  | { type: "vibrance"; value: number }
+  | { type: "highlightShadow"; config: HighlightShadowConfig }
+  | { type: "monochrome"; config: MonochromeConfig }
+```
+
+**Used by:**
+
+* [`FilmStyleRecipe`](#filmstylerecipe) - Array of effects
+
+***
+
+### FilmStyleRecipe
+
+An ordered array of film style effects applied sequentially to produce the final look.
+
+```tsx
+type FilmStyleRecipe = FilmStyleEffect[]
+```
+
+**Used by:**
+
+* [`ZCamera`](/sdk/capture/ZCamera) - In `filmStyleOverrides` and `customFilmStyles` props
+
+***
+
+### WhiteBalanceConfig
+
+Configuration for white balance adjustment.
+
+```tsx
+type WhiteBalanceConfig = {
+  temperature: number;  // Color temperature in Kelvin (e.g., 5500 daylight, 6500 cloudy)
+  tint?: number;        // Tint adjustment (-100 to 100, green to magenta). Default: 0
+}
+```
+
+***
+
+### HighlightShadowConfig
+
+Configuration for highlight and shadow adjustments.
+
+```tsx
+type HighlightShadowConfig = {
+  highlights: number;  // Highlight adjustment (0 = no change, negative = reduce, positive = boost)
+  shadows: number;     // Shadow adjustment (0 = no change, positive = lift shadows)
+}
+```
+
+***
+
+### MonochromeConfig
+
+Configuration for monochrome (black & white) film style.
+
+```tsx
+type MonochromeConfig = {
+  intensity: number;                            // 0 = none, 1 = full B&W
+  color?: { r: number; g: number; b: number };  // Optional tint color (0-1 range)
+}
+```
 
 ***
 
@@ -4425,19 +5382,33 @@ type AspectRatio = "4:3" | "16:9" | "1:1"
 
 ### Orientation
 
-Crop orientation for captured photos.
+Orientation for captured photos and videos. Uses accelerometer-based detection that works even when iOS orientation lock is enabled.
 
 ```tsx
 type Orientation = "auto" | "portrait" | "landscape"
 ```
 
-* **`auto`** - Automatically determines orientation based on device orientation
-* **`portrait`** - Force portrait crop
-* **`landscape`** - Force landscape crop
+* **`auto`** - Automatically determines orientation from the device accelerometer (portrait or landscape depending on how the device is held)
+* **`portrait`** - Force portrait orientation
+* **`landscape`** - Force landscape orientation (auto-detects left/right from the accelerometer)
 
 **Used by:**
 
 * [`takePhoto()`](/sdk/capture/takePhoto) - In `TakePhotoOptions`
+
+***
+
+### DeviceOrientation
+
+Physical device orientation reported by the accelerometer. Emitted via the [`onOrientationChange`](/sdk/capture/ZCamera#onorientationchange) callback on `ZCamera`.
+
+```tsx
+type DeviceOrientation = "portrait" | "portraitUpsideDown" | "landscapeLeft" | "landscapeRight"
+```
+
+**Used by:**
+
+* [`ZCamera`](/sdk/capture/ZCamera) - `onOrientationChange` callback parameter
 
 ***
 
@@ -4800,24 +5771,21 @@ Xcode is required for iOS development. Install it from the Mac App Store.
 
 ### Installing Packages
 
-The ZCAM SDK is divided into standalone packages. Install only what you need:
+The ZCAM SDK is available as a single package:
 
 ```bash
-# Full flow (capture, prove, verify)
-npm i react-native-zcam1-capture react-native-zcam1-prove react-native-zcam1-verify
+npm i @succinctlabs/react-native-zcam1
 
 # Install native dependencies
 cd ios && pod install
 ```
 
-Individual packages:
+The package provides the following functionality:
 
-| Package                      | Purpose                               |
-| ---------------------------- | ------------------------------------- |
-| `react-native-zcam1-capture` | Take photos with C2PA manifests       |
-| `react-native-zcam1-prove`   | Generate ZK proofs for photos         |
-| `react-native-zcam1-verify`  | Verify photo authenticity             |
-| `react-native-zcam1-picker`  | Image picker with authenticity badges |
+| Import path                                | Purpose                                                        |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| `@succinctlabs/react-native-zcam1`         | Camera capture, verification, image picker, and C2PA utilities |
+| `@succinctlabs/react-native-zcam1/proving` | ZK proof generation                                            |
 
 :::warning
 The UniFFI bindings are built during `npm install`. This can take several minutes on first install.
@@ -4872,15 +5840,6 @@ Add these keys to your `Info.plist` (or `app.json` for Expo):
 }
 ```
 
-### Environment Variables
-
-Create a `.env` file with your configuration:
-
-```bash
-EXPO_PUBLIC_APP_ID=<TEAM_ID>.<BUNDLE_IDENTIFIER>
-EXPO_PUBLIC_BACKEND_URL=https://your-backend-url.com
-```
-
 ### Running on Device
 
 App Attest requires a physical iOS device—it does not work in the simulator (the SDK falls back to mock mode for development).
@@ -4908,7 +5867,7 @@ Wrap your app with the `ProverProvider` to enable proof generation:
 
 ```tsx
 // App.tsx or _layout.tsx
-import { ProverProvider } from "react-native-zcam1-prove";
+import { ProverProvider } from "@succinctlabs/react-native-zcam1/proving";
 
 export default function App() {
   return (
@@ -4926,7 +5885,7 @@ Initialize the capture SDK and use the `ZCamera` component:
 ```tsx
 import { useEffect, useRef, useState } from "react";
 import { Button, View } from "react-native";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
+import { initCapture, ZCamera, CaptureInfo } from "@succinctlabs/react-native-zcam1";
 
 export function CaptureScreen() {
   const camera = useRef<ZCamera>(null);
@@ -4965,7 +5924,7 @@ export function CaptureScreen() {
 Use the `useProver` hook to access the proving client:
 
 ```tsx
-import { useProver } from "react-native-zcam1-prove";
+import { useProver } from "@succinctlabs/react-native-zcam1/proving";
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 
 export function ProvePhoto({ photoUri }: { photoUri: string }) {
@@ -4993,16 +5952,16 @@ export function ProvePhoto({ photoUri }: { photoUri: string }) {
 Use the `VerifiableFile` class to verify authenticity:
 
 ```tsx
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export function VerifyPhoto({ photoUri }: { photoUri: string }) {
   const handleVerify = () => {
     const file = new VerifiableFile(photoUri);
+    const appId = process.env.EXPO_PUBLIC_APP_ID!;
 
-    const hashValid = file.verifyHash();
-    const proofValid = file.verifyProof();
+    const proofValid = file.verifyProof(appId);
 
-    if (hashValid && proofValid) {
+    if (proofValid) {
       console.log("Photo is authentic!");
     } else {
       console.log("Verification failed");
@@ -5020,9 +5979,8 @@ Here's a minimal app combining all three steps:
 ```tsx
 import { useState, useRef, useEffect } from "react";
 import { View, Button, Text } from "react-native";
-import { ProverProvider, useProver } from "react-native-zcam1-prove";
-import { initCapture, ZCamera, CaptureInfo } from "react-native-zcam1-capture";
-import { VerifiableFile } from "react-native-zcam1-verify";
+import { ProverProvider, useProver } from "@succinctlabs/react-native-zcam1/proving";
+import { initCapture, ZCamera, CaptureInfo, VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 function MainScreen() {
   const camera = useRef<ZCamera>(null);
@@ -5054,7 +6012,8 @@ function MainScreen() {
   const verify = () => {
     if (!provenPath) return;
     const file = new VerifiableFile(provenPath);
-    const isValid = file.verifyHash() && file.verifyProof();
+    const appId = process.env.EXPO_PUBLIC_APP_ID!;
+    const isValid = file.verifyProof(appId);
     alert(isValid ? "Authentic!" : "Invalid");
   };
 

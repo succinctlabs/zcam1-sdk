@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/initializeTheme.iife.js"></script><link rel="preload" as="image" href="/Succinct_FullLogo_Magenta.svg"/><title>Verifiable News Platform – ZCAM</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><meta property="og:type" content="website"/><meta property="og:title" content="Verifiable News Platform"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/><meta name="twitter:card" content="summary_large_image"/>
-    <script type="module" crossorigin src="/assets/index-_jsy_YyL.js"></script>
+    <script type="module" crossorigin src="/assets/index-CA3QJxQy.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-CxwytKPm.css">
   </head>
   <body>
@@ -28,14 +28,14 @@
 <p class="vocs_Paragraph">The news platform builds a specialized camera app for reporters using the ZCAM SDK:</p>
 <ol class="vocs_List vocs_List_ordered">
 <li class="vocs_ListItem"><strong class="vocs_Strong">Installation</strong>: Setup the SDK using the <a class="vocs_Anchor vocs_Link vocs_Link_accent" href="/getting-started/installation" data-discover="true">installation guide</a></li>
-<li class="vocs_ListItem"><strong class="vocs_Strong">Camera Setup</strong>: Use <code class="vocs_Code">react-native-zcam1-capture</code> to initialize the camera:<!-- -->
+<li class="vocs_ListItem"><strong class="vocs_Strong">Camera Setup</strong>: Use <code class="vocs_Code">@succinctlabs/react-native-zcam1</code> to initialize the camera:<!-- -->
 <ul class="vocs_List vocs_List_unordered">
 <li class="vocs_ListItem">Call <code class="vocs_Code">initCapture()</code> to initialize device keys and attestation</li>
 <li class="vocs_ListItem">Use the <code class="vocs_Code">&lt;ZCamera&gt;</code> component to render the camera preview</li>
 <li class="vocs_ListItem">Call <code class="vocs_Code">takePhoto()</code> to capture a photo with verifiable bindings</li>
 </ul>
 </li>
-<li class="vocs_ListItem"><strong class="vocs_Strong">Proof Generation</strong> (Optional): Use <code class="vocs_Code">react-native-zcam1-prove</code> to generate zero-knowledge proofs:<!-- -->
+<li class="vocs_ListItem"><strong class="vocs_Strong">Proof Generation</strong> (Optional): Use <code class="vocs_Code">@succinctlabs/react-native-zcam1/proving</code> to generate zero-knowledge proofs:<!-- -->
 <ul class="vocs_List vocs_List_unordered">
 <li class="vocs_ListItem">Wrap your app with <code class="vocs_Code">ProverProvider</code> and use the <code class="vocs_Code">useProver()</code> hook</li>
 <li class="vocs_ListItem">Call <code class="vocs_Code">waitAndEmbedProof()</code> to generate and embed the proof, or use <code class="vocs_Code">requestProof()</code> + <code class="vocs_Code">useProofRequestStatus()</code> for progress tracking</li>
@@ -52,10 +52,10 @@
 <li class="vocs_ListItem">The platform can display verification status badges</li>
 </ul>
 </li>
-<li class="vocs_ListItem"><strong class="vocs_Strong">Client-Side Verification</strong>: Integrate <code class="vocs_Code">react-native-zcam1-verify</code> (or web equivalent) to enable verification:<!-- -->
+<li class="vocs_ListItem"><strong class="vocs_Strong">Client-Side Verification</strong>: Integrate <code class="vocs_Code">@succinctlabs/react-native-zcam1</code> (or web equivalent) to enable verification:<!-- -->
 <ul class="vocs_List vocs_List_unordered">
 <li class="vocs_ListItem">Add a &quot;Verify Photo&quot; button for each photo in articles</li>
-<li class="vocs_ListItem">Call <code class="vocs_Code">verifyHash()</code> and <code class="vocs_Code">verifyProof()</code> methods to validate authenticity</li>
+<li class="vocs_ListItem">Call <code class="vocs_Code">verifyBindings()</code> or <code class="vocs_Code">verifyProof()</code> to validate authenticity</li>
 <li class="vocs_ListItem">Display verification results to readers (e.g., &quot;✓ Verified Authentic&quot;)</li>
 </ul>
 </li>

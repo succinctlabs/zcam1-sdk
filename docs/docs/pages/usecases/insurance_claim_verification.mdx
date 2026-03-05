@@ -35,7 +35,7 @@ On the insurance company's backend, verification is integrated into the automate
 
 1. **Automated Verification**: When a claim enters the triage flow, the system automatically verifies all attached photos:
    - Integrate `@succinctlabs/react-native-zcam1` (or server-side equivalent) into the backend
-   - For each photo, call `verifyHash()` and `verifyProof()` methods
+   - For each photo, call `verifyBindings()` or `verifyProof()` to validate authenticity
    - Check that the photo was taken using the insurance company's app
 2. **Metadata Analysis**: Leverage metadata from the C2PA manifest:
    - Verify location data matches the claim location

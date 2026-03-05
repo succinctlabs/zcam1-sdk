@@ -134,9 +134,7 @@ import { launchImageLibrary } from "@succinctlabs/react-native-image-picker";
 import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 type VerificationResult = {
-  hashValid: boolean;
   proofValid: boolean;
-  authentic: boolean;
 };
 
 export function VerifyScreen() {
@@ -157,14 +155,9 @@ export function VerifyScreen() {
 
     try {
       const file = new VerifiableFile(asset.uri);
-
       const proofValid = file.verifyProof("TEAM_ID.com.example.app");
 
-      setResult({
-        hashValid,
-        proofValid,
-        authentic: hashValid && proofValid,
-      });
+      setResult({ proofValid });
     } catch (err: any) {
       setError(err.message);
     }
@@ -177,9 +170,8 @@ export function VerifyScreen() {
       {result && (
         <View style={styles.result}>
           <Text style={styles.title}>
-            {result.authentic ? "✓ Authentic" : "✗ Not Authentic"}
+            {result.proofValid ? "✓ Authentic" : "✗ Not Authentic"}
           </Text>
-          <Text>Hash Valid: {result.hashValid ? "Yes" : "No"}</Text>
           <Text>Proof Valid: {result.proofValid ? "Yes" : "No"}</Text>
         </View>
       )}
@@ -206,22 +198,21 @@ import { VerifiableFile } from "@succinctlabs/react-native-zcam1";
 
 export type VerificationStatus =
   | { status: "authentic" }
-  | { status: "invalid_hash" }
   | { status: "invalid_proof" }
   | { status: "no_manifest" }
   | { status: "error"; message: string };
 
-export function verifyPhoto(uri: string): VerificationStatus {
+export function verifyPhoto(uri: string, appId: string): VerificationStatus {
   try {
     const file = new VerifiableFile(uri);
 
-    if (!file.verifyProof()) {
+    if (!file.verifyProof(appId)) {
       return { status: "invalid_proof" };
     }
 
     return { status: "authentic" };
   } catch (error: any) {
-    if (error.message?.includes("no manifest")) {
+    if (error.message?.includes("no manifest") || error.message?.includes("not found")) {
       return { status: "no_manifest" };
     }
     return { status: "error", message: error.message };
@@ -233,21 +224,18 @@ export function verifyPhoto(uri: string): VerificationStatus {
 
 | Check | What It Validates | Use Case |
 |-------|-------------------|----------|
-| `verifyHash()` | Photo bytes match the SHA-256 hash in the C2PA manifest | Always use this first to check file integrity |
-| `verifyBindings()` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
-| `verifyProof()` | ZK proof is valid and chains to the Apple Root CA | For photos with `succinct.proof` (after proof generation) |
+| `verifyBindings(production)` | Apple App Attest signature is valid and corresponds to the photo hash | For photos with `succinct.bindings` (before proof generation) |
+| `verifyProof(appId)` | ZK proof is valid and chains to the Apple Root CA | For photos with `succinct.proof` (after proof generation) |
+
+Both methods internally compute and verify the file's content hash against the C2PA manifest.
 
 **Verification Flow:**
 
 For photos with `succinct.bindings`:
-1. Call `verifyHash()` to check file integrity
-2. Call `verifyBindings()` to verify the Apple App Attest signature
+- Call `verifyBindings(production)` to verify the Apple App Attest signature and file integrity
 
 For photos with `succinct.proof`:
-1. Call `verifyHash()` to check file integrity
-2. Call `verifyProof()` to verify the ZK proof
-
-Both hash and bindings/proof checks must pass for a photo to be considered authentic.
+- Call `verifyProof(appId)` to verify the ZK proof and file integrity
 
 ## Notes
 

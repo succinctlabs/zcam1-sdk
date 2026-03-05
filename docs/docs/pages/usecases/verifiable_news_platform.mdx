@@ -39,7 +39,7 @@ On the news platform's website, articles display verifiable photos with verifica
    - The platform can display verification status badges
 2. **Client-Side Verification**: Integrate `@succinctlabs/react-native-zcam1` (or web equivalent) to enable verification:
    - Add a "Verify Photo" button for each photo in articles
-   - Call `verifyHash()` and `verifyProof()` methods to validate authenticity
+   - Call `verifyBindings()` or `verifyProof()` to validate authenticity
    - Display verification results to readers (e.g., "✓ Verified Authentic")
 3. **Metadata Display**: Show readers metadata from the C2PA manifest:
    - Capture timestamp, device information, app identifier
