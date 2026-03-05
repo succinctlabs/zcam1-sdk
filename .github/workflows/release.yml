@@ -56,17 +56,11 @@ jobs:
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
-      - name: Add the framework to the GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          draft: true
-          files: |
-            react-native-zcam1/Zcam1Framework.xcframework.zip
-            react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
-
-      - name: Finalize the GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: ZCAM1 SDK v${{ github.event.inputs.version }}
+          files: |
+            react-native-zcam1/Zcam1Framework.xcframework.zip
+            react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
