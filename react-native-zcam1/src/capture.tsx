@@ -89,7 +89,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
-    throw "Only EC public keys are supported";
+    throw new Error("Only EC public keys are supported");
   }
 
   const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
@@ -115,7 +115,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   }
 
   if (deviceKeyId == null) {
-    throw "failed to generate a device key";
+    throw new Error("Failed to generate a device key");
   }
 
   let attestation = await EncryptedStorage.getItem(`attestation-${deviceKeyId}`);

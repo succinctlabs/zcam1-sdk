@@ -38,6 +38,7 @@ interface PhotoMetadataInfo {
   focalLength: number;                // Focal length in millimeters
   authenticityData: AuthenticityData; // Device security status
   depthData?: DepthData;              // Depth map information (optional)
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
 }
 ```
 
@@ -63,6 +64,7 @@ interface VideoMetadataInfo {
   audioSampleRate?: number;           // Audio sample rate in Hz (optional)
   audioChannels?: number;             // Number of audio channels (optional)
   authenticityData: AuthenticityData; // Device security status
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
 }
 ```
 
@@ -125,3 +127,21 @@ interface DepthDataStatistics {
 ```
 
 Statistical information about depth values in a depth map.
+
+## FilmStyleInfo
+
+```typescript
+interface FilmStyleInfo {
+  name: string;    // Film style name (e.g., "mellow", "nostalgic", "bw", or a custom name)
+  source: string;  // How the style was defined: "builtin", "override", or "custom"
+  recipe: string;  // JSON-encoded array of FilmStyleEffect objects applied at capture
+}
+```
+
+Film style (filter) information recorded at capture time. Present when a non-default film style was applied.
+
+- **`builtin`** — A standard preset (`mellow`, `nostalgic`, `bw`) used without modification.
+- **`override`** — A built-in preset whose recipe was overridden via `filmStyleOverrides`.
+- **`custom`** — An app-defined style registered via `customFilmStyles`.
+
+The `recipe` field is a JSON string that can be parsed into a [`FilmStyleRecipe`](/sdk/capture/types#filmstylerecipe) (an array of [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) objects).

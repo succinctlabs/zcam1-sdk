@@ -154,7 +154,7 @@ function MainScreen() {
     if (!provenPath) return;
     const file = new VerifiableFile(provenPath);
     const appId = process.env.EXPO_PUBLIC_APP_ID!;
-    const isValid = file.verifyHash() && file.verifyProof(appId);
+    const isValid = file.verifyProof(appId);
     alert(isValid ? "Authentic!" : "Invalid");
   };
 

@@ -66,36 +66,35 @@ Gets the capture metadata from the C2PA manifest. See [`captureMetadata`](/sdk/v
 
 Determines the authenticity status of the file. See [`authenticityStatus`](/sdk/verify/authenticityStatus).
 
-### c2paReader()
+### bindings()
 
-Returns the underlying C2PA Reader. See [`c2paReader`](/sdk/verify/c2paReader).
+Returns the raw `succinct.bindings` assertion data. Returns `ResultAsync<Record<string, any>, Error>`.
+
+### proof()
+
+Returns the raw `succinct.proof` assertion data. Returns `ResultAsync<Record<string, any>, Error>`.
 
 ## Example
 
 ```ts
-import { VerifiableFile } from "@succinctlabs/zcam1-verify";
+import { VerifiableBuffer } from "@succinctlabs/zcam1-verify";
+import { readFileSync } from "node:fs";
 
-const input = document.querySelector<HTMLInputElement>("#file-input")!;
+const buffer = readFileSync("photo.jpg");
+const verifiable = new VerifiableBuffer(buffer, "image/jpeg");
 
-input.addEventListener("change", async () => {
-  const file = input.files?.[0];
-  if (!file) return;
+const bindingsResult = await verifiable.verifyBindings(false);
+const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
+const metadataResult = await verifiable.captureMetadata();
 
-  const verifiable = new VerifiableFile(file);
-
-  const bindingsResult = await verifiable.verifyBindings(false);
-  const proofResult = await verifiable.verifyProof("TEAM_ID.com.example.app");
-  const metadataResult = await verifiable.captureMetadata();
-
-  if (bindingsResult.isOk() && proofResult.isOk()) {
-    console.log("Verified!");
-    if (metadataResult.isOk()) {
-      console.log("Captured:", metadataResult.value.when);
-    }
-  } else {
-    console.log("Verification failed");
+if (bindingsResult.isOk() && proofResult.isOk()) {
+  console.log("Verified!");
+  if (metadataResult.isOk()) {
+    console.log("Captured:", metadataResult.value.when);
   }
-});
+} else {
+  console.log("Verification failed");
+}
 ```
 
 ## Notes

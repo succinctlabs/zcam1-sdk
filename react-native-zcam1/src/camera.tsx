@@ -23,7 +23,7 @@ import NativeZcam1Sdk, {
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Capture";
-import { generateAppAttestAssertion } from "./utils";
+import { generateAppAttestAssertion, stripFileProtocol } from "./utils";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -528,8 +528,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const aspectRatio: AspectRatio = options.aspectRatio ?? "4:3";
     const orientation: Orientation = options.orientation ?? "auto";
 
-    console.log("[ZCamera] takePhoto: calling native with includeDepthData =", includeDepthData);
-
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
@@ -539,14 +537,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       orientation,
       false, // skipPostProcessing - default to false for normal operation
     );
-
-    console.log("[ZCamera] takePhoto: native result:", {
-      filePath: result?.filePath ? "present" : "missing",
-      format: result?.format,
-      hasMetadata: !!result?.metadata,
-      hasDepthData: !!result?.depthData,
-      depthDataKeys: result?.depthData ? Object.keys(result.depthData) : null,
-    });
 
     if (!result || !result.filePath) {
       throw new Error("Native camera capture did not return a valid file path.");
@@ -654,7 +644,7 @@ async function embedBindings(
   captureInfo: CaptureInfo,
   certChainPem: string,
 ): Promise<string> {
-  originalPath = originalPath.replace("file://", "");
+  originalPath = stripFileProtocol(originalPath);
   const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
   const ext = Util.extname(originalPath);
@@ -677,7 +667,6 @@ async function embedBindings(
   if (format.indexOf("video") < 0) {
     normalizedMetadata = manifestEditor.addPhotoMetadataAction(metadata as PhotoMetadataInfo, when);
   } else {
-    console.log("Metadata", metadata);
     normalizedMetadata = manifestEditor.addVideoMetadataAction(metadata as VideoMetadataInfo, when);
   }
 

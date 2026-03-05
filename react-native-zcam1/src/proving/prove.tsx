@@ -18,6 +18,7 @@ import {
   SelfSignedCertChain,
 } from "../bindings";
 import { getContentPublicKey, getSecureEnclaveKeyId } from "../common";
+import { stripFileProtocol } from "../utils";
 import {
   FulfillmentStatus,
   type Initialized,
@@ -39,7 +40,7 @@ export type Settings = {
   certChain?: SelfSignedCertChain | ExistingCertChain;
   /** Whether to target the production environment. */
   production: boolean;
-  /** Prover network mode (mainnet or reserved capacity). Defaults to `Reserved`. */
+  /** Prover network mode (mainnet or reserved capacity). Defaults to `Mainnet`. */
   proverNetworkMode?: ProverNetworkMode;
 };
 
@@ -60,7 +61,7 @@ async function createProvingClient(
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
-    throw "Only EC public keys are supported";
+    throw new Error("Only EC public keys are supported");
   }
 
   const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
@@ -406,7 +407,7 @@ export class ProvingClient {
    * @returns Request ID for polling proof status
    */
   async requestProof(originalPath: string): Promise<string> {
-    originalPath = originalPath.replace("file://", "");
+    originalPath = stripFileProtocol(originalPath);
     const format = formatFromPath(originalPath);
 
     if (format === undefined) {
@@ -436,7 +437,7 @@ export class ProvingClient {
    * @returns Path to the new file with embedded proof
    */
   async embedProof(originalPath: string, proof: ArrayBuffer): Promise<string> {
-    originalPath = originalPath.replace("file://", "");
+    originalPath = stripFileProtocol(originalPath);
     const format = formatFromPath(originalPath);
     const ext = Util.extname(originalPath);
 
@@ -472,7 +473,6 @@ export class ProvingClient {
 
   async waitAndEmbedProof(originalPath: string): Promise<string> {
     const requestId = await this.requestProof(originalPath);
-    console.log(`Request ID: ${requestId}`);
     const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
     while (true) {

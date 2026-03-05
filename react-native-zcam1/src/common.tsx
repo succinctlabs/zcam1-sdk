@@ -41,6 +41,6 @@ export function getSecureEnclaveKeyId(publicKey: ECKey): Uint8Array {
 
     return sha1(out);
   } else {
-    throw "Invalid key type";
+    throw new Error("Invalid key type");
   }
 }
