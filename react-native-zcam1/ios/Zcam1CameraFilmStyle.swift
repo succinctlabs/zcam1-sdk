@@ -188,4 +188,110 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
 
         return outputBuffer
     }
+
+    // MARK: - CIFilter-based Pipeline (GPU-only, for preview rendering)
+
+    /// Create CIFilter equivalents from a JavaScript film style recipe.
+    /// Used for GPU-only preview rendering without CPU readback.
+    /// Results are visually approximate to Harbeth — exact film styles are applied via Harbeth during capture.
+    static func createCIFilters(from recipe: [[String: Any]]) -> [CIFilter] {
+        var filters: [CIFilter] = []
+
+        // Collect color controls into a single CIColorControls filter for efficiency.
+        var saturation: Float?
+        var contrast: Float?
+        var brightness: Float?
+
+        for effect in recipe {
+            guard let type = effect["type"] as? String else { continue }
+
+            switch type {
+            case "whiteBalance":
+                if let config = effect["config"] as? [String: Any],
+                   let temp = config["temperature"] as? Float {
+                    let tint = config["tint"] as? Float ?? 0
+                    if let filter = CIFilter(name: "CITemperatureAndTint") {
+                        filter.setValue(CIVector(x: 6500, y: 0), forKey: "inputNeutral")
+                        filter.setValue(
+                            CIVector(x: CGFloat(6500 + temp * 100), y: CGFloat(tint * 100)),
+                            forKey: "inputTargetNeutral"
+                        )
+                        filters.append(filter)
+                    }
+                }
+            case "saturation":
+                saturation = effect["value"] as? Float
+            case "contrast":
+                contrast = effect["value"] as? Float
+            case "brightness":
+                brightness = effect["value"] as? Float
+            case "hue":
+                if let value = effect["value"] as? Float {
+                    if let filter = CIFilter(name: "CIHueAdjust") {
+                        // Harbeth uses degrees, CIFilter uses radians.
+                        filter.setValue(NSNumber(value: value * .pi / 180.0), forKey: "inputAngle")
+                        filters.append(filter)
+                    }
+                }
+            case "vibrance":
+                if let value = effect["value"] as? Float {
+                    if let filter = CIFilter(name: "CIVibrance") {
+                        filter.setValue(NSNumber(value: value), forKey: "inputAmount")
+                        filters.append(filter)
+                    }
+                }
+            case "highlightShadow":
+                if let config = effect["config"] as? [String: Any],
+                   let highlights = config["highlights"] as? Float,
+                   let shadows = config["shadows"] as? Float {
+                    if let filter = CIFilter(name: "CIHighlightShadowAdjust") {
+                        filter.setValue(NSNumber(value: highlights), forKey: "inputHighlightAmount")
+                        filter.setValue(NSNumber(value: shadows), forKey: "inputShadowAmount")
+                        filters.append(filter)
+                    }
+                }
+            case "monochrome":
+                if let config = effect["config"] as? [String: Any],
+                   let intensity = config["intensity"] as? Float {
+                    if let filter = CIFilter(name: "CIColorMonochrome") {
+                        filter.setValue(NSNumber(value: intensity), forKey: "inputIntensity")
+                        if let colorConfig = config["color"] as? [String: Any],
+                           let r = colorConfig["r"] as? CGFloat,
+                           let g = colorConfig["g"] as? CGFloat,
+                           let b = colorConfig["b"] as? CGFloat {
+                            filter.setValue(CIColor(red: r, green: g, blue: b), forKey: "inputColor")
+                        }
+                        filters.append(filter)
+                    }
+                }
+            default:
+                break
+            }
+        }
+
+        // Combine saturation, contrast, and brightness into one CIColorControls filter.
+        if saturation != nil || contrast != nil || brightness != nil {
+            if let filter = CIFilter(name: "CIColorControls") {
+                if let s = saturation { filter.setValue(NSNumber(value: s), forKey: "inputSaturation") }
+                if let c = contrast { filter.setValue(NSNumber(value: c), forKey: "inputContrast") }
+                if let b = brightness { filter.setValue(NSNumber(value: b), forKey: "inputBrightness") }
+                // Insert at start so color controls are applied before other effects.
+                filters.insert(filter, at: 0)
+            }
+        }
+
+        return filters
+    }
+
+    /// Apply an array of CIFilters to a CIImage. All processing stays on GPU (lazy evaluation).
+    static func applyCIFilters(_ filters: [CIFilter], to image: CIImage) -> CIImage {
+        var result = image
+        for filter in filters {
+            filter.setValue(result, forKey: kCIInputImageKey)
+            if let output = filter.outputImage {
+                result = output
+            }
+        }
+        return result
+    }
 }
