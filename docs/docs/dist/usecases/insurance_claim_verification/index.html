@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/initializeTheme.iife.js"></script><link rel="preload" as="image" href="/Succinct_FullLogo_Magenta.svg"/><title>Insurance Claim Verification – ZCAM</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><meta property="og:type" content="website"/><meta property="og:title" content="Insurance Claim Verification"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/><meta name="twitter:card" content="summary_large_image"/>
-    <script type="module" crossorigin src="/assets/index-CA3QJxQy.js"></script>
+    <script type="module" crossorigin src="/assets/index-_jsy_YyL.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-CxwytKPm.css">
   </head>
   <body>
@@ -34,7 +34,7 @@
 <li class="vocs_ListItem">Call <code class="vocs_Code">takePhoto()</code> to capture a verifiable photo</li>
 </ul>
 </li>
-<li class="vocs_ListItem"><strong class="vocs_Strong">Proof Generation</strong> (Optional): Use <code class="vocs_Code">@succinctlabs/react-native-zcam1/proving</code> to attach zero-knowledge proofs:<!-- -->
+<li class="vocs_ListItem"><strong class="vocs_Strong">Proof Generation</strong> (Optional): Use <code class="vocs_Code">react-native-zcam1-prove</code> to attach zero-knowledge proofs:<!-- -->
 <ul class="vocs_List vocs_List_unordered">
 <li class="vocs_ListItem">Use <code class="vocs_Code">waitAndEmbedProof()</code> to generate and embed proofs</li>
 <li class="vocs_ListItem">This provides additional cryptographic guarantees and privacy</li>
@@ -47,8 +47,8 @@
 <ol class="vocs_List vocs_List_ordered">
 <li class="vocs_ListItem"><strong class="vocs_Strong">Automated Verification</strong>: When a claim enters the triage flow, the system automatically verifies all attached photos:<!-- -->
 <ul class="vocs_List vocs_List_unordered">
-<li class="vocs_ListItem">Integrate <code class="vocs_Code">@succinctlabs/react-native-zcam1</code> (or server-side equivalent) into the backend</li>
-<li class="vocs_ListItem">For each photo, call <code class="vocs_Code">verifyBindings()</code> or <code class="vocs_Code">verifyProof()</code> to validate authenticity</li>
+<li class="vocs_ListItem">Integrate <code class="vocs_Code">react-native-zcam1-verify</code> (or server-side equivalent) into the backend</li>
+<li class="vocs_ListItem">For each photo, call <code class="vocs_Code">verifyHash()</code> and <code class="vocs_Code">verifyProof()</code> methods</li>
 <li class="vocs_ListItem">Check that the photo was taken using the insurance company&#x27;s app</li>
 </ul>
 </li>

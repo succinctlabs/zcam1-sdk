@@ -7,25 +7,15 @@
 - [Architecture](/technical-docs/architecture): The ZCAM SDK allows an integrating app to:
 - [FAQs](/technical-docs/faq): *Does ZCAM work on Android?*
 - [ZK Proof Details](/technical-docs/zkproof-details): The SP1 program proves the following:
-- [Capture SDK](/sdk/capture): The Capture SDK (`@succinctlabs/react-native-zcam1`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
+- [Capture SDK](/sdk/capture): The Capture SDK (`react-native-zcam1-capture`) takes photos and produces C2PA-signed assets bound to hardware-backed integrity signals.
 - [Overview](/sdk): The ZCAM1 SDK provides React Native components and hooks for capturing, proving, and verifying authenticated photos using hardware-backed cryptography and zero-knowledge proofs.
-- [Picker SDK](/sdk/picker): The Picker SDK (`@succinctlabs/react-native-zcam1`) provides an image picker component with built-in authenticity status badges.
-- [Prove SDK](/sdk/prove): The Prove SDK (`@succinctlabs/react-native-zcam1/proving`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
-- [Verify SDK](/sdk/verify): The Verify SDK (`@succinctlabs/react-native-zcam1`) validates the authenticity of C2PA-signed photos with embedded proofs.
-- [VerifiableFile](/sdk/verify-react-native/VerifiableFile): Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
-- [captureMetadata](/sdk/verify-react-native/captureMetadata): Returns the capture metadata from the C2PA manifest. Contains device info and camera settings recorded at capture time.
-- [dataHash](/sdk/verify-react-native/dataHash): Returns the file's content hash as recorded in the active C2PA manifest. This hash is used as a public input to the zero-knowledge proof.
-- [Verify Types](/sdk/verify-react-native/types): Type definitions used throughout the Verify SDK.
-- [verifyBindings](/sdk/verify-react-native/verifyBindings): Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryptographic integrity of the hardware-backed assertion.
-- [verifyProof](/sdk/verify-react-native/verifyProof): Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
-- [VerifiableBuffer](/sdk/verify/VerifiableBuffer): Class for verifying C2PA manifests and ZK proofs in Node.js. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
-- [VerifiableFile](/sdk/verify/VerifiableFile): Class for verifying C2PA manifests and ZK proofs in the browser. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
-- [authenticityStatus](/sdk/verify/authenticityStatus): Determines the authenticity status of the file based on its C2PA manifest. Use this to decide which verification method to call.
-- [c2paReader](/sdk/verify/c2paReader): Returns the underlying C2PA Reader for the file. Use this for direct access to the C2PA manifest store when you need lower-level control.
+- [Picker SDK](/sdk/picker): The Picker SDK (`react-native-zcam1-picker`) provides an image picker component with built-in authenticity status badges.
+- [Prove SDK](/sdk/prove): The Prove SDK (`react-native-zcam1-prove`) generates zero-knowledge proofs for C2PA-signed images and embeds them back into the photo.
+- [Verify SDK](/sdk/verify): The Verify SDK (`react-native-zcam1-verify`) validates the authenticity of C2PA-signed photos with embedded proofs.
+- [VerifiableFile](/sdk/verify/VerifiableFile): Class for verifying C2PA manifests and ZK proofs in photos. Extracts the manifest on construction and provides methods to verify bindings, proofs, and retrieve metadata.
 - [captureMetadata](/sdk/verify/captureMetadata): Returns the capture metadata from the C2PA manifest. Contains device info and camera settings recorded at capture time.
-- [dataHash](/sdk/verify/dataHash): Computes the content hash of the file. This hash is used as a public input to the zero-knowledge proof.
-- [Verify Web/Node.js SDK](/sdk/verify): The Verify SDK (`@succinctlabs/zcam1-verify`) validates the authenticity of C2PA-signed photos and videos in the browser and Node.js.
-- [Verify Browser Types](/sdk/verify/types): Type definitions used throughout the Verify Browser SDK.
+- [dataHash](/sdk/verify/dataHash): Returns the file's content hash as recorded in the active C2PA manifest. This hash is used as a public input to the zero-knowledge proof.
+- [Verify Types](/sdk/verify/types): Type definitions used throughout the Verify SDK.
 - [verifyBindings](/sdk/verify/verifyBindings): Verifies the manifest's bindings (e.g., App Attest attestation). Checks the cryptographic integrity of the hardware-backed assertion.
 - [verifyProof](/sdk/verify/verifyProof): Verifies the cryptographic zero-knowledge proof embedded in the C2PA manifest. Checks the validity and integrity of the ZK proof.
 - [ProverProvider](/sdk/prove/ProverProvider): React context provider that initializes the proving client for ZK proof generation.
