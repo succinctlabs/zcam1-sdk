@@ -1,4 +1,5 @@
 import { generateHardwareKey, getAttestation } from "@pagopa/io-react-native-integrity";
+import Geolocation from "@react-native-community/geolocation";
 import EncryptedStorage from "react-native-encrypted-storage";
 
 import { type ECKey, getContentPublicKey, getSecureEnclaveKeyId } from "./common";
@@ -162,4 +163,18 @@ export async function updateRegistration(keyId: string, _settings: Settings): Pr
   await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
+}
+
+/**
+ * Requests location permission from the user.
+ * This function triggers the native location authorization prompt on the device.
+ * @throws {string} Error message if permission request fails
+ */
+export function requestLocationPermission() {
+  Geolocation.requestAuthorization(
+    () => {},
+    (error) => {
+      throw error.message;
+    },
+  );
 }

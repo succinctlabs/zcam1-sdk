@@ -6,10 +6,10 @@ import {
   CaptureInfo,
   initCapture,
   ZCamera,
-  privateDirectory
+  privateDirectory,
+  requestLocationPermission,
 } from "@succinctlabs/react-native-zcam1";
 import Toast from "react-native-toast-message";
-
 
 enum CaptureMode {
   Photo = "photo",
@@ -31,6 +31,8 @@ export default function Home() {
       production: false,
     };
   }, [appId]);
+
+  requestLocationPermission();
 
   useEffect(() => {
     async function fetchDevice() {
@@ -103,6 +105,8 @@ export default function Home() {
               ref={camera}
               captureInfo={captureInfo}
               depthEnabled={true}
+              captureLocationEnabled={true}
+              captureTimestampEnabled={true}
             />
           ) : (
             <View

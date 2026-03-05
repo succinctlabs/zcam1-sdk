@@ -47,7 +47,7 @@ export type {
 } from "./camera";
 export { ZCamera } from "./camera";
 export type { CaptureInfo, DeviceOrientation } from "./capture";
-export { initCapture } from "./capture";
+export { initCapture, requestLocationPermission, updateRegistration } from "./capture";
 
 /**
  * Core cryptographic key types and secure enclave utilities.
