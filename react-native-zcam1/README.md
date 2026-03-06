@@ -4,7 +4,7 @@ React Native SDK for capturing, signing, verifying, and proving media authentici
 
 **Platform:** iOS (Android coming soon)
 
-**Full API Reference:** [zcamdocs.succinct.tools](https://zcamdocs.succinct.tools/)
+**Full API Reference:** [zcam-sdk.succinct.xyz](https://zcam-sdk.succinct.xyz/)
 
 ## What It Does
 
@@ -163,7 +163,7 @@ export function CaptureScreen() {
 }
 ```
 
-See the [Quickstart Guide](https://zcamdocs.succinct.tools/getting-started/quickstart) for a complete capture → prove → verify flow.
+See the [Quickstart Guide](https://zcam-sdk.succinct.xyz//getting-started/quickstart) for a complete capture → prove → verify flow.
 
 ## Troubleshooting
 
