@@ -51,6 +51,11 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Check npm auth
+        run: |
+          cd react-native-zcam1 && npm publish --dry-run --ignore-scripts --access public --provenance
+          cd ../zcam1-verify && npm publish --dry-run --ignore-scripts --access public --provenance
+
       - name: Create tag
         run: |
           git tag v${{ github.event.inputs.version }}
@@ -60,9 +65,15 @@ jobs:
         run: |
           cd react-native-zcam1
           npm ci
-          npm publish --access public
+          npm publish --access public --provenance
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
+
+      - name: Publish zcam1-verify
+        run: |
+          cd zcam1-verify
+          npm ci
+          npm publish --access public --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
