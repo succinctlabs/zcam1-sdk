@@ -68,6 +68,53 @@ Pod::Spec.new do |s|
     vendored_frameworks += ["Zcam1ProvingFramework.xcframework"]
   end
 
+  version = package["version"]
+  base_url = "https://github.com/succinctlabs/zcam1-sdk/releases/download/v#{version}"
+
+  # Proving framework download command, only included when proving is enabled.
+  # Injected as a shell snippet into prepare_command via Ruby interpolation.
+  download_proving_cmd = enable_proving ? <<~SHELL
+    if [ ! -d "Zcam1ProvingFramework.xcframework" ]; then
+      echo "Downloading Zcam1ProvingFramework.xcframework v#{version}..."
+      curl -L "#{base_url}/Zcam1ProvingFramework.xcframework.zip" -o Zcam1ProvingFramework.xcframework.zip
+      unzip -q Zcam1ProvingFramework.xcframework.zip
+      rm Zcam1ProvingFramework.xcframework.zip
+    elif [ -f "$MARKER" ] && [ "$(cat $MARKER)" != "#{version}" ]; then
+      echo "Updating Zcam1ProvingFramework.xcframework to v#{version}..."
+      rm -rf Zcam1ProvingFramework.xcframework
+      curl -L "#{base_url}/Zcam1ProvingFramework.xcframework.zip" -o Zcam1ProvingFramework.xcframework.zip
+      unzip -q Zcam1ProvingFramework.xcframework.zip
+      rm Zcam1ProvingFramework.xcframework.zip
+    fi
+  SHELL
+  : ""
+
+  # Download xcframeworks from GitHub release artifacts before pod installation.
+  # The version marker file ensures stale frameworks are replaced on version upgrades.
+  # When frameworks are already present and up-to-date (Yalc, private npm), download is skipped.
+  s.prepare_command = <<~SHELL
+    MARKER=".xcframework-version"
+    # If the folder is absent, download from GitHub release artifacts.
+    # If the folder is present but the marker is absent, it came from Yalc or a private npm
+    # registry (which includes the frameworks directly) — skip the download.
+    # If the marker is present and the version differs, re-download (public npm upgrade).
+    if [ ! -d "Zcam1Framework.xcframework" ]; then
+      echo "Downloading Zcam1Framework.xcframework v#{version}..."
+      curl -L "#{base_url}/Zcam1Framework.xcframework.zip" -o Zcam1Framework.xcframework.zip
+      unzip -q Zcam1Framework.xcframework.zip
+      rm Zcam1Framework.xcframework.zip
+      echo "#{version}" > "$MARKER"
+    elif [ -f "$MARKER" ] && [ "$(cat $MARKER)" != "#{version}" ]; then
+      echo "Updating Zcam1Framework.xcframework to v#{version}..."
+      rm -rf Zcam1Framework.xcframework
+      curl -L "#{base_url}/Zcam1Framework.xcframework.zip" -o Zcam1Framework.xcframework.zip
+      unzip -q Zcam1Framework.xcframework.zip
+      rm Zcam1Framework.xcframework.zip
+      echo "#{version}" > "$MARKER"
+    fi
+    #{download_proving_cmd}
+  SHELL
+
   s.source_files = source_files
   # Only expose ObjC headers publicly (Swift can import these).
   s.public_header_files = public_header_files
