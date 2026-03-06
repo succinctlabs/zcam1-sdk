@@ -52,12 +52,6 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Check npm auth
-        run: |
-          OIDC_TOKEN=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm" | python3 -c "import sys,json; print(json.load(sys.stdin)['value'].split('.')[1] + '==')" | base64 -d 2>/dev/null | python3 -m json.tool || echo "Failed to decode token")
-          echo "OIDC token claims: $OIDC_TOKEN"
-
       - name: Create tag
         run: |
           git tag v${{ github.event.inputs.version }}
