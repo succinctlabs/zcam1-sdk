@@ -8,6 +8,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   build-and-release:
     runs-on: macos-15
@@ -24,35 +28,63 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,wasm32-unknown-unknown
+
+      - name: "Install protoc"
+        run: |
+          brew install protobuf
+
+      - name: "Install sp1up"
+        run: |
+          curl -L https://sp1.succinct.xyz | bash
+          echo "$HOME/.sp1/bin" >> $GITHUB_PATH
+
+      - name: "Install SP1 toolchain"
+        run: |
+          sp1up --token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Check npm auth
+        run: |
+          OIDC_TOKEN=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm" | python3 -c "import sys,json; print(json.load(sys.stdin)['value'].split('.')[1] + '==')" | base64 -d 2>/dev/null | python3 -m json.tool || echo "Failed to decode token")
+          echo "OIDC token claims: $OIDC_TOKEN"
 
       - name: Create tag
         run: |
           git tag v${{ github.event.inputs.version }}
           git push origin v${{ github.event.inputs.version }}
 
-      - name: Publish react-native-zcam1-c2pa
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
+
+      - name: Publish zcam1-verify
         run: |
-          cd react-native-zcam1-c2pa
+          cd zcam1-verify
           npm ci
-          # npm version ${{ github.event.inputs.version }}
-          # npm publish
-          npm run ubrn:ios
-          zip -r Zcam1C2paFramework.xcframework.zip Zcam1C2paFramework.xcframework
+          npm publish --access public --provenance
 
-      - name: Add the framework to the GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          draft: true
-          files: |
-            react-native-zcam1-c2pa/Zcam1C2paFramework.xcframework.zip
+      - name: Publish react-native-zcam1
+        run: |
+          cd react-native-zcam1
+          npm ci
+          npm publish --access public --provenance
+          zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
+          zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
-      - name: Finalize the GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: ZCAM1 SDK v${{ github.event.inputs.version }}
+          files: |
+            react-native-zcam1/Zcam1Framework.xcframework.zip
+            react-native-zcam1/Zcam1ProvingFramework.xcframework.zip

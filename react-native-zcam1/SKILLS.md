@@ -9,7 +9,7 @@ This document is optimized for LLMs and AI coding assistants helping developers 
 - **Platform:** iOS only (Android coming soon)
 - **Requirements:** React Native 0.81+, React 19+, iOS 16+, New Architecture enabled
 - **Physical device required** for App Attest (simulator uses mock attestations in dev)
-- **Docs:** https://zcamdocs.succinct.tools/
+- **Docs:** https://zcam-sdk.succinct.xyz/
 
 ## What This SDK Does
 
