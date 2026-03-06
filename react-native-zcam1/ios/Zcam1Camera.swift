@@ -10,6 +10,7 @@ import CoreMotion
 import Foundation
 import Harbeth
 import ImageIO
+import MetalKit
 import MobileCoreServices
 import UIKit
 
@@ -2620,13 +2621,113 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 }
 // Capture delegate implementation moved into the internal PhotoCaptureDelegate helper.
 
+// MARK: - Metal Preview View
+
+/// Metal-backed preview view that renders CIImage directly to GPU without CPU readback.
+/// Eliminates the expensive GPU→CPU texture readback that UIImageView + CIContext.createCGImage() causes.
+/// The previous UIImageView approach spent ~74% of CPU time on agxsTwiddleAddressCommon (Metal texture readback).
+@available(iOS 16.0, *)
+private class MetalPreviewView: MTKView, MTKViewDelegate {
+
+    private var ciContext: CIContext?
+    private var commandQueue: MTLCommandQueue?
+    private var currentImage: CIImage?
+    private let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+    init() {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            super.init(frame: .zero, device: nil)
+            return
+        }
+        super.init(frame: .zero, device: device)
+
+        self.delegate = self
+        commandQueue = device.makeCommandQueue()
+        ciContext = CIContext(mtlDevice: device, options: [.cacheIntermediates: false])
+
+        // Manual draw mode — we trigger draws when new frames arrive.
+        isPaused = true
+        enableSetNeedsDisplay = false
+        framebufferOnly = false
+
+        // Opaque for optimal compositing performance.
+        isOpaque = true
+        clearsContextBeforeDrawing = false
+    }
+
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) not supported")
+    }
+
+    /// Render a CIImage to the Metal drawable. Safe to call from any thread.
+    func render(_ image: CIImage) {
+        currentImage = image
+        DispatchQueue.main.async { [weak self] in
+            self?.draw()
+        }
+    }
+
+    /// Clear the preview (e.g., during camera position switch).
+    func clear() {
+        currentImage = nil
+    }
+
+    // MARK: - MTKViewDelegate
+
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        // Scaling is handled dynamically in draw(in:).
+    }
+
+    func draw(in view: MTKView) {
+        guard let drawable = currentDrawable,
+              let commandBuffer = commandQueue?.makeCommandBuffer(),
+              let ciContext = ciContext else {
+            return
+        }
+
+        let drawableSize = view.drawableSize
+        let bounds = CGRect(origin: .zero, size: drawableSize)
+
+        guard let image = currentImage else {
+            // No image — present empty drawable to avoid stale frames.
+            commandBuffer.present(drawable)
+            commandBuffer.commit()
+            return
+        }
+
+        // Scale to fill the drawable (scaleAspectFill behavior).
+        let scaleX = drawableSize.width / image.extent.width
+        let scaleY = drawableSize.height / image.extent.height
+        let scale = max(scaleX, scaleY)
+
+        // Apply scale, then center within the drawable bounds.
+        var scaled = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        let tx = (drawableSize.width - scaled.extent.width) / 2 - scaled.extent.origin.x
+        let ty = (drawableSize.height - scaled.extent.height) / 2 - scaled.extent.origin.y
+        scaled = scaled.transformed(by: CGAffineTransform(translationX: tx, y: ty))
+
+        // Crop to drawable bounds (clips overflowing edges from aspect fill).
+        let cropped = scaled.cropped(to: bounds)
+
+        ciContext.render(
+            cropped,
+            to: drawable.texture,
+            commandBuffer: commandBuffer,
+            bounds: bounds,
+            colorSpace: colorSpace
+        )
+
+        commandBuffer.present(drawable)
+        commandBuffer.commit()
+    }
+}
+
 // MARK: - Camera Preview View
 
 /// UIView subclass that displays the live camera preview.
 ///
-/// NEW ARCHITECTURE: Always uses AVCaptureVideoDataOutput for preview rendering.
-/// This eliminates the complexity of toggling between preview layer and film style image view.
-/// All frames go through the same pipeline - film style is applied when needed.
+/// Uses Metal-backed rendering via MetalPreviewView to keep the entire preview pipeline on GPU.
+/// CIImage from the camera → CIFilter film styles → Metal drawable, with zero CPU readback.
 ///
 /// This view is intended to be wrapped by a React Native view manager
 /// and controlled via props such as `isActive` and `position`.
@@ -2648,7 +2749,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             guard oldValue != position else { return }
             // Set flag first to stop accepting frames, then clear the preview.
             isReconfiguring = true
-            previewImageView.image = nil
+            metalPreviewView.clear()
             reconfigureSession()
         }
     }
@@ -2726,20 +2827,14 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// Token for this view's motion manager listener, used for cleanup in deinit.
     private var orientationListenerToken: Int?
 
-    // Preview rendering - single UIImageView for all frames (filtered or not)
-    private let previewImageView: UIImageView = {
-        let iv = UIImageView()
-        iv.contentMode = .scaleAspectFill
-        iv.clipsToBounds = true
-        return iv
-    }()
+    // Preview rendering — Metal-backed view for GPU-only frame display.
+    private let metalPreviewView = MetalPreviewView()
 
-    // Video processing
+    // Video processing.
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilmStyleEnum: Zcam1CameraFilmStyle = .normal
-    private var currentCustomFilmStyles: [C7FilterProtocol]?
-    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    private var currentFilmStyleRecipe: [[String: Any]]?
     private var frameCount: Int = 0
 
     // Flag to skip frames during camera reconfiguration to avoid showing incorrectly mirrored frames.
@@ -2758,10 +2853,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private func commonInit() {
         backgroundColor = .black
 
-        // Add preview image view as the only preview mechanism.
-        previewImageView.frame = bounds
-        previewImageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        addSubview(previewImageView)
+        // Add Metal preview view for GPU-only frame rendering.
+        metalPreviewView.frame = bounds
+        metalPreviewView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(metalPreviewView)
 
         // Register for orientation change events from the motion manager.
         orientationListenerToken = Zcam1MotionManager.shared.addListener { [weak self] orientation in
@@ -2782,21 +2877,24 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
 
     public override func layoutSubviews() {
         super.layoutSubviews()
-        previewImageView.frame = bounds
+        metalPreviewView.frame = bounds
     }
 
     // MARK: - Film Style Resolution
 
     /// Resolves and applies the current film style, checking overrides and custom film styles first.
+    /// Creates CIFilter chain for GPU-only preview, and Harbeth chain for capture/recording via the service.
     private func applyCurrentFilmStyle() {
         // Check filmStyleOverrides first.
         if let overrides = filmStyleOverrides as? [String: [[String: Any]]],
            let recipe = overrides[filmStyle] {
             print("[Zcam1CameraView] Using film style override for '\(filmStyle)'")
-            let filmStyles = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
-            currentCustomFilmStyles = filmStyles
+            // Store recipe for per-frame CIFilter creation on the capture queue (thread-safe).
+            currentFilmStyleRecipe = recipe
+            // Harbeth chain for capture/recording via the service.
+            let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
-            Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
+            Zcam1CameraService.shared.setCustomFilmStyles(harbethFilters)
             return
         }
 
@@ -2804,15 +2902,15 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let custom = customFilmStyles as? [String: [[String: Any]]],
            let recipe = custom[filmStyle] {
             print("[Zcam1CameraView] Using custom film style '\(filmStyle)'")
-            let filmStyles = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
-            currentCustomFilmStyles = filmStyles
+            currentFilmStyleRecipe = recipe
+            let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
-            Zcam1CameraService.shared.setCustomFilmStyles(filmStyles)
+            Zcam1CameraService.shared.setCustomFilmStyles(harbethFilters)
             return
         }
 
         // Fall back to no film style (JS SDK provides all built-in recipes via filmStyleOverrides).
-        currentCustomFilmStyles = nil
+        currentFilmStyleRecipe = nil
         currentFilmStyleEnum = .normal
         Zcam1CameraService.shared.setFilmStyle(.normal)
     }
@@ -2844,38 +2942,27 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             return
         }
 
-        // Convert pixel buffer to UIImage.
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
-            return
-        }
+        // Create CIImage from pixel buffer (zero-cost wrapper, stays on GPU).
+        var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-        // Create UIImage with fixed portrait orientation for display.
-        // The app UI is portrait-locked, so the preview frame is always taller than wide.
-        // Camera sensor buffers always arrive in landscape (native sensor orientation),
-        // so we rotate to fit the portrait frame.
-        //
-        // Back camera: .right (90° CW) maps the landscape-right sensor to portrait.
-        // Front camera: .left (90° CCW) because the mirrored pixel buffer from
-        // isVideoMirrored on the AVCaptureConnection changes the effective sensor
-        // orientation. Using .right would display upside-down; .rightMirrored would
-        // fix orientation but cancel out the mirror. .left gives correct orientation
-        // while preserving the connection-level mirror for a natural selfie view.
+        // Apply orientation as a lazy CIImage transform (no CPU work).
+        // Camera sensor buffers always arrive in landscape (native sensor orientation).
+        // Back camera: .right (90° CW) maps landscape-right sensor to portrait.
+        // Front camera: .left (90° CCW) because isVideoMirrored on the AVCaptureConnection
+        // changes the effective sensor orientation.
         let isFront = position.lowercased() == "front"
-        let imageOrientation: UIImage.Orientation = isFront ? .left : .right
+        ciImage = ciImage.oriented(isFront ? .left : .right)
 
-        var displayImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: imageOrientation)
-
-        // Apply film style if needed.
-        if let customFilmStyles = currentCustomFilmStyles {
-            displayImage = Zcam1CameraFilmStyle.apply(filmStyles: customFilmStyles, to: displayImage)
+        // Apply film style CIFilters if configured (GPU pipeline, lazy evaluation).
+        // Filters are created fresh per-frame from the stored recipe to avoid cross-thread
+        // mutation of CIFilter instances (recipe is set on main thread, read here on capture queue).
+        if let recipe = currentFilmStyleRecipe {
+            let filters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
+            ciImage = Zcam1CameraFilmStyle.applyCIFilters(filters, to: ciImage)
         }
 
-        // Update UI on main thread, but double-check we're not reconfiguring.
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self, !self.isReconfiguring else { return }
-            self.previewImageView.image = displayImage
-        }
+        // Render directly to Metal drawable (GPU→GPU, no CPU readback).
+        metalPreviewView.render(ciImage)
     }
 
     public func captureOutput(
