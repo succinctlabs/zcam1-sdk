@@ -61,6 +61,12 @@ jobs:
           git tag v${{ github.event.inputs.version }}
           git push origin v${{ github.event.inputs.version }}
 
+      - name: Publish zcam1-verify
+        run: |
+          cd zcam1-verify
+          npm ci
+          npm publish --access public --provenance
+
       - name: Publish react-native-zcam1
         run: |
           cd react-native-zcam1
@@ -68,12 +74,6 @@ jobs:
           npm publish --access public --provenance
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
-
-      - name: Publish zcam1-verify
-        run: |
-          cd zcam1-verify
-          npm ci
-          npm publish --access public --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
