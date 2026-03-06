@@ -60,19 +60,23 @@ jobs:
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
 
-      - name: Publish react-native-zcam1
-        run: |
-          cd react-native-zcam1
-          npm ci
-          npm publish --access public --provenance
-          zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
-          zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
-
       - name: Publish zcam1-verify
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd zcam1-verify
           npm ci
-          npm publish --access public --provenance
+          npm publish --access public
+
+      - name: Publish react-native-zcam1
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd react-native-zcam1
+          npm ci
+          npm publish --access public
+          zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
+          zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
