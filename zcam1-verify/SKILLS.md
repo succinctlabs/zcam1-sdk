@@ -8,7 +8,7 @@ This document is optimized for LLMs and AI coding assistants helping developers 
 - **Peer dependency:** `neverthrow` (required)
 - **Platforms:** Browser (WASM) and Node.js
 - **Purpose:** Verify C2PA-signed photos/videos captured with the ZCAM1 React Native SDK
-- **Docs:** https://zcamdocs.succinct.tools/
+- **Docs:** https://zcam-sdk.succinct.xyz/
 
 ## What This SDK Does
 
