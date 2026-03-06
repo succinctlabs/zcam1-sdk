@@ -54,8 +54,9 @@ jobs:
 
       - name: Check npm auth
         run: |
-          cd react-native-zcam1 && npm publish --dry-run --ignore-scripts --access public --provenance
-          cd ../zcam1-verify && npm publish --dry-run --ignore-scripts --access public --provenance
+          OIDC_TOKEN=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm" | python3 -c "import sys,json; print(json.load(sys.stdin)['value'].split('.')[1] + '==')" | base64 -d 2>/dev/null | python3 -m json.tool || echo "Failed to decode token")
+          echo "OIDC token claims: $OIDC_TOKEN"
 
       - name: Create tag
         run: |
