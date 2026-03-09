@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/zcam1-verify",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "ZCAM1 Verify SDK for browser and Node.js",
   "type": "module",
   "main": "dist/index.js",
@@ -28,8 +28,7 @@
     "test": "vitest --browser=chromium --run",
     "test:node": "vitest --config vitest.config.node.ts --run",
     "test:watch": "vitest",
-    "test:browser": "vitest --browser=chromium --run",
-    "prepack": "npm run ubrn:web -- --release && npm run build"
+    "test:browser": "vitest --browser=chromium --run"
   },
   "repository": {
     "type": "git",
