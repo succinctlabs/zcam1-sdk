@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -81,7 +81,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework",
     "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded",
-    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework; fi"
+    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework; fi"
   },
   "files": [
     "src",
