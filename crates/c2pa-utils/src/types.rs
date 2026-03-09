@@ -156,6 +156,10 @@ pub struct FilmStyleInfo {
 pub struct AuthenticityData {
     is_jail_broken: bool,
     is_location_spoofing_available: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_location_available: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    location_retrieval_status: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
@@ -176,6 +180,10 @@ pub struct PhotoMetadataInfo {
     depth_data: Option<DepthData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     film_style: Option<FilmStyleInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    trusted_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    location: Option<LocationInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
@@ -199,6 +207,11 @@ pub struct VideoMetadataInfo {
     authenticity_data: AuthenticityData,
     #[serde(skip_serializing_if = "Option::is_none")]
     film_style: Option<FilmStyleInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    // The trusted capture timestamp in milliseconds.
+    trusted_timestamp: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    location: Option<LocationInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -221,12 +234,30 @@ pub struct DepthData {
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct DepthDataStatistics {
-    min: String,
-    max: String,
-    mean: String,
-    std_dev: String,
-    valid_pixel_count: u32,
-    sample_stride: u32,
+    pub min: String,
+    pub max: String,
+    pub mean: String,
+    pub std_dev: String,
+    pub valid_pixel_count: u32,
+    pub sample_stride: u32,
+}
+/// GPS location captured at the time of photo/video creation.
+///
+/// Coordinates and accuracy are stored as strings to preserve the original
+/// precision from the device without floating-point rounding.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct LocationInfo {
+    /// Latitude in decimal degrees (e.g. "37.7749").
+    pub latitude: String,
+    /// Longitude in decimal degrees (e.g. "-122.4194").
+    pub longitude: String,
+    /// Altitude in meters above sea level, if available.
+    pub altitude: Option<String>,
+    /// Horizontal accuracy radius in meters.
+    pub accuracy: String,
+    /// Vertical accuracy in meters, if available.
+    pub altitude_accuracy: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, uniffi::Record)]

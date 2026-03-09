@@ -40,6 +40,7 @@
     "@pagopa/io-react-native-crypto": "^1.2.4",
     "@pagopa/io-react-native-integrity": "^0.3.2",
     "@react-native-camera-roll/camera-roll": "^7.10.2",
+    "@react-native-community/geolocation": "^3.4.0",
     "@scure/base": "^2.0.0",
     "@shopify/flash-list": "^2.2.0",
     "jail-monkey": "^2.8.5",
