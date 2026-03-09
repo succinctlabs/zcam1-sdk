@@ -41,7 +41,7 @@ jobs:
 
       - name: "Check sp1up"
         run: |
-          curl --head  https://github.com/$\{SP1UP_REPO\}/releases/latest/download/cargo_prove_v6.0.2_darwin_arm64.tar.gz --output /dev/null
+          curl --head --fail https://github.com/succinctlabs/sp1/releases/latest/download/cargo_prove_v6.0.2_darwin_arm64.tar.gz --output /dev/null
 
       - name: "Install SP1 toolchain"
         run: |
