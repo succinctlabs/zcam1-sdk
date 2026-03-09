@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/zcam1-verify",
-  "version": "0.2.8",
+  "version": "0.3.0",
   "description": "ZCAM1 Verify SDK for browser and Node.js",
   "type": "module",
   "main": "dist/index.js",
