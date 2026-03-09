@@ -47,8 +47,11 @@ export function CaptureScreen() {
   const handleCapture = async () => {
     const photo = await camera.current?.takePhoto();
     if (photo) {
-      // photo.path = C2PA-signed JPEG with succinct.bindings
-      // photo.originalPath = raw capture before signing
+      // photo contains 2 fields:
+      // path: C2PA-signed JPEG with succinct.bindings
+      //   this is a temporary path: the photo must be saved, either to the app
+      //   private document directory or the camera roll.
+      //  originalPath: raw capture before signing
     }
   };
 
