@@ -24,8 +24,9 @@ function flexibleBase64Decode(str: string): Uint8Array {
 }
 
 export async function getContentPublicKey(): Promise<PublicKey> {
-  return await getPublicKeyFixed(CONTENT_KEY_TAG).catch(() => {
-    return generate(CONTENT_KEY_TAG);
+  return await getPublicKeyFixed(CONTENT_KEY_TAG).catch(async () => {
+    await generate(CONTENT_KEY_TAG);
+    return getPublicKeyFixed(CONTENT_KEY_TAG);
   });
 }
 
