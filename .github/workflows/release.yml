@@ -43,6 +43,9 @@ jobs:
         run: |
           sp1up --token ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
