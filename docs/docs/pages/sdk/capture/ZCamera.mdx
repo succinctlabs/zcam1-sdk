@@ -127,6 +127,20 @@ Define additional custom film styles by name. Reference them using the `filmStyl
 
 See [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) for all available effect types.
 
+### captureTimestampEnabled
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+When `true`, a trusted GPS timestamp is embedded in the C2PA manifest at capture time. The timestamp is sourced from GPS rather than the device clock, making it tamper-evident. Requires location permission. Stored as `trustedTimestamp` in [`PhotoMetadataInfo`](/sdk/verify/types#photometadatainfo) / [`VideoMetadataInfo`](/sdk/verify/types#videometadatainfo).
+
+### captureLocationEnabled
+
+- **Type:** `boolean`
+- **Default:** `false`
+
+When `true`, GPS coordinates are embedded in the C2PA manifest at capture time. Requires location permission. Stored as `location` ([`LocationInfo`](/sdk/verify/types#locationinfo)) in photo/video metadata. If retrieval fails, [`AuthenticityData.isLocationAvailable`](/sdk/verify/types#authenticitydata) is set to `false` and `locationRetrievalStatus` contains the error reason.
+
 ### depthEnabled
 
 - **Type:** `boolean`

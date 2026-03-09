@@ -156,8 +156,20 @@ export interface ZCameraProps {
    * Use with `filmStyle` prop by casting the custom name: `filmStyle={"myStyle" as CameraFilmStyle}`.
    */
   customFilmStyles?: Record<string, FilmStyleRecipe>;
-
+  /**
+   * When true, embeds a trusted GPS timestamp in the C2PA manifest at capture time.
+   * Requires location permission. The timestamp is sourced from GPS rather than device clock,
+   * making it tamper-evident. Stored as `trustedTimestamp` in photo/video metadata.
+   * @default false
+   */
   captureTimestampEnabled?: boolean;
+  /**
+   * When true, embeds GPS coordinates in the C2PA manifest at capture time.
+   * Requires location permission. Stored as `location` in photo/video metadata.
+   * If location retrieval fails, `isLocationAvailable` is set to `false` and
+   * `locationRetrievalStatus` contains the error reason.
+   * @default false
+   */
   captureLocationEnabled?: boolean;
 
   /**
