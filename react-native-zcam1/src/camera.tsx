@@ -755,7 +755,7 @@ function retrieveLocationData(
             ? BigInt(Math.trunc(position.timestamp))
             : undefined,
           isLocationAvailable: true,
-          locationRetrievalStatus: undefined,
+          locationRetrievalStatus: "success",
         });
       },
       (error) => {

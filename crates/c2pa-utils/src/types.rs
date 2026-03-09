@@ -208,6 +208,7 @@ pub struct VideoMetadataInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     film_style: Option<FilmStyleInfo>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    // The trusted capture timestamp in milliseconds.
     trusted_timestamp: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     location: Option<LocationInfo>,
