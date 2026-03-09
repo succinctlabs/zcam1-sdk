@@ -67,7 +67,6 @@ jobs:
           npm publish --access public --provenance
 
       - name: Publish react-native-zcam1
-        env:
         run: |
           cd react-native-zcam1
           npm ci
