@@ -54,7 +54,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Create tag
         run: |
@@ -69,11 +68,10 @@ jobs:
 
       - name: Publish react-native-zcam1
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd react-native-zcam1
           npm ci
-          npm publish --access public
+          npm publish --access public --provenance
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
 
