@@ -1,3 +1,10 @@
+---
+name: react-native-zcam1
+description: React Native ZCAM1 SDK integration guide for @succinctlabs/react-native-zcam1.
+TRIGGER when: user is working with @succinctlabs/react-native-zcam1, ZCamera, initCapture, VerifiableFile, or ZCAM.
+DO NOT TRIGGER for: general React Native, other camera libraries, or unrelated SDKs.
+---
+
 # ZCAM1 React Native SDK — Integration Guide for AI Assistants
 
 This document is optimized for LLMs and AI coding assistants helping developers integrate `@succinctlabs/react-native-zcam1`.
@@ -21,7 +28,7 @@ ZCAM1 captures photos/videos and embeds cryptographic provenance data using the 
 
 - **`appId`**: Always `TEAM_ID.BUNDLE_ID` format (e.g., `NLS5R4YCGX.com.example.app`). This is critical — wrong format causes "RP ID mismatch" errors.
 - **`CaptureInfo`**: Device registration data returned by `initCapture()`. Must be obtained before using `ZCamera`.
-- **`ZPhoto`**: Result of `takePhoto()` — has `.originalPath` (raw) and `.path` (C2PA-signed).
+- **`ZPhoto`**: Result of `takePhoto()` — has `.originalPath` (raw) and `.path` (C2PA-signed). **Both paths are temporary** — the files will be deleted. You must explicitly save them.
 - **`production` flag**: Controls whether real or development App Attest is used. Use `false` for development.
 
 ## Integration Patterns
@@ -47,11 +54,24 @@ export function CaptureScreen() {
   const handleCapture = async () => {
     const photo = await camera.current?.takePhoto();
     if (photo) {
-      // photo contains 2 fields:
-      // path: C2PA-signed JPEG with succinct.bindings
-      //   this is a temporary path: the photo must be saved, either to the app
-      //   private document directory or the camera roll.
-      //  originalPath: raw capture before signing
+      // photo.path = C2PA-signed JPEG with succinct.bindings
+      // photo.originalPath = raw capture before signing
+      // 
+      // ⚠️ IMPORTANT: photo.originalPath is TEMPORARY file.
+      // It will be deleted automatically. You MUST save the file before returning,
+      // either to the app's private directory or the camera roll.
+      //
+      // Option A — save to app private directory (recommended for provenance preservation):
+      //   import { File, Directory } from "expo-file-system";
+      //   const dir = new Directory(privateDirectory() + "photos/");
+      //   if (!dir.exists) dir.create();
+      //   const src = new File(photo.path);
+      //   src.move(dir);
+      //
+      // Option B — save to camera roll:
+      //   import * as MediaLibrary from "expo-media-library";
+      //   await MediaLibrary.saveToLibraryAsync(photo.path);
+
     }
   };
 
@@ -140,7 +160,13 @@ await camera.current?.startVideoRecording("back", { maxDurationSeconds: 30 });
 
 // Stop recording — returns C2PA-signed video
 const result = await camera.current?.stopVideoRecording();
-// result.filePath = signed .mov file
+// ⚠️ IMPORTANT: result.filePath is a TEMPORARY file and will be deleted automatically.
+// You MUST save it before returning, e.g.:
+//   import { File, Directory } from "expo-file-system";
+//   const dir = new Directory(privateDirectory() + "videos/");
+//   dir.create();
+//   const src = new File(result.filePath);
+//   src.move(dir);
 ```
 
 ## Key Exports (Main)
@@ -236,7 +262,9 @@ EXPO_PUBLIC_APP_ID=TEAM_ID.com.example.myapp
 
 5. **Simulator limitations** — App Attest doesn't work on simulator. The SDK generates mock attestations in dev, but these will fail real verification. Always test on a physical device.
 
-6. **Missing Rust toolchain** — `npm install` compiles Rust to native code. You need `rustup` with iOS targets installed.
+6. **Not saving captured files** — Both `takePhoto()` and `stopVideoRecording()` return **temporary** paths that are deleted automatically. Always move the file immediately after capture using `new File(path).move(dir)` (expo-file-system) or save to camera roll with `MediaLibrary.saveToLibraryAsync()` (expo-media-library).
+
+7. **Missing Rust toolchain** — `npm install` compiles Rust to native code. You need `rustup` with iOS targets installed.
 
 ## Troubleshooting
 
