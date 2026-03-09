@@ -28,7 +28,8 @@
     "test": "vitest --browser=chromium --run",
     "test:node": "vitest --config vitest.config.node.ts --run",
     "test:watch": "vitest",
-    "test:browser": "vitest --browser=chromium --run"
+    "test:browser": "vitest --browser=chromium --run",
+    "prepack": "npm run ubrn:web -- --release && npm run build"
   },
   "repository": {
     "type": "git",

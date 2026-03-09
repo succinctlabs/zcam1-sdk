@@ -39,10 +39,6 @@ jobs:
           curl -L https://sp1.succinct.xyz | bash
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
 
-      - name: "Check sp1up"
-        run: |
-          curl --head --fail https://github.com/succinctlabs/sp1/releases/latest/download/cargo_prove_v6.0.2_darwin_arm64.tar.gz --output /dev/null
-
       - name: "Install SP1 toolchain"
         run: |
           sp1up --token ${{ secrets.GITHUB_TOKEN }}
