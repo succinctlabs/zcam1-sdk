@@ -1193,6 +1193,20 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         }
     }
 
+    // MARK: - Audio Session
+
+    /// Configures the audio session to allow mixing with other audio (e.g., music).
+    /// This matches the native iOS Camera app behavior where music continues during preview.
+    private func configureAudioSessionForMixing() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.ambient, options: [.mixWithOthers])
+            try audioSession.setActive(true)
+        } catch {
+            print("[Zcam1CameraService] Failed to configure audio session for mixing: \(error)")
+        }
+    }
+
     // MARK: - Session Control
 
     public func startRunning() {
@@ -1202,6 +1216,8 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
         sessionQueue.async {
             guard let session = self.captureSession else { return }
             if !session.isRunning {
+                // Configure audio session to allow mixing with other audio before starting capture.
+                self.configureAudioSessionForMixing()
                 session.startRunning()
             }
 
