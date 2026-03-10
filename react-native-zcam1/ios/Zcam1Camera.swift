@@ -1041,6 +1041,9 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
 
             do {
                 let session = self.captureSession ?? AVCaptureSession()
+                // Disable automatic audio session configuration to prevent interrupting other audio.
+                // This allows music to continue playing during camera preview.
+                session.automaticallyConfiguresApplicationAudioSession = false
                 session.beginConfiguration()
                 self.didPrewarmDepth = false
                 // Use .high preset to support both photo and video capture.
