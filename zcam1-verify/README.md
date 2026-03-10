@@ -1,19 +1,66 @@
 # @succinctlabs/zcam1-verify
 
-Browser-based verification SDK for ZCAM1-authenticated media files. This package enables client-side verification of C2PA-signed images and videos that contain either Apple App Attestation bindings or zero-knowledge proofs of authenticity.
-
+Browser and Node.js verification SDK for ZCAM1-authenticated media files. This package enables client-side verification of C2PA-signed images and videos that contain either Apple App Attestation bindings or zero-knowledge proofs of authenticity.
 
 ## Installation
 
 ```bash
-npm install @succinctlabs/zcam1-verify
+npm install @succinctlabs/zcam1-verify neverthrow
+```
+
+> **Note:** `neverthrow` is a peer dependency. Methods like `verifyBindings()` and `verifyProof()` return `ResultAsync<T, Error>` which you handle with `.isOk()` / `.isErr()`.
+
+## Browser Usage
+
+The browser entry point uses WASM and requires top-level `await` support:
+
+```typescript
+import { VerifiableFile, AuthenticityStatus } from "@succinctlabs/zcam1-verify";
+
+// VerifiableFile works with browser File objects
+const input = document.querySelector<HTMLInputElement>("#file-input");
+const file = new VerifiableFile(input.files[0]);
+
+// Check what type of verification is available
+const status = await file.authenticityStatus();
+
+if (status === AuthenticityStatus.Proof) {
+  const result = await file.verifyProof("TEAM_ID.com.example.app");
+  if (result.isOk()) {
+    console.log("Proof valid:", result.value);
+  } else {
+    console.error("Verification failed:", result.error.message);
+  }
+}
+```
+
+## Node.js Usage
+
+The Node.js entry point provides `VerifiableBuffer` for working with file buffers:
+
+```typescript
+import { VerifiableBuffer, AuthenticityStatus } from "@succinctlabs/zcam1-verify/node";
+import { readFileSync } from "fs";
+
+const buffer = readFileSync("photo.jpg");
+const file = new VerifiableBuffer(buffer, "image/jpeg");
+
+const status = await file.authenticityStatus();
+console.log("Status:", status);
+
+if (status === AuthenticityStatus.Bindings) {
+  const result = await file.verifyBindings(false); // false = development
+  if (result.isOk()) {
+    console.log("Bindings valid:", result.value);
+  }
+}
 ```
 
 ## API Reference
 
-### `VerifiableFile`
+### `VerifiableFile` (Browser)
 
-The main class for verifying ZCAM1-authenticated media files.
+The main class for verifying ZCAM1-authenticated media files in the browser.
 
 #### Constructor
 
@@ -21,10 +68,8 @@ The main class for verifying ZCAM1-authenticated media files.
 new VerifiableFile(file: File)
 ```
 
-Creates a new verifiable file instance.
-
 **Parameters:**
-- `file` - The `File` object to verify (typically an image or video with C2PA metadata)
+- `file` - A browser `File` object (typically an image or video with C2PA metadata)
 
 #### Methods
 
@@ -32,107 +77,109 @@ Creates a new verifiable file instance.
 
 Determines the authenticity status of the file based on its C2PA manifest.
 
-**Returns:** A promise that resolves to one of:
+**Returns:** A promise resolving to one of:
 - `AuthenticityStatus.Bindings` - File contains Apple App Attestation bindings
 - `AuthenticityStatus.Proof` - File contains a zero-knowledge proof
 - `AuthenticityStatus.InvalidManifest` - Manifest exists but lacks required assertions
 - `AuthenticityStatus.NoManifest` - No C2PA manifest found
 
-**Example:**
-```typescript
-const status = await verifiable.authenticityStatus();
-switch (status) {
-  case AuthenticityStatus.Bindings:
-    console.log('File has bindings assertion');
-    break;
-  case AuthenticityStatus.Proof:
-    console.log('File has proof assertion');
-    break;
-  case AuthenticityStatus.InvalidManifest:
-    console.log('File has C2PA manifest but no ZCAM1 assertions');
-    break;
-  case AuthenticityStatus.NoManifest:
-    console.log('File has no C2PA manifest');
-    break;
-}
-```
+##### `verifyBindings(production: boolean): ResultAsync<boolean, Error>`
 
-##### `verifyBindings(production: boolean): Promise<boolean>`
-
-Verifies the Apple App Attestation bindings in a C2PA manifest by validating the attestation and assertion against the photo hash and capture metadata.
+Verifies the Apple App Attestation bindings by validating the attestation and assertion against the photo hash and capture metadata.
 
 **Parameters:**
-- `production` - Set to `true` for production Apple App Attestation GUID, `false` for development
+- `production` - `true` for production Apple App Attestation, `false` for development
 
-**Returns:** A promise that resolves to `true` if the bindings are valid
+**Returns:** `ResultAsync<boolean, Error>` — use `.isOk()` to check success
 
-**Throws:** Error if verification fails
+##### `verifyProof(appId: string): ResultAsync<boolean, Error>`
 
-**Example:**
-```typescript
-try {
-  const isValid = await verifiable.verifyBindings(false); // development mode
-  console.log('Bindings verified:', isValid);
-} catch (error) {
-  console.error('Verification failed:', error.message);
-}
-```
-
-##### `verifyProof(appId: string): Promise<boolean>`
-
-Verifies the zero-knowledge proof assertion in a C2PA manifest using Groth16 verification.
+Verifies the zero-knowledge proof assertion using Groth16 verification.
 
 **Parameters:**
 - `appId` - The application identifier (format: `TEAM_ID.BUNDLE_ID`)
 
-**Returns:** A promise that resolves to `true` if the proof is valid, `false` otherwise
+**Returns:** `ResultAsync<boolean, Error>` — use `.isOk()` to check success
 
-**Example:**
-```typescript
-const appId = 'NLS5R4YCGX.com.example.myapp';
-const isValid = await verifiable.verifyProof(appId);
-console.log('Proof verified:', isValid);
-```
+##### `captureMetadata(): ResultAsync<CaptureMetadata, Error>`
 
-##### `captureMetadata(): Promise<CaptureMetadata>`
+Extracts capture metadata from the C2PA manifest.
 
-Extracts the capture metadata from the C2PA manifest, including timestamp and capture parameters.
-
-**Returns:** A promise that resolves to capture metadata containing:
-- `when` - ISO 8601 timestamp of when the photo/video was captured
+**Returns:** `ResultAsync<CaptureMetadata, Error>` containing:
+- `when` - ISO 8601 timestamp of capture
 - `parameters` - Either `PhotoMetadataInfo` or `VideoMetadataInfo` with device and capture details
 
-**Example:**
 ```typescript
-const metadata = await verifiable.captureMetadata();
-console.log('Captured:', metadata.when);
-console.log('Device:', metadata.parameters.deviceMake);
-console.log('Model:', metadata.parameters.deviceModel);
-
-// Photo-specific metadata
-if ('focalLength' in metadata.parameters) {
-  console.log('Focal length:', metadata.parameters.focalLength);
-  console.log('ISO:', metadata.parameters.iso);
-}
-
-// Video-specific metadata
-if ('frameRate' in metadata.parameters) {
-  console.log('Frame rate:', metadata.parameters.frameRate);
-  console.log('Duration:', metadata.parameters.duration);
+const result = await file.captureMetadata();
+if (result.isOk()) {
+  console.log("Captured:", result.value.when);
+  console.log("Device:", result.value.parameters.deviceMake);
 }
 ```
 
-##### `dataHash(): Promise<string>`
+##### `dataHash(): Promise<Uint8Array>`
 
-Returns the file's content hash as recorded in the active C2PA manifest.
+Computes the file's content hash (SHA-256 over the file without C2PA manifest).
 
-**Returns:** A promise that resolves to the manifest data hash (base64-encoded string)
+**Returns:** `Promise<Uint8Array>`
 
-**Example:**
+##### `c2paReader(): ResultAsync<Reader, Error>`
+
+Returns the underlying C2PA Reader for advanced use cases.
+
+---
+
+### `VerifiableBuffer` (Node.js)
+
+The Node.js equivalent of `VerifiableFile`, working with `Buffer` instead of `File`.
+
+#### Constructor
+
 ```typescript
-const hash = await verifiable.dataHash();
-console.log('Content hash:', hash);
+new VerifiableBuffer(buffer: Buffer, mimeType: string)
 ```
+
+**Parameters:**
+- `buffer` - The file data as a Node.js `Buffer`
+- `mimeType` - MIME type of the file (e.g., `"image/jpeg"`, `"video/quicktime"`)
+
+#### Methods
+
+All methods are identical to `VerifiableFile`:
+- `authenticityStatus(): Promise<AuthenticityStatus>`
+- `verifyBindings(production: boolean): ResultAsync<boolean, Error>`
+- `verifyProof(appId: string): ResultAsync<boolean, Error>`
+- `captureMetadata(): ResultAsync<CaptureMetadata, Error>`
+- `dataHash(): Promise<Uint8Array>`
+
+---
+
+### `AuthenticityStatus` (Enum)
+
+```typescript
+enum AuthenticityStatus {
+  Bindings,       // Has Apple App Attestation bindings
+  Proof,          // Has zero-knowledge proof
+  InvalidManifest, // C2PA manifest exists but missing ZCAM1 assertions
+  NoManifest,     // No C2PA manifest found
+}
+```
+
+### `CaptureMetadata` (Type)
+
+```typescript
+interface CaptureMetadata {
+  when: string; // ISO 8601 timestamp
+  parameters: PhotoMetadataInfo | VideoMetadataInfo;
+}
+```
+
+## Verification Flow
+
+1. Call `authenticityStatus()` to determine what type of verification is available
+2. For `AuthenticityStatus.Bindings`: call `verifyBindings(production)`
+3. For `AuthenticityStatus.Proof`: call `verifyProof(appId)`
+4. Both methods internally verify the file's content hash against the C2PA manifest
 
 ## License
 

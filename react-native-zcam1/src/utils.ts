@@ -2,6 +2,13 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { base64 } from "@scure/base";
 
+/**
+ * Strips the "file://" protocol prefix from a path if present.
+ */
+export function stripFileProtocol(path: string): string {
+  return path.startsWith("file://") ? path.slice(7) : path;
+}
+
 function stringToArray(s: string): Uint8Array {
   return new TextEncoder().encode(s);
 }

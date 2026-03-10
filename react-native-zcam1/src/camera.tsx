@@ -1,14 +1,17 @@
+import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
 import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
+  AuthenticityData,
   buildSelfSignedCertificate,
   computeHash,
   DepthData,
   ExistingCertChain,
   formatFromPath,
+  LocationInfo,
   ManifestEditor,
   type PhotoMetadataInfo,
   SelfSignedCertChain,
@@ -23,7 +26,7 @@ import NativeZcam1Sdk, {
   type StartNativeVideoRecordingResult,
   type StopNativeVideoRecordingResult,
 } from "./NativeZcam1Capture";
-import { generateAppAttestAssertion } from "./utils";
+import { generateAppAttestAssertion, stripFileProtocol } from "./utils";
 
 export const CERT_KEY_TAG = "CERT_KEY_TAG";
 
@@ -153,6 +156,22 @@ export interface ZCameraProps {
    * Use with `filmStyle` prop by casting the custom name: `filmStyle={"myStyle" as CameraFilmStyle}`.
    */
   customFilmStyles?: Record<string, FilmStyleRecipe>;
+  /**
+   * When true, embeds a trusted GPS timestamp in the C2PA manifest at capture time.
+   * Requires location permission. The timestamp is sourced from GPS rather than device clock,
+   * making it tamper-evident. Stored as `trustedTimestamp` in photo/video metadata.
+   * @default false
+   */
+  captureTimestampEnabled?: boolean;
+  /**
+   * When true, embeds GPS coordinates in the C2PA manifest at capture time.
+   * Requires location permission. Stored as `location` in photo/video metadata.
+   * If location retrieval fails, `isLocationAvailable` is set to `false` and
+   * `locationRetrievalStatus` contains the error reason.
+   * @default false
+   */
+  captureLocationEnabled?: boolean;
+
   /**
    * Enable depth data capture at session level.
    * When true, depth data can be captured but zoom may be restricted on dual-camera devices.
@@ -472,6 +491,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       const when = new Date().toISOString().replace("T", " ").split(".")[0]!;
       const isJailBroken = JailMonkey.isJailBroken();
       const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
+      const location = await retrieveLocationData(
+        this.props.captureTimestampEnabled,
+        this.props.captureLocationEnabled,
+      );
+      const authenticityData: AuthenticityData = {
+        isJailBroken,
+        isLocationSpoofingAvailable,
+        isLocationAvailable: location.isLocationAvailable,
+        locationRetrievalStatus: location.locationRetrievalStatus,
+      };
 
       result.filePath = await embedBindings(
         result.filePath,
@@ -492,11 +521,10 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
           audioCodec: result.audioCodec,
           audioSampleRate: result.audioSampleRate,
           audioChannels: result.audioChannels,
-          authenticityData: {
-            isJailBroken,
-            isLocationSpoofingAvailable,
-          },
+          authenticityData,
           filmStyle: this.resolveFilmStyleInfo(),
+          trustedTimestamp: location.trustedTimestamp,
+          location: location.coords,
         },
         this.props.captureInfo,
         this.certChainPem,
@@ -528,8 +556,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const aspectRatio: AspectRatio = options.aspectRatio ?? "4:3";
     const orientation: Orientation = options.orientation ?? "auto";
 
-    console.log("[ZCamera] takePhoto: calling native with includeDepthData =", includeDepthData);
-
     const result = await NativeZcam1Sdk.takeNativePhoto(
       format,
       this.props.position || "back",
@@ -539,14 +565,6 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       orientation,
       false, // skipPostProcessing - default to false for normal operation
     );
-
-    console.log("[ZCamera] takePhoto: native result:", {
-      filePath: result?.filePath ? "present" : "missing",
-      format: result?.format,
-      hasMetadata: !!result?.metadata,
-      hasDepthData: !!result?.depthData,
-      depthDataKeys: result?.depthData ? Object.keys(result.depthData) : null,
-    });
 
     if (!result || !result.filePath) {
       throw new Error("Native camera capture did not return a valid file path.");
@@ -565,6 +583,16 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const softwareVersion = tiff.Software || "Unknown";
     const isJailBroken = JailMonkey.isJailBroken();
     const isLocationSpoofingAvailable = JailMonkey.canMockLocation();
+    const location = await retrieveLocationData(
+      this.props.captureTimestampEnabled,
+      this.props.captureLocationEnabled,
+    );
+    const authenticityData: AuthenticityData = {
+      isJailBroken,
+      isLocationSpoofingAvailable,
+      isLocationAvailable: location.isLocationAvailable,
+      locationRetrievalStatus: location.locationRetrievalStatus,
+    };
 
     const destinationPath = await embedBindings(
       originalPath,
@@ -580,12 +608,11 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
         focalLength: exif.FocalLength,
-        authenticityData: {
-          isJailBroken,
-          isLocationSpoofingAvailable,
-        },
+        authenticityData,
         depthData: result.depthData as DepthData | undefined,
         filmStyle: this.resolveFilmStyleInfo(),
+        trustedTimestamp: location.trustedTimestamp,
+        location: location.coords,
       },
       this.props.captureInfo,
       this.certChainPem,
@@ -654,7 +681,7 @@ async function embedBindings(
   captureInfo: CaptureInfo,
   certChainPem: string,
 ): Promise<string> {
-  originalPath = originalPath.replace("file://", "");
+  originalPath = stripFileProtocol(originalPath);
   const dataHash = computeHash(originalPath);
   const format = formatFromPath(originalPath);
   const ext = Util.extname(originalPath);
@@ -677,7 +704,6 @@ async function embedBindings(
   if (format.indexOf("video") < 0) {
     normalizedMetadata = manifestEditor.addPhotoMetadataAction(metadata as PhotoMetadataInfo, when);
   } else {
-    console.log("Metadata", metadata);
     normalizedMetadata = manifestEditor.addVideoMetadataAction(metadata as VideoMetadataInfo, when);
   }
 
@@ -702,4 +728,62 @@ async function embedBindings(
   await manifestEditor.embedManifestToFile(destinationPath, format);
 
   return destinationPath;
+}
+
+type LocationData = {
+  coords: LocationInfo | undefined;
+  trustedTimestamp: bigint | undefined;
+  isLocationAvailable: boolean | undefined;
+  locationRetrievalStatus: string | undefined;
+};
+
+function retrieveLocationData(
+  captureTimestampEnabled: boolean | undefined,
+  captureLocationEnabled: boolean | undefined,
+): Promise<LocationData> {
+  if (!captureTimestampEnabled && !captureLocationEnabled) {
+    return Promise.resolve({
+      coords: undefined,
+      trustedTimestamp: undefined,
+      isLocationAvailable: undefined,
+      locationRetrievalStatus: undefined,
+    });
+  }
+
+  return new Promise((resolve) => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          coords: captureLocationEnabled
+            ? {
+                latitude: position.coords.latitude.toFixed(6),
+                longitude: position.coords.longitude.toFixed(6),
+                altitude: position.coords.altitude?.toFixed(6),
+                accuracy: position.coords.accuracy.toFixed(6),
+                altitudeAccuracy: position.coords.altitudeAccuracy?.toFixed(6),
+              }
+            : undefined,
+          trustedTimestamp: captureTimestampEnabled
+            ? BigInt(Math.trunc(position.timestamp))
+            : undefined,
+          isLocationAvailable: true,
+          locationRetrievalStatus: "success",
+        });
+      },
+      (error) => {
+        console.warn(`[ZCAM1] failed to retrieve GPS location data: ${error.message}`);
+        resolve({
+          coords: undefined,
+          trustedTimestamp: undefined,
+          isLocationAvailable: false,
+          locationRetrievalStatus: error.message,
+        });
+      },
+      {
+        timeout: 1000, // 1 second
+        maximumAge: 60 * 1000, // 1 minute
+        enableHighAccuracy: true,
+      },
+    );
+  });
 }

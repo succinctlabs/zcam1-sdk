@@ -1,4 +1,5 @@
 import { generateHardwareKey, getAttestation } from "@pagopa/io-react-native-integrity";
+import Geolocation from "@react-native-community/geolocation";
 import EncryptedStorage from "react-native-encrypted-storage";
 
 import { type ECKey, getContentPublicKey, getSecureEnclaveKeyId } from "./common";
@@ -89,7 +90,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
-    throw "Only EC public keys are supported";
+    throw new Error("Only EC public keys are supported");
   }
 
   const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
@@ -115,7 +116,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   }
 
   if (deviceKeyId == null) {
-    throw "failed to generate a device key";
+    throw new Error("Failed to generate a device key");
   }
 
   let attestation = await EncryptedStorage.getItem(`attestation-${deviceKeyId}`);
@@ -162,4 +163,18 @@ export async function updateRegistration(keyId: string, _settings: Settings): Pr
   await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
+}
+
+/**
+ * Requests location permission from the user.
+ * This function triggers the native location authorization prompt on the device.
+ * @throws {string} Error message if permission request fails
+ */
+export function requestLocationPermission() {
+  Geolocation.requestAuthorization(
+    () => {},
+    (error) => {
+      throw error.message;
+    },
+  );
 }

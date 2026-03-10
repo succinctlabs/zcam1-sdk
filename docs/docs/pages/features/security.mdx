@@ -65,6 +65,16 @@ To mitigate this:
 
 This is an active area of development to strengthen the SDK's guarantees on potentially compromised devices.
 
+### GPS Location and Timestamp
+
+GPS location and timestamp embedding are **opt-in** features enabled via the [`captureLocationEnabled`](/sdk/capture/ZCamera#captureLocationEnabled) and [`captureTimestampEnabled`](/sdk/capture/ZCamera#captureTimestampEnabled) props on `ZCamera`. When enabled, the device queries GPS at capture time and embeds the coordinates and/or timestamp directly into the C2PA manifest.
+
+Because these values come from GPS rather than the device clock or software, they are relatively hard to spoof:
+- **GPS coordinates** require the device to have a genuine satellite fix or cell/Wi-Fi assisted location. Spoofing GPS at the OS level typically requires a jailbroken device, which is separately detected and flagged.
+- **GPS timestamp** is derived from the GPS signal itself, not the device clock, making it independent of any user-controlled time setting.
+
+When location retrieval fails (e.g., permission denied, no GPS fix within the timeout), the manifest records `isLocationAvailable: false` and a `locationRetrievalStatus` reason, so verifiers can distinguish "location not requested" from "location attempted but unavailable."
+
 ### Integrator Responsibilities
 
 For the SDK's guarantees to hold, integrating applications must:
@@ -91,5 +101,5 @@ ZCAM embeds rich contextual metadata at capture time, giving verifiers the signa
 | **Depth Map** | Per-pixel depth from dual cameras/LiDAR | Flat depth when the subject has more depth variance |
 | **White Balance** | Color temperature | Screen color temperature differs from natural light |
 | **Ambient Light** | Environmental light level | Unusually uniform lighting could indicate screen glow|
-| **GPS** (WIP) | Location | Location inconsistent with claimed scene |
-| **Timestamp** (WIP) | Time | Time inconsistent with lighting conditions |
+| **GPS** | Location embedded from device GPS at capture time | Location inconsistent with claimed scene |
+| **Timestamp** | GPS-sourced timestamp embedded at capture time | Timestamp inconsistent with lighting conditions or claimed context |

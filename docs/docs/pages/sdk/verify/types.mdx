@@ -38,6 +38,9 @@ interface PhotoMetadataInfo {
   focalLength: number;                // Focal length in millimeters
   authenticityData: AuthenticityData; // Device security status
   depthData?: DepthData;              // Depth map information (optional)
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
+  trustedTimestamp?: bigint;          // Timestamp extracted from GPS data (Unix timestamp in milliseconds, optional)
+  location?: LocationInfo;            // Geographic location where the photo was captured (optional)
 }
 ```
 
@@ -63,6 +66,9 @@ interface VideoMetadataInfo {
   audioSampleRate?: number;           // Audio sample rate in Hz (optional)
   audioChannels?: number;             // Number of audio channels (optional)
   authenticityData: AuthenticityData; // Device security status
+  filmStyle?: FilmStyleInfo;          // Film style applied at capture (optional)
+  trustedTimestamp?: bigint;          // Timestamp extracted from GPS data (Unix timestamp in milliseconds, optional)
+  location?: LocationInfo;            // Geographic location where the photo was captured (optional)
 }
 ```
 
@@ -90,12 +96,16 @@ Enum representing the authenticity status of a file based on its C2PA manifest c
 
 ```typescript
 interface AuthenticityData {
-  isJailBroken: boolean;              // Whether the device was jailbroken at capture time
+  isJailBroken: boolean;                // Whether the device was jailbroken at capture time
   isLocationSpoofingAvailable: boolean; // Whether location spoofing was detected
+  isLocationAvailable?: boolean;        // Whether location was successfully retrieved at capture time (optional)
+  locationRetrievalStatus?: string;     // Reason location was unavailable, or "success" (optional)
 }
 ```
 
 Device security status information captured at the time of photo/video creation.
+
+- **`isLocationAvailable`** — `true` if location access was granted and coordinates were successfully retrieved at capture time. `false` if location was attempted but could not be obtained. Absent if location access wasn't requested.
 
 ## DepthData
 
@@ -125,3 +135,40 @@ interface DepthDataStatistics {
 ```
 
 Statistical information about depth values in a depth map.
+
+## FilmStyleInfo
+
+```typescript
+interface FilmStyleInfo {
+  name: string;    // Film style name (e.g., "mellow", "nostalgic", "bw", or a custom name)
+  source: string;  // How the style was defined: "builtin", "override", or "custom"
+  recipe: string;  // JSON-encoded array of FilmStyleEffect objects applied at capture
+}
+```
+
+Film style (filter) information recorded at capture time. Present when a non-default film style was applied.
+
+- **`builtin`** — A standard preset (`mellow`, `nostalgic`, `bw`) used without modification.
+- **`override`** — A built-in preset whose recipe was overridden via `filmStyleOverrides`.
+- **`custom`** — An app-defined style registered via `customFilmStyles`.
+
+The `recipe` field is a JSON string that can be parsed into a [`FilmStyleRecipe`](/sdk/capture/types#filmstylerecipe) (an array of [`FilmStyleEffect`](/sdk/capture/types#filmstyleeffect) objects).
+
+## LocationInfo
+
+```typescript
+interface LocationInfo {
+  latitude: string;          // Latitude in decimal degrees (e.g., "37.7749")
+  longitude: string;         // Longitude in decimal degrees (e.g., "-122.4194")
+  altitude?: string;         // Altitude in meters above sea level (optional)
+  accuracy: string;          // Horizontal accuracy radius in meters
+  altitudeAccuracy?: string; // Vertical accuracy in meters (optional)
+}
+```
+
+GPS location captured at the time of photo/video creation. Coordinates and accuracy are stored as strings to preserve original device precision without floating-point rounding.
+
+**Used by:**
+
+- [`PhotoMetadataInfo.location`](#photometadatainfo) - Location where the photo was captured
+- [`VideoMetadataInfo.location`](#videometadatainfo) - Location where the video was recorded

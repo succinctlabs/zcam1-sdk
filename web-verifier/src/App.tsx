@@ -154,7 +154,7 @@ function App() {
       <div>
         <p>
           This small tool allows to extract the data embedded inside a authentic
-          photo or video. The source code is avaliable at the{" "}
+          photo or video. The source code is available at the{" "}
           <a href="https://github.com/succinctlabs/zcam1-sdk">ZCAM SDK</a>{" "}
           repository.
         </p>
