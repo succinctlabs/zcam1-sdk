@@ -12,8 +12,12 @@ ios/Zcam1Sdk.h
 ios/Zcam1Sdk.mm
 ios/proving/Zcam1Proving.h
 ios/proving/Zcam1Proving.mm
+android/src/main/jniLibs
+android/src/main/jniLibsProving
 
-
+# node.js
+#
+node_modules/
 # node.js
 #
 node_modules/
