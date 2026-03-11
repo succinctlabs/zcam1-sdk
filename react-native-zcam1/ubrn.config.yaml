@@ -6,5 +6,10 @@ turboModule:
   entrypoint: src/bindings.tsx
 ios:
   frameworkName: Zcam1Framework
+android:
+  packageName: com.succinctlabs.zcam1sdk
 noOverwrite:
   - "Zcam1Sdk.podspec"
+  - "android/build.gradle"
+  - "android/cpp-adapter.cpp"
+  - "android/CMakeLists.txt"
