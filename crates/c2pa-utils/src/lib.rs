@@ -22,7 +22,7 @@ mod manifest_editor;
 #[cfg(all(feature = "editor", any(target_os = "macos", target_os = "ios")))]
 mod signing;
 
-#[cfg(all(feature = "android-signing", target_os = "android"))]
+#[cfg(all(feature = "editor", target_os = "android"))]
 mod android_signing;
 
 uniffi::setup_scaffolding!();

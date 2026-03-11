@@ -697,7 +697,9 @@ async function embedBindings(
   // On iOS, pass the contentKeyId (SHA1 of public key) so Rust signs via Secure Enclave.
   const keyTag =
     Platform.OS === "android"
-      ? new TextEncoder().encode("ZCAM1_CONTENT_KEY_TAG")
+      ? new TextEncoder().encode(
+          (await isEmulator()) ? "ZCAM1_MOCK_CONTENT_KEY_TAG" : "ZCAM1_CONTENT_KEY_TAG",
+        )
       : captureInfo.contentKeyId;
 
   const manifestEditor = new ManifestEditor(
