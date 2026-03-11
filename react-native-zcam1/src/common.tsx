@@ -7,11 +7,12 @@ import { isEmulator } from "react-native-device-info";
 const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
 
 // Mock P-256 key used on emulators where hardware-backed key generation is unavailable.
+// Public key coordinates correspond to MOCK_KEY in crates/c2pa-utils/src/manifest_editor.rs.
 const MOCK_EMULATOR_CONTENT_KEY = {
   kty: "EC" as const,
   crv: "P-256",
-  x: "RppjUgQnczmTmn56a9D_jkSp8aa3c79PJqdpizyENR0",
-  y: "ZdPRyOD6bo0Iy_gD-aHujhhgut4cS5yjOtsSeUsYkkc",
+  x: "hcUZSvoPr0QDDmC0CwMFLgGcHUTas1g4RXET2nFv_BA",
+  y: "v5WB7DJhhKed3SmZpO8hVJQXRUSOzNSxrfnQ9kv1zTg",
 };
 
 export interface ECKey {
