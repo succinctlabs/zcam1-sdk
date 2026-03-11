@@ -4219,6 +4219,7 @@ dependencies = [
  "base64ct",
  "c2pa",
  "futures",
+ "p256",
  "serde",
  "serde_json",
  "serde_json_canonicalizer",

@@ -1,16 +1,14 @@
 use jni::{
-    objects::{JObject, JValue},
+    objects::{JByteArray, JObject, JValue},
     JavaVM,
 };
 use std::error::Error;
 
 pub fn sign_with_android_keystore(key_alias: &str, data: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     // Get the running JVM (already loaded by React Native / uniffi)
-    let jvm = JavaVM::get_created()
-        .map_err(|e| format!("Failed to get JVM list: {e}"))?
-        .into_iter()
-        .next()
-        .ok_or("No JVM found")?;
+    let ctx = ndk_context::android_context();
+    let jvm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }
+        .map_err(|e| format!("Failed to get JVM: {e}"))?;
 
     let mut env = jvm
         .attach_current_thread()
@@ -82,10 +80,8 @@ pub fn sign_with_android_keystore(key_alias: &str, data: &[u8]) -> Result<Vec<u8
     )?;
 
     // signature.sign() -> byte[]
-    let result = env
-        .call_method(&signature, "sign", "()[B", &[])?
-        .l()?;
-    let result_bytes = env.convert_byte_array(result.into())?;
+    let result = env.call_method(&signature, "sign", "()[B", &[])?.l()?;
+    let result_bytes = env.convert_byte_array(JByteArray::from(result))?;
 
     Ok(result_bytes)
 }
