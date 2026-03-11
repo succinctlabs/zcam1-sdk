@@ -573,6 +573,13 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const originalPath = result.filePath;
     const depthHeatMapPath = result.depthHeatMapPath as string | undefined;
     const depthRawHash = result.depthRawHash as string | undefined;
+
+    // Log depth diagnostics for troubleshooting.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const depthDiag = (result as any)._depthDiag;
+    if (depthDiag) {
+      console.log("[DEPTH_DIAG]", JSON.stringify(depthDiag, null, 2));
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadata = (result.metadata as any) ?? {};
 
@@ -737,6 +744,8 @@ async function embedBindings(
       );
     } catch (e) {
       console.warn("[embedBindings] Failed to embed depth heat map:", e);
+    } finally {
+      FileSystem.unlink(depthHeatMapPath).catch(() => {});
     }
   }
 

@@ -78,9 +78,14 @@ public class Zcam1DepthDataProcessor {
     ///  - `jpegData`: JPEG-encoded heat map at the depth sensor's native resolution
     ///  - `rawHash`: hex-encoded SHA-256 of the raw Float32 depth buffer
     ///
+    /// The `photoOrientation` parameter should be the UIImage.Orientation of the captured photo
+    /// so the heatmap matches the photo's display orientation (depth sensor data is always in
+    /// native landscape orientation).
+    ///
     /// Returns nil if the depth data contains no valid pixels.
     public static func generateHeatMap(
-        from depthData: AVDepthData
+        from depthData: AVDepthData,
+        photoOrientation: UIImage.Orientation = .up
     ) -> (jpegData: Data, rawHash: String)? {
         // Unify to Float32 depth.
         let unified = convertToFloat32Depth(depthData)
@@ -100,9 +105,21 @@ public class Zcam1DepthDataProcessor {
         let floatBuffer = baseAddress.assumingMemoryBound(to: Float32.self)
         let rowStride = bytesPerRow / MemoryLayout<Float32>.stride
 
-        // Compute SHA-256 of the raw Float32 buffer.
-        let rawByteCount = height * bytesPerRow
-        let rawHash = sha256Hex(data: baseAddress, count: rawByteCount)
+        // Compute SHA-256 of the raw Float32 pixel data (excluding row padding).
+        let pixelBytesPerRow = width * MemoryLayout<Float32>.stride
+        let rawHash: String
+        if pixelBytesPerRow == bytesPerRow {
+            // No padding — hash the entire buffer directly.
+            rawHash = sha256Hex(data: baseAddress, count: height * bytesPerRow)
+        } else {
+            // Strip per-row padding by copying only pixel data into a contiguous buffer.
+            var contiguous = Data(capacity: height * pixelBytesPerRow)
+            for y in 0..<height {
+                let rowStart = baseAddress.advanced(by: y * bytesPerRow)
+                contiguous.append(Data(bytes: rowStart, count: pixelBytesPerRow))
+            }
+            rawHash = contiguous.withUnsafeBytes { sha256Hex(data: $0.baseAddress!, count: contiguous.count) }
+        }
 
         // Extract all values and find min/max.
         var minVal: Float = .infinity
@@ -165,8 +182,9 @@ public class Zcam1DepthDataProcessor {
             return nil
         }
 
-        // Encode as JPEG.
-        guard let jpegData = UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.85) else {
+        // Encode as JPEG, applying the photo's orientation so the heatmap matches.
+        let orientedImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: photoOrientation)
+        guard let jpegData = orientedImage.jpegData(compressionQuality: 0.85) else {
             return nil
         }
 
