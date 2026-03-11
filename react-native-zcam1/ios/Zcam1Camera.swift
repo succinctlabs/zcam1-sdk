@@ -427,10 +427,29 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
 
             // Extract depth data only when requested (and when available).
             var depthData: [String: Any]? = nil
+            var depthHeatMapPath: String? = nil
+            var depthRawHash: String? = nil
             if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
                 print("[PhotoCaptureDelegate] processing depth data...")
                 depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
                 print("[PhotoCaptureDelegate] depth data processed")
+
+                // Generate depth heat map (Turbo-colorized JPEG at native depth resolution).
+                print("[PhotoCaptureDelegate] generating depth heat map...")
+                if let heatMapResult = Zcam1DepthDataProcessor.generateHeatMap(from: depthDataSnapshot) {
+                    let heatMapFilename = "zcam1-depth-\(UUID().uuidString).jpg"
+                    let heatMapURL = FileManager.default.temporaryDirectory.appendingPathComponent(heatMapFilename)
+                    do {
+                        try heatMapResult.jpegData.write(to: heatMapURL, options: [.atomic])
+                        depthHeatMapPath = heatMapURL.path
+                        depthRawHash = heatMapResult.rawHash
+                        print("[PhotoCaptureDelegate] depth heat map written: \(heatMapResult.jpegData.count) bytes")
+                    } catch {
+                        print("[PhotoCaptureDelegate] WARNING: failed to write depth heat map: \(error)")
+                    }
+                } else {
+                    print("[PhotoCaptureDelegate] depth heat map generation returned nil (no valid depth pixels)")
+                }
             }
 
             var result: [String: Any] = [
@@ -442,6 +461,14 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             // Include depth data in result if requested and available.
             if self.includeDepthData, let depthData = depthData {
                 result["depthData"] = depthData
+            }
+
+            // Include depth heat map path and raw hash if generated.
+            if let depthHeatMapPath = depthHeatMapPath {
+                result["depthHeatMapPath"] = depthHeatMapPath
+            }
+            if let depthRawHash = depthRawHash {
+                result["depthRawHash"] = depthRawHash
             }
 
             print("[PhotoCaptureDelegate] calling completion on main thread...")
