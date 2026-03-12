@@ -1,5 +1,4 @@
 use std::{
-    marker::PhantomData,
     num::NonZeroUsize,
     str::FromStr,
     sync::{Arc, Mutex, OnceLock},
@@ -19,12 +18,18 @@ use sp1_sdk::{
     },
 };
 use tokio::{runtime::Runtime, sync::oneshot};
-use zcam1_ios::AuthInputs;
+use zcam1_common::AuthInputs;
 
 use crate::error::Error;
 
-pub const IOS_AUTHENCITY_ELF: Elf = include_elf!("authenticity-ios");
-pub const IOS_AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/vk.bin");
+#[cfg(apple)]
+pub const AUTHENCITY_ELF: Elf = include_elf!("authenticity-ios");
+#[cfg(apple)]
+pub const AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/authenticity-ios.bin");
+#[cfg(android)]
+pub const AUTHENCITY_ELF: Elf = include_elf!("authenticity-android");
+#[cfg(android)]
+pub const AUTHENCITY_VK: &[u8] = include_bytes!("../artifacts/authenticity-android.bin");
 
 /// Selects which prover network to connect to.
 #[derive(Debug, Default, uniffi::Enum)]
@@ -51,85 +56,41 @@ pub trait Initialized: Send + Sync {
 }
 
 #[derive(uniffi::Object)]
-pub struct IosProvingClient(ProvingClient<AuthInputs>);
+pub struct ProvingClient {
+    prover: Arc<OnceLock<EitherProver>>,
+    vk_hash: Arc<OnceLock<String>>,
+}
 
 #[uniffi::export]
-impl IosProvingClient {
+impl ProvingClient {
     #[uniffi::constructor(default(callback = None))]
     pub fn new(
         private_key: &str,
         callback: Option<Box<dyn Initialized>>,
         network_mode: Option<ProverNetworkMode>,
     ) -> Self {
-        Self(ProvingClient::ios(private_key, callback, network_mode))
+        Self::network(private_key, AUTHENCITY_VK, callback, network_mode)
     }
 
     #[uniffi::constructor(default(callback = None))]
-    pub fn mock(callback: Option<Box<dyn Initialized>>) -> Self {
-        Self(ProvingClient::mock(callback))
+    pub fn simulator(callback: Option<Box<dyn Initialized>>) -> Self {
+        Self::mock(AUTHENCITY_VK, callback)
     }
 
     pub async fn request_proof(
         &self,
         file_path: &str,
         format: &str,
-        inputs: IosProofRequestInputs,
+        production: bool,
     ) -> Result<String, Error> {
+        let prover = self.prover.get().ok_or(Error::ProverNotInitialized)?;
+
         let inputs = AuthInputs {
             photo_bytes: std::fs::read(file_path)?,
             format: format.to_string(),
-            app_attest_production: inputs.app_attest_production,
+            production,
         };
-        self.0.request_proof(inputs).await
-    }
 
-    pub fn vk_hash(&self) -> Result<String, Error> {
-        self.0.vk_hash()
-    }
-
-    pub async fn get_proof_status(&self, request_id: &str) -> Result<ProofRequestStatus, Error> {
-        self.0.get_proof_status(request_id).await
-    }
-}
-
-pub struct ProvingClient<I> {
-    prover: Arc<OnceLock<EitherProver>>,
-    vk_hash: Arc<OnceLock<String>>,
-    phantom: PhantomData<I>,
-}
-
-impl<I> ProvingClient<I>
-where
-    I: Into<SP1Stdin>,
-{
-    pub fn mock(callback: Option<Box<dyn Initialized>>) -> Self {
-        let prover = Arc::new(OnceLock::new());
-        let vk_hash = Arc::new(OnceLock::new());
-        let cloned_prover = prover.clone();
-        let cloned_vk_hash = vk_hash.clone();
-
-        tokio_rt().spawn(async move {
-            let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
-            let _ = cloned_vk_hash.set(vk.bytes32());
-            let _ = cloned_prover.set(EitherProver::Mock {
-                vk: Box::new(vk),
-                proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
-            });
-
-            if let Some(callback) = callback {
-                callback.initialized();
-            }
-        });
-
-        Self {
-            prover,
-            vk_hash,
-            phantom: PhantomData,
-        }
-    }
-
-    pub async fn request_proof(&self, inputs: I) -> Result<String, Error> {
-        let prover = self.prover.get().ok_or(Error::ProverNotInitialized)?;
         prover.request_proof(inputs.into()).await
     }
 
@@ -146,9 +107,10 @@ where
     }
 }
 
-impl ProvingClient<AuthInputs> {
-    pub fn ios(
+impl ProvingClient {
+    pub fn network(
         private_key: &str,
+        vk: &'static [u8],
         callback: Option<Box<dyn Initialized>>,
         network_mode: Option<ProverNetworkMode>,
     ) -> Self {
@@ -163,7 +125,7 @@ impl ProvingClient<AuthInputs> {
 
         tokio_rt().spawn(async move {
             let prover = NetworkProver::new(signer, &rpc_url, network_mode).await;
-            let vk = bincode::deserialize::<SP1VerifyingKey>(IOS_AUTHENCITY_VK).unwrap();
+            let vk = bincode::deserialize::<SP1VerifyingKey>(vk).unwrap();
             let _ = cloned_vk_hash.set(vk.bytes32());
             let _ = cloned_prover.set(EitherProver::Network {
                 prover: Arc::new(prover),
@@ -175,11 +137,29 @@ impl ProvingClient<AuthInputs> {
             }
         });
 
-        Self {
-            prover,
-            vk_hash,
-            phantom: PhantomData,
-        }
+        Self { prover, vk_hash }
+    }
+
+    pub fn mock(vk: &'static [u8], callback: Option<Box<dyn Initialized>>) -> Self {
+        let prover = Arc::new(OnceLock::new());
+        let vk_hash = Arc::new(OnceLock::new());
+        let cloned_prover = prover.clone();
+        let cloned_vk_hash = vk_hash.clone();
+
+        tokio_rt().spawn(async move {
+            let vk = bincode::deserialize::<SP1VerifyingKey>(vk).unwrap();
+            let _ = cloned_vk_hash.set(vk.bytes32());
+            let _ = cloned_prover.set(EitherProver::Mock {
+                vk: Box::new(vk),
+                proof_requests: Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())),
+            });
+
+            if let Some(callback) = callback {
+                callback.initialized();
+            }
+        });
+
+        Self { prover, vk_hash }
     }
 }
 
@@ -200,7 +180,7 @@ impl EitherProver {
             EitherProver::Network { prover, vk } => {
                 let prover = prover.clone();
                 let vk = vk.clone();
-                let pk = SP1ProvingKey::new(*vk, IOS_AUTHENCITY_ELF);
+                let pk = SP1ProvingKey::new(*vk, AUTHENCITY_ELF);
 
                 run_on_tokio(async move {
                     prover
@@ -294,8 +274,8 @@ impl EitherProver {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
-pub struct IosProofRequestInputs {
-    pub app_attest_production: bool,
+pub struct ProofRequestInputs {
+    pub production: bool,
 }
 
 #[derive(Debug, uniffi::Record)]

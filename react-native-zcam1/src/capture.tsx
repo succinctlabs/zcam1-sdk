@@ -1,15 +1,16 @@
-import { Platform } from "react-native";
+import {
+  getPublicKeyFixed,
+  isKeyStrongboxBacked,
+  sign as cryptoSign,
+} from "@pagopa/io-react-native-crypto";
 import {
   generateHardwareKey,
   getAttestation,
   isPlayServicesAvailable,
 } from "@pagopa/io-react-native-integrity";
-import {
-  sign as cryptoSign,
-  getPublicKeyFixed,
-  isKeyStrongboxBacked,
-} from "@pagopa/io-react-native-crypto";
 import Geolocation from "@react-native-community/geolocation";
+import { Platform } from "react-native";
+import { getBundleId, isEmulator } from "react-native-device-info";
 import EncryptedStorage from "react-native-encrypted-storage";
 
 import { type ECKey, getContentPublicKey, getSecureEnclaveKeyId } from "./common";
@@ -27,10 +28,6 @@ export type {
   MonochromeConfig,
   WhiteBalanceConfig,
 } from "./camera";
-export function getZCamera() {
-  const camera = require("./camera");
-  return camera.ZCamera;
-}
 
 import NativeZcam1Capture from "./NativeZcam1Capture";
 
@@ -100,6 +97,8 @@ export class ZPhoto {
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const contentPublicKey = await getContentPublicKey();
+  const isSimulator = await isEmulator();
+  let appId = settings.appId;
 
   if (contentPublicKey.kty !== "EC") {
     throw new Error("Only EC public keys are supported");
@@ -112,54 +111,57 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
     ? await EncryptedStorage.getItem(`attestation-${deviceKeyId}`)
     : null;
 
-  if (deviceKeyId == null || attestation == null) {
-    if (Platform.OS === "android") {
+  //if (deviceKeyId == null || attestation == null) {
+  switch (Platform.OS) {
+    case "android":
+      // On Android, the appId is the package name.
+      appId = getBundleId();
+
       // On Android, getAttestation() creates the key AND returns the attestation
       // certificate chain in a single call. generateHardwareKey() is iOS-only.
-      const keyAlias = `zcam1-device-${settings.appId}`;
-      try {
-        attestation = await getAttestation(keyAlias, keyAlias);
-      } catch (error: unknown) {
-        const err = error as { code?: string; message?: string } | undefined;
-        if (err?.code === "KEY_ALREADY_EXISTS") {
-          // Key was created before but attestation wasn't stored — can't re-attest.
-          // Use a placeholder; the key itself is still usable for signing.
-          attestation = await EncryptedStorage.getItem(`attestation-${keyAlias}`) ?? "KEY_PREVIOUSLY_CREATED";
-        } else {
-          throw error;
-        }
+      deviceKeyId = `zcam1-device-${settings.appId}`;
+
+      if (isSimulator) {
+        // Emulator or device without Play Integrity support — use mock attestation.
+        console.warn(
+          "[ZCAM] Play Integrity not available - using mock attestation. This is for development only.",
+        );
+        attestation = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
+      } else {
+        attestation = await getAttestation(deviceKeyId, deviceKeyId);
       }
-      deviceKeyId = keyAlias;
-    } else {
+      break;
+
+    case "ios":
+    case "macos":
       // iOS: generate key first, then attest separately
       if (deviceKeyId == null) {
-        try {
+        if (isSimulator) {
+          console.warn(
+            "[ZCAM] Running in simulator - using mock device key. This is for development only.",
+          );
+          deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+        } else {
           deviceKeyId = await generateHardwareKey();
-        } catch (error: unknown) {
-          const err = error as { code?: string; message?: string } | undefined;
-          if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
-            console.warn(
-              "[ZCAM] Running in simulator - using mock device key. This is for development only.",
-            );
-            deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
-          } else {
-            throw error;
-          }
         }
       }
       attestation = await updateRegistration(deviceKeyId!, settings);
-    }
+      break;
 
-    await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId!);
-    await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
+    default:
+      throw new Error(`initCapture: ${Platform.OS} not supported`);
   }
+
+  await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId!);
+  await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
+  //}
 
   if (deviceKeyId == null) {
     throw new Error("Failed to generate a device key");
   }
 
   return {
-    appId: settings.appId,
+    appId,
     deviceKeyId,
     contentPublicKey,
     contentKeyId,
@@ -174,25 +176,16 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
  * @returns Attestation data and challenge
  */
 export async function updateRegistration(keyId: string, _settings: Settings): Promise<string> {
-  // Try to get real attestation, but fall back to mock for simulator
-  let attestation: string;
-  try {
-    attestation = await getAttestation(keyId, keyId);
-  } catch (error: unknown) {
-    // If running in simulator, App Attest is not supported
-    const err = error as { code?: string; message?: string } | undefined;
-    if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
-      console.warn(
-        "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
-      );
-      // Use a mock attestation for simulator testing
-      // In production, this would need to be rejected by the backend
-      return `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
-    } else {
-      throw error;
-    }
+  const isSimulator = await isEmulator();
+
+  if (isSimulator) {
+    console.warn(
+      "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
+    );
+    return `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
   }
 
+  const attestation = await getAttestation(keyId, keyId);
   await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
@@ -219,10 +212,7 @@ export function requestLocationPermission() {
  * @param message - The UTF-8 string message to sign
  * @returns Base64-encoded ECDSA signature
  */
-export async function signWithDeviceKey(
-  deviceKeyId: string,
-  message: string,
-): Promise<string> {
+export async function signWithDeviceKey(deviceKeyId: string, message: string): Promise<string> {
   return cryptoSign(message, deviceKeyId);
 }
 
@@ -231,9 +221,7 @@ export async function signWithDeviceKey(
  * @param deviceKeyId - The key alias/tag from initCapture().deviceKeyId
  * @returns The public key as an ECKey (JWK format with x, y coordinates)
  */
-export async function getDevicePublicKey(
-  deviceKeyId: string,
-): Promise<ECKey> {
+export async function getDevicePublicKey(deviceKeyId: string): Promise<ECKey> {
   const key = await getPublicKeyFixed(deviceKeyId);
   if (key.kty !== "EC") {
     throw new Error("Expected EC key, got " + key.kty);
@@ -247,9 +235,7 @@ export async function getDevicePublicKey(
  * @param deviceKeyId - The key alias/tag from initCapture().deviceKeyId
  * @returns true if StrongBox-backed, false if TEE-backed or unsupported
  */
-export async function isDeviceKeyStrongboxBacked(
-  deviceKeyId: string,
-): Promise<boolean> {
+export async function isDeviceKeyStrongboxBacked(deviceKeyId: string): Promise<boolean> {
   if (Platform.OS !== "android") return false;
   return isKeyStrongboxBacked(deviceKeyId);
 }

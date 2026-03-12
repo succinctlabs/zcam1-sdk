@@ -8,6 +8,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Platform } from "react-native";
+import { isEmulator } from "react-native-device-info";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
@@ -22,10 +24,10 @@ import { stripFileProtocol } from "../utils";
 import {
   FulfillmentStatus,
   type Initialized,
-  IosProvingClient,
-  type IosProvingClientInterface,
   ProofRequestStatus,
   ProverNetworkMode,
+  ProvingClient as ProvingClientInner,
+  type ProvingClientInterface,
 } from "./bindings";
 
 export { ProverNetworkMode } from "./bindings";
@@ -57,7 +59,7 @@ async function createProvingClient(
   onProofRequest?: (requestId: string, photoPath: string) => void,
 ): Promise<ProvingClient> {
   let certChainPem: string;
-  let client: IosProvingClientInterface;
+  let client: ProvingClientInterface;
   const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
@@ -76,9 +78,9 @@ async function createProvingClient(
 
   if (settings.privateKey) {
     const proverNetworkMode = settings.proverNetworkMode ?? ProverNetworkMode.Mainnet;
-    client = new IosProvingClient(settings.privateKey, onInitialized, proverNetworkMode);
+    client = new ProvingClientInner(settings.privateKey, onInitialized, proverNetworkMode);
   } else {
-    client = IosProvingClient.mock(onInitialized);
+    client = ProvingClientInner.simulator(onInitialized);
   }
 
   return new ProvingClient(client, contentKeyId, certChainPem, settings.production, onProofRequest);
@@ -379,14 +381,14 @@ export function useProofRequestStatus(requestId: string | null): ProofRequestCon
 }
 
 export class ProvingClient {
-  client: IosProvingClientInterface;
+  client: ProvingClientInterface;
   contentKeyId: Uint8Array;
   certChainPem: string;
   production: boolean;
   onProofRequest?: (requestId: string, photoPath: string) => void;
 
   constructor(
-    client: IosProvingClientInterface,
+    client: ProvingClientInterface,
     contentKeyId: Uint8Array,
     certChainPem: string,
     production: boolean,
@@ -414,9 +416,7 @@ export class ProvingClient {
       throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
-    const requestId = await this.client.requestProof(originalPath, format, {
-      appAttestProduction: this.production,
-    });
+    const requestId = await this.client.requestProof(originalPath, format, this.production);
 
     if (this.onProofRequest) {
       this.onProofRequest(requestId, originalPath);
@@ -445,9 +445,18 @@ export class ProvingClient {
       throw new Error(`Unsupported file format: ${originalPath}`);
     }
 
+    // On Android, pass the KeyStore alias so Rust signs via JNI.
+    // On iOS, pass the contentKeyId (SHA1 of public key) so Rust signs via Secure Enclave.
+    const keyTag =
+      Platform.OS === "android"
+        ? new TextEncoder().encode(
+            (await isEmulator()) ? "ZCAM1_MOCK_CONTENT_KEY_TAG" : "ZCAM1_CONTENT_KEY_TAG",
+          )
+        : this.contentKeyId;
+
     const manifestEditor = ManifestEditor.fromManifest(
       originalPath,
-      this.contentKeyId.buffer as ArrayBuffer,
+      keyTag.buffer as ArrayBuffer,
       this.certChainPem,
     );
 

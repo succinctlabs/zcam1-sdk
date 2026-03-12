@@ -1,6 +1,6 @@
 mod error;
 
 mod prover;
-pub use prover::{FulfillmentStatus, IOS_AUTHENCITY_ELF, IosProvingClient, ProofRequestStatus};
+pub use prover::{FulfillmentStatus, ProofRequestStatus, ProvingClient};
 
 uniffi::setup_scaffolding!();
