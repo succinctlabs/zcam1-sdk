@@ -28,7 +28,7 @@ p256 = { version = "0.13", features = ["ecdsa"] }
 
 [dev-dependencies]
 zcam1-c2pa-utils = { path = ".", features = ["io", "editor"] }
-zcam1-common.workspace = true
+zcam1-certs-utils.workspace = true
 tempfile = "3.23.0"
 tokio = { version = "1.48", default-features = false, features = [
     "rt",

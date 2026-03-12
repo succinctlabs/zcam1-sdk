@@ -7,25 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-# Members
-zcam1-ios.workspace = true
-
-sp1-sdk.workspace = true
-
-base64ct.workspace = true
-eyre.workspace = true
-getrandom.workspace = true
-hex.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 thiserror.workspace = true
-tracing = "0.1"
-
-der = "0.7"
-p256 = { version = "0.13", features = ["jwk"] }
-rcgen = "0.14.5"
-spki = { version = "0.7", features = ["pem"] }
-x509-cert = { version = "0.2", features = ["builder", "pem"] }
 
 [dev-dependencies]
 c2pa.workspace = true
