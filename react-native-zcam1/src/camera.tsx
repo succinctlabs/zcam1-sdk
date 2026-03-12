@@ -728,7 +728,7 @@ async function embedBindings(
       const heatMapBase64 = await FileSystem.readFile(depthHeatMapPath, "base64");
       const depthData = (metadata as PhotoMetadataInfo).depthData;
       manifestEditor.addAssertion(
-        "org.zcam1.depth_heatmap",
+        "succinct.depth-heatmap",
         JSON.stringify({
           format: "image/jpeg",
           width: depthData?.width,
