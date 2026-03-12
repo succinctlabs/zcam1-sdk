@@ -4,7 +4,7 @@ use p256::ecdsa::{signature::Signer, Signature, SigningKey};
 use serde_json::json;
 use tempfile::tempdir;
 use zcam1_c2pa_utils::{compute_hash, ManifestEditor};
-use zcam1_common::generate_cert_chain;
+use zcam1_certs_utils::{build_self_signed_certificate, JwkEcKey};
 
 #[tokio::test]
 async fn test_video_hash() {
@@ -16,14 +16,14 @@ async fn test_video_hash() {
     let x = encoded_point.x().unwrap();
     let y = encoded_point.y().unwrap();
 
-    let jwk = json!({
-        "kty": "EC",
-        "crv": "P-256",
-        "x": Base64UrlUnpadded::encode_string(x),
-        "y": Base64UrlUnpadded::encode_string(y),
-    });
+    let jwk = JwkEcKey {
+        kty: "EC".to_string(),
+        crv: "P-256".to_string(),
+        x: Base64UrlUnpadded::encode_string(x),
+        y: Base64UrlUnpadded::encode_string(y),
+    };
 
-    let certs = generate_cert_chain(jwk, "TEST SUBJECT", "TEST ORG").unwrap();
+    let certs = build_self_signed_certificate(&jwk, None).unwrap();
 
     let signer = CallbackSigner::new(
         move |_context, data: &[u8]| -> Result<Vec<u8>, c2pa::Error> {

@@ -58,16 +58,15 @@ pub fn build_self_signed_certificate(
     cert_chain_params: Option<SelfSignedCertChain>,
 ) -> Result<String, CertsError> {
     let cert_chain_params = cert_chain_params.unwrap_or_default();
-    let cert_chain = CertChainBuilder::new()
-        .self_signed(
-            &cert_chain_params.root_cert_subject,
-            &cert_chain_params.intermediate_cert_subject,
-        )?
-        .build(
-            &leaf_jwk.try_into()?,
-            &cert_chain_params.leaf_cert_subject,
-            &cert_chain_params.leaf_organization,
-        )?;
+    let cert_chain = CertChainBuilder::self_signed(
+        &cert_chain_params.root_cert_subject,
+        &cert_chain_params.intermediate_cert_subject,
+    )?
+    .build(
+        &leaf_jwk.try_into()?,
+        &cert_chain_params.leaf_cert_subject,
+        &cert_chain_params.leaf_organization,
+    )?;
 
     Ok(cert_chain)
 }
