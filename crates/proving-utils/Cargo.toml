@@ -27,4 +27,5 @@ cfg_aliases = "0.2.1"
 tokio = { version = "1", features = ["rt-multi-thread", "time"] }
 
 [dev-dependencies]
+zcam1-testing-utils.workspace = true
 sp1-sdk = { workspace = true, features = ["reserved-capacity"] }

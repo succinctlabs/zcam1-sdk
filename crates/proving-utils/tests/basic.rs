@@ -1,6 +1,6 @@
 use sp1_sdk::{Prover, env::EnvProver};
 use zcam1_common::AuthInputs;
-use zcam1_proving_utils::IOS_AUTHENCITY_ELF;
+use zcam1_testing_utils::IOS_AUTHENCITY_ELF;
 
 #[tokio::test]
 async fn execute_in_sp1_test() {
@@ -8,7 +8,7 @@ async fn execute_in_sp1_test() {
         photo_bytes: std::fs::read("./tests/fixtures/with_bindings.jpg")
             .expect("Failed to read with_bindings.jpg"),
         format: "image/jpeg".to_string(),
-        app_attest_production: false,
+        production: false,
     };
 
     let prover = EnvProver::new().await;

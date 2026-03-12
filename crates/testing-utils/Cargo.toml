@@ -1,0 +1,13 @@
+[package]
+name = "zcam1-testing-utils"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+sp1-build.workspace = true
+
+[build-dependencies]
+sp1-build.workspace = true
