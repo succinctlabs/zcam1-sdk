@@ -9,7 +9,7 @@ import {
   isPlayServicesAvailable,
 } from "@pagopa/io-react-native-integrity";
 import Geolocation from "@react-native-community/geolocation";
-import { Platform } from "react-native";
+import { PermissionsAndroid, Platform } from "react-native";
 import { getBundleId, isEmulator } from "react-native-device-info";
 import EncryptedStorage from "react-native-encrypted-storage";
 
@@ -189,6 +189,18 @@ export async function updateRegistration(keyId: string, _settings: Settings): Pr
   await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
+}
+
+/**
+ * Requests camera (and microphone) permissions on Android.
+ * No-op on iOS — the system prompts automatically when the camera is accessed.
+ */
+export async function requestCameraPermission(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  await PermissionsAndroid.requestMultiple([
+    PermissionsAndroid.PERMISSIONS.CAMERA,
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+  ]);
 }
 
 /**
