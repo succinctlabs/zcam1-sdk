@@ -1,12 +1,12 @@
 [workspace]
 [package]
-name = "authenticity-ios"
+name = "authenticity-android"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 zcam1-common = { path = "../../crates/common" }
-zcam1-ios = { path = "../../crates/ios" }
+zcam1-android = { path = "../../crates/android" }
 zcam1-c2pa-utils = { path = "../../crates/c2pa-utils" }
 
 base64ct = "1.6.0"

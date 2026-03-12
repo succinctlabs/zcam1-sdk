@@ -14,14 +14,14 @@ pub use types::{KeyAttestationResult, KeyDescription, RootOfTrust, VerifiedBootS
 /// Convenience function to validate all Android attestation artifacts in one call.
 ///
 /// Validates the key attestation chain and then verifies the signature.
-pub fn validate_android_attestation(
+pub fn validate_attestation(
     attestation: &str,
     signature: &str,
     message: &str,
     expected_challenge: &str,
     expected_package_name: &str,
     production: bool,
-) -> Result<bool, Error> {
+) -> Result<(), Error> {
     let key_result = validate_key_attestation(
         attestation,
         expected_challenge,
@@ -31,5 +31,5 @@ pub fn validate_android_attestation(
 
     verify_signature(signature, message, &key_result.public_key_hex)?;
 
-    Ok(true)
+    Ok(())
 }

@@ -19,7 +19,7 @@ pub fn verify_signature(
     signature_b64: &str,
     message: &str,
     public_key_hex: &str,
-) -> Result<bool, Error> {
+) -> Result<(), Error> {
     let signature_bytes = Base64::decode_vec(signature_b64).map_err(|_| Error::SignatureInvalid)?;
 
     let signature = Signature::from_der(&signature_bytes).map_err(|_| Error::SignatureInvalid)?;
@@ -36,7 +36,6 @@ pub fn verify_signature(
     // matching Android's SHA256withECDSA behavior
     verifying_key
         .verify(message.as_bytes(), &signature)
-        .map(|()| true)
         .map_err(|_| Error::SignatureInvalid)
 }
 
@@ -84,7 +83,7 @@ mod tests {
 
         let result = verify_signature(&signature_b64, message, &public_key_hex);
         assert!(result.is_ok());
-        assert!(result.is_ok_and(|v| v));
+        assert!(result.is_ok());
     }
 
     #[test]

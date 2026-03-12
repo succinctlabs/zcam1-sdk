@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-zcam1-ios = {workspace = true, features = ["proving"] }
+zcam1-common = {workspace = true, features = ["proving"] }
 serde.workspace = true
 sp1-sdk = { workspace = true, features = ["network"] }
 thiserror.workspace = true
