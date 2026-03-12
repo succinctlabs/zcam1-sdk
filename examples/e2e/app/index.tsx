@@ -7,6 +7,7 @@ import {
   initCapture,
   ZCamera,
   privateDirectory,
+  requestCameraPermission,
   requestLocationPermission,
 } from "@succinctlabs/react-native-zcam1";
 import Toast from "react-native-toast-message";
@@ -35,12 +36,7 @@ export default function Home() {
   requestLocationPermission();
 
   useEffect(() => {
-    async function fetchDevice() {
-      const captureInfo = await initCapture(settings);
-      setCaptureInfo(captureInfo);
-    }
-
-    fetchDevice();
+    requestCameraPermission().then(() => initCapture(settings).then(setCaptureInfo));
   }, [settings]);
 
   const toggleCaptureMode = useCallback(() => {
