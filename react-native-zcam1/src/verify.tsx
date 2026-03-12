@@ -1,6 +1,6 @@
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { base64 } from "@scure/base";
-import { Platform } from "react-native";
+
 import {
   computeHash,
   extractManifest,
@@ -10,11 +10,6 @@ import {
   verifyGroth16,
   VideoMetadataInfo,
 } from "./bindings";
-
-// Import all exports from bindings — available functions depend on build platform.
-// Apple builds have: verifyBindingsFromManifest, verifyGroth16
-// Android builds have: verifyAndroidBindingsFromManifest, verifyGroth16
-import * as verifier from "./bindings";
 
 /**
  * Capture metadata extracted from the C2PA manifest.
@@ -53,7 +48,7 @@ export class VerifiableFile {
    * On iOS: validates Apple App Attest attestation + assertion.
    * On Android: validates Android Key Attestation chain + ECDSA signature.
    */
-  verifyBindings(production: boolean, packageName?: string): boolean {
+  verifyBindings(production: boolean): boolean {
     if (this.hash === undefined) {
       this.hash = computeHash(this.path);
     }
@@ -61,22 +56,7 @@ export class VerifiableFile {
     const bindings = this.activeManifest.bindings()!;
     const metadata = this.activeManifest.captureMetadataAction()!;
 
-    if (Platform.OS === "android") {
-      const fn = (verifier as any).verifyAndroidBindingsFromManifest;
-      if (!fn) {
-        throw new Error("Android verify bindings not available");
-      }
-      if (!packageName) {
-        throw new Error("packageName is required for Android verification");
-      }
-      return fn(bindings, metadata, this.hash, packageName, production);
-    }
-
-    const fn = (verifier as any).verifyBindingsFromManifest;
-    if (!fn) {
-      throw new Error("Apple verify bindings not available");
-    }
-    return fn(bindings, metadata, this.hash, production);
+    return verifyBindingsFromManifest(bindings, metadata, this.hash, production);
   }
 
   /**
@@ -120,11 +100,6 @@ function verifyProofFromManifest(
 
   if (proof === undefined) {
     throw new Error("The proof was not found in the manifest");
-  }
-
-  const verifyGroth16 = (verifier as any).verifyGroth16;
-  if (!verifyGroth16) {
-    throw new Error("Groth16 verifier not available on this platform");
   }
 
   const hash = new Uint8Array(computeHash(path));
