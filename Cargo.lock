@@ -9604,6 +9604,7 @@ dependencies = [
  "cfg_aliases",
  "lru 0.16.3",
  "serde",
+ "sha2",
  "sp1-build",
  "sp1-prover",
  "sp1-sdk",
