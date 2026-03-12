@@ -2,7 +2,7 @@ import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
 import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
-import { Dirs, Util } from "react-native-file-access";
+import { Dirs, FileSystem, Util } from "react-native-file-access";
 
 import {
   AuthenticityData,
@@ -571,6 +571,15 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     }
 
     const originalPath = result.filePath;
+    const depthHeatMapPath = result.depthHeatMapPath as string | undefined;
+    const depthRawHash = result.depthRawHash as string | undefined;
+
+    // Log depth diagnostics for troubleshooting.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const depthDiag = (result as any)._depthDiag;
+    if (depthDiag) {
+      console.log("[DEPTH_DIAG]", JSON.stringify(depthDiag, null, 2));
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const metadata = (result.metadata as any) ?? {};
 
@@ -616,6 +625,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       },
       this.props.captureInfo,
       this.certChainPem,
+      depthHeatMapPath,
+      depthRawHash,
     );
 
     return new ZPhoto(originalPath, destinationPath);
@@ -680,6 +691,8 @@ async function embedBindings(
   metadata: PhotoMetadataInfo | VideoMetadataInfo,
   captureInfo: CaptureInfo,
   certChainPem: string,
+  depthHeatMapPath?: string,
+  depthRawHash?: string,
 ): Promise<string> {
   originalPath = stripFileProtocol(originalPath);
   const dataHash = computeHash(originalPath);
@@ -705,6 +718,35 @@ async function embedBindings(
     normalizedMetadata = manifestEditor.addPhotoMetadataAction(metadata as PhotoMetadataInfo, when);
   } else {
     normalizedMetadata = manifestEditor.addVideoMetadataAction(metadata as VideoMetadataInfo, when);
+  }
+
+  // Embed depth heat map as a C2PA assertion if available.
+  // The heat map JPEG is read from disk (written by Swift during capture) — only the
+  // file path string crosses the RN bridge, not the binary data.
+  if (depthHeatMapPath && format.indexOf("video") < 0) {
+    try {
+      const heatMapBase64 = await FileSystem.readFile(depthHeatMapPath, "base64");
+      const depthData = (metadata as PhotoMetadataInfo).depthData;
+      manifestEditor.addAssertion(
+        "succinct.depth-heatmap",
+        JSON.stringify({
+          format: "image/jpeg",
+          width: depthData?.width,
+          height: depthData?.height,
+          colormap: "turbo",
+          depth_accuracy: depthData?.accuracy,
+          depth_range_min: depthData?.statistics?.min,
+          depth_range_max: depthData?.statistics?.max,
+          sensor_type: depthData?.pixelFormat,
+          raw_depth_hash: depthRawHash,
+          image_data: heatMapBase64,
+        }),
+      );
+    } catch (e) {
+      console.warn("[embedBindings] Failed to embed depth heat map:", e);
+    } finally {
+      FileSystem.unlink(depthHeatMapPath).catch(() => {});
+    }
   }
 
   const assertion = await generateAppAttestAssertion(

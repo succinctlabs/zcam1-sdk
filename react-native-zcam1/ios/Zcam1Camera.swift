@@ -12,7 +12,10 @@ import Harbeth
 import ImageIO
 import MetalKit
 import MobileCoreServices
+import os.log
 import UIKit
+
+private let zcam1Log = OSLog(subsystem: "com.succinct.zcam1", category: "Camera")
 
 // MARK: - Motion Manager (Singleton for orientation detection)
 
@@ -223,6 +226,25 @@ final class Zcam1MotionManager {
     }
 }
 
+// MARK: - UIImage.Orientation from EXIF
+
+extension UIImage.Orientation {
+    /// Convert a CGImagePropertyOrientation integer (EXIF 1-8) to UIImage.Orientation.
+    static func from(cgImageOrientation value: Int) -> UIImage.Orientation {
+        switch value {
+        case 1: return .up
+        case 2: return .upMirrored
+        case 3: return .down
+        case 4: return .downMirrored
+        case 5: return .leftMirrored
+        case 6: return .right
+        case 7: return .rightMirrored
+        case 8: return .left
+        default: return .up
+        }
+    }
+}
+
 // MARK: - Orientation Helpers
 
 /// Convert AVCaptureVideoOrientation to a JS-friendly string.
@@ -368,6 +390,9 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             "[PhotoCaptureDelegate] extracting depthData (includeDepthData=\(includeDepthData))...")
         let depthDataSnapshot: AVDepthData? = includeDepthData ? photo.depthData : nil
         print("[PhotoCaptureDelegate] depthData present: \(depthDataSnapshot != nil)")
+        os_log(.info, log: zcam1Log, "DEPTH_DIAG capture result: includeDepthData=%{public}@, photo.depthData=%{public}@",
+               String(describing: includeDepthData),
+               depthDataSnapshot != nil ? "PRESENT" : "NIL")
 
         // Process synchronously on the current queue to avoid closure capture issues.
         // The AVCapturePhotoOutput callback queue can handle this work.
@@ -427,10 +452,32 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
 
             // Extract depth data only when requested (and when available).
             var depthData: [String: Any]? = nil
+            var depthHeatMapPath: String? = nil
+            var depthRawHash: String? = nil
             if self.includeDepthData, let depthDataSnapshot = depthDataSnapshot {
                 print("[PhotoCaptureDelegate] processing depth data...")
                 depthData = Zcam1DepthDataProcessor.processDepthData(depthDataSnapshot)
                 print("[PhotoCaptureDelegate] depth data processed")
+
+                // Generate depth heat map (Turbo-colorized JPEG at native depth resolution).
+                // Pass photo orientation so heatmap matches the photo's display rotation.
+                let exifOrientation = metadata[kCGImagePropertyOrientation as String] as? Int ?? 1
+                let photoOrientation = UIImage.Orientation.from(cgImageOrientation: exifOrientation)
+                print("[PhotoCaptureDelegate] generating depth heat map (exifOrientation=\(exifOrientation))...")
+                if let heatMapResult = Zcam1DepthDataProcessor.generateHeatMap(from: depthDataSnapshot, photoOrientation: photoOrientation) {
+                    let heatMapFilename = "zcam1-depth-\(UUID().uuidString).jpg"
+                    let heatMapURL = FileManager.default.temporaryDirectory.appendingPathComponent(heatMapFilename)
+                    do {
+                        try heatMapResult.jpegData.write(to: heatMapURL, options: [.atomic])
+                        depthHeatMapPath = heatMapURL.path
+                        depthRawHash = heatMapResult.rawHash
+                        print("[PhotoCaptureDelegate] depth heat map written: \(heatMapResult.jpegData.count) bytes")
+                    } catch {
+                        print("[PhotoCaptureDelegate] WARNING: failed to write depth heat map: \(error)")
+                    }
+                } else {
+                    print("[PhotoCaptureDelegate] depth heat map generation returned nil (no valid depth pixels)")
+                }
             }
 
             var result: [String: Any] = [
@@ -442,6 +489,23 @@ private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegat
             // Include depth data in result if requested and available.
             if self.includeDepthData, let depthData = depthData {
                 result["depthData"] = depthData
+            }
+
+            // Include depth heat map path and raw hash if generated.
+            if let depthHeatMapPath = depthHeatMapPath {
+                result["depthHeatMapPath"] = depthHeatMapPath
+            }
+            if let depthRawHash = depthRawHash {
+                result["depthRawHash"] = depthRawHash
+            }
+
+            // Depth diagnostics for troubleshooting (visible in JS console).
+            if let owner = self.owner {
+                var diag = owner.depthDiagnostics()
+                diag["includeDepthData"] = self.includeDepthData
+                diag["photoDepthDataPresent"] = depthDataSnapshot != nil
+                diag["depthHeatMapGenerated"] = depthHeatMapPath != nil
+                result["_depthDiag"] = diag
             }
 
             print("[PhotoCaptureDelegate] calling completion on main thread...")
@@ -1167,7 +1231,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 // - Enable at the output level based on the depthEnabled parameter.
                 // - When enabled, prewarm the pipeline via setPreparedPhotoSettingsArray.
                 // - Note: Enabling depth restricts zoom on dual-camera devices.
-                if self.photoOutput.isDepthDataDeliverySupported {
+                let depthSupported = self.photoOutput.isDepthDataDeliverySupported
+                os_log(.info, log: zcam1Log, "DEPTH_DIAG session config: depthEnabled=%{public}@, isDepthDataDeliverySupported=%{public}@, preset=%{public}@, device=%{public}@",
+                       String(describing: depthEnabled), String(describing: depthSupported),
+                       session.sessionPreset.rawValue,
+                       self.videoInput?.device.localizedName ?? "nil")
+                if depthSupported {
                     self.photoOutput.isDepthDataDeliveryEnabled = depthEnabled
                     self.depthEnabledAtSessionLevel = depthEnabled
                 } else {
@@ -1345,6 +1414,18 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
     /// Returns false for single rear cameras (iPhone SE, 16e, Air).
     public func isDepthSupported() -> Bool {
         return photoOutput.isDepthDataDeliverySupported
+    }
+
+    /// Returns depth diagnostic info for troubleshooting.
+    public func depthDiagnostics() -> [String: Any] {
+        return [
+            "depthEnabledAtSessionLevel": depthEnabledAtSessionLevel,
+            "isDepthDataDeliverySupported": photoOutput.isDepthDataDeliverySupported,
+            "isDepthDataDeliveryEnabled": photoOutput.isDepthDataDeliveryEnabled,
+            "deviceType": videoInput?.device.deviceType.rawValue ?? "unknown",
+            "deviceName": videoInput?.device.localizedName ?? "unknown",
+            "sessionPreset": captureSession?.sessionPreset.rawValue ?? "none",
+        ]
     }
 
     /// Check if enabling depth would restrict zoom on this device.
@@ -1848,6 +1929,10 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     print(
                         "[Zcam1CameraService] takePhoto: isDepthDataDeliveryEnabled=\(self.photoOutput.isDepthDataDeliveryEnabled)"
                     )
+                    os_log(.info, log: zcam1Log, "DEPTH_DIAG takePhoto: output.isDepthDataDeliveryEnabled=%{public}@, depthEnabledAtSessionLevel=%{public}@, includeDepthData=%{public}@",
+                           String(describing: self.photoOutput.isDepthDataDeliveryEnabled),
+                           String(describing: self.depthEnabledAtSessionLevel),
+                           String(describing: includeDepthData))
                     if self.photoOutput.isDepthDataDeliveryEnabled {
                         print(
                             "[Zcam1CameraService] takePhoto: setting settings.isDepthDataDeliveryEnabled=\(includeDepthData)"
