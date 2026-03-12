@@ -1,7 +1,8 @@
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
-use zcam1_c2pa_utils::{compute_hash, extract_manifest, types::DeviceBindings};
-use zcam1_ios::{validate_assertion, validate_attestation};
+use zcam1_c2pa_utils::types::DeviceBindings;
+#[cfg(feature = "apple-verify")]
+use zcam1_c2pa_utils::{compute_hash, extract_manifest};
 
 use crate::error::VerifyError;
 
@@ -23,7 +24,6 @@ pub fn verify_bindings_from_file(path: &str, production: bool) -> Result<bool, V
 }
 
 /// Verify Apple App Attest bindings from a C2PA manifest.
-#[cfg(feature = "apple-verify")]
 #[uniffi::export]
 pub fn verify_bindings_from_manifest(
     bindings: &DeviceBindings,
@@ -31,6 +31,7 @@ pub fn verify_bindings_from_manifest(
     photo_hash: &[u8],
     production: bool,
 ) -> Result<bool, VerifyError> {
+    // Handle emulator mock attestation (no real hardware key on emulator)
     if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
         if production {
             return Err(VerifyError::SimulatorNotAllowed);
@@ -38,6 +39,29 @@ pub fn verify_bindings_from_manifest(
         return Ok(true);
     }
 
+    if bindings.device_key_id.contains("") {
+        #[cfg(feature = "android-verify")]
+        return verify_android_bindings(bindings, normalized_metadata, photo_hash, production);
+
+        #[cfg(not(feature = "android-verify"))]
+        unimplemented!("The 'android-verify' feature must be enabled")
+    } else {
+        #[cfg(feature = "apple-verify")]
+        return verify_ios_bindings(bindings, normalized_metadata, photo_hash, production);
+
+        #[cfg(not(feature = "apple-verify"))]
+        unimplemented!("The 'apple-verify' feature must be enabled")
+    }
+}
+
+/// Verify Apple App Attest bindings from a C2PA manifest.
+#[cfg(feature = "apple-verify")]
+fn verify_ios_bindings(
+    bindings: &DeviceBindings,
+    normalized_metadata: &str,
+    photo_hash: &[u8],
+    production: bool,
+) -> Result<bool, VerifyError> {
     let metadata_hash = Sha256::digest(normalized_metadata.as_bytes());
     let client_data = format!(
         "{}|{}",
@@ -67,19 +91,12 @@ pub fn verify_bindings_from_manifest(
 
 /// Verify Android Key Attestation bindings from a C2PA manifest.
 #[cfg(feature = "android-verify")]
-#[uniffi::export]
-pub fn verify_android_bindings_from_manifest(
+fn verify_android_bindings(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
     photo_hash: Vec<u8>,
-    expected_package_name: &str,
     production: bool,
 ) -> Result<bool, VerifyError> {
-    // Handle emulator mock attestation (no real hardware key on emulator)
-    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
-        return Ok(true);
-    }
-
     // 1. Validate Key Attestation chain — verifies cert chain roots to Google CA,
     //    checks challenge, security levels, package name
     let key_result = zcam1_android::validate_key_attestation(

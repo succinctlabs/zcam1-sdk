@@ -2,9 +2,9 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { generateHardwareSignatureWithAssertion } from "@pagopa/io-react-native-integrity";
 import { base64 } from "@scure/base";
 import { Platform } from "react-native";
+import { isEmulator } from "react-native-device-info";
 
 import { signWithDeviceKey } from "./capture";
-import { isEmulator } from "react-native-device-info";
 
 /**
  * Strips the "file://" protocol prefix from a path if present.
