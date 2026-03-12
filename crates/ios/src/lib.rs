@@ -2,13 +2,11 @@ mod assertion;
 mod attestation;
 mod certificate;
 mod error;
-mod io;
 mod types;
 mod utils;
 mod verifier;
 
 pub use error::Error;
-pub use io::AuthInputs;
 pub use verifier::{IosRegisterInputs, IosVerifier};
 
 /// Apple Root Cert.

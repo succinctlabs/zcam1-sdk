@@ -5,9 +5,12 @@ use std::io::Cursor;
 
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
+use zcam1_android::{
+    constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_SOFTWARE_ROOT},
+    validate_attestation,
+};
 use zcam1_c2pa_utils::{compute_hash_from_stream, extract_manifest_from_stream};
 use zcam1_common::AuthInputs;
-use zcam1_ios::{APPLE_ROOT_CERT, validate_assertion, validate_attestation};
 
 pub fn main() {
     let auth_inputs = sp1_zkvm::io::read::<AuthInputs>();
@@ -29,35 +32,26 @@ pub fn main() {
         Base64::encode_string(&metadata_hash)
     );
 
-    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
-        // Reject simulator attestations in production mode
-        assert!(
-            !auth_inputs.app_attest_production,
-            "Simulator attestations are not allowed in production mode"
-        );
-        // Skip App Attest validation for simulator in dev mode
-    } else {
-        let public_key_uncompressed = validate_attestation(
+    // Skip validation if we are on a simulator
+    if !bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        validate_attestation(
             &bindings.attestation,
-            &bindings.device_key_id,
+            &bindings.assertion,
+            &client_data,
             &bindings.device_key_id,
             &bindings.app_id,
             auth_inputs.production,
-            !auth_inputs.production, // Skip full chain validation for development
         )
-        .unwrap();
-
-        validate_assertion(
-            &bindings.assertion,
-            client_data.as_bytes(),
-            &public_key_uncompressed,
-            &bindings.app_id,
-            0,
-        )
-        .unwrap();
+        .unwrap()
     }
+
+    let root_cert = if auth_inputs.production {
+        &format!("{}{}", GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_HARDWARE_ROOT_EC)
+    } else {
+        GOOGLE_SOFTWARE_ROOT
+    };
 
     sp1_zkvm::io::commit_slice(&photo_hash);
     sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
-    sp1_zkvm::io::commit_slice(APPLE_ROOT_CERT.as_bytes());
+    sp1_zkvm::io::commit_slice(root_cert.as_bytes());
 }

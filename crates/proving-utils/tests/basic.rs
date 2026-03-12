@@ -1,5 +1,5 @@
 use sp1_sdk::{Prover, env::EnvProver};
-use zcam1_ios::AuthInputs;
+use zcam1_common::AuthInputs;
 use zcam1_proving_utils::IOS_AUTHENCITY_ELF;
 
 #[tokio::test]

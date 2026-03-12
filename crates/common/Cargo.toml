@@ -7,8 +7,15 @@ edition = "2024"
 workspace = true
 
 [dependencies]
+serde.workspace = true
 thiserror.workspace = true
+
+sp1-sdk = { workspace = true, optional = true }
 
 [dev-dependencies]
 c2pa.workspace = true
 x509-parser = "0.16.0"
+
+
+[features]
+proving = ["dep:sp1-sdk"]
