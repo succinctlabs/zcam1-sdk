@@ -44,19 +44,19 @@ export class VerifiableFile {
   }
 
   /**
-   * Verifies the manifest's bindings (e.g., App Attest).
+   * Verifies the manifest's bindings.
+   * On iOS: validates Apple App Attest attestation + assertion.
+   * On Android: validates Android Key Attestation chain + ECDSA signature.
    */
-  verifyBindings(appAttestProduction: boolean): boolean {
+  verifyBindings(production: boolean): boolean {
     if (this.hash === undefined) {
       this.hash = computeHash(this.path);
     }
 
-    return verifyBindingsFromManifest(
-      this.activeManifest.bindings()!,
-      this.activeManifest.captureMetadataAction()!,
-      this.hash,
-      appAttestProduction,
-    );
+    const bindings = this.activeManifest.bindings()!;
+    const metadata = this.activeManifest.captureMetadataAction()!;
+
+    return verifyBindingsFromManifest(bindings, metadata, this.hash, production);
   }
 
   /**
@@ -76,7 +76,7 @@ export class VerifiableFile {
       this.hash = computeHash(this.path);
     }
 
-    return base64.encode(new Uint8Array(this.hash));
+    return base64.encode(new Uint8Array(this.hash!));
   }
 
   /**

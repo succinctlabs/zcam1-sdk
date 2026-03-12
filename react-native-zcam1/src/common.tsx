@@ -1,8 +1,19 @@
 import { sha1 } from "@noble/hashes/legacy.js";
 import { generate, getPublicKeyFixed, type PublicKey } from "@pagopa/io-react-native-crypto";
 import { base64, base64nopad, base64url, base64urlnopad } from "@scure/base";
+import { Platform } from "react-native";
+import { isEmulator } from "react-native-device-info";
 
 const CONTENT_KEY_TAG = "ZCAM1_CONTENT_KEY_TAG";
+
+// Mock P-256 key used on emulators where hardware-backed key generation is unavailable.
+// Public key coordinates correspond to MOCK_KEY in crates/c2pa-utils/src/manifest_editor.rs.
+const MOCK_EMULATOR_CONTENT_KEY = {
+  kty: "EC" as const,
+  crv: "P-256",
+  x: "hcUZSvoPr0QDDmC0CwMFLgGcHUTas1g4RXET2nFv_BA",
+  y: "v5WB7DJhhKed3SmZpO8hVJQXRUSOzNSxrfnQ9kv1zTg",
+};
 
 export interface ECKey {
   kty: "EC";
@@ -24,6 +35,14 @@ function flexibleBase64Decode(str: string): Uint8Array {
 }
 
 export async function getContentPublicKey(): Promise<PublicKey> {
+  const isAndroidEmulator = await isEmulator().then(
+    (isEmulator) => isEmulator && Platform.OS === "android",
+  );
+
+  if (isAndroidEmulator) {
+    return MOCK_EMULATOR_CONTENT_KEY;
+  }
+
   return await getPublicKeyFixed(CONTENT_KEY_TAG).catch(async () => {
     await generate(CONTENT_KEY_TAG);
     return getPublicKeyFixed(CONTENT_KEY_TAG);

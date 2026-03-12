@@ -1,7 +1,7 @@
 import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
-import { requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
+import { Platform, requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
@@ -578,7 +578,7 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
     const tiff = metadata["{TIFF}"] ?? {};
 
     const when = tiff.DateTime || new Date().toISOString().replace("T", " ").split(".")[0];
-    const deviceMake = tiff.Make || "Apple";
+    const deviceMake = tiff.Make || (Platform.OS === "android" ? "Android" : "Apple");
     const deviceModel = tiff.Model || "Unknown";
     const softwareVersion = tiff.Software || "Unknown";
     const isJailBroken = JailMonkey.isJailBroken();
@@ -601,9 +601,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         deviceMake: deviceMake,
         deviceModel: deviceModel,
         softwareVersion: softwareVersion,
-        xResolution: exif.PixelXDimension,
-        yResolution: exif.PixelYDimension,
-        orientation: metadata.Orientation,
+        xResolution: exif.PixelXDimension ?? result.width,
+        yResolution: exif.PixelYDimension ?? result.height,
+        orientation: metadata.Orientation ?? result.orientation,
         iso: exif.ISOSpeedRatings?.toString(),
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
@@ -693,9 +693,18 @@ async function embedBindings(
   const destinationPath =
     Dirs.CacheDir + `/zcam-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
+  // On Android, pass the KeyStore alias so Rust signs via JNI.
+  // On iOS, pass the contentKeyId (SHA1 of public key) so Rust signs via Secure Enclave.
+  const keyTag =
+    Platform.OS === "android"
+      ? new TextEncoder().encode(
+          (await isEmulator()) ? "ZCAM1_MOCK_CONTENT_KEY_TAG" : "ZCAM1_CONTENT_KEY_TAG",
+        )
+      : captureInfo.contentKeyId;
+
   const manifestEditor = new ManifestEditor(
     originalPath,
-    captureInfo.contentKeyId.buffer as ArrayBuffer,
+    keyTag.buffer as ArrayBuffer,
     certChainPem,
   );
 
