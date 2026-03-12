@@ -9611,6 +9611,14 @@ dependencies = [
  "tokio",
  "uniffi",
  "zcam1-common",
+ "zcam1-testing-utils",
+]
+
+[[package]]
+name = "zcam1-testing-utils"
+version = "0.1.0"
+dependencies = [
+ "sp1-build",
 ]
 
 [[package]]
