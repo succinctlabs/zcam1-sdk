@@ -902,7 +902,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                         }
                         // Enable video stabilization to reduce hand-shake in both preview and recording.
                         if connection.isVideoStabilizationSupported {
-                            connection.preferredVideoStabilizationMode = .auto
+                            connection.preferredVideoStabilizationMode = .standard
                         }
                         session.commitConfiguration()
                         print(
@@ -945,7 +945,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     }
                     // Enable video stabilization to reduce hand-shake in both preview and recording.
                     if connection.isVideoStabilizationSupported {
-                        connection.preferredVideoStabilizationMode = .auto
+                        connection.preferredVideoStabilizationMode = .standard
                     }
                     print(
                         "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled), mirrored=\(connection.isVideoMirrored), stabilization=\(connection.activeVideoStabilizationMode.rawValue)"
@@ -1217,7 +1217,7 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     }
                     // Enable video stabilization on the photo output connection.
                     if photoConnection.isVideoStabilizationSupported {
-                        photoConnection.preferredVideoStabilizationMode = .auto
+                        photoConnection.preferredVideoStabilizationMode = .standard
                     }
                     print("[Zcam1CameraService] photo output mirrored=\(photoConnection.isVideoMirrored) for position=\(position == .front ? "front" : "back"), stabilization=\(photoConnection.activeVideoStabilizationMode.rawValue)")
                 }
