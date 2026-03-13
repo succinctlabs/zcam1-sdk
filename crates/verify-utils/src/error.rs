@@ -8,11 +8,11 @@ pub enum VerifyError {
     #[error(transparent)]
     C2pa(#[from] zcam1_c2pa_utils::error::C2paError),
 
-    #[cfg(feature = "apple-verify")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[error(transparent)]
     AppAttest(#[from] zcam1_ios::Error),
 
-    #[cfg(feature = "android-verify")]
+    #[cfg(target_os = "android")]
     #[error(transparent)]
     AndroidAttestation(#[from] zcam1_android::Error),
 

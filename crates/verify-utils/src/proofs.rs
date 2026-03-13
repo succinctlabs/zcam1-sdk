@@ -1,5 +1,4 @@
 use sp1_verifier::{GROTH16_VK_BYTES, Groth16Verifier};
-use zcam1_ios::APPLE_ROOT_CERT;
 
 use crate::error::VerifyError;
 
@@ -13,7 +12,19 @@ pub fn verify_proof_from_manifest(
 
     public_inputs.extend_from_slice(photo_hash);
     public_inputs.extend_from_slice(app_id.as_bytes());
-    public_inputs.extend_from_slice(APPLE_ROOT_CERT.as_bytes());
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    public_inputs.extend_from_slice(zcam1_ios::APPLE_ROOT_CERT.as_bytes());
+
+    #[cfg(target_os = "android")]
+    public_inputs.extend_from_slice(
+        format!(
+            "{}{}",
+            zcam1_android::GOOGLE_HARDWARE_ROOT_RSA,
+            zcam1_android::GOOGLE_HARDWARE_ROOT_EC,
+        )
+        .as_bytes(),
+    );
 
     verify_groth16(proof, &public_inputs, vk_hash)
 }
