@@ -2,6 +2,7 @@ import Geolocation from "@react-native-community/geolocation";
 import JailMonkey from "jail-monkey";
 import React from "react";
 import { Platform, requireNativeComponent, type StyleProp, type ViewStyle } from "react-native";
+import { isEmulator } from "react-native-device-info";
 import { Dirs, Util } from "react-native-file-access";
 
 import {
@@ -601,9 +602,9 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         deviceMake: deviceMake,
         deviceModel: deviceModel,
         softwareVersion: softwareVersion,
-        xResolution: exif.PixelXDimension ?? result.width,
-        yResolution: exif.PixelYDimension ?? result.height,
-        orientation: metadata.Orientation ?? result.orientation,
+        xResolution: exif.PixelXDimension,
+        yResolution: exif.PixelYDimension,
+        orientation: metadata.Orientation,
         iso: exif.ISOSpeedRatings?.toString(),
         exposureTime: exif.ExposureTime,
         depthOfField: exif.FNumber,
