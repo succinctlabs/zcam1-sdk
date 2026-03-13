@@ -9507,6 +9507,7 @@ dependencies = [
  "thiserror 2.0.17",
  "x509-cert",
  "x509-verify",
+ "zcam1-c2pa-utils",
 ]
 
 [[package]]
