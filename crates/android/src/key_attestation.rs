@@ -13,7 +13,6 @@ use crate::types::KeyAttestationResult;
 /// * `attestation` - Base64-encoded attestation chain from pagopa library
 /// * `expected_challenge` - The challenge embedded in the cert (usually `deviceKeyId`)
 /// * `expected_package_name` - Expected app package name (e.g., `"com.anonymous.zcam1"`)
-/// * `production` - If `true`, require TEE or `StrongBox`; if `false`, allow Software keys
 ///
 /// # Returns
 /// * `KeyAttestationResult` containing the extracted public key and validation details
@@ -21,14 +20,12 @@ pub fn validate_key_attestation(
     attestation: &str,
     expected_challenge: &str,
     expected_package_name: &str,
-    production: bool,
 ) -> Result<KeyAttestationResult, Error> {
     // 1. Decode certificate chain from pagopa format
     let certificates = decode_certificate_chain(attestation)?;
 
     // 2. Validate chain roots to a Google attestation CA
-    let allow_software_root = !production;
-    validate_certificate_chain(&certificates, allow_software_root)?;
+    validate_certificate_chain(&certificates)?;
 
     // 3. Get leaf certificate (first in chain, contains KeyDescription)
     let leaf_cert = certificates
@@ -48,19 +45,17 @@ pub fn validate_key_attestation(
     }
 
     // 6. Verify security levels meet requirements
-    if production {
-        if !key_desc.attestation_security_level.is_hardware_backed() {
-            return Err(Error::SecurityLevelTooLow {
-                field: "Attestation",
-                actual: key_desc.attestation_security_level,
-            });
-        }
-        if !key_desc.keymint_security_level.is_hardware_backed() {
-            return Err(Error::SecurityLevelTooLow {
-                field: "KeyMint",
-                actual: key_desc.keymint_security_level,
-            });
-        }
+    if !key_desc.attestation_security_level.is_hardware_backed() {
+        return Err(Error::SecurityLevelTooLow {
+            field: "Attestation",
+            actual: key_desc.attestation_security_level,
+        });
+    }
+    if !key_desc.keymint_security_level.is_hardware_backed() {
+        return Err(Error::SecurityLevelTooLow {
+            field: "KeyMint",
+            actual: key_desc.keymint_security_level,
+        });
     }
 
     // 7. Verify package name (if available in attestation)
@@ -117,13 +112,13 @@ mod tests {
 
     #[test]
     fn test_empty_attestation() {
-        let result = validate_key_attestation("", "challenge", "com.example", false);
+        let result = validate_key_attestation("", "challenge", "com.example");
         assert!(matches!(result, Err(Error::InvalidCertChain(_))));
     }
 
     #[test]
     fn test_invalid_base64_attestation() {
-        let result = validate_key_attestation("not-valid!!!", "challenge", "com.example", false);
+        let result = validate_key_attestation("not-valid!!!", "challenge", "com.example");
         assert!(matches!(result, Err(Error::InvalidCertChain(_))));
     }
 
@@ -131,7 +126,7 @@ mod tests {
     fn test_invalid_inner_cert() {
         // Valid outer base64, but inner content is not a valid certificate
         let attestation = Base64::encode_string(b"not_a_cert_at_all");
-        let result = validate_key_attestation(&attestation, "challenge", "com.example", false);
+        let result = validate_key_attestation(&attestation, "challenge", "com.example");
         assert!(matches!(result, Err(Error::InvalidCertChain(_))));
     }
 
@@ -146,7 +141,7 @@ mod tests {
         let root_der = root_cert.to_der().expect("should encode to DER");
 
         let attestation = make_pagopa_attestation(&root_der);
-        let result = validate_key_attestation(&attestation, "challenge", "com.example", false);
+        let result = validate_key_attestation(&attestation, "challenge", "com.example");
         assert!(
             matches!(result, Err(Error::ExtensionNotFound)),
             "Expected ExtensionNotFound, got: {result:?}"
@@ -163,7 +158,7 @@ mod tests {
         let root_der = root_cert.to_der().expect("should encode to DER");
 
         let attestation = make_pagopa_chain(&[root_der.clone(), root_der]);
-        let result = validate_key_attestation(&attestation, "challenge", "com.example", false);
+        let result = validate_key_attestation(&attestation, "challenge", "com.example");
         assert!(
             matches!(result, Err(Error::ExtensionNotFound)),
             "Expected ExtensionNotFound, got: {result:?}"
@@ -178,7 +173,7 @@ mod tests {
         let root_der = root_cert.to_der().expect("should encode to DER");
 
         let attestation = make_pagopa_attestation(&root_der);
-        let result = validate_key_attestation(&attestation, "challenge", "com.example", false);
+        let result = validate_key_attestation(&attestation, "challenge", "com.example");
         assert!(
             matches!(result, Err(Error::ExtensionNotFound)),
             "Expected ExtensionNotFound, got: {result:?}"
