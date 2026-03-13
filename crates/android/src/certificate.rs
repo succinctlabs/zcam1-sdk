@@ -7,7 +7,7 @@ use x509_verify::{
     der::{Decode, DecodePem},
 };
 
-use crate::constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_SOFTWARE_ROOT};
+use crate::constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA};
 use crate::error::Error;
 
 /// Pre-parsed Google root CA certificates, parsed once at first access.
@@ -18,19 +18,15 @@ use crate::error::Error;
 struct GoogleRoots {
     hardware_rsa: Certificate,
     hardware_ec: Certificate,
-    software: Option<Certificate>,
 }
 
 static GOOGLE_ROOTS: LazyLock<Option<GoogleRoots>> = LazyLock::new(|| {
     let hardware_rsa = Certificate::from_pem(GOOGLE_HARDWARE_ROOT_RSA).ok()?;
     let hardware_ec = Certificate::from_pem(GOOGLE_HARDWARE_ROOT_EC).ok()?;
-    // Software root may fail to parse (non-conformant DER). That's OK —
-    // it's only used for emulator testing and has already expired.
-    let software = Certificate::from_pem(GOOGLE_SOFTWARE_ROOT).ok();
+
     Some(GoogleRoots {
         hardware_rsa,
         hardware_ec,
-        software,
     })
 });
 
@@ -78,10 +74,7 @@ pub fn decode_certificate_chain(attestation: &str) -> Result<Vec<Certificate>, E
 /// 1. Chain root matches a known Google root by subject
 /// 2. Each certificate is signed by the next certificate in the chain
 /// 3. Root certificate's self-signature is valid
-pub fn validate_certificate_chain(
-    certificates: &[Certificate],
-    allow_software_root: bool,
-) -> Result<(), Error> {
+pub fn validate_certificate_chain(certificates: &[Certificate]) -> Result<(), Error> {
     if certificates.is_empty() {
         return Err(Error::InvalidCertChain("empty chain".into()));
     }
@@ -91,7 +84,7 @@ pub fn validate_certificate_chain(
         .ok_or_else(|| Error::InvalidCertChain("empty chain".into()))?;
 
     // Check if chain root matches any known Google root
-    if !matches_google_root(chain_root, allow_software_root) {
+    if !matches_google_root(chain_root) {
         return Err(Error::UntrustedRoot);
     }
 
@@ -116,7 +109,7 @@ pub fn validate_certificate_chain(
 }
 
 /// Check if a certificate matches any known Google attestation root CA.
-fn matches_google_root(cert: &Certificate, allow_software_root: bool) -> bool {
+fn matches_google_root(cert: &Certificate) -> bool {
     let Some(roots) = GOOGLE_ROOTS.as_ref() else {
         return false;
     };
@@ -125,13 +118,6 @@ fn matches_google_root(cert: &Certificate, allow_software_root: bool) -> bool {
 
     if cert_subject == &roots.hardware_rsa.tbs_certificate.subject
         || cert_subject == &roots.hardware_ec.tbs_certificate.subject
-    {
-        return true;
-    }
-
-    if allow_software_root
-        && let Some(sw) = &roots.software
-        && cert_subject == &sw.tbs_certificate.subject
     {
         return true;
     }
@@ -167,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_validate_empty_chain() {
-        let result = validate_certificate_chain(&[], true);
+        let result = validate_certificate_chain(&[]);
         assert!(result.is_err());
     }
 

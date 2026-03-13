@@ -24,7 +24,6 @@ fn test_validate() {
         &client_data,
         &bindings.device_key_id,
         &bindings.app_id,
-        false,
     )
     .unwrap();
 }

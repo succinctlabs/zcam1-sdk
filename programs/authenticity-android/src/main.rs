@@ -6,7 +6,7 @@ use std::io::Cursor;
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
 use zcam1_android::{
-    constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_SOFTWARE_ROOT},
+    constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA},
     validate_attestation,
 };
 use zcam1_c2pa_utils::{compute_hash_from_stream, extract_manifest_from_stream};
@@ -40,16 +40,11 @@ pub fn main() {
             &client_data,
             &bindings.device_key_id,
             &bindings.app_id,
-            auth_inputs.production,
         )
         .unwrap()
     }
 
-    let root_cert = if auth_inputs.production {
-        &format!("{}{}", GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_HARDWARE_ROOT_EC)
-    } else {
-        GOOGLE_SOFTWARE_ROOT
-    };
+    let root_cert = &format!("{}{}", GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_HARDWARE_ROOT_EC);
 
     sp1_zkvm::io::commit_slice(&photo_hash);
     sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
