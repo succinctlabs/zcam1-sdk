@@ -272,6 +272,7 @@ pub struct DeviceBindings {
 pub struct Proof {
     pub data: String,
     pub vk_hash: String,
+    pub platform: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

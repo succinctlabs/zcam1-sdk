@@ -18,22 +18,13 @@ pub fn verify_bindings_from_manifest(
     }
 
     if bindings.device_key_id.starts_with("ZCAM1_ANDROID_DEVICE_") {
-        #[cfg(target_os = "android")]
-        return verify_android_bindings(bindings, normalized_metadata, photo_hash, production);
-
-        #[cfg(not(target_os = "android"))]
-        unimplemented!("The 'android-verify' feature must be enabled")
+        verify_android_bindings(bindings, normalized_metadata, photo_hash)
     } else {
-        #[cfg(any(target_os = "macos", target_os = "ios"))]
-        return verify_ios_bindings(bindings, normalized_metadata, photo_hash, production);
-
-        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-        unimplemented!("The 'apple-verify' feature must be enabled")
+        verify_ios_bindings(bindings, normalized_metadata, photo_hash, production)
     }
 }
 
 /// Verify Apple App Attest bindings from a C2PA manifest.
-#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn verify_ios_bindings(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
@@ -68,12 +59,10 @@ fn verify_ios_bindings(
 }
 
 /// Verify Android Key Attestation bindings from a C2PA manifest.
-#[cfg(target_os = "android")]
 fn verify_android_bindings(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
     photo_hash: &[u8],
-    production: bool,
 ) -> Result<bool, VerifyError> {
     // 1. Validate Key Attestation chain — verifies cert chain roots to Google CA,
     //    checks challenge, security levels, package name
@@ -81,7 +70,6 @@ fn verify_android_bindings(
         &bindings.attestation,
         &bindings.device_key_id,
         &bindings.app_id,
-        production,
     )?;
 
     // 2. Reconstruct the signed message: base64(photoHash)|base64(sha256(metadata))

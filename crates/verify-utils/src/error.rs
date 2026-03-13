@@ -8,11 +8,9 @@ pub enum VerifyError {
     #[error(transparent)]
     C2pa(#[from] zcam1_c2pa_utils::error::C2paError),
 
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[error(transparent)]
     AppAttest(#[from] zcam1_ios::Error),
 
-    #[cfg(target_os = "android")]
     #[error(transparent)]
     AndroidAttestation(#[from] zcam1_android::Error),
 
@@ -27,4 +25,7 @@ pub enum VerifyError {
 
     #[error("Proof not found in the manifest")]
     ProofNotFound,
+
+    #[error("Platform {0} is not supported")]
+    PlatformNotSupported(String),
 }
