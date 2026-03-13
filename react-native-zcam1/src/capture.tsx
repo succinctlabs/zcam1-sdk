@@ -98,7 +98,9 @@ export class ZPhoto {
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const contentPublicKey = await getContentPublicKey();
   const isSimulator = await isEmulator();
-  let appId = settings.appId;
+
+  // On Android, the appId is the package name.
+  const appId = Platform.OS == "android" ? getBundleId() : settings.appId;
 
   if (contentPublicKey.kty !== "EC") {
     throw new Error("Only EC public keys are supported");
@@ -114,9 +116,6 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   if (deviceKeyId == null || attestation == null) {
     switch (Platform.OS) {
       case "android":
-        // On Android, the appId is the package name.
-        appId = getBundleId();
-
         // On Android, getAttestation() creates the key AND returns the attestation
         // certificate chain in a single call. generateHardwareKey() is iOS-only.
         deviceKeyId = `ZCAM1_ANDROID_DEVICE_${appId}`;
