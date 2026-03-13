@@ -17,23 +17,23 @@ pub fn verify_bindings_from_manifest(
         return Ok(true);
     }
 
-    if bindings.device_key_id.contains("") {
-        #[cfg(feature = "android-verify")]
+    if bindings.device_key_id.starts_with("ZCAM1_ANDROID_DEVICE_") {
+        #[cfg(target_os = "android")]
         return verify_android_bindings(bindings, normalized_metadata, photo_hash, production);
 
-        #[cfg(not(feature = "android-verify"))]
+        #[cfg(not(target_os = "android"))]
         unimplemented!("The 'android-verify' feature must be enabled")
     } else {
-        #[cfg(feature = "apple-verify")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         return verify_ios_bindings(bindings, normalized_metadata, photo_hash, production);
 
-        #[cfg(not(feature = "apple-verify"))]
+        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
         unimplemented!("The 'apple-verify' feature must be enabled")
     }
 }
 
 /// Verify Apple App Attest bindings from a C2PA manifest.
-#[cfg(feature = "apple-verify")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn verify_ios_bindings(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
@@ -68,11 +68,11 @@ fn verify_ios_bindings(
 }
 
 /// Verify Android Key Attestation bindings from a C2PA manifest.
-#[cfg(feature = "android-verify")]
+#[cfg(target_os = "android")]
 fn verify_android_bindings(
     bindings: &DeviceBindings,
     normalized_metadata: &str,
-    photo_hash: Vec<u8>,
+    photo_hash: &[u8],
     production: bool,
 ) -> Result<bool, VerifyError> {
     // 1. Validate Key Attestation chain — verifies cert chain roots to Google CA,
@@ -80,7 +80,7 @@ fn verify_android_bindings(
     let key_result = zcam1_android::validate_key_attestation(
         &bindings.attestation,
         &bindings.device_key_id,
-        expected_package_name,
+        &bindings.app_id,
         production,
     )?;
 
@@ -88,7 +88,7 @@ fn verify_android_bindings(
     let metadata_hash = Sha256::digest(normalized_metadata.as_bytes());
     let client_data = format!(
         "{}|{}",
-        Base64::encode_string(&photo_hash),
+        Base64::encode_string(photo_hash),
         Base64::encode_string(&metadata_hash)
     );
 

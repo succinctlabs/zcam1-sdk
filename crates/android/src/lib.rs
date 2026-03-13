@@ -6,6 +6,7 @@ pub mod key_attestation;
 pub mod signature;
 pub mod types;
 
+pub use constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_SOFTWARE_ROOT};
 pub use error::{Error, SecurityLevel};
 pub use key_attestation::validate_key_attestation;
 pub use signature::{verify_message_binding, verify_signature};

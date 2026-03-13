@@ -119,7 +119,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
         // On Android, getAttestation() creates the key AND returns the attestation
         // certificate chain in a single call. generateHardwareKey() is iOS-only.
-        deviceKeyId = `zcam1-device-${settings.appId}`;
+        deviceKeyId = `ZCAM1_ANDROID_DEVICE_${appId}`;
 
         if (isSimulator) {
           // Emulator or device without Play Integrity support — use mock attestation.
