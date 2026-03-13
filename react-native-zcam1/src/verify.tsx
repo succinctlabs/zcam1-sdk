@@ -74,7 +74,7 @@ export class VerifiableFile {
       proof.vkHash,
       hash.buffer as ArrayBuffer,
       appId,
-      Platform.OS,
+      proof.platform,
     );
   }
 

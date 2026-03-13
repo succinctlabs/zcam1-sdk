@@ -9508,6 +9508,7 @@ dependencies = [
  "x509-cert",
  "x509-verify",
  "zcam1-c2pa-utils",
+ "zcam1-common",
 ]
 
 [[package]]
@@ -9565,6 +9566,7 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.17",
+ "uniffi",
  "x509-parser 0.16.0",
 ]
 
@@ -9586,6 +9588,7 @@ dependencies = [
  "x509-cert",
  "x509-verify",
  "zcam1-c2pa-utils",
+ "zcam1-common",
 ]
 
 [[package]]
@@ -9642,6 +9645,7 @@ name = "zcam1-wasm-bindings"
 version = "0.1.0"
 dependencies = [
  "zcam1-c2pa-utils",
+ "zcam1-common",
 ]
 
 [[package]]
