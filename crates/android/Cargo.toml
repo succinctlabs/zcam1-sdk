@@ -25,3 +25,4 @@ x509-verify = { version = "0.4.5", features = ["p256", "p384", "rsa", "x509", "p
 [dev-dependencies]
 p256 = { version = "0.13", features = ["ecdsa"] }
 rand_core = { version = "0.6", features = ["getrandom"] }
+zcam1-c2pa-utils = { workspace = true, features = ["io"] }
