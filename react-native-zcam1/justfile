@@ -6,5 +6,17 @@ add-yalc-to-android-test:
     yalc publish
     cd ../examples/android-test && yalc add @succinctlabs/react-native-zcam1-capture
 
+add-yalc-to-capture:
+    yalc publish
+    cd ../examples/capture && yalc add @succinctlabs/react-native-zcam1
+
+add-yalc-to-prove:
+    yalc publish
+    cd ../examples/prove && yalc add @succinctlabs/react-native-zcam1
+
+add-yalc-to-verify:
+    yalc publish
+    cd ../examples/verify && yalc add @succinctlabs/react-native-zcam1
+
 publish $NPM_CONFIG_REGISTRY:
     npm publish --access public
