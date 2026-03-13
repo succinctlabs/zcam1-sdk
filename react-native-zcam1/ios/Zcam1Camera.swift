@@ -900,9 +900,13 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                         if connection.isVideoMirroringSupported {
                             connection.isVideoMirrored = (self.currentPosition == .front)
                         }
+                        // Enable video stabilization to reduce hand-shake in both preview and recording.
+                        if connection.isVideoStabilizationSupported {
+                            connection.preferredVideoStabilizationMode = .standard
+                        }
                         session.commitConfiguration()
                         print(
-                            "[Zcam1CameraService] configureVideoDataOutput: reconfigured connection for position=\(self.currentPosition == .front ? "front" : "back"), mirrored=\(connection.isVideoMirrored)"
+                            "[Zcam1CameraService] configureVideoDataOutput: reconfigured connection for position=\(self.currentPosition == .front ? "front" : "back"), mirrored=\(connection.isVideoMirrored), stabilization=\(connection.activeVideoStabilizationMode.rawValue)"
                         )
                     }
 
@@ -939,8 +943,12 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                     if connection.isVideoMirroringSupported {
                         connection.isVideoMirrored = (self.currentPosition == .front)
                     }
+                    // Enable video stabilization to reduce hand-shake in both preview and recording.
+                    if connection.isVideoStabilizationSupported {
+                        connection.preferredVideoStabilizationMode = .standard
+                    }
                     print(
-                        "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled), mirrored=\(connection.isVideoMirrored)"
+                        "[Zcam1CameraService] configureVideoDataOutput: connection configured, isActive=\(connection.isActive), isEnabled=\(connection.isEnabled), mirrored=\(connection.isVideoMirrored), stabilization=\(connection.activeVideoStabilizationMode.rawValue)"
                     )
                 } else {
                     print(
@@ -1202,11 +1210,16 @@ public final class Zcam1CameraService: NSObject, AVCaptureAudioDataOutputSampleB
                 // Mirror front camera photos to match the preview (native iOS selfie behavior).
                 // The photo output has a separate AVCaptureConnection from the video data output,
                 // so mirroring must be configured independently on each.
-                if let photoConnection = self.photoOutput.connection(with: .video),
-                   photoConnection.isVideoMirroringSupported {
-                    photoConnection.automaticallyAdjustsVideoMirroring = false
-                    photoConnection.isVideoMirrored = (position == .front)
-                    print("[Zcam1CameraService] photo output mirrored=\(photoConnection.isVideoMirrored) for position=\(position == .front ? "front" : "back")")
+                if let photoConnection = self.photoOutput.connection(with: .video) {
+                    if photoConnection.isVideoMirroringSupported {
+                        photoConnection.automaticallyAdjustsVideoMirroring = false
+                        photoConnection.isVideoMirrored = (position == .front)
+                    }
+                    // Enable video stabilization on the photo output connection.
+                    if photoConnection.isVideoStabilizationSupported {
+                        photoConnection.preferredVideoStabilizationMode = .standard
+                    }
+                    print("[Zcam1CameraService] photo output mirrored=\(photoConnection.isVideoMirrored) for position=\(position == .front ? "front" : "back"), stabilization=\(photoConnection.activeVideoStabilizationMode.rawValue)")
                 }
 
                 // Audio input/output setup is deferred until recording starts.
