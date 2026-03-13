@@ -111,50 +111,50 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
     ? await EncryptedStorage.getItem(`attestation-${deviceKeyId}`)
     : null;
 
-  //if (deviceKeyId == null || attestation == null) {
-  switch (Platform.OS) {
-    case "android":
-      // On Android, the appId is the package name.
-      appId = getBundleId();
+  if (deviceKeyId == null || attestation == null) {
+    switch (Platform.OS) {
+      case "android":
+        // On Android, the appId is the package name.
+        appId = getBundleId();
 
-      // On Android, getAttestation() creates the key AND returns the attestation
-      // certificate chain in a single call. generateHardwareKey() is iOS-only.
-      deviceKeyId = `zcam1-device-${settings.appId}`;
+        // On Android, getAttestation() creates the key AND returns the attestation
+        // certificate chain in a single call. generateHardwareKey() is iOS-only.
+        deviceKeyId = `zcam1-device-${settings.appId}`;
 
-      if (isSimulator) {
-        // Emulator or device without Play Integrity support — use mock attestation.
-        console.warn(
-          "[ZCAM] Play Integrity not available - using mock attestation. This is for development only.",
-        );
-        attestation = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
-      } else {
-        attestation = await getAttestation(deviceKeyId, deviceKeyId);
-      }
-      break;
-
-    case "ios":
-    case "macos":
-      // iOS: generate key first, then attest separately
-      if (deviceKeyId == null) {
         if (isSimulator) {
+          // Emulator or device without Play Integrity support — use mock attestation.
           console.warn(
-            "[ZCAM] Running in simulator - using mock device key. This is for development only.",
+            "[ZCAM] Play Integrity not available - using mock attestation. This is for development only.",
           );
-          deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+          attestation = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
         } else {
-          deviceKeyId = await generateHardwareKey();
+          attestation = await getAttestation(deviceKeyId, deviceKeyId);
         }
-      }
-      attestation = await updateRegistration(deviceKeyId!, settings);
-      break;
+        break;
 
-    default:
-      throw new Error(`initCapture: ${Platform.OS} not supported`);
+      case "ios":
+      case "macos":
+        // iOS: generate key first, then attest separately
+        if (deviceKeyId == null) {
+          if (isSimulator) {
+            console.warn(
+              "[ZCAM] Running in simulator - using mock device key. This is for development only.",
+            );
+            deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+          } else {
+            deviceKeyId = await generateHardwareKey();
+          }
+        }
+        attestation = await updateRegistration(deviceKeyId!, settings);
+        break;
+
+      default:
+        throw new Error(`initCapture: ${Platform.OS} not supported`);
+    }
+
+    await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId!);
+    await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
   }
-
-  await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId!);
-  await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
-  //}
 
   if (deviceKeyId == null) {
     throw new Error("Failed to generate a device key");
