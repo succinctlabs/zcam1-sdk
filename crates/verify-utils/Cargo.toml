@@ -9,6 +9,8 @@ workspace = true
 [dependencies]
 # Members
 zcam1-c2pa-utils = { workspace = true, features = ["io"] }
+zcam1-android.workspace = true
+zcam1-ios.workspace = true
 
 # sp1
 sp1-verifier.workspace = true
@@ -17,9 +19,3 @@ base64ct.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
-
-[target.'cfg(target_os = "android")'.dependencies]
-zcam1-android.workspace = true
-
-[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-zcam1-ios.workspace = true

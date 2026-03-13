@@ -440,6 +440,7 @@ export class ProvingClient {
     originalPath = stripFileProtocol(originalPath);
     const format = formatFromPath(originalPath);
     const ext = Util.extname(originalPath);
+    const isSimulator = await isEmulator();
 
     if (format === undefined) {
       throw new Error(`Unsupported file format: ${originalPath}`);
@@ -450,7 +451,7 @@ export class ProvingClient {
     const keyTag =
       Platform.OS === "android"
         ? new TextEncoder().encode(
-            (await isEmulator()) ? "ZCAM1_MOCK_CONTENT_KEY_TAG" : "ZCAM1_CONTENT_KEY_TAG",
+            isSimulator ? "ZCAM1_MOCK_CONTENT_KEY_TAG" : "ZCAM1_CONTENT_KEY_TAG",
           )
         : this.contentKeyId;
 
@@ -468,6 +469,7 @@ export class ProvingClient {
       JSON.stringify({
         data: base64.encode(new Uint8Array(proof)),
         vk_hash: vkHash,
+        platform: Platform.OS,
       }),
     );
 
