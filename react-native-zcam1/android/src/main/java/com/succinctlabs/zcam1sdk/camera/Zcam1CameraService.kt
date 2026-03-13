@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.random.Random
+import androidx.exifinterface.media.ExifInterface
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.*
@@ -365,13 +366,50 @@ class Zcam1CameraService {
             exec,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeFile(tempFile.absolutePath, opts)
+                    val exifData = try {
+                        val exifInterface = ExifInterface(tempFile.absolutePath)
+                        val exifMap = WritableNativeMap().apply {
+                            val width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
+                            val height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
+                            if (width > 0) putInt("PixelXDimension", width)
+                            if (height > 0) putInt("PixelYDimension", height)
+                            exifInterface.getAttributeDouble(ExifInterface.TAG_EXPOSURE_TIME, Double.NaN)
+                                .takeIf { !it.isNaN() }?.let { putDouble("ExposureTime", it) }
+                            exifInterface.getAttributeDouble(ExifInterface.TAG_F_NUMBER, Double.NaN)
+                                .takeIf { !it.isNaN() }?.let { putDouble("FNumber", it) }
+                            exifInterface.getAttributeDouble(ExifInterface.TAG_FOCAL_LENGTH, Double.NaN)
+                                .takeIf { !it.isNaN() }?.let { putDouble("FocalLength", it) }
+                            exifInterface.getAttribute(ExifInterface.TAG_ISO_SPEED_RATINGS)
+                                ?.let { putString("ISOSpeedRatings", it) }
+                        }
+                        val tiffMap = WritableNativeMap().apply {
+                            exifInterface.getAttribute(ExifInterface.TAG_DATETIME)
+                                ?.let { putString("DateTime", it) }
+                            exifInterface.getAttribute(ExifInterface.TAG_MAKE)
+                                ?.let { putString("Make", it) }
+                            exifInterface.getAttribute(ExifInterface.TAG_MODEL)
+                                ?.let { putString("Model", it) }
+                            exifInterface.getAttribute(ExifInterface.TAG_SOFTWARE)
+                                ?.let { putString("Software", it) }
+                        }
+                        val orientation = exifInterface.getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL
+                        )
+                        WritableNativeMap().apply {
+                            putMap("{Exif}", exifMap)
+                            putMap("{TIFF}", tiffMap)
+                            putInt("Orientation", orientation)
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to read EXIF from captured image", e)
+                        null
+                    }
 
                     val result = WritableNativeMap().apply {
                         putString("filePath", tempFile.absolutePath)
                         putString("format", "jpeg")
-                        putNull("metadata")
+                        if (exifData != null) putMap("metadata", exifData) else putNull("metadata")
                     }
                     promise.resolve(result)
                 }
