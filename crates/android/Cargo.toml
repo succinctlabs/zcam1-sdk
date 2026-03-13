@@ -8,6 +8,8 @@ description = "Android Key Attestation validation for ZCAM1"
 workspace = true
 
 [dependencies]
+zcam1-common.workspace = true
+
 base64ct = { workspace = true }
 hex = { workspace = true }
 serde = { workspace = true }

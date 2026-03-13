@@ -30,12 +30,14 @@ add_library(zcam1-sdk SHARED
     ../cpp/zcam1-sdk.cpp
     ../cpp/generated/zcam1_c2pa_utils.cpp
     ../cpp/generated/zcam1_certs_utils.cpp
+    ../cpp/generated/zcam1_common.cpp
     ../cpp/generated/zcam1_verify_utils.cpp
     cpp-adapter.cpp
 )
 
 add_library(zcam1-proving SHARED
     ../cpp/proving/zcam1-proving.cpp
+    ../cpp/proving/generated/zcam1_common.cpp
     ../cpp/proving/generated/zcam1_proving_utils.cpp
     cpp-adapter-proving.cpp
 )

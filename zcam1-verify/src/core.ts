@@ -12,6 +12,7 @@ import type {
   PhotoMetadataInfo,
   VideoMetadataInfo,
 } from "./generated/zcam1_c2pa_utils";
+import { rootCerts } from "./bindings";
 
 export {
   PhotoMetadataInfo,
@@ -117,8 +118,12 @@ export function verifyProofAssertion(
   appId: string,
 ): ResultAsync<boolean, Error> {
   const appIdBytes = utf8ToBytes(appId);
-  const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
-  const publicInputs = concatBytes(photoHash, appIdBytes, appleRootCert);
+  const certs = rootCerts(proofAssertion["platform"] ?? "ios");
+  const publicInputs = concatBytes(
+    photoHash,
+    appIdBytes,
+    new Uint8Array(certs),
+  );
 
   const isValid = verify_groth16(
     base64.decode(proofAssertion["data"]),

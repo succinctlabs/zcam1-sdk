@@ -13,6 +13,7 @@ if (!rustInstalled) {
 // Export the generated bindings to the app.
 export * from './generated/zcam1_c2pa_utils';
 export * from './generated/zcam1_certs_utils';
+export * from './generated/zcam1_common';
 export * from './generated/zcam1_verify_utils';
 
 // Now import the bindings so we can:
@@ -20,6 +21,7 @@ export * from './generated/zcam1_verify_utils';
 // - export them as namespaced objects as the default export.
 import * as zcam1_c2pa_utils from './generated/zcam1_c2pa_utils';
 import * as zcam1_certs_utils from './generated/zcam1_certs_utils';
+import * as zcam1_common from './generated/zcam1_common';
 import * as zcam1_verify_utils from './generated/zcam1_verify_utils';
 
 // Initialize the generated bindings: mostly checksums, but also callbacks.
@@ -29,6 +31,7 @@ let initialized = false;
 if (!initialized) {
   zcam1_c2pa_utils.default.initialize();
   zcam1_certs_utils.default.initialize();
+  zcam1_common.default.initialize();
   zcam1_verify_utils.default.initialize();
   initialized = true;
 }
@@ -44,6 +47,7 @@ export async function uniffiInitAsync() {
 export default {
   zcam1_c2pa_utils,
   zcam1_certs_utils,
+  zcam1_common,
   zcam1_verify_utils,
 };
 
