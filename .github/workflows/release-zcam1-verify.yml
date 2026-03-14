@@ -6,7 +6,7 @@ on:
       - "zcam1-verify-v*"
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -46,3 +46,10 @@ jobs:
           npm ci
           TAG=$(node -p "const v=require('./package.json').version; v.includes('-') ? v.split('-')[1].split('.')[0] : 'latest'")
           npm publish --access public --provenance --tag $TAG
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: zcam1-verify ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
