@@ -1,0 +1,39 @@
+name: Release zcam1-verify
+
+on:
+  push:
+    tags:
+      - "zcam1-verify-v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Validate version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/zcam1-verify-v}
+          PKG_VERSION=$(node -p "require('./zcam1-verify/package.json').version")
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "Tag version ($VERSION) does not match package.json version ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - name: Publish zcam1-verify
+        run: |
+          cd zcam1-verify
+          npm ci
+          npm publish --access public --provenance
