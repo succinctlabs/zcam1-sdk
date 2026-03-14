@@ -1,5 +1,4 @@
 import { base64 } from "@scure/base";
-import { Platform } from "react-native";
 
 import {
   computeHash,

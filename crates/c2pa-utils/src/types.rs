@@ -272,7 +272,13 @@ pub struct DeviceBindings {
 pub struct Proof {
     pub data: String,
     pub vk_hash: String,
+    #[serde(default = "default_platform")]
     pub platform: String,
+}
+
+// Backward compatibility: older proofs omit the platform field
+fn default_platform() -> String {
+    "ios".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
