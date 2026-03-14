@@ -79,7 +79,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: react-native-zcam1 ${{ github.ref_name }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(github.ref_name, '-alpha.') || contains(github.ref_name, '-beta.') || contains(github.ref_name, '-rc.') }}
           files: |
             react-native-zcam1/Zcam1Framework.xcframework.zip
             react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
