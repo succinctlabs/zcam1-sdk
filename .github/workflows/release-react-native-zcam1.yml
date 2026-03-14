@@ -66,7 +66,8 @@ jobs:
         run: |
           cd react-native-zcam1
           npm ci
-          npm publish --access public --provenance
+          TAG=$(node -p "const v=require('./package.json').version; v.includes('-') ? v.split('-')[1].split('.')[0] : 'latest'")
+          npm publish --access public --provenance --tag $TAG
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
           cd android/src/main

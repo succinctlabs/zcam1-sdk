@@ -44,4 +44,5 @@ jobs:
         run: |
           cd zcam1-verify
           npm ci
-          npm publish --access public --provenance
+          TAG=$(node -p "const v=require('./package.json').version; v.includes('-') ? v.split('-')[1].split('.')[0] : 'latest'")
+          npm publish --access public --provenance --tag $TAG
