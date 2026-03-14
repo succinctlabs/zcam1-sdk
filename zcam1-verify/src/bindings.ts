@@ -10,7 +10,7 @@ import * as zcam1_c2pa_utils from './generated/zcam1_c2pa_utils';
 import * as zcam1_common from './generated/zcam1_common';
 
 import initAsync from './generated/wasm-bindgen/index.js';
-import wasmPath from './generated/wasm-bindgen/index_bg.wasm';
+import wasmPath from './generated/wasm-bindgen/index_bg.wasm?url';
 
 export async function uniffiInitAsync() {
   await initAsync({ module_or_path: wasmPath })
