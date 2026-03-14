@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Button, View, Text, Switch } from "react-native";
+import { StyleSheet, View, Text, Switch } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { FileSystem, Util } from "react-native-file-access";
 import {
@@ -11,6 +11,7 @@ import {
   requestLocationPermission,
 } from "@succinctlabs/react-native-zcam1";
 import Toast from "react-native-toast-message";
+import { Button } from "@/components/Button";
 
 enum CaptureMode {
   Photo = "photo",
