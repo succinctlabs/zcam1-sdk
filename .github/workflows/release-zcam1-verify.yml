@@ -19,6 +19,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
