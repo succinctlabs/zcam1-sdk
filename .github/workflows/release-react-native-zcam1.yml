@@ -25,7 +25,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim,wasm32-unknown-unknown
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
       - name: Install protoc
         run: brew install protobuf
