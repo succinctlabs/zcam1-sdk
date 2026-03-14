@@ -25,7 +25,7 @@ def getPackageVersion() {
 
 task downloadJniLibs {
   def version = getPackageVersion()
-  def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/v${version}"
+  def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/react-native-zcam1-v${version}"
   def jniLibsDir = file("src/main/jniLibs")
   def jniLibsProvingDir = file("src/main/jniLibsProving")
   def markerFile = file(".jnilibs-version")

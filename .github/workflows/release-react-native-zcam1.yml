@@ -1,19 +1,16 @@
-name: Release ZCAM1 SDK
+name: Release react-native-zcam1
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version for the release (e.g. 1.0.0)"
-        required: true
-        type: string
+  push:
+    tags:
+      - "react-native-zcam1-v*"
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  build-and-release:
+  publish:
     runs-on: macos-15
 
     steps:
@@ -30,18 +27,16 @@ jobs:
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,wasm32-unknown-unknown
 
-      - name: "Install protoc"
-        run: |
-          brew install protobuf
+      - name: Install protoc
+        run: brew install protobuf
 
-      - name: "Install sp1up"
+      - name: Install sp1up
         run: |
           curl -L https://sp1.succinct.xyz | bash
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
 
-      - name: "Install SP1 toolchain"
-        run: |
-          sp1up --token ${{ secrets.GITHUB_TOKEN }}
+      - name: Install SP1 toolchain
+        run: sp1up --token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
@@ -55,16 +50,14 @@ jobs:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Create tag
+      - name: Validate version
         run: |
-          git tag v${{ github.event.inputs.version }}
-          git push origin v${{ github.event.inputs.version }}
-
-      - name: Publish zcam1-verify
-        run: |
-          cd zcam1-verify
-          npm ci
-          npm publish --access public --provenance
+          VERSION=${GITHUB_REF#refs/tags/react-native-zcam1-v}
+          PKG_VERSION=$(node -p "require('./react-native-zcam1/package.json').version")
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "Tag version ($VERSION) does not match package.json version ($PKG_VERSION)"
+            exit 1
+          fi
 
       - name: Publish react-native-zcam1
         run: |
@@ -80,8 +73,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: ZCAM1 SDK v${{ github.event.inputs.version }}
+          tag_name: ${{ github.ref_name }}
+          name: react-native-zcam1 ${{ github.ref_name }}
           files: |
             react-native-zcam1/Zcam1Framework.xcframework.zip
             react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
