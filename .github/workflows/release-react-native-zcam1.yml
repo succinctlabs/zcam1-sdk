@@ -33,6 +33,9 @@ jobs:
             i686-linux-android
             x86_64-linux-android
 
+      - name: Install ndk
+        run: cargo install cargo-ndk
+
       - name: Install protoc
         run: brew install protobuf
 
