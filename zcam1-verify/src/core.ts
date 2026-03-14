@@ -12,7 +12,7 @@ import type {
   PhotoMetadataInfo,
   VideoMetadataInfo,
 } from "./generated/zcam1_c2pa_utils";
-import { rootCerts } from "./bindings";
+import { rootCerts } from "./generated/zcam1_common";
 
 export {
   PhotoMetadataInfo,
