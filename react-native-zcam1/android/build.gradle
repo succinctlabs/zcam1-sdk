@@ -16,6 +16,63 @@ buildscript {
   }
 }
 
+def getPackageVersion() {
+  def packageJson = new groovy.json.JsonSlurper().parseText(
+    file("../package.json").text
+  )
+  return packageJson.version
+}
+
+task downloadJniLibs {
+  def version = getPackageVersion()
+  def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/v${version}"
+  def jniLibsDir = file("src/main/jniLibs")
+  def jniLibsProvingDir = file("src/main/jniLibsProving")
+  def markerFile = file(".jnilibs-version")
+
+  doFirst {
+    // Logic mirrors the iOS podspec prepare_command:
+    // - dir absent → download
+    // - dir present, marker absent → Yalc/local dev, skip
+    // - dir present, marker version differs → re-download
+    [jniLibs: jniLibsDir, jniLibsProving: jniLibsProvingDir].each { name, dir ->
+      def zipName = "${name}.zip"
+      def zipUrl = "${baseUrl}/${zipName}"
+
+      if (!dir.exists()) {
+        println "Downloading ${name} v${version}..."
+        exec {
+          commandLine "curl", "-fL", zipUrl, "-o", zipName
+          workingDir "src/main"
+        }
+        exec {
+          commandLine "unzip", "-q", zipName
+          workingDir "src/main"
+        }
+        new File("${projectDir}/src/main/${zipName}").delete()
+      } else if (markerFile.exists() && markerFile.text.trim() != version) {
+        println "Updating ${name} to v${version}..."
+        dir.deleteDir()
+        exec {
+          commandLine "curl", "-fL", zipUrl, "-o", zipName
+          workingDir "src/main"
+        }
+        exec {
+          commandLine "unzip", "-q", zipName
+          workingDir "src/main"
+        }
+        new File("${projectDir}/src/main/${zipName}").delete()
+      }
+    }
+
+    if (jniLibsDir.exists()) {
+      markerFile.text = version
+    }
+  }
+}
+
+preBuild.dependsOn downloadJniLibs
+
 def reactNativeArchitectures() {
   def value = rootProject.getProperties().get("reactNativeArchitectures")
   return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
