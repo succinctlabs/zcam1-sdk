@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Image,
-  Button,
   Pressable,
   Share,
 } from "react-native";
@@ -27,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
 import { Util } from "react-native-file-access";
+import { Button } from "@/components/Button";
 
 export default function Details() {
   const { uri, authStatus } = useLocalSearchParams<{
