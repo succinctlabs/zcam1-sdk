@@ -77,14 +77,14 @@
     "ubrn:web": "ubrn build web",
     "clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/generated/",
     "build": "bob build",
-    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release && npm run ubrn:android -- --release && npm run ubrn:android:proving -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded; fi",
+    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release && npm run ubrn:android -- --release && npm run ubrn:android:proving -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded && mv android/src/main/jniLibs android/src/main/jniLibs.excluded && mv android/src/main/jniLibsProving android/src/main/jniLibsProving.excluded; fi",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-    "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework",
-    "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded",
-    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework; fi"
+    "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework && mv android/src/main/jniLibs.excluded android/src/main/jniLibs && mv android/src/main/jniLibsProving.excluded android/src/main/jniLibsProving",
+    "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded && mv android/src/main/jniLibs android/src/main/jniLibs.excluded && mv android/src/main/jniLibsProving android/src/main/jniLibsProving.excluded",
+    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework && mv android/src/main/jniLibs.excluded android/src/main/jniLibs && mv android/src/main/jniLibsProving.excluded android/src/main/jniLibsProving; fi"
   },
   "files": [
     "src",
