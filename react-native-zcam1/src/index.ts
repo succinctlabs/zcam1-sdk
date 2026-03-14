@@ -39,6 +39,7 @@ export type {
   CaptureFormat,
   FilmStyleEffect,
   FilmStyleRecipe,
+  HardwareShutterAction,
   HighlightShadowConfig,
   MonochromeConfig,
   TakePhotoOptions,

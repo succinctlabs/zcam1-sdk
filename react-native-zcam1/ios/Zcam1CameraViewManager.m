@@ -50,6 +50,8 @@ RCT_EXPORT_MODULE(Zcam1CameraView);
 // @property (nonatomic, copy) NSDictionary *customFilmStyles;   // additional custom film styles by name
 // @property (nonatomic) BOOL depthEnabled;            // enable depth data at session level (default: NO)
 // @property (nonatomic, copy) RCTDirectEventBlock onOrientationChange;  // orientation change callback
+// @property (nonatomic) BOOL hardwareShutterEnabled;                    // enable hardware button capture (default: YES)
+// @property (nonatomic, copy) RCTDirectEventBlock onHardwareShutter;    // hardware shutter callback
 RCT_EXPORT_VIEW_PROPERTY(isActive, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(position, NSString);
 RCT_EXPORT_VIEW_PROPERTY(captureFormat, NSString);
@@ -58,6 +60,8 @@ RCT_EXPORT_VIEW_PROPERTY(torch, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(exposure, float);
 RCT_EXPORT_VIEW_PROPERTY(depthEnabled, BOOL);
 RCT_EXPORT_VIEW_PROPERTY(onOrientationChange, RCTDirectEventBlock);
+RCT_EXPORT_VIEW_PROPERTY(hardwareShutterEnabled, BOOL);
+RCT_EXPORT_VIEW_PROPERTY(onHardwareShutter, RCTDirectEventBlock);
 
 // Use custom property setter to ensure the Swift setter is called properly.
 RCT_CUSTOM_VIEW_PROPERTY(filmStyle, NSString, Zcam1CameraView)

@@ -2838,6 +2838,7 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     public var isActive: Bool = true {
         didSet {
             updateRunningState()
+            updateCaptureEventInteraction()
         }
     }
 
@@ -2922,8 +2923,25 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     /// Sends a dictionary with "orientation" key ("portrait", "landscapeLeft", "landscapeRight", "portraitUpsideDown").
     public var onOrientationChange: (([String: Any]) -> Void)?
 
+    /// Callback fired when a hardware capture button is pressed (volume buttons or Camera Control).
+    /// Sends a dictionary with "action" key ("photo" for shutter press, "focus" for light press on Camera Control).
+    public var onHardwareShutter: (([String: Any]) -> Void)?
+
+    /// Whether hardware buttons (volume buttons, Camera Control) trigger capture events.
+    /// When true, volume buttons fire onHardwareShutter and the system volume HUD is suppressed.
+    /// Requires iOS 17.2+. Defaults to true.
+    public var hardwareShutterEnabled: Bool = true {
+        didSet {
+            updateCaptureEventInteraction()
+        }
+    }
+
     /// Token for this view's motion manager listener, used for cleanup in deinit.
     private var orientationListenerToken: Int?
+
+    /// Stored reference for the capture event interaction (volume + Camera Control buttons).
+    /// Typed as Any to keep the stored property available on iOS 16.0; only instantiated on iOS 17.2+.
+    private var captureEventInteractionStorage: Any?
 
     // Preview rendering — Metal-backed view for GPU-only frame display.
     private let metalPreviewView = MetalPreviewView()
@@ -2962,6 +2980,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
             callback(["orientation": orientationToString(orientation)])
         }
 
+        // Setup hardware button capture event interaction (iOS 17.2+).
+        setupCaptureEventInteraction()
+
         // Configure session and start receiving frames.
         reconfigureSession()
     }
@@ -2971,11 +2992,55 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let token = orientationListenerToken {
             Zcam1MotionManager.shared.removeListener(token)
         }
+
+        // Remove the capture event interaction to stop intercepting hardware buttons.
+        if #available(iOS 17.2, *) {
+            if let interaction = captureEventInteractionStorage as? AVCaptureEventInteraction {
+                self.removeInteraction(interaction)
+            }
+        }
     }
 
     public override func layoutSubviews() {
         super.layoutSubviews()
         metalPreviewView.frame = bounds
+    }
+
+    // MARK: - Hardware Shutter (Volume Buttons + Camera Control)
+
+    /// Configures AVCaptureEventInteraction for hardware shutter support.
+    /// Volume buttons and Camera Control (iPhone 16) will fire onHardwareShutter events.
+    /// The system volume HUD is automatically suppressed while the interaction is active.
+    private func setupCaptureEventInteraction() {
+        guard #available(iOS 17.2, *) else { return }
+
+        let interaction = AVCaptureEventInteraction { [weak self] event in
+            // Primary action: full press on volume button or Camera Control.
+            guard event.phase == .ended else { return }
+            guard let callback = self?.onHardwareShutter else { return }
+            DispatchQueue.main.async {
+                callback(["action": "photo"])
+            }
+        } secondary: { [weak self] event in
+            // Secondary action: light press on Camera Control (focus/zoom).
+            guard event.phase == .ended else { return }
+            guard let callback = self?.onHardwareShutter else { return }
+            DispatchQueue.main.async {
+                callback(["action": "focus"])
+            }
+        }
+
+        interaction.isEnabled = hardwareShutterEnabled && isActive
+        self.addInteraction(interaction)
+        captureEventInteractionStorage = interaction
+    }
+
+    /// Updates the capture event interaction's enabled state based on hardwareShutterEnabled and isActive.
+    private func updateCaptureEventInteraction() {
+        guard #available(iOS 17.2, *),
+              let interaction = captureEventInteractionStorage as? AVCaptureEventInteraction
+        else { return }
+        interaction.isEnabled = hardwareShutterEnabled && isActive
     }
 
     // MARK: - Film Style Resolution
