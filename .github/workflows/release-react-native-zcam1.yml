@@ -69,9 +69,6 @@ jobs:
           fi
           sp1up --token "$SP1UP_TOKEN" --version "$sp1_version"
 
-      - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
