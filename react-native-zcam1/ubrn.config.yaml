@@ -8,6 +8,7 @@ ios:
   frameworkName: Zcam1Framework
 android:
   packageName: com.succinctlabs.zcam1sdk
+  jniLibs: ../Zcam1Jni
 noOverwrite:
   - "Zcam1Sdk.podspec"
   - "android/build.gradle"

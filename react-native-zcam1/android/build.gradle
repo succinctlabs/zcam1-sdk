@@ -26,15 +26,16 @@ def getPackageVersion() {
 task downloadJniLibs {
   def version = getPackageVersion()
   def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/react-native-zcam1-v${version}"
-  def jniLibsDir = file("src/main/jniLibs")
-  def jniLibsProvingDir = file("src/main/jniLibsProving")
+  def jniLibsDir = file("../Zcam1Jni")
+  def jniLibsProvingDir = file("../Zcam1ProvingJni")
   def markerFile = file(".jnilibs-version")
 
   doFirst {
     // Logic mirrors the iOS podspec prepare_command:
-    // - dir absent → download
-    // - dir present, marker absent → Yalc/local dev, skip
-    // - dir present, marker version differs → re-download
+    // - dir absent → download from GitHub release artifacts
+    // - dir present, marker absent → Yalc/local dev (package includes JNI libs), skip
+    // - dir present, marker present, version differs → re-download (public npm upgrade)
+    // - dir present, marker present, version matches → already up to date, skip
     [jniLibs: jniLibsDir, jniLibsProving: jniLibsProvingDir].each { name, dir ->
       def zipName = "${name}.zip"
       def zipUrl = "${baseUrl}/${zipName}"
@@ -50,6 +51,7 @@ task downloadJniLibs {
           workingDir "src/main"
         }
         new File("${projectDir}/src/main/${zipName}").delete()
+        markerFile.text = version
       } else if (markerFile.exists() && markerFile.text.trim() != version) {
         println "Updating ${name} to v${version}..."
         dir.deleteDir()
@@ -62,16 +64,15 @@ task downloadJniLibs {
           workingDir "src/main"
         }
         new File("${projectDir}/src/main/${zipName}").delete()
+        markerFile.text = version
       }
-    }
-
-    if (jniLibsDir.exists()) {
-      markerFile.text = version
     }
   }
 }
 
-preBuild.dependsOn downloadJniLibs
+afterEvaluate {
+  preBuild.dependsOn downloadJniLibs
+}
 
 def reactNativeArchitectures() {
   def value = rootProject.getProperties().get("reactNativeArchitectures")
