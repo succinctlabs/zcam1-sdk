@@ -55,7 +55,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size
 
 cmake_path(
   SET MY_RUST_LIB
-  ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libzcam1_bindings.a
+  ${CMAKE_SOURCE_DIR}/../Zcam1Jni/${ANDROID_ABI}/libzcam1_bindings.a
 
   NORMALIZE
 )
@@ -64,7 +64,7 @@ set_target_properties(my_rust_lib PROPERTIES IMPORTED_LOCATION ${MY_RUST_LIB})
 
 cmake_path(
   SET MY_RUST_PROVING_LIB
-  ${CMAKE_SOURCE_DIR}/src/main/jniLibsProving/${ANDROID_ABI}/libzcam1_proving_bindings.a
+  ${CMAKE_SOURCE_DIR}/../Zcam1ProvingJni/${ANDROID_ABI}/libzcam1_proving_bindings.a
 
   NORMALIZE
 )

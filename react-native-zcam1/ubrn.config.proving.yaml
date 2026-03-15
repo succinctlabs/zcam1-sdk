@@ -18,7 +18,7 @@ ios:
     - 'target.aarch64-apple-ios-sim.rustflags=["-C","link-arg=-target","-C","link-arg=arm64-apple-ios16.0-simulator"]'
 android:
   packageName: com.succinctlabs.zcam1sdk
-  jniLibs: src/main/jniLibsProving
+  jniLibs: ../Zcam1ProvingJni
   apiLevel: 28
   targets:
     - arm64-v8a
