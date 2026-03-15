@@ -36,7 +36,7 @@ task downloadJniLibs {
     // - dir present, marker absent → Yalc/local dev (package includes JNI libs), skip
     // - dir present, marker present, version differs → re-download (public npm upgrade)
     // - dir present, marker present, version matches → already up to date, skip
-    [jniLibs: jniLibsDir, jniLibsProving: jniLibsProvingDir].each { name, dir ->
+    [Zcam1Jni: jniLibsDir, Zcam1ProvingJni: jniLibsProvingDir].each { name, dir ->
       def zipName = "${name}.zip"
       def zipUrl = "${baseUrl}/${zipName}"
 
@@ -44,26 +44,26 @@ task downloadJniLibs {
         println "Downloading ${name} v${version}..."
         exec {
           commandLine "curl", "-fL", zipUrl, "-o", zipName
-          workingDir "src/main"
+          workingDir ".."
         }
         exec {
           commandLine "unzip", "-q", zipName
-          workingDir "src/main"
+          workingDir ".."
         }
-        new File("${projectDir}/src/main/${zipName}").delete()
+        new File("${projectDir}/../${zipName}").delete()
         markerFile.text = version
       } else if (markerFile.exists() && markerFile.text.trim() != version) {
         println "Updating ${name} to v${version}..."
         dir.deleteDir()
         exec {
           commandLine "curl", "-fL", zipUrl, "-o", zipName
-          workingDir "src/main"
+          workingDir ".."
         }
         exec {
           commandLine "unzip", "-q", zipName
-          workingDir "src/main"
+          workingDir ".."
         }
-        new File("${projectDir}/src/main/${zipName}").delete()
+        new File("${projectDir}/../${zipName}").delete()
         markerFile.text = version
       }
     }
