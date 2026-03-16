@@ -23,6 +23,26 @@ def getPackageVersion() {
   return packageJson.version
 }
 
+// Proving is opt-in.
+//
+// Enable proving in one of these ways:
+//
+// 1) Environment variable (works for Expo + non-Expo):
+//    ZCAM1_ENABLE_PROVING=1 ./gradlew ...
+//
+// 2) gradle.properties (recommended for Expo plugins):
+//    android/gradle.properties:
+//      enableProving=true
+//
+def isProvingEnabled() {
+  def fromEnv = System.getenv("ZCAM1_ENABLE_PROVING")
+  if (fromEnv == "1" || fromEnv?.toLowerCase() == "true") return true
+  def fromProps = rootProject.findProperty("enableProving") ?: project.findProperty("enableProving")
+  return fromProps == "true" || fromProps == true
+}
+
+def enableProving = isProvingEnabled()
+
 task downloadJniLibs {
   def version = getPackageVersion()
   def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/react-native-zcam1-v${version}"
@@ -36,7 +56,12 @@ task downloadJniLibs {
     // - dir present, marker absent → Yalc/local dev (package includes JNI libs), skip
     // - dir present, marker present, version differs → re-download (public npm upgrade)
     // - dir present, marker present, version matches → already up to date, skip
-    [Zcam1Jni: jniLibsDir, Zcam1ProvingJni: jniLibsProvingDir].each { name, dir ->
+    def libs = [Zcam1Jni: jniLibsDir]
+    if (enableProving) {
+      libs["Zcam1ProvingJni"] = jniLibsProvingDir
+    }
+
+    libs.each { name, dir ->
       def zipName = "${name}.zip"
       def zipUrl = "${baseUrl}/${zipName}"
 
@@ -132,7 +157,7 @@ android {
     }
     externalNativeBuild {
       cmake {
-        arguments '-DANDROID_STL=c++_shared'
+        arguments '-DANDROID_STL=c++_shared', "-DZCAM1_ENABLE_PROVING=${enableProving ? '1' : '0'}"
         abiFilters (*reactNativeArchitectures())
       }
     }
