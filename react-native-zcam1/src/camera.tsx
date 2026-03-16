@@ -46,6 +46,13 @@ export type CaptureFormat = "jpeg" | "dng";
  */
 export type CameraFilmStyle = "normal" | "mellow" | "nostalgic" | "bw";
 
+/**
+ * Hardware shutter action type.
+ * - "photo": Full press on volume button or Camera Control. Trigger capture.
+ * - "focus": Light press on Camera Control. Trigger focus/zoom (optional).
+ */
+export type HardwareShutterAction = "photo" | "focus";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom Film Style Recipe Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -186,6 +193,21 @@ export interface ZCameraProps {
    * @param orientation The new physical orientation of the device.
    */
   onOrientationChange?: (orientation: DeviceOrientation) => void;
+  /**
+   * Whether hardware buttons (volume buttons, Camera Control on iPhone 16)
+   * should trigger capture events via onHardwareShutter.
+   * When enabled, the system volume HUD is automatically suppressed while
+   * the camera is active. Requires iOS 17.2+; ignored on older versions.
+   * @default true
+   */
+  hardwareShutterEnabled?: boolean;
+  /**
+   * Callback fired when a hardware capture button is pressed.
+   * Volume buttons and Camera Control (iPhone 16) trigger "photo" action.
+   * Light press on Camera Control triggers "focus" action.
+   * @param action The type of hardware shutter event.
+   */
+  onHardwareShutter?: (action: HardwareShutterAction) => void;
   /** Capture information used to generate C2PA bindings for each photo. */
   captureInfo: CaptureInfo;
   /** Optional certificate chain used to sign the C2PA manifest. */
@@ -225,6 +247,8 @@ type NativeCameraViewProps = {
   customFilmStyles?: Record<string, FilmStyleEffect[]>;
   depthEnabled?: boolean;
   onOrientationChange?: (event: { nativeEvent: { orientation: string } }) => void;
+  hardwareShutterEnabled?: boolean;
+  onHardwareShutter?: (event: { nativeEvent: { action: string } }) => void;
 };
 
 /**
@@ -649,6 +673,8 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
       customFilmStyles,
       depthEnabled = false,
       onOrientationChange,
+      hardwareShutterEnabled = true,
+      onHardwareShutter,
       style,
     } = this.props;
 
@@ -675,6 +701,12 @@ export class ZCamera extends React.PureComponent<ZCameraProps> {
         onOrientationChange={
           onOrientationChange
             ? (event) => onOrientationChange(event.nativeEvent.orientation as DeviceOrientation)
+            : undefined
+        }
+        hardwareShutterEnabled={hardwareShutterEnabled}
+        onHardwareShutter={
+          onHardwareShutter
+            ? (event) => onHardwareShutter(event.nativeEvent.action as HardwareShutterAction)
             : undefined
         }
       />
