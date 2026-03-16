@@ -211,9 +211,21 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
                    let temp = config["temperature"] as? Float {
                     let tint = config["tint"] as? Float ?? 0
                     if let filter = CIFilter(name: "CITemperatureAndTint") {
+                        // Convert Harbeth C7WhiteBalance temperature (4000-7000K, neutral 5000K)
+                        // to a CIFilter Kelvin offset from D65 (6500K).
+                        // Harbeth mix factor: temp < 5000 ? 0.0004*(temp-5000) : 0.00006*(temp-5000).
+                        // Scale this factor to a perceptually similar CIFilter Kelvin offset.
+                        let harbethFactor: Float = temp < 5000
+                            ? 0.0004 * (temp - 5000)
+                            : 0.00006 * (temp - 5000)
+                        let targetTemp = CGFloat(6500.0 + harbethFactor * 5000.0)
+                        // Harbeth tint (-200 to 200) applies a subtle YIQ shift.
+                        // CITemperatureAndTint tint operates in a different perceptual space.
+                        let targetTint = CGFloat(tint * 0.5)
+
                         filter.setValue(CIVector(x: 6500, y: 0), forKey: "inputNeutral")
                         filter.setValue(
-                            CIVector(x: CGFloat(6500 + temp * 100), y: CGFloat(tint * 100)),
+                            CIVector(x: targetTemp, y: targetTint),
                             forKey: "inputTargetNeutral"
                         )
                         filters.append(filter)
@@ -245,7 +257,11 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
                    let highlights = config["highlights"] as? Float,
                    let shadows = config["shadows"] as? Float {
                     if let filter = CIFilter(name: "CIHighlightShadowAdjust") {
-                        filter.setValue(NSNumber(value: highlights), forKey: "inputHighlightAmount")
+                        // Harbeth C7HighlightShadow: highlights 0=no change, 1=darken highlights.
+                        // CIHighlightShadowAdjust: inputHighlightAmount 1=no change, 0=darken.
+                        // Clamp to [0,1] to match Harbeth's @ZeroOneRange, then invert.
+                        let clampedHighlights = min(max(highlights, 0), 1)
+                        filter.setValue(NSNumber(value: 1.0 - clampedHighlights), forKey: "inputHighlightAmount")
                         filter.setValue(NSNumber(value: shadows), forKey: "inputShadowAmount")
                         filters.append(filter)
                     }

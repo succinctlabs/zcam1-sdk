@@ -2952,6 +2952,8 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
     private let videoDataQueue = DispatchQueue(label: "com.zcam1.videodata", qos: .userInteractive)
     private var currentFilmStyleEnum: Zcam1CameraFilmStyle = .normal
     private var currentFilmStyleRecipe: [[String: Any]]?
+    /// Lock for thread-safe access to currentFilmStyleRecipe (written on main, read on capture queue).
+    private let filmStyleLock = NSLock()
     private var frameCount: Int = 0
 
     // Flag to skip frames during camera reconfiguration to avoid showing incorrectly mirrored frames.
@@ -3047,7 +3049,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
            let recipe = overrides[filmStyle] {
             print("[Zcam1CameraView] Using film style override for '\(filmStyle)'")
             // Store recipe for per-frame CIFilter creation on the capture queue (thread-safe).
+            filmStyleLock.lock()
             currentFilmStyleRecipe = recipe
+            filmStyleLock.unlock()
             // Harbeth chain for capture/recording via the service.
             let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
@@ -3059,7 +3063,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         if let custom = customFilmStyles as? [String: [[String: Any]]],
            let recipe = custom[filmStyle] {
             print("[Zcam1CameraView] Using custom film style '\(filmStyle)'")
+            filmStyleLock.lock()
             currentFilmStyleRecipe = recipe
+            filmStyleLock.unlock()
             let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
             currentFilmStyleEnum = .normal
             Zcam1CameraService.shared.setCustomFilmStyles(harbethFilters)
@@ -3067,7 +3073,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         }
 
         // Fall back to no film style (JS SDK provides all built-in recipes via filmStyleOverrides).
+        filmStyleLock.lock()
         currentFilmStyleRecipe = nil
+        filmStyleLock.unlock()
         currentFilmStyleEnum = .normal
         Zcam1CameraService.shared.setFilmStyle(.normal)
     }
@@ -3113,7 +3121,10 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         // Apply film style CIFilters if configured (GPU pipeline, lazy evaluation).
         // Filters are created fresh per-frame from the stored recipe to avoid cross-thread
         // mutation of CIFilter instances (recipe is set on main thread, read here on capture queue).
-        if let recipe = currentFilmStyleRecipe {
+        filmStyleLock.lock()
+        let recipe = currentFilmStyleRecipe
+        filmStyleLock.unlock()
+        if let recipe = recipe {
             let filters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
             ciImage = Zcam1CameraFilmStyle.applyCIFilters(filters, to: ciImage)
         }
