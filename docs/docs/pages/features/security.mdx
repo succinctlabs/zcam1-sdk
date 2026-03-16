@@ -4,10 +4,10 @@
 
   A verifiably authentic photo from ZCAM provides the following guarantees:
 
-  1. **Device Authenticity**: The photo was signed on a genuine Apple device with a Secure Enclave
-  2. **App Binding**: The signing key is bound to a specific application via Apple App Attest
+  1. **Device Authenticity**: The photo was signed on a genuine device with a Secure Enclave
+  2. **App Binding**: The signing key is bound to a specific application (via Apple App Attest on iOS; Android Key Attestation + Google Play Integrity on Android, planned)
   3. **Content Integrity**: The photo has not been modified since the signature was created
-  4. **Proof Validity**: The above properties are verified in a zero-knowledge proof that chains to Apple's root certificate
+  4. **Proof Validity**: The above properties are verified in a zero-knowledge proof that chains to the platform root certificate
 
   ## Trust Assumptions
 
@@ -15,8 +15,9 @@
 
   | Assumption | Rationale |
   |------------|-----------|
-  | Secure Enclave keys cannot be exfiltrated | Hardware security guarantee from Apple |
+  | Secure Enclave keys cannot be exfiltrated | Hardware security guarantee from Apple / Android |
   | Apple App Attest is honest | Apple signs attestations only for legitimate device/app pairs |
+  | Android Key Attestation + Play Integrity are honest | Google provides hardware-backed key and app integrity guarantees |
   | SP1 proof system is sound | Groth16 proofs cannot be forged without the witness |
 
 ## SDK Trust Model
