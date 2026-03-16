@@ -97,6 +97,23 @@ task downloadJniLibs {
 
 afterEvaluate {
   preBuild.dependsOn downloadJniLibs
+  // CMake build tasks don't depend on preBuild, so explicitly wire them to
+  // downloadJniLibs so the .a files are present before ninja links against them.
+  tasks.configureEach { task ->
+    if (task.name.startsWith("buildCMake") || task.name.startsWith("configureCMake")) {
+      task.dependsOn downloadJniLibs
+    }
+  }
+
+  // The React Native gradle plugin does not wire the app's configureCMake task to depend
+  // on this module's generateCodegenArtifactsFromSchema, so on a fresh npm install the
+  // app's CMake configuration fails because the codegen JNI directory doesn't exist yet.
+  // Fix: make every app:configureCMake* task depend on our codegen task.
+  rootProject.findProject(":app")?.tasks?.configureEach { task ->
+    if (task.name.startsWith("configureCMake")) {
+      task.dependsOn tasks.named("generateCodegenArtifactsFromSchema")
+    }
+  }
 }
 
 def reactNativeArchitectures() {
