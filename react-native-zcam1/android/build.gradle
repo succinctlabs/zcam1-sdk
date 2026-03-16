@@ -26,8 +26,8 @@ def getPackageVersion() {
 task downloadJniLibs {
   def version = getPackageVersion()
   def baseUrl = "https://github.com/succinctlabs/zcam1-sdk/releases/download/react-native-zcam1-v${version}"
-  def jniLibsDir = file("../Zcam1Jni")
-  def jniLibsProvingDir = file("../Zcam1ProvingJni")
+  def jniLibsDir = file("src/main/jniLibs")
+  def jniLibsProvingDir = file("src/main/jniProvingLibs")
   def markerFile = file(".jnilibs-version")
 
   doFirst {
@@ -36,7 +36,7 @@ task downloadJniLibs {
     // - dir present, marker absent → Yalc/local dev (package includes JNI libs), skip
     // - dir present, marker present, version differs → re-download (public npm upgrade)
     // - dir present, marker present, version matches → already up to date, skip
-    [Zcam1Jni: jniLibsDir, Zcam1ProvingJni: jniLibsProvingDir].each { name, dir ->
+    [jniLibs: jniLibsDir, jniProvingLibs: jniLibsProvingDir].each { name, dir ->
       def zipName = "${name}.zip"
       def zipUrl = "${baseUrl}/${zipName}"
 
@@ -44,11 +44,11 @@ task downloadJniLibs {
         println "Downloading ${name} v${version}..."
         exec {
           commandLine "curl", "-fL", zipUrl, "-o", zipName
-          workingDir ".."
+          workingDir "src/main"
         }
         exec {
           commandLine "unzip", "-q", zipName
-          workingDir ".."
+          workingDir "src/main"
         }
         new File("${projectDir}/../${zipName}").delete()
         markerFile.text = version
@@ -57,13 +57,13 @@ task downloadJniLibs {
         dir.deleteDir()
         exec {
           commandLine "curl", "-fL", zipUrl, "-o", zipName
-          workingDir ".."
+          workingDir "src/main"
         }
         exec {
           commandLine "unzip", "-q", zipName
-          workingDir ".."
+          workingDir "src/main"
         }
-        new File("${projectDir}/../${zipName}").delete()
+        new File("${projectDir}/src/main/${zipName}").delete()
         markerFile.text = version
       }
     }
@@ -72,23 +72,6 @@ task downloadJniLibs {
 
 afterEvaluate {
   preBuild.dependsOn downloadJniLibs
-}
-
-// With --configure-on-demand (used by Expo), the app's CMake configuration task can start
-// before the library's generateCodegenArtifactsFromSchema task is registered, breaking the
-// dependency chain that the React Native Gradle Plugin is supposed to set up automatically.
-// This explicitly wires the dependency after all projects are evaluated.
-if (isNewArchitectureEnabled()) {
-  gradle.projectsEvaluated {
-    def codegenTask = tasks.findByName('generateCodegenArtifactsFromSchema')
-    if (codegenTask) {
-      rootProject.subprojects { subproject ->
-        subproject.tasks.matching { it.name.startsWith('configureCMake') }.configureEach { cmakeTask ->
-          cmakeTask.dependsOn(codegenTask)
-        }
-      }
-    }
-  }
 }
 
 def reactNativeArchitectures() {

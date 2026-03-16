@@ -98,8 +98,8 @@ jobs:
           npm publish --access public --provenance --tag $TAG
           zip -r Zcam1Framework.xcframework.zip Zcam1Framework.xcframework
           zip -r Zcam1ProvingFramework.xcframework.zip Zcam1ProvingFramework.xcframework
-          zip -r Zcam1Jni.zip Zcam1Jni
-          zip -r Zcam1ProvingJni.zip Zcam1ProvingJni
+          zip -r Zcam1Jni.zip android/src/main/jniLibs
+          zip -r Zcam1ProvingJni.zip android/src/main/jniProvingLibs
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -110,5 +110,5 @@ jobs:
           files: |
             react-native-zcam1/Zcam1Framework.xcframework.zip
             react-native-zcam1/Zcam1ProvingFramework.xcframework.zip
-            react-native-zcam1/Zcam1Jni.zip
-            react-native-zcam1/Zcam1ProvingJni.zip
+            react-native-zcam1/jniLibs.zip
+            react-native-zcam1/jniProvingLibs.zip
