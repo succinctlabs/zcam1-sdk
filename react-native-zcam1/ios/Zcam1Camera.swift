@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import AVKit
 import CoreMotion
 import Foundation
 import Harbeth
