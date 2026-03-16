@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -26,7 +26,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "prettier": "^3.8.1",
-    "react-native-builder-bob": "^0.40.17",
+    "react-native-builder-bob": "^0.37.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.0"
   },
