@@ -40,6 +40,18 @@ export interface TakeNativePhotoResult {
    * support depth delivery.
    */
   depthData?: { [key: string]: unknown } | null;
+
+  /**
+   * Local filesystem path to a Turbo-colorized depth heat map JPEG.
+   * Only present when depth data was requested and successfully captured.
+   */
+  depthHeatMapPath?: string | null;
+
+  /**
+   * Hex-encoded SHA-256 hash of the raw Float32 depth buffer.
+   * Only present when depth data was requested and successfully captured.
+   */
+  depthRawHash?: string | null;
 }
 
 export type NativeVideoRecordingFormat = "mov";
