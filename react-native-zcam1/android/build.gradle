@@ -74,6 +74,23 @@ afterEvaluate {
   preBuild.dependsOn downloadJniLibs
 }
 
+// With --configure-on-demand (used by Expo), the app's CMake configuration task can start
+// before the library's generateCodegenArtifactsFromSchema task is registered, breaking the
+// dependency chain that the React Native Gradle Plugin is supposed to set up automatically.
+// This explicitly wires the dependency after all projects are evaluated.
+if (isNewArchitectureEnabled()) {
+  gradle.projectsEvaluated {
+    def codegenTask = tasks.findByName('generateCodegenArtifactsFromSchema')
+    if (codegenTask) {
+      rootProject.subprojects { subproject ->
+        subproject.tasks.matching { it.name.startsWith('configureCMake') }.configureEach { cmakeTask ->
+          cmakeTask.dependsOn(codegenTask)
+        }
+      }
+    }
+  }
+}
+
 def reactNativeArchitectures() {
   def value = rootProject.getProperties().get("reactNativeArchitectures")
   return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
