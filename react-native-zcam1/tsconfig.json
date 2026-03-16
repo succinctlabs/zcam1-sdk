@@ -21,6 +21,5 @@
     "strict": true,
     "target": "ESNext",
     "verbatimModuleSyntax": true,
-  },
-  "exclude": ["src/proving"]
+  }
 }
