@@ -3016,18 +3016,11 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         guard #available(iOS 17.2, *) else { return }
 
         let interaction = AVCaptureEventInteraction { [weak self] event in
-            // Primary action: full press on volume button or Camera Control.
+            // All hardware capture events (volume up, volume down, Camera Control) fire here.
             guard event.phase == .ended else { return }
             guard let callback = self?.onHardwareShutter else { return }
             DispatchQueue.main.async {
                 callback(["action": "photo"])
-            }
-        } secondary: { [weak self] event in
-            // Secondary action: light press on Camera Control (focus/zoom).
-            guard event.phase == .ended else { return }
-            guard let callback = self?.onHardwareShutter else { return }
-            DispatchQueue.main.async {
-                callback(["action": "focus"])
             }
         }
 
