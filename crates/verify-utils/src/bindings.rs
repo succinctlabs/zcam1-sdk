@@ -13,6 +13,9 @@ pub fn verify_bindings_from_manifest(
     production: bool,
 ) -> Result<bool, VerifyError> {
     if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        if production {
+            return Err(VerifyError::SimulatorNotAllowed);
+        }
         return Ok(true);
     }
 

@@ -785,6 +785,7 @@ async function embedBindings(
     dataHash,
     normalizedMetadata,
     captureInfo.deviceKeyId,
+    captureInfo.production,
   );
 
   // Add an assertion containing all data needed to later generate a  proof

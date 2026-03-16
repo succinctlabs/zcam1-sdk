@@ -17,6 +17,7 @@ export async function generateAppAttestAssertion(
   dataHash: ArrayBuffer,
   normalizedMetadata: string,
   deviceKeyId: string,
+  production: boolean,
 ): Promise<string> {
   let assertion: string;
 
@@ -30,11 +31,14 @@ export async function generateAppAttestAssertion(
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string } | undefined;
     if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
+      if (production) {
+        throw new Error(
+          "ZCAM: Simulator is not supported in production mode. Set production: false for development.",
+        );
+      }
       console.warn(
-        "[ZCAMs] Running in simulator - using mock attestation. This is for development only.",
+        "[ZCAM] Running in simulator - using mock assertion. This is for development only.",
       );
-      // Use a mock attestation for simulator testing
-      // In production, this would need to be rejected by the backend
       assertion = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
     } else {
       throw error;

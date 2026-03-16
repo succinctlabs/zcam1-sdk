@@ -7,7 +7,7 @@ import { canonicalize } from "json-canonicalize";
 import { sha256 } from "@noble/hashes/sha2.js";
 import * as x509 from "@peculiar/x509";
 import { fromBER } from "asn1js";
-import { err, ok, okAsync, Result, ResultAsync } from "neverthrow";
+import { err, errAsync, ok, okAsync, Result, ResultAsync } from "neverthrow";
 import type {
   PhotoMetadataInfo,
   VideoMetadataInfo,
@@ -81,6 +81,17 @@ export function verifyBindingsAssertion(
   photoHash: Uint8Array,
   production: boolean,
 ): ResultAsync<boolean, Error> {
+  if (bindingsAssertion.attestation?.startsWith("SIMULATOR_MOCK_")) {
+    if (production) {
+      return errAsync(
+        new Error(
+          "Simulator attestations are not allowed in production mode",
+        ),
+      );
+    }
+    return okAsync(true);
+  }
+
   const normalizedCaptureAction = canonicalize(captureAction);
   const clientData = computeClientData(
     photoHash,

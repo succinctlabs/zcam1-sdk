@@ -22,4 +22,7 @@ pub enum VerifyError {
 
     #[error("Proof not found in the manifest")]
     ProofNotFound,
+
+    #[error("Simulator attestations are not allowed in production mode")]
+    SimulatorNotAllowed,
 }

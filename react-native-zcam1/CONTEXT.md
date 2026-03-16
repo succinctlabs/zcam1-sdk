@@ -29,7 +29,7 @@ ZCAM1 captures photos/videos and embeds cryptographic provenance data using the 
 - **`appId`**: Always `TEAM_ID.BUNDLE_ID` format (e.g., `NLS5R4YCGX.com.example.app`). This is critical — wrong format causes "RP ID mismatch" errors.
 - **`CaptureInfo`**: Device registration data returned by `initCapture()`. Must be obtained before using `ZCamera`.
 - **`ZPhoto`**: Result of `takePhoto()` — has `.originalPath` (raw) and `.path` (C2PA-signed). **Both paths are temporary** — the files will be deleted. You must explicitly save them.
-- **`production` flag**: Controls whether real or development App Attest is used. Use `false` for development.
+- **`production` flag**: Controls whether real or development App Attest is used. When `true` (recommended for production), the SDK will throw an error if running on a simulator — this prevents mock attestations from being created. Use `false` for development to allow simulator testing with mock attestations.
 
 ## Integration Patterns
 
@@ -260,7 +260,7 @@ EXPO_PUBLIC_APP_ID=TEAM_ID.com.example.myapp
 
 4. **Not running `pod install`** — After `npm install`, run `cd ios && pod install`. After enabling proving, run `pod install` again.
 
-5. **Simulator limitations** — App Attest doesn't work on simulator. The SDK generates mock attestations in dev, but these will fail real verification. Always test on a physical device.
+5. **Simulator limitations** — App Attest doesn't work on simulator. In production mode (`production: true`), the SDK will throw an error on simulator. In dev mode (`production: false`), mock attestations are generated for testing, but these are rejected by verification in production mode. Always test on a physical device for production builds.
 
 6. **Not saving captured files** — Both `takePhoto()` and `stopVideoRecording()` return **temporary** paths that are deleted automatically. Always move the file immediately after capture using `new File(path).move(dir)` (expo-file-system) or save to camera roll with `MediaLibrary.saveToLibraryAsync()` (expo-media-library).
 
@@ -273,6 +273,6 @@ EXPO_PUBLIC_APP_ID=TEAM_ID.com.example.myapp
 | `FFI function ... checksum mismatch` | Stale uniffi cache | `npm run clean` in package dir, then reinstall |
 | `method_manifesteditor_... is not a function` | Same cache issue | Same fix as above |
 | `RP ID mismatch` | Wrong `appId` in `initCapture()` | Use `TEAM_ID.BUNDLE_ID` format |
-| `UNSUPPORTED_SERVICE` error | Running on simulator | Expected — SDK uses mock attestations on simulator |
+| `UNSUPPORTED_SERVICE` error | Running on simulator with `production: true` | Set `production: false` in `initCapture()` for simulator development |
 | Build fails with Rust errors | Missing iOS targets | `rustup target add aarch64-apple-ios aarch64-apple-ios-sim` |
 | Pod install fails | Missing Metal Toolchain | `xcodebuild -downloadComponent MetalToolchain` |
