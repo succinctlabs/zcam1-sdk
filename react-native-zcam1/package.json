@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.4",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -96,11 +96,11 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
+    "!android/src/main/jniLibs.excluded",
+    "!android/src/main/jniProvingLibs.excluded",
     "*.podspec",
     "Zcam1Framework.xcframework",
     "Zcam1ProvingFramework.xcframework",
-    "Zcam1Jni",
-    "Zcam1ProvingJni",
     "app.plugin.js",
     "react-native.config.js",
     "turbo.json"
