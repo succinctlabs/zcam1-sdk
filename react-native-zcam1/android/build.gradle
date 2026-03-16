@@ -36,7 +36,7 @@ task downloadJniLibs {
     // - dir present, marker absent → Yalc/local dev (package includes JNI libs), skip
     // - dir present, marker present, version differs → re-download (public npm upgrade)
     // - dir present, marker present, version matches → already up to date, skip
-    [jniLibs: jniLibsDir, jniProvingLibs: jniLibsProvingDir].each { name, dir ->
+    [Zcam1Jni: jniLibsDir, Zcam1ProvingJni: jniLibsProvingDir].each { name, dir ->
       def zipName = "${name}.zip"
       def zipUrl = "${baseUrl}/${zipName}"
 
