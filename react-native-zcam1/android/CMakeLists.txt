@@ -16,15 +16,22 @@ execute_process(
 # paths with Windows path separators.
 get_filename_component(UNIFFI_BINDGEN_PATH "${UNIFFI_BINDGEN_PATH}" DIRECTORY)
 
+option(ZCAM1_ENABLE_PROVING "Enable proving support" OFF)
+
 # Specifies a path to native header files.
 include_directories(
     ../cpp
     ../cpp/generated
-    ../cpp/proving
-    ../cpp/proving/generated
 
     ${UNIFFI_BINDGEN_PATH}/cpp/includes
 )
+
+if (ZCAM1_ENABLE_PROVING)
+  include_directories(
+      ../cpp/proving
+      ../cpp/proving/generated
+  )
+endif()
 
 add_library(zcam1-sdk SHARED
     ../cpp/zcam1-sdk.cpp
@@ -35,12 +42,14 @@ add_library(zcam1-sdk SHARED
     cpp-adapter.cpp
 )
 
-add_library(zcam1-proving SHARED
-    ../cpp/proving/zcam1-proving.cpp
-    ../cpp/proving/generated/zcam1_common.cpp
-    ../cpp/proving/generated/zcam1_proving_utils.cpp
-    cpp-adapter-proving.cpp
-)
+if (ZCAM1_ENABLE_PROVING)
+  add_library(zcam1-proving SHARED
+      ../cpp/proving/zcam1-proving.cpp
+      ../cpp/proving/generated/zcam1_common.cpp
+      ../cpp/proving/generated/zcam1_proving_utils.cpp
+      cpp-adapter-proving.cpp
+  )
+endif()
 
 # Set C++ compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
@@ -62,14 +71,16 @@ cmake_path(
 add_library(my_rust_lib STATIC IMPORTED)
 set_target_properties(my_rust_lib PROPERTIES IMPORTED_LOCATION ${MY_RUST_LIB})
 
-cmake_path(
-  SET MY_RUST_PROVING_LIB
-  ${CMAKE_SOURCE_DIR}/src/main/jniProvingLibs/${ANDROID_ABI}/libzcam1_proving_bindings.a
+if (ZCAM1_ENABLE_PROVING)
+  cmake_path(
+    SET MY_RUST_PROVING_LIB
+    ${CMAKE_SOURCE_DIR}/src/main/jniProvingLibs/${ANDROID_ABI}/libzcam1_proving_bindings.a
 
-  NORMALIZE
-)
-add_library(my_rust_proving_lib STATIC IMPORTED)
-set_target_properties(my_rust_proving_lib PROPERTIES IMPORTED_LOCATION ${MY_RUST_PROVING_LIB})
+    NORMALIZE
+  )
+  add_library(my_rust_proving_lib STATIC IMPORTED)
+  set_target_properties(my_rust_proving_lib PROPERTIES IMPORTED_LOCATION ${MY_RUST_PROVING_LIB})
+endif()
 
 # Add ReactAndroid libraries, being careful to account for different versions.
 find_package(ReactAndroid REQUIRED CONFIG)
@@ -85,16 +96,20 @@ endif()
 # This if-then-else can be removed once this library does not support version below 0.76
 if (REACTNATIVE_MERGED_SO)
   target_link_libraries(zcam1-sdk ReactAndroid::reactnative)
-  target_link_libraries(zcam1-proving ReactAndroid::reactnative)
+  if (ZCAM1_ENABLE_PROVING)
+    target_link_libraries(zcam1-proving ReactAndroid::reactnative)
+  endif()
 else()
   target_link_libraries(zcam1-sdk
     ReactAndroid::turbomodulejsijni
     ReactAndroid::react_nativemodule_core
   )
-  target_link_libraries(zcam1-proving
-    ReactAndroid::turbomodulejsijni
-    ReactAndroid::react_nativemodule_core
-  )
+  if (ZCAM1_ENABLE_PROVING)
+    target_link_libraries(zcam1-proving
+      ReactAndroid::turbomodulejsijni
+      ReactAndroid::react_nativemodule_core
+    )
+  endif()
 endif()
 
 find_package(fbjni REQUIRED CONFIG)
@@ -105,10 +120,12 @@ target_link_libraries(
   ${LOGCAT}
   my_rust_lib
 )
-target_link_libraries(
-  zcam1-proving
-  fbjni::fbjni
-  ReactAndroid::jsi
-  ${LOGCAT}
-  my_rust_proving_lib
-)
+if (ZCAM1_ENABLE_PROVING)
+  target_link_libraries(
+    zcam1-proving
+    fbjni::fbjni
+    ReactAndroid::jsi
+    ${LOGCAT}
+    my_rust_proving_lib
+  )
+endif()
