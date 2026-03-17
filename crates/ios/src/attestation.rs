@@ -127,28 +127,11 @@ pub fn validate_attestation(
             if aaguid.len() != 16 {
                 return Err(Error::InvalidAaguidLength);
             }
-            // check in bytes and in ASCII
-            if production
-                && (aaguid.as_slice()
-                    != [
-                        0x61, 0x70, 0x70, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x00, 0x00, 0x00,
-                        0x00, 0x00, 0x00, 0x00,
-                    ]
-                    || aaguid.as_slice()
-                        != [
-                            97, 112, 112, 97, 116, 116, 101, 115, 116, 0, 0, 0, 0, 0, 0, 0,
-                        ])
-            {
+            if production && aaguid.as_slice() != b"appattest\0\0\0\0\0\0\0" {
                 return Err(Error::AaguidMismatch);
             }
 
-            if !production
-                && aaguid.as_slice()
-                    != [
-                        0x61, 0x70, 0x70, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x64, 0x65, 0x76,
-                        0x65, 0x6c, 0x6f, 0x70,
-                    ]
-            {
+            if !production && aaguid.as_slice() != b"appattestdevelop" {
                 return Err(Error::AaguidMismatch);
             }
         }

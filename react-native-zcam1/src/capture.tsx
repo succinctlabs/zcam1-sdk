@@ -52,6 +52,7 @@ export type {
  */
 export type CaptureInfo = {
   appId: string;
+  production: boolean;
   deviceKeyId: string;
   contentPublicKey: ECKey;
   contentKeyId: Uint8Array;
@@ -103,6 +104,12 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
       // If running in simulator, hardware key generation is not supported
       const err = error as { code?: string; message?: string } | undefined;
       if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
+        if (settings.production) {
+          throw new Error(
+            "ZCAM: Simulator is not supported in production mode. Set production: false for development.",
+          );
+        }
+
         console.warn(
           "[ZCAM] Running in simulator - using mock device key. This is for development only.",
         );
@@ -127,6 +134,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
   return {
     appId: settings.appId,
+    production: settings.production,
     deviceKeyId,
     contentPublicKey,
     contentKeyId,
@@ -140,8 +148,8 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
  * @param settings - Configuration settings for registration
  * @returns Attestation data and challenge
  */
-export async function updateRegistration(keyId: string, _settings: Settings): Promise<string> {
-  // Try to get real attestation, but fall back to mock for simulator
+export async function updateRegistration(keyId: string, settings: Settings): Promise<string> {
+  // Try to get real attestation, but fall back to mock for simulator in dev mode
   let attestation: string;
   try {
     attestation = await getAttestation(keyId, keyId);
@@ -149,11 +157,15 @@ export async function updateRegistration(keyId: string, _settings: Settings): Pr
     // If running in simulator, App Attest is not supported
     const err = error as { code?: string; message?: string } | undefined;
     if (err?.code === "-1" || err?.message?.includes("UNSUPPORTED_SERVICE")) {
+      if (settings.production) {
+        throw new Error(
+          "ZCAM: Simulator is not supported in production mode. Set production: false for development.",
+        );
+      }
       console.warn(
         "[ZCAM] Running in simulator - using mock attestation. This is for development only.",
       );
       // Use a mock attestation for simulator testing
-      // In production, this would need to be rejected by the backend
       return `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
     } else {
       throw error;

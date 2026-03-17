@@ -3329,7 +3329,7 @@ dependencies = [
 
 [[package]]
 name = "zcam1-verify"
-version = "0.1.6"
+version = "0.3.0"
 dependencies = [
  "uniffi-runtime-javascript",
  "wasm-bindgen",

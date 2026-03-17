@@ -20,6 +20,15 @@ pub enum VerifyError {
     #[error(transparent)]
     Groth16(#[from] sp1_verifier::Groth16Error),
 
+    #[error("Bindings not found in the manifest")]
+    BindingsNotFound,
+
     #[error("Proof not found in the manifest")]
     ProofNotFound,
+
+    #[error("Metadata not found in the manifest")]
+    MetadataNotFound,
+
+    #[error("Simulator attestations are not allowed in production mode")]
+    SimulatorNotAllowed,
 }

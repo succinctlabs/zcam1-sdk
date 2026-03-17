@@ -28,8 +28,14 @@ pub fn main() {
         Base64::encode_string(&metadata_hash)
     );
 
-    // Skip App Attest validation if we are on a simulator
-    if !bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        // Reject simulator attestations in production mode
+        assert!(
+            !auth_inputs.app_attest_production,
+            "Simulator attestations are not allowed in production mode"
+        );
+        // Skip App Attest validation for simulator in dev mode
+    } else {
         let public_key_uncompressed = validate_attestation(
             &bindings.attestation,
             &bindings.device_key_id,
