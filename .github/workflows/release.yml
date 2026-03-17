@@ -63,7 +63,7 @@ jobs:
 
           echo "::group::Verify sp1up installation"
           command -v sp1up || true
-          sp1up --version || true
+          sp1up --help | sed -n '1,12p'
           echo "::endgroup::"
 
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
@@ -86,9 +86,26 @@ jobs:
           echo "Token length: ${#SP1UP_TOKEN}"
           echo "::endgroup::"
 
-          echo "::group::Run sp1up (bash -x trace)"
+          echo "::group::Resolve SP1 latest release tag (authenticated)"
+          releases_json=$(curl --fail --show-error --silent \
+            --header "Authorization: Bearer $SP1UP_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/succinctlabs/sp1/releases/latest)
+          sp1_version=$(printf '%s' "$releases_json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+
+          if [ -z "$sp1_version" ]; then
+            echo "::error::Failed to parse tag_name from GitHub releases API response."
+            echo "::group::Raw releases API response (truncated)"
+            printf '%s\n' "$releases_json" | sed -n '1,80p'
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "Resolved SP1 version: $sp1_version"
+          echo "::endgroup::"
+
+          echo "::group::Run sp1up (bash -x trace, pinned version)"
           set +e
-          bash -x "$(command -v sp1up)" --token "$SP1UP_TOKEN" 2>&1 | tee sp1up.log
+          bash -x "$(command -v sp1up)" --token "$SP1UP_TOKEN" --version "$sp1_version" 2>&1 | tee sp1up.log
           exit_code=${PIPESTATUS[0]}
           set -e
           echo "::endgroup::"
