@@ -36,12 +36,36 @@ jobs:
 
       - name: "Install sp1up"
         run: |
-          curl -L https://sp1.succinct.xyz | bash
+          set -euo pipefail
+          curl --fail --show-error --silent --location \
+            --retry 5 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 20 --max-time 180 \
+            https://sp1.succinct.xyz | bash
+          export PATH="$HOME/.sp1/bin:$PATH"
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
 
       - name: "Install SP1 toolchain"
         run: |
-          sp1up --token ${{ secrets.GH_TOKEN }}
+          set -euo pipefail
+          SP1UP_TOKEN="${{ secrets.GH_TOKEN }}"
+
+          if [ -z "$SP1UP_TOKEN" ]; then
+            echo "::error::GH_TOKEN secret is empty or not configured."
+            exit 1
+          fi
+
+          releases_json=$(curl --fail --show-error --silent \
+            --header "Authorization: Bearer $SP1UP_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/succinctlabs/sp1/releases/latest)
+          sp1_version=$(printf '%s' "$releases_json" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+
+          if [ -z "$sp1_version" ]; then
+            echo "::error::Failed to parse tag_name from GitHub releases API response."
+            printf '%s\n' "$releases_json" | sed -n '1,80p'
+            exit 1
+          fi
+          sp1up --token "$SP1UP_TOKEN" --version "$sp1_version"
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
