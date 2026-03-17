@@ -61,6 +61,7 @@ jobs:
             exit $installer_exit_code
           fi
 
+          export PATH="$HOME/.sp1/bin:$PATH"
           echo "::group::Verify sp1up installation"
           command -v sp1up || true
           sp1up --help | sed -n '1,12p'
