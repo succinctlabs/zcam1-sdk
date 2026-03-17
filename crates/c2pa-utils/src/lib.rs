@@ -12,6 +12,8 @@ use crate::{
     types::{AuthenticityStatus, ManifestStore},
 };
 
+mod debug_utils;
+
 pub mod error;
 
 pub mod types;
