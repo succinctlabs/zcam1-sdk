@@ -81,14 +81,16 @@ jobs:
           echo "::group::SP1 toolchain install diagnostics"
           echo "Runner: $RUNNER_OS"
           echo "sp1up path: $(command -v sp1up || echo 'not found')"
-          sp1up --version || true
+          sp1up --help | sed -n '1,20p'
           echo "Token provided: yes"
           echo "Token length: ${#SP1UP_TOKEN}"
           echo "::endgroup::"
 
-          echo "::group::Run sp1up"
-          sp1up --token "$SP1UP_TOKEN" 2>&1 | tee sp1up.log
+          echo "::group::Run sp1up (bash -x trace)"
+          set +e
+          bash -x "$(command -v sp1up)" --token "$SP1UP_TOKEN" 2>&1 | tee sp1up.log
           exit_code=${PIPESTATUS[0]}
+          set -e
           echo "::endgroup::"
 
           if [ $exit_code -ne 0 ]; then
