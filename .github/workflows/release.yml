@@ -36,42 +36,17 @@ jobs:
 
       - name: "Install sp1up"
         run: |
-          set -o pipefail
-
-          echo "::group::Download sp1up installer"
+          set -euo pipefail
           curl --fail --show-error --silent --location \
             --retry 5 --retry-all-errors --retry-delay 2 \
             --connect-timeout 20 --max-time 180 \
-            https://sp1.succinct.xyz -o /tmp/sp1up-install.sh
-          echo "Installer path: /tmp/sp1up-install.sh"
-          echo "Installer size: $(wc -c < /tmp/sp1up-install.sh) bytes"
-          chmod +x /tmp/sp1up-install.sh
-          echo "::endgroup::"
-
-          echo "::group::Run sp1up installer (bash -x)"
-          bash -x /tmp/sp1up-install.sh 2>&1 | tee sp1up-install.log
-          installer_exit_code=${PIPESTATUS[0]}
-          echo "::endgroup::"
-
-          if [ $installer_exit_code -ne 0 ]; then
-            echo "::error::sp1up installer failed with exit code $installer_exit_code"
-            echo "::group::sp1up installer failure log"
-            sed -n '1,240p' sp1up-install.log
-            echo "::endgroup::"
-            exit $installer_exit_code
-          fi
-
+            https://sp1.succinct.xyz | bash
           export PATH="$HOME/.sp1/bin:$PATH"
-          echo "::group::Verify sp1up installation"
-          command -v sp1up || true
-          sp1up --help | sed -n '1,12p'
-          echo "::endgroup::"
-
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
 
       - name: "Install SP1 toolchain"
         run: |
-          set -o pipefail
+          set -euo pipefail
           SP1UP_TOKEN="${{ secrets.GH_TOKEN }}"
 
           if [ -z "$SP1UP_TOKEN" ]; then
@@ -79,15 +54,6 @@ jobs:
             exit 1
           fi
 
-          echo "::group::SP1 toolchain install diagnostics"
-          echo "Runner: $RUNNER_OS"
-          echo "sp1up path: $(command -v sp1up || echo 'not found')"
-          sp1up --help | sed -n '1,20p'
-          echo "Token provided: yes"
-          echo "Token length: ${#SP1UP_TOKEN}"
-          echo "::endgroup::"
-
-          echo "::group::Resolve SP1 latest release tag (authenticated)"
           releases_json=$(curl --fail --show-error --silent \
             --header "Authorization: Bearer $SP1UP_TOKEN" \
             --header "Accept: application/vnd.github+json" \
@@ -96,28 +62,10 @@ jobs:
 
           if [ -z "$sp1_version" ]; then
             echo "::error::Failed to parse tag_name from GitHub releases API response."
-            echo "::group::Raw releases API response (truncated)"
             printf '%s\n' "$releases_json" | sed -n '1,80p'
-            echo "::endgroup::"
             exit 1
           fi
-          echo "Resolved SP1 version: $sp1_version"
-          echo "::endgroup::"
-
-          echo "::group::Run sp1up (bash -x trace, pinned version)"
-          set +e
-          bash -x "$(command -v sp1up)" --token "$SP1UP_TOKEN" --version "$sp1_version" 2>&1 | tee sp1up.log
-          exit_code=${PIPESTATUS[0]}
-          set -e
-          echo "::endgroup::"
-
-          if [ $exit_code -ne 0 ]; then
-            echo "::error::sp1up failed with exit code $exit_code"
-            echo "::group::sp1up failure log"
-            cat sp1up.log
-            echo "::endgroup::"
-            exit $exit_code
-          fi
+          sp1up --token "$SP1UP_TOKEN" --version "$sp1_version"
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
