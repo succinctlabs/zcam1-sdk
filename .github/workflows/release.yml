@@ -41,7 +41,34 @@ jobs:
 
       - name: "Install SP1 toolchain"
         run: |
-          sp1up --token ${{ secrets.GH_TOKEN }}
+          set -o pipefail
+          SP1UP_TOKEN="${{ secrets.GH_TOKEN }}"
+
+          if [ -z "$SP1UP_TOKEN" ]; then
+            echo "::error::GH_TOKEN secret is empty or not configured."
+            exit 1
+          fi
+
+          echo "::group::SP1 toolchain install diagnostics"
+          echo "Runner: $RUNNER_OS"
+          echo "sp1up path: $(command -v sp1up || echo 'not found')"
+          sp1up --version || true
+          echo "Token provided: yes"
+          echo "Token length: ${#SP1UP_TOKEN}"
+          echo "::endgroup::"
+
+          echo "::group::Run sp1up"
+          sp1up --token "$SP1UP_TOKEN" 2>&1 | tee sp1up.log
+          exit_code=${PIPESTATUS[0]}
+          echo "::endgroup::"
+
+          if [ $exit_code -ne 0 ]; then
+            echo "::error::sp1up failed with exit code $exit_code"
+            echo "::group::sp1up failure log"
+            cat sp1up.log
+            echo "::endgroup::"
+            exit $exit_code
+          fi
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
