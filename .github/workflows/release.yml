@@ -36,7 +36,36 @@ jobs:
 
       - name: "Install sp1up"
         run: |
-          curl -L https://sp1.succinct.xyz | bash
+          set -o pipefail
+
+          echo "::group::Download sp1up installer"
+          curl --fail --show-error --silent --location \
+            --retry 5 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 20 --max-time 180 \
+            https://sp1.succinct.xyz -o /tmp/sp1up-install.sh
+          echo "Installer path: /tmp/sp1up-install.sh"
+          echo "Installer size: $(wc -c < /tmp/sp1up-install.sh) bytes"
+          chmod +x /tmp/sp1up-install.sh
+          echo "::endgroup::"
+
+          echo "::group::Run sp1up installer (bash -x)"
+          bash -x /tmp/sp1up-install.sh 2>&1 | tee sp1up-install.log
+          installer_exit_code=${PIPESTATUS[0]}
+          echo "::endgroup::"
+
+          if [ $installer_exit_code -ne 0 ]; then
+            echo "::error::sp1up installer failed with exit code $installer_exit_code"
+            echo "::group::sp1up installer failure log"
+            sed -n '1,240p' sp1up-install.log
+            echo "::endgroup::"
+            exit $installer_exit_code
+          fi
+
+          echo "::group::Verify sp1up installation"
+          command -v sp1up || true
+          sp1up --version || true
+          echo "::endgroup::"
+
           echo "$HOME/.sp1/bin" >> $GITHUB_PATH
 
       - name: "Install SP1 toolchain"
