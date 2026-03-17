@@ -7,8 +7,9 @@ import {
   StyleSheet,
   Image,
   Pressable,
-  Share,
+  Platform,
 } from "react-native";
+import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useProofRequestStatus,
@@ -27,6 +28,7 @@ import { Video } from "react-native-video";
 import Toast from "react-native-toast-message";
 import { Util } from "react-native-file-access";
 import { Button } from "@/components/Button";
+import { getBundleId } from "react-native-device-info";
 
 export default function Details() {
   const { uri, authStatus } = useLocalSearchParams<{
@@ -395,7 +397,9 @@ function Proof({
   const [hash, setHash] = useState<string | undefined>(undefined);
 
   const verifyProof = useCallback(async () => {
-    const appId = process.env.EXPO_PUBLIC_APP_ID!;
+    const appId =
+      Platform.OS === "ios" ? process.env.EXPO_PUBLIC_APP_ID! : getBundleId();
+
     try {
       setIsValid(verifier.verifyProof(appId));
       setHash(verifier.dataHash());
@@ -440,14 +444,11 @@ function Proof({
 }
 
 function ShareArtifact({ uri }: { uri: string }) {
-  const onShare = async () => {
-    await Share.share({
-      message: "Share",
-      url: uri,
-    });
+  const onSave = async () => {
+    await CameraRoll.saveAsset(uri, { type: "photo" });
   };
 
-  return <Button onPress={onShare} title="Share" />;
+  return <Button onPress={onSave} title="Save to Gallery" />;
 }
 
 // Format capture date - handle various formats

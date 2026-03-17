@@ -5,6 +5,7 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   CaptureInfo,
   initCapture,
+  requestCameraPermission,
   ZCamera,
 } from "@succinctlabs/react-native-zcam1";
 
@@ -23,16 +24,9 @@ export default function Index() {
   }, [appId]);
 
   useEffect(() => {
-    async function fetchDevice() {
-      try {
-        const captureInfo = await initCapture(settings);
-        setCaptureInfo(captureInfo);
-      } catch (error) {
-        console.error("Failed to initialize device:", error);
-      }
-    }
-
-    fetchDevice();
+    requestCameraPermission().then(() =>
+      initCapture(settings).then(setCaptureInfo),
+    );
   }, [settings]);
 
   const capture = async () => {

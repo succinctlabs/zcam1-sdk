@@ -13,7 +13,7 @@ Device registration information returned by [`initCapture()`](/sdk/capture/initC
 
 ```tsx
 type CaptureInfo = {
-  appId: string;                    // Your Team ID + Bundle ID
+  appId: string;                    // iOS: "TEAM_ID.BUNDLE_ID" — Android: package name
   deviceKeyId: string;              // App Attest device key ID
   contentPublicKey: ECKey;          // Secure Enclave content key
   contentKeyId: Uint8Array;         // Derived content key identifier
@@ -33,7 +33,7 @@ Configuration for device initialization.
 
 ```tsx
 type Settings = {
-  appId: string;      // Your Team ID + Bundle ID (e.g., "TEAM_ID.com.example.app")
+  appId: string;      // iOS: "TEAM_ID.BUNDLE_ID" — Android: package name (derived automatically)
   production: boolean; // false for dev, true for production App Attest
 }
 ```

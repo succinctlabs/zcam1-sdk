@@ -37,7 +37,9 @@ export default function Home() {
   requestLocationPermission();
 
   useEffect(() => {
-    requestCameraPermission().then(() => initCapture(settings).then(setCaptureInfo));
+    requestCameraPermission().then(() =>
+      initCapture(settings).then(setCaptureInfo),
+    );
   }, [settings]);
 
   const toggleCaptureMode = useCallback(() => {
