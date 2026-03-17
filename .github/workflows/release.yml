@@ -41,7 +41,7 @@ jobs:
 
       - name: "Install SP1 toolchain"
         run: |
-          sp1up --token ${{ secrets.GITHUB_TOKEN }}
+          sp1up --token ${{ secrets.GH_TOKEN }}
 
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
