@@ -7,8 +7,10 @@ Initializes the device by generating hardware-backed keys and App Attest attesta
 ```tsx
 import { initCapture } from "@succinctlabs/react-native-zcam1";
 
+// iOS: appId is required ("TEAM_ID.BUNDLE_ID")
+// Android: appId can be omitted
 const captureInfo = await initCapture({
-  appId: "TEAM_ID.com.example.app",
+  appId: process.env.EXPO_PUBLIC_APP_ID, // iOS only
   production: false
 });
 ```
@@ -23,16 +25,14 @@ Configuration for initialization.
 
 ```tsx
 type Settings = {
-  appId: string;      // iOS: "TEAM_ID.BUNDLE_ID" — Android: package name
+  appId?: string;     // iOS only: "TEAM_ID.BUNDLE_ID" — not needed on Android
   production: boolean; // false for dev, true for production
 }
 ```
 
 **Field Details:**
 
-- **`appId`** (`string`, required) - The app identifier.
-  - **iOS:** `TEAM_ID.BUNDLE_ID` (e.g., `"NLS5R4YCGX.com.example.myapp"`). Find your Team ID in Xcode under Signing & Capabilities or in the Apple Developer portal.
-  - **Android:** The app package name (e.g., `"com.example.myapp"`), matching `android.package` in `app.json`. The value passed here is ignored on Android — the package name is derived automatically at runtime.
+- **`appId`** (`string`, iOS only) - The app identifier in `TEAM_ID.BUNDLE_ID` format (e.g., `"NLS5R4YCGX.com.example.myapp"`). Required on iOS — omitting it will throw. Find your Team ID in Xcode under Signing & Capabilities or in the Apple Developer portal. On Android, the package name is derived automatically from the app bundle and this field is ignored.
 - **`production`** (`boolean`, required) - `false` for development, `true` for production App Attest environment
 
 ## Returns

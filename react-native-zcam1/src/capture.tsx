@@ -62,11 +62,15 @@ export type {
  * Device registration information including keys, certificate chain, and attestation.
  */
 export type CaptureInfo = {
+  /** Application identifier. On iOS, formatted as `<TEAM_ID>.<BUNDLE_ID>` (e.g. `NLS5R4YCGX.com.example.myapp`). On Android, the app's package name (e.g. `com.example.myapp`). */
   appId: string;
-  production: boolean;
+  /** Unique identifier for the device key. */
   deviceKeyId: string;
+  /** EC public key used to sign captured content. */
   contentPublicKey: ECKey;
+  /** Identifier for the content key. */
   contentKeyId: Uint8Array;
+  /** Device attestation blob. */
   attestation: string;
 };
 
@@ -74,7 +78,9 @@ export type CaptureInfo = {
  * Configuration settings for device initialization and backend communication.
  */
 export type Settings = {
-  appId: string;
+  /** iOS only. The app identifier, formatted as `<TEAM_ID>.<BUNDLE_ID>` (e.g. `NLS5R4YCGX.com.example.myapp`). Required on iOS — omitting it will throw. Ignored on Android, where the package name is derived automatically from the app bundle. */
+  appId?: string;
+  /** Whether to use the production backend. */
   production: boolean;
 };
 
@@ -99,9 +105,7 @@ export class ZPhoto {
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const contentPublicKey = await getContentPublicKey();
   const isSimulator = await isEmulator();
-
-  // On Android, the appId is the package name.
-  const appId = Platform.OS == "android" ? getBundleId() : settings.appId;
+  let appId: string | undefined = undefined;
 
   if (contentPublicKey.kty !== "EC") {
     throw new Error("Only EC public keys are supported");
@@ -117,6 +121,8 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   if (deviceKeyId == null || attestation == null) {
     switch (Platform.OS) {
       case "android":
+        appId = getBundleId();
+
         // On Android, getAttestation() creates the key AND returns the attestation
         // certificate chain in a single call. generateHardwareKey() is iOS-only.
         deviceKeyId = `ZCAM1_ANDROID_DEVICE_${appId}`;
@@ -152,7 +158,13 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
         throw new Error(`initCapture: ${Platform.OS} not supported`);
     }
 
-    await EncryptedStorage.setItem(`deviceKeyId-${settings.appId}`, deviceKeyId!);
+    if (settings.appId === undefined) {
+      throw new Error("The appId is required on iOS");
+    }
+
+    appId = settings.appId;
+
+    await EncryptedStorage.setItem(`deviceKeyId-${appId}`, deviceKeyId!);
     await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
   }
 
@@ -161,8 +173,7 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   }
 
   return {
-    appId,
-    production: settings.production,
+    appId: appId!,
     deviceKeyId,
     contentPublicKey,
     contentKeyId,

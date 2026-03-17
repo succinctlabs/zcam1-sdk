@@ -57,6 +57,7 @@ export class VerifiableFile {
 
   /**
    * Verifies the cryptographic proof embedded in the C2PA manifest.
+   * @param appId - The app identifier used during capture. On iOS: `TEAM_ID.BUNDLE_ID` (e.g. `NLS5R4YCGX.com.example.myapp`). On Android: the package name (e.g. `com.example.myapp`).
    * @returns True if the proof is valid, false otherwise
    */
   verifyProof(appId: string): boolean {
