@@ -95,7 +95,6 @@ function App() {
           await verifiableFile
             .proof()
             .map((p) => {
-              console.log("proof", p);
               return {
                 data: p["data"],
                 vkHash: p["vk_hash"],
@@ -137,13 +136,17 @@ function App() {
           }
           break;
         }
-        case AuthenticityStatus.Proof:
-          setIsValid(
-            await verifiableFile
-              .verifyProof("NLS5R4YCGX.com.anonymous.zcam1-e2e-example")
-              .unwrapOr(undefined),
+        case AuthenticityStatus.Proof: {
+          const isValid = await verifiableFile.verifyProof(
+            "NLS5R4YCGX.com.anonymous.zcam1-e2e-example",
           );
+          setIsValid(isValid.unwrapOr(false));
+
+          if (isValid.isErr()) {
+            setValidationErrorMessage(isValid.error.message);
+          }
           break;
+        }
       }
     }
   };
@@ -433,7 +436,8 @@ function App() {
         {isValid === false && fileStatus === AuthenticityStatus.Proof && (
           <p className="flex items-center gap-2">
             <ExclamationCircleIcon className="h-5 w-5 mt-1 shrink-0 text-red-500" />
-            The file does not have a valid proof!
+            The file does not have a valid proof
+            {validationErrorMessage && `: ${validationErrorMessage}`}.
           </p>
         )}
       </div>
