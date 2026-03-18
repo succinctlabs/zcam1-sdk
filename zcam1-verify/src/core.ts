@@ -84,9 +84,7 @@ export function verifyBindingsAssertion(
   if (bindingsAssertion.attestation?.startsWith("SIMULATOR_MOCK_")) {
     if (production) {
       return errAsync(
-        new Error(
-          "Simulator attestations are not allowed in production mode",
-        ),
+        new Error("Simulator attestations are not allowed in production mode"),
       );
     }
     return okAsync(true);
@@ -172,7 +170,7 @@ async function validateAttestation(
   );
 
   if (!subCaCertificate) {
-    throw new Error("No sub CA certificate found");
+    return err(new Error("No sub CA certificate found"));
   }
 
   const clientCertificate = certificates.find(
@@ -181,12 +179,14 @@ async function validateAttestation(
   );
 
   if (!clientCertificate) {
-    throw new Error("No client CA certificate found");
+    return err(new Error("No client CA certificate found"));
   }
 
   if (!clientCertificate.verify({ publicKey: subCaCertificate.publicKey })) {
-    throw new Error(
-      "Client CA certificate is not signed by Apple App Attestation CA 1",
+    return err(
+      new Error(
+        "Client CA certificate is not signed by Apple App Attestation CA 1",
+      ),
     );
   }
 
@@ -203,7 +203,7 @@ async function validateAttestation(
   );
 
   if (!extension) {
-    throw new Error("No 1.2.840.113635.100.8.2 extension found");
+    return err(new Error("No 1.2.840.113635.100.8.2 extension found"));
   }
 
   const parsedExtension: any = fromBER(extension.value);
@@ -212,7 +212,7 @@ async function validateAttestation(
       .valueHexView;
 
   if (bytesToHex(actualNonce) !== bytesToHex(nonce)) {
-    throw new Error("Nonce does not match");
+    return err(new Error("Nonce does not match"));
   }
 
   // 5. Get sha256 hash of the credential public key
@@ -222,7 +222,7 @@ async function validateAttestation(
   const rawPublicKeyHash = sha256(rawPublicKeyBytes);
 
   if (keyId !== base64.encode(rawPublicKeyHash)) {
-    throw new Error("keyId does not match");
+    return err(new Error("keyId does not match"));
   }
 
   // 6. Verify RP ID hash.
@@ -230,7 +230,7 @@ async function validateAttestation(
   const rpIdHash = authData.subarray(0, 32);
 
   if (base64.encode(appIdHash) !== base64.encode(rpIdHash)) {
-    throw new Error("App Id does not match");
+    return err(new Error("App Id does not match"));
   }
 
   // 7. Verify counter
@@ -238,7 +238,7 @@ async function validateAttestation(
   const signCount = view.getInt32(33, false);
 
   if (signCount !== 0) {
-    throw new Error("signCount is not 0");
+    return err(new Error("signCount is not 0"));
   }
 
   // 8. Very aaguid is present and is 16 bytes, if production \x61\x70\x70\x61\x74\x74\x65\x73\x74\x00\x00\x00\x00\x00\x00\x00 or appattestdevelop if dev
@@ -246,11 +246,11 @@ async function validateAttestation(
 
   if (production) {
     if (aaguid !== PROD_AA_GUID) {
-      throw new Error("aaguid is not valid");
+      return err(new Error("aaguid is not production"));
     }
   } else {
     if (aaguid !== DEV_AA_GUID) {
-      throw new Error("aaguid is not valid");
+      return err(new Error("aaguid is not sandbox"));
     }
   }
 
@@ -273,15 +273,18 @@ async function validateAssertion(
   const nonce = sha256(concatBytes(authenticatorData, clientDataHash));
 
   // 3. Verify signature over nonce
+  const rawSignature = ecdsaDerToRaw(signature);
+  if (rawSignature.isErr()) return err(rawSignature.error);
+
   const isSignatureValid = await crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },
     publicKey,
-    ecdsaDerToRaw(signature),
+    rawSignature.value,
     nonce as Uint8Array<ArrayBuffer>,
   );
 
   if (!isSignatureValid) {
-    throw new Error("Invalid signature");
+    return err(new Error("Invalid signature"));
   }
 
   // 4. Verify RP ID
@@ -289,13 +292,16 @@ async function validateAssertion(
   const rpIdHash = authenticatorData.subarray(0, 32);
 
   if (base64.encode(appIdHash) !== base64.encode(rpIdHash)) {
-    throw new Error("App Id does not match");
+    return err(new Error("App Id does not match"));
   }
 
   return ok(true);
 }
 
-function ecdsaDerToRaw(der: Uint8Array, size = 32): Uint8Array<ArrayBuffer> {
+function ecdsaDerToRaw(
+  der: Uint8Array,
+  size = 32,
+): Result<Uint8Array<ArrayBuffer>, Error> {
   const view = der.buffer.slice(
     der.byteOffset,
     der.byteOffset + der.byteLength,
@@ -304,7 +310,7 @@ function ecdsaDerToRaw(der: Uint8Array, size = 32): Uint8Array<ArrayBuffer> {
   const values = (result as any).valueBlock.value;
 
   if (!Array.isArray(values) || values.length !== 2) {
-    throw new Error("Invalid ECDSA DER signature");
+    return err(new Error("Invalid ECDSA DER signature"));
   }
 
   const r = new Uint8Array(values[0].valueBlock.valueHexView);
@@ -319,5 +325,5 @@ function ecdsaDerToRaw(der: Uint8Array, size = 32): Uint8Array<ArrayBuffer> {
     s.slice(Math.max(0, s.length - size)),
     size * 2 - Math.min(size, s.length),
   );
-  return out;
+  return ok(out);
 }

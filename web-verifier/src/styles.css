@@ -327,4 +327,8 @@ body {
   font-family: var(--font-oracle);
 }
 
+button {
+  cursor: pointer;
+}
+
 @plugin "@tailwindcss/typography";

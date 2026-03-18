@@ -48,6 +48,7 @@ function App() {
   );
 
   const [isValid, setIsValid] = useState<boolean | undefined>(undefined);
+  const [validationErrorMessage, setValidationErrorMessage] = useState("");
 
   const previewUrl = useMemo(() => {
     if (!verifiableFile) return undefined;
@@ -127,11 +128,15 @@ function App() {
   const handleVerify = async () => {
     if (verifiableFile) {
       switch (fileStatus) {
-        case AuthenticityStatus.Bindings:
-          setIsValid(
-            await verifiableFile.verifyBindings(false).unwrapOr(undefined),
-          );
+        case AuthenticityStatus.Bindings: {
+          const isValid = await verifiableFile.verifyBindings(false);
+          setIsValid(isValid.unwrapOr(false));
+
+          if (isValid.isErr()) {
+            setValidationErrorMessage(isValid.error.message);
+          }
           break;
+        }
         case AuthenticityStatus.Proof:
           setIsValid(
             await verifiableFile
@@ -415,7 +420,8 @@ function App() {
         {isValid === false && fileStatus === AuthenticityStatus.Bindings && (
           <p className="flex items-center gap-2">
             <ExclamationCircleIcon className="h-5 w-5 mt-1 shrink-0 text-red-500" />
-            The file does not have valid bindings!
+            The file does not have valid bindings
+            {validationErrorMessage && `: ${validationErrorMessage}`}.
           </p>
         )}
         {isValid === true && fileStatus === AuthenticityStatus.Proof && (
