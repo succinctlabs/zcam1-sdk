@@ -128,7 +128,7 @@ function App() {
     if (verifiableFile) {
       switch (fileStatus) {
         case AuthenticityStatus.Bindings: {
-          const isValid = await verifiableFile.verifyBindings(false);
+          const isValid = await verifiableFile.verifyBindings(true);
           setIsValid(isValid.unwrapOr(false));
 
           if (isValid.isErr()) {
