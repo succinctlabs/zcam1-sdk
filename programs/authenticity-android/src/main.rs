@@ -33,7 +33,13 @@ pub fn main() {
     );
 
     // Skip validation if we are on a simulator
-    if !bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        // Reject simulator attestations in production mode
+        assert!(
+            !auth_inputs.production,
+            "Simulator attestations are not allowed in production mode"
+        );
+    } else {
         validate_attestation(
             &bindings.attestation,
             &bindings.assertion,

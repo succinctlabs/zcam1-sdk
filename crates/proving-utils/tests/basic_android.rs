@@ -3,9 +3,9 @@ use zcam1_common::AuthInputs;
 use zcam1_testing_utils::ANDROID_AUTHENCITY_ELF;
 
 #[tokio::test]
-async fn execute_in_sp1_test() {
+async fn execute_android_in_sp1_test() {
     let inputs = AuthInputs {
-        photo_bytes: std::fs::read("./tests/fixtures/with_bindings_androis.jpg")
+        photo_bytes: std::fs::read("./tests/fixtures/with_bindings_android.jpg")
             .expect("Failed to read with_bindings.jpg"),
         format: "image/jpeg".to_string(),
         production: false,
