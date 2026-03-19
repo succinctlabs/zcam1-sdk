@@ -100,7 +100,7 @@ pub fn decode_assertion(encoded: String) -> Result<AssertionObject, Error> {
     Ok(assertion)
 }
 
-/// Decode for AuthenticatorData.
+/// Decode for `AuthenticatorData`.
 pub fn decode_auth_data(s: Vec<u8>) -> Result<AuthenticatorData, Error> {
     if s.len() < 37 {
         return Err(Error::DecodeFailed(format!(
@@ -131,7 +131,7 @@ pub fn decode_base64_to_bytes(encoded: &str) -> Result<Vec<u8>, base64ct::Error>
     Base64::decode_vec(encoded)
 }
 
-/// Decode ClientData.
+/// Decode `ClientData`.
 pub fn decode_client_data(encoded: String) -> Result<ClientData, serde_json::Error> {
     let client_data: ClientData = serde_json::from_str(encoded.clone().as_str())?;
     Ok(client_data)

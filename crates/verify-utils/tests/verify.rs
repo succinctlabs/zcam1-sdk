@@ -43,7 +43,10 @@ fn test_simulator_mock_accepted_in_dev() {
     let result = verify_bindings_from_manifest(&bindings, "some metadata", &[0u8; 32], false);
 
     assert!(result.is_ok());
-    assert!(result.unwrap(), "Simulator mock should be accepted in dev mode");
+    assert!(
+        result.unwrap(),
+        "Simulator mock should be accepted in dev mode"
+    );
 }
 
 #[test]
@@ -51,7 +54,10 @@ fn test_simulator_mock_rejected_in_production() {
     let bindings = mock_bindings();
     let result = verify_bindings_from_manifest(&bindings, "some metadata", &[0u8; 32], true);
 
-    assert!(result.is_err(), "Simulator mock should be rejected in production");
+    assert!(
+        result.is_err(),
+        "Simulator mock should be rejected in production"
+    );
     let err = result.unwrap_err();
     assert!(
         err.to_string().contains("Simulator"),
@@ -62,10 +68,10 @@ fn test_simulator_mock_rejected_in_production() {
 #[test]
 fn test_verify_bindings_file_without_manifest() {
     // sample.jpg has no C2PA manifest — should return an error
-    let result = verify_bindings_from_file(
-        "../c2pa-utils/tests/fixtures/sample.jpg",
-        false,
-    );
+    let result = verify_bindings_from_file("../c2pa-utils/tests/fixtures/sample.jpg", false);
 
-    assert!(result.is_err(), "File without manifest should fail verification");
+    assert!(
+        result.is_err(),
+        "File without manifest should fail verification"
+    );
 }

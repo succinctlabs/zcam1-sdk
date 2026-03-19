@@ -1,6 +1,6 @@
 use base64ct::{Base64UrlUnpadded, Encoding};
 use c2pa::{
-    crypto::cose::{CertificateTrustPolicy, check_end_entity_certificate_profile},
+    crypto::cose::{check_end_entity_certificate_profile, CertificateTrustPolicy},
     status_tracker::StatusTracker,
 };
 use p256::ecdsa::SigningKey;
@@ -56,14 +56,20 @@ fn test_build_produces_three_certs() {
     let chain_pem = build_chain();
 
     let cert_count = chain_pem.matches("-----BEGIN CERTIFICATE-----").count();
-    assert_eq!(cert_count, 3, "Chain should have exactly 3 certificates (leaf, intermediate, root)");
+    assert_eq!(
+        cert_count, 3,
+        "Chain should have exactly 3 certificates (leaf, intermediate, root)"
+    );
 
     let certs = parse_chain(&chain_pem);
     assert_eq!(certs.len(), 3);
 
     // Verify CA flags
     assert!(!certs[0].tbs_certificate.is_ca(), "Leaf should not be a CA");
-    assert!(certs[1].tbs_certificate.is_ca(), "Intermediate should be a CA");
+    assert!(
+        certs[1].tbs_certificate.is_ca(),
+        "Intermediate should be a CA"
+    );
     assert!(certs[2].tbs_certificate.is_ca(), "Root should be a CA");
 }
 
@@ -73,7 +79,11 @@ fn test_root_is_self_signed() {
     let certs = parse_chain(&chain_pem);
     let root = &certs[2];
 
-    assert_eq!(root.issuer(), root.subject(), "Root cert should be self-signed");
+    assert_eq!(
+        root.issuer(),
+        root.subject(),
+        "Root cert should be self-signed"
+    );
 }
 
 #[test]
@@ -82,11 +92,13 @@ fn test_chain_issuer_subject_linkage() {
     let certs = parse_chain(&chain_pem);
 
     assert_eq!(
-        certs[0].issuer(), certs[1].subject(),
+        certs[0].issuer(),
+        certs[1].subject(),
         "Leaf issuer should match intermediate subject"
     );
     assert_eq!(
-        certs[1].issuer(), certs[2].subject(),
+        certs[1].issuer(),
+        certs[2].subject(),
         "Intermediate issuer should match root subject"
     );
 }
@@ -106,8 +118,14 @@ fn test_leaf_subject_matches_input() {
     let certs = parse_chain(&chain_pem);
 
     let subject_str = certs[0].subject().to_string();
-    assert!(subject_str.contains("My Custom Leaf"), "Leaf subject should contain CN: {subject_str}");
-    assert!(subject_str.contains("My Custom Org"), "Leaf subject should contain org: {subject_str}");
+    assert!(
+        subject_str.contains("My Custom Leaf"),
+        "Leaf subject should contain CN: {subject_str}"
+    );
+    assert!(
+        subject_str.contains("My Custom Org"),
+        "Leaf subject should contain org: {subject_str}"
+    );
 }
 
 #[test]
@@ -133,7 +151,8 @@ fn test_leaf_pubkey_matches_input_jwk() {
         .to_vec();
 
     assert_eq!(
-        leaf_pubkey_bytes.as_slice(), pt.as_bytes(),
+        leaf_pubkey_bytes.as_slice(),
+        pt.as_bytes(),
         "Leaf cert public key should match the input JWK"
     );
 }
@@ -212,7 +231,10 @@ fn test_leaf_cert_extensions() {
 
     assert!(!tbs_cert.is_ca(), "Leaf cert should not be a CA");
     assert!(aki_good, "Authority Key Identifier should be present");
-    assert!(key_usage_good, "Key Usage should include digitalSignature, keyCertSign, or nonRepudiation");
+    assert!(
+        key_usage_good,
+        "Key Usage should include digitalSignature, keyCertSign, or nonRepudiation"
+    );
     assert!(handled_all_critical, "Unhandled critical extensions found");
     assert!(extended_key_usage_good, "Extended Key Usage check failed");
 }
@@ -222,7 +244,10 @@ fn test_leaf_cert_extensions() {
 #[test]
 fn test_default_params() {
     let result = build_self_signed_certificate(&random_jwk(), None);
-    assert!(result.is_ok(), "build_self_signed_certificate with None params should succeed");
+    assert!(
+        result.is_ok(),
+        "build_self_signed_certificate with None params should succeed"
+    );
 }
 
 #[test]
@@ -235,5 +260,8 @@ fn test_invalid_jwk_returns_error() {
     };
 
     let result = build_self_signed_certificate(&bad_jwk, None);
-    assert!(result.is_err(), "Invalid JWK coordinates should produce an error, not a panic");
+    assert!(
+        result.is_err(),
+        "Invalid JWK coordinates should produce an error, not a panic"
+    );
 }

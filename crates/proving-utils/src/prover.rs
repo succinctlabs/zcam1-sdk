@@ -116,7 +116,7 @@ impl ProvingClient {
     ) -> Self {
         let network_mode = network_mode.unwrap_or_default().into();
         let rpc_url = get_default_rpc_url_for_mode(network_mode);
-        let signer = NetworkSigner::local(&private_key).unwrap();
+        let signer = NetworkSigner::local(private_key).unwrap();
 
         let prover = Arc::new(OnceLock::new());
         let vk_hash = Arc::new(OnceLock::new());
@@ -198,7 +198,7 @@ impl EitherProver {
                 let id = B256::random().to_string();
 
                 let proof = SP1ProofWithPublicValues::create_mock_proof(
-                    &vk,
+                    vk,
                     SP1PublicValues::default(),
                     sp1_sdk::SP1ProofMode::Groth16,
                     SP1_CIRCUIT_VERSION,

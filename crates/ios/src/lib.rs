@@ -114,7 +114,10 @@ mod tests {
 
         assert!(result.is_err(), "Wrong app_id should fail: {result:?}");
         let err = format!("{}", result.unwrap_err());
-        assert!(err.contains("RP ID mismatch"), "Error should be RpIdMismatch: {err}");
+        assert!(
+            err.contains("RP ID mismatch"),
+            "Error should be RpIdMismatch: {err}"
+        );
     }
 
     #[test]
@@ -130,7 +133,10 @@ mod tests {
 
         assert!(result.is_err(), "Wrong key_id should fail: {result:?}");
         let err = format!("{}", result.unwrap_err());
-        assert!(err.contains("Public key hash mismatch"), "Error should be PublicKeyHashMismatch: {err}");
+        assert!(
+            err.contains("Public key hash mismatch"),
+            "Error should be PublicKeyHashMismatch: {err}"
+        );
     }
 
     #[test]
@@ -144,14 +150,16 @@ mod tests {
             false,
         );
 
-        assert!(result.is_err(), "Invalid attestation data should return error, not panic");
+        assert!(
+            result.is_err(),
+            "Invalid attestation data should return error, not panic"
+        );
     }
 
     #[test]
     fn test_assertion_wrong_client_data() {
         let attestation = decode_attestation(ATTESTATION.to_string()).unwrap();
-        let public_key_hex =
-            public_key_uncompressed_hex(&attestation.att_stmt.x5c[0]).unwrap();
+        let public_key_hex = public_key_uncompressed_hex(&attestation.att_stmt.x5c[0]).unwrap();
 
         // Use different client data than what was signed
         let result = validate_assertion(
@@ -163,14 +171,16 @@ mod tests {
         );
 
         // Signature verification should fail because the nonce won't match
-        assert!(result.is_err(), "Wrong client data should fail signature verification: {result:?}");
+        assert!(
+            result.is_err(),
+            "Wrong client data should fail signature verification: {result:?}"
+        );
     }
 
     #[test]
     fn test_assertion_counter_not_incrementing() {
         let attestation = decode_attestation(ATTESTATION.to_string()).unwrap();
-        let public_key_hex =
-            public_key_uncompressed_hex(&attestation.att_stmt.x5c[0]).unwrap();
+        let public_key_hex = public_key_uncompressed_hex(&attestation.att_stmt.x5c[0]).unwrap();
 
         // The assertion has counter=1, so prev_counter=u32::MAX should fail
         let result = validate_assertion(
@@ -182,6 +192,9 @@ mod tests {
         );
 
         assert!(result.is_ok(), "Should not error");
-        assert!(!result.unwrap(), "Counter not incrementing should return false");
+        assert!(
+            !result.unwrap(),
+            "Counter not incrementing should return false"
+        );
     }
 }

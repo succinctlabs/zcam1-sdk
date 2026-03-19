@@ -18,6 +18,9 @@ fn test_verifier_trait_with_real_attestation() {
     // The test attestation data was generated with "CHALLENGE" as the challenge string,
     // not the device key ID. In production, the challenge is typically the device key ID.
     let result = verifier.bootstrap_verify(&inputs, "CHALLENGE".to_string());
-    assert!(result.is_ok(), "bootstrap_verify should succeed: {result:?}");
+    assert!(
+        result.is_ok(),
+        "bootstrap_verify should succeed: {result:?}"
+    );
     assert!(result.unwrap(), "Attestation should be valid");
 }

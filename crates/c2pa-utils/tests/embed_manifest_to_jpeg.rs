@@ -61,13 +61,19 @@ async fn test_embed_manifest_to_jpg() {
 
     // Hash should be unchanged after manifest embedding
     let embedded_hash = compute_hash(destination_path.to_str().unwrap()).unwrap();
-    assert_eq!(orig_hash, embedded_hash, "Hash should be unchanged after manifest embedding");
+    assert_eq!(
+        orig_hash, embedded_hash,
+        "Hash should be unchanged after manifest embedding"
+    );
 
     // Manifest should be extractable with correct contents
     let store = extract_manifest(destination_path.to_str().unwrap()).unwrap();
     let active = store.active_manifest().unwrap();
 
-    assert!(!active.claim.signature.is_empty(), "Manifest should have a signature");
+    assert!(
+        !active.claim.signature.is_empty(),
+        "Manifest should have a signature"
+    );
 
     // Params in bindings should match original assertion
     let bindings = active.bindings().expect("Bindings should be present");
