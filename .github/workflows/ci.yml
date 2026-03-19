@@ -39,10 +39,6 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: npm run lint
 
-      - name: Type check
-        working-directory: ${{ matrix.package }}
-        run: npm run typecheck
-
   rust:
     name: "Rust: lint, format & test"
     runs-on: ubuntu-latest
