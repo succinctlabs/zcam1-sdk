@@ -62,3 +62,30 @@ jobs:
         run: |
           cargo clippy -p zcam1-certs-utils
           cargo clippy -p zcam1-c2pa-utils --no-default-features --features io
+          cargo clippy -p zcam1-ios
+          cargo clippy -p zcam1-common
+          cargo clippy -p zcam1-verify-utils
+
+      - name: Run tests
+        run: |
+          cargo test -p zcam1-certs-utils
+          cargo test -p zcam1-ios
+          cargo test -p zcam1-common
+          cargo test -p zcam1-verify-utils
+
+  rust-test-macos:
+    name: Rust Tests (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests (c2pa-utils with editor feature)
+        run: cargo test -p zcam1-c2pa-utils
