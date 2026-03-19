@@ -117,8 +117,8 @@ pub fn validate_attestation(
     hasher = Sha256::new();
     hasher.update(app_id.clone());
     let app_id_hash = hasher.finalize();
-    let auth_data_bytes = Base64::decode_vec(&attestation.auth_data)
-        .map_err(Error::DecodeAuthDataFailed)?;
+    let auth_data_bytes =
+        Base64::decode_vec(&attestation.auth_data).map_err(Error::DecodeAuthDataFailed)?;
     let auth_data = decode_auth_data(auth_data_bytes)?;
     if auth_data.rp_id != app_id_hash.to_vec() {
         return Err(Error::RpIdMismatch {
