@@ -29,8 +29,17 @@ pub enum Error {
     #[error("Package name mismatch: expected {expected}, got {actual}")]
     PackageNameMismatch { expected: String, actual: String },
 
-    #[error("Faiuled to extract the package")]
+    #[error("Failed to extract the package")]
     PackageExtractionFailed,
+
+    #[error("RootOfTrust not present in hardware-enforced attestation")]
+    RootOfTrustMissing,
+
+    #[error("Device bootloader is not locked")]
+    BootloaderUnlocked,
+
+    #[error("Verified boot state is not Verified: got {0}")]
+    BootStateNotVerified(crate::types::VerifiedBootState),
 
     #[error("Signature verification failed")]
     SignatureInvalid,

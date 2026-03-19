@@ -58,7 +58,24 @@ pub fn validate_key_attestation(
         });
     }
 
-    // 7. Verify package name (if available in attestation)
+    // 7. Verify RootOfTrust: device must have a locked bootloader and verified boot state
+    let root_of_trust = key_desc
+        .hardware_enforced
+        .root_of_trust
+        .as_ref()
+        .ok_or(Error::RootOfTrustMissing)?;
+
+    if !root_of_trust.device_locked {
+        return Err(Error::BootloaderUnlocked);
+    }
+
+    if !root_of_trust.verified_boot_state.is_verified() {
+        return Err(Error::BootStateNotVerified(
+            root_of_trust.verified_boot_state,
+        ));
+    }
+
+    // 8. Verify package name (if available in attestation)
     let package_name = extract_package_name(&key_desc);
     if let Some(ref actual_package) = package_name {
         if actual_package != expected_package_name {
@@ -71,10 +88,10 @@ pub fn validate_key_attestation(
         return Err(Error::PackageExtractionFailed);
     }
 
-    // 8. Extract public key from leaf certificate
+    // 9. Extract public key from leaf certificate
     let public_key_hex = extract_public_key_hex(leaf_cert);
 
-    // 9. Compute key ID = SHA-256 of public key bytes
+    // 10. Compute key ID = SHA-256 of public key bytes
     let public_key_bytes = hex::decode(&public_key_hex)
         .map_err(|e| Error::PublicKeyError(format!("hex decode: {e}")))?;
     let key_id = Sha256::digest(&public_key_bytes);
