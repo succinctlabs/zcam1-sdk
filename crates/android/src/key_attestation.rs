@@ -60,13 +60,15 @@ pub fn validate_key_attestation(
 
     // 7. Verify package name (if available in attestation)
     let package_name = extract_package_name(&key_desc);
-    if let Some(ref actual_package) = package_name
-        && actual_package != expected_package_name
-    {
-        return Err(Error::PackageNameMismatch {
-            expected: expected_package_name.to_string(),
-            actual: actual_package.clone(),
-        });
+    if let Some(ref actual_package) = package_name {
+        if actual_package != expected_package_name {
+            return Err(Error::PackageNameMismatch {
+                expected: expected_package_name.to_string(),
+                actual: actual_package.clone(),
+            });
+        }
+    } else {
+        return Err(Error::PackageExtractionFailed);
     }
 
     // 8. Extract public key from leaf certificate

@@ -29,6 +29,9 @@ pub enum Error {
     #[error("Package name mismatch: expected {expected}, got {actual}")]
     PackageNameMismatch { expected: String, actual: String },
 
+    #[error("Faiuled to extract the package")]
+    PackageExtractionFailed,
+
     #[error("Signature verification failed")]
     SignatureInvalid,
 
