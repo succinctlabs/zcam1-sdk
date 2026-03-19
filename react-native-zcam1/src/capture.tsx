@@ -103,9 +103,11 @@ export class ZPhoto {
  * @returns Device information including keys, certificate chain, and attestation
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
-  const contentPublicKey = await getContentPublicKey();
   const isSimulator = await isEmulator();
-  let appId: string | undefined = undefined;
+  const appId = getAppId(settings);
+  const deviceKeyId = await getAndPersistDeviceKeyId(appId, isSimulator);
+  const attestation = await getAndPersistAttestation(deviceKeyId, isSimulator);
+  const contentPublicKey = await getContentPublicKey();
 
   if (contentPublicKey.kty !== "EC") {
     throw new Error("Only EC public keys are supported");
@@ -113,82 +115,69 @@ export async function initCapture(settings: Settings): Promise<CaptureInfo> {
 
   const contentKeyId = getSecureEnclaveKeyId(contentPublicKey);
 
-  let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${settings.appId}`);
-  let attestation = deviceKeyId
-    ? await EncryptedStorage.getItem(`attestation-${deviceKeyId}`)
-    : null;
-
-  if (deviceKeyId == null || attestation == null) {
-    switch (Platform.OS) {
-      case "android":
-        appId = getBundleId();
-
-        // On Android, getAttestation() creates the key AND returns the attestation
-        // certificate chain in a single call. generateHardwareKey() is iOS-only.
-        deviceKeyId = `ZCAM1_ANDROID_DEVICE_${appId}`;
-
-        if (isSimulator) {
-          // Emulator or device without Play Integrity support — use mock attestation.
-          console.warn(
-            "[ZCAM] Play Integrity not available - using mock attestation. This is for development only.",
-          );
-          attestation = `SIMULATOR_MOCK_${deviceKeyId}_${Date.now()}`;
-        } else {
-          attestation = await getAttestation(deviceKeyId, deviceKeyId);
-        }
-        break;
-
-      case "ios":
-      case "macos":
-        // iOS: generate key first, then attest separately
-        if (deviceKeyId == null) {
-          if (isSimulator) {
-            console.warn(
-              "[ZCAM] Running in simulator - using mock device key. This is for development only.",
-            );
-            deviceKeyId = `SIMULATOR_DEVICE_KEY_${Date.now()}`;
-          } else {
-            deviceKeyId = await generateHardwareKey();
-          }
-        }
-        attestation = await updateRegistration(deviceKeyId!, settings);
-        break;
-
-      default:
-        throw new Error(`initCapture: ${Platform.OS} not supported`);
-    }
-
-    if (settings.appId === undefined) {
-      throw new Error("The appId is required on iOS");
-    }
-
-    appId = settings.appId;
-
-    await EncryptedStorage.setItem(`deviceKeyId-${appId}`, deviceKeyId!);
-    await EncryptedStorage.setItem(`attestation-${deviceKeyId}`, attestation!);
-  }
-
-  if (deviceKeyId == null) {
-    throw new Error("Failed to generate a device key");
-  }
-
   return {
     appId: appId!,
     deviceKeyId,
     contentPublicKey,
     contentKeyId,
-    attestation: attestation!,
+    attestation,
   };
 }
 
-/**
- * Updates device registration by performing attestation with the backend.
- * @param keyId - The hardware key identifier
- * @param settings - Configuration settings for registration
- * @returns Attestation data and challenge
- */
-export async function updateRegistration(keyId: string, _settings: Settings): Promise<string> {
-  const isSimulator = await isEmulator();
+function getAppId(settings: Settings): string {
+  switch (Platform.OS) {
+    case "android":
+      return getBundleId();
+
+    case "ios":
+    case "macos":
+      if (settings.appId === undefined) {
+        throw new Error("The appId is required on iOS");
+      }
+      return settings.appId;
+
+    default:
+      throw new Error(`getAppId: ${Platform.OS} not supported`);
+  }
+}
+
+async function getAndPersistDeviceKeyId(appId: string, isSimulator: boolean): Promise<string> {
+  let deviceKeyId = await EncryptedStorage.getItem(`deviceKeyId-${appId}`);
+
+  if (deviceKeyId) return deviceKeyId;
+
+  if (isSimulator) {
+    console.warn(
+      "[ZCAM] Running in simulator - using mock device key. This is for development only.",
+    );
+    return `SIMULATOR_DEVICE_KEY_${Date.now()}`;
+  }
+
+  switch (Platform.OS) {
+    case "android":
+      // On Android, getAttestation() creates the key AND returns the attestation
+      // certificate chain in a single call. generateHardwareKey() is iOS-only.
+      deviceKeyId = `ZCAM1_ANDROID_DEVICE_${appId}`;
+      break;
+
+    case "ios":
+    case "macos":
+      deviceKeyId = await generateHardwareKey();
+      break;
+
+    default:
+      throw new Error(`getDeviceKeyId: ${Platform.OS} not supported`);
+  }
+
+  await EncryptedStorage.setItem(`deviceKeyId-${appId}`, deviceKeyId);
+
+  return deviceKeyId;
+}
+
+async function getAndPersistAttestation(keyId: string, isSimulator: boolean): Promise<string> {
+  let attestation = await EncryptedStorage.getItem(`attestation-${keyId}`);
+
+  if (attestation) return attestation;
 
   if (isSimulator) {
     console.warn(
@@ -197,10 +186,22 @@ export async function updateRegistration(keyId: string, _settings: Settings): Pr
     return `SIMULATOR_MOCK_${keyId}_${Date.now()}`;
   }
 
-  const attestation = await getAttestation(keyId, keyId);
+  attestation = await getAttestation(keyId, keyId);
+
   await EncryptedStorage.setItem(`attestation-${keyId}`, attestation);
 
   return attestation;
+}
+
+/**
+ * Updates device registration by performing attestation with the backend.
+ * @param keyId - The hardware key identifier
+ * @returns Attestation data and challenge
+ */
+export async function updateRegistration(keyId: string, isSimulator: boolean): Promise<string> {
+  await EncryptedStorage.removeItem(`attestation-${keyId}`);
+
+  return getAndPersistAttestation(keyId, isSimulator);
 }
 
 /**
