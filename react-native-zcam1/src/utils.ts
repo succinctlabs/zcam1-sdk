@@ -21,7 +21,6 @@ export async function generateAppAttestAssertion(
   dataHash: ArrayBuffer,
   normalizedMetadata: string,
   deviceKeyId: string,
-  production: boolean,
 ): Promise<string> {
   if (await isEmulator()) {
     console.warn(

@@ -34,7 +34,8 @@ jobs:
             x86_64-linux-android
 
       - name: Install ndk
-        run: cargo install cargo-ndk
+        uses: cargo-bins/cargo-binstall@main
+        run: cargo binstall cargo-ndk --version 4.1.2
 
       - name: Install protoc
         run: brew install protobuf

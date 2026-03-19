@@ -32,7 +32,7 @@ pub fn main() {
     if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
         // Reject simulator attestations in production mode
         assert!(
-            !auth_inputs.app_attest_production,
+            !auth_inputs.production,
             "Simulator attestations are not allowed in production mode"
         );
         // Skip App Attest validation for simulator in dev mode

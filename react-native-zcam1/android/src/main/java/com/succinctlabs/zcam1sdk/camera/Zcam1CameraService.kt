@@ -486,7 +486,7 @@ class Zcam1CameraService {
         val startResult = WritableNativeMap().apply {
             putString("status", "recording")
             putString("filePath", outputFile.absolutePath)
-            putString("format", "mov")
+            putString("format", "mp4")
             putBoolean("hasAudio", hasAudio)
         }
         promise.resolve(startResult)
@@ -518,7 +518,7 @@ class Zcam1CameraService {
 
             return WritableNativeMap().apply {
                 putString("filePath", outputFile.absolutePath)
-                putString("format", "mov")
+                putString("format", "mp4")
                 putBoolean("hasAudio", hasAudio)
                 putString("deviceMake", Build.MANUFACTURER)
                 putString("deviceModel", Build.MODEL)
@@ -534,7 +534,7 @@ class Zcam1CameraService {
             Log.e(TAG, "Failed to extract video metadata", e)
             return WritableNativeMap().apply {
                 putString("filePath", outputFile.absolutePath)
-                putString("format", "mov")
+                putString("format", "mp4")
                 putBoolean("hasAudio", hasAudio)
                 putString("deviceMake", Build.MANUFACTURER)
                 putString("deviceModel", Build.MODEL)

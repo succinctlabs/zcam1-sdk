@@ -61,7 +61,8 @@ Pod::Spec.new do |s|
     source_files += [
       "ios/proving/*.{h,m,mm,swift}",
       "cpp/proving/*.{hpp,cpp,c,h}",
-      "cpp/proving/generated/*.{hpp,cpp,c,h}",
+      "cpp/proving/generated/zcam1_proving_utils.cpp",
+      "cpp/proving/generated/zcam1_proving_utils.hpp",
     ]
     public_header_files += ["ios/proving/*.h"]
 
@@ -124,7 +125,7 @@ Pod::Spec.new do |s|
 
   s.frameworks = ["QuickLook"]
   s.vendored_frameworks = vendored_frameworks
-  s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
+  s.dependency    "uniffi-bindgen-react-native", "0.30.0-1"
 
   # Harbeth: GPU-accelerated image/video/camera filter library.
   s.dependency "Harbeth", "~> 1.1"
