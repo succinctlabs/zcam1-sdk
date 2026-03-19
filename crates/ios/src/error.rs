@@ -6,6 +6,9 @@ pub enum Error {
     #[error("Failed to decode data from base64: {0}")]
     DecodeAuthDataFailed(#[from] base64ct::Error),
 
+    #[error("Failed to decode attestation/assertion data: {0}")]
+    DecodeFailed(String),
+
     #[error("Failed verify signature: {0}")]
     FailedToVerifySignature(#[from] ecdsa::signature::Error),
 
