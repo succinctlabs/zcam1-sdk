@@ -326,54 +326,74 @@ mod tests {
     use crate::types::AssertionStore;
 
     #[test]
-    fn test_deser_data_hash() {
+    fn test_deser_assertion_store_without_optional_fields() {
+        // Minimal AssertionStore: only the required c2pa.actions.v2 field.
+        // All optional fields (bindings, proof, hash) should be None.
         let json = json!({
             "c2pa.actions.v2": {
                 "actions": []
-            },
-            "c2pa.hash.bmff.v3": {
-                "exclusions": [
-                    {
-                    "xpath": "/uuid",
-                    "length": null,
-                    "data": [
-                        {
-                        "offset": 8,
-                        "value": "2P7D1hsOSDySl1goh37EgQ=="
-                        }
-                    ],
-                    "subset": null,
-                    "version": null,
-                    "flags": null,
-                    "exact": null
-                    },
-                    {
-                    "xpath": "/ftyp",
-                    "length": null,
-                    "data": null,
-                    "subset": null,
-                    "version": null,
-                    "flags": null,
-                    "exact": null
-                    },
-                    {
-                    "xpath": "/mfra",
-                    "length": null,
-                    "data": null,
-                    "subset": null,
-                    "version": null,
-                    "flags": null,
-                    "exact": null
-                    }
-                ],
-                "alg": "sha256",
-                "hash": "VNtDCaAx/XHJUJdTmRaPZfNScgKhXSVwlK0yILwWJkE=",
-                "name": "jumbf manifest"
             }
         });
 
         let store = serde_json::from_value::<AssertionStore>(json).unwrap();
 
-        assert!(store.hash.is_some())
+        assert!(store.device_bindings.is_none());
+        assert!(store.proof.is_none());
+        assert!(store.hash.is_none());
+    }
+
+    #[test]
+    fn test_deser_assertion_store_with_bindings() {
+        let json = json!({
+            "c2pa.actions.v2": {
+                "actions": []
+            },
+            "succinct.bindings": {
+                "app_id": "com.example.app",
+                "device_key_id": "key123",
+                "attestation": "attest_data",
+                "assertion": "assert_data"
+            }
+        });
+
+        let store = serde_json::from_value::<AssertionStore>(json).unwrap();
+        let bindings = store.device_bindings.expect("bindings should be present");
+        assert_eq!(bindings.app_id, "com.example.app");
+        assert_eq!(bindings.device_key_id, "key123");
+        assert_eq!(bindings.attestation, "attest_data");
+        assert_eq!(bindings.assertion, "assert_data");
+    }
+
+    #[test]
+    fn test_deser_assertion_store_with_proof() {
+        let json = json!({
+            "c2pa.actions.v2": {
+                "actions": []
+            },
+            "succinct.proof": {
+                "data": "base64proofdata",
+                "vk_hash": "0xabc123"
+            }
+        });
+
+        let store = serde_json::from_value::<AssertionStore>(json).unwrap();
+        let proof = store.proof.expect("proof should be present");
+        assert_eq!(proof.data, "base64proofdata");
+        assert_eq!(proof.vk_hash, "0xabc123");
+    }
+
+    #[test]
+    fn test_actions_get_returns_none_for_missing() {
+        let json = json!({
+            "c2pa.actions.v2": {
+                "actions": [
+                    { "action": "succinct.capture", "when": "2025-01-01" }
+                ]
+            }
+        });
+
+        let store = serde_json::from_value::<AssertionStore>(json).unwrap();
+        assert!(store.actions.get("succinct.capture").is_some());
+        assert!(store.actions.get("nonexistent.action").is_none());
     }
 }
