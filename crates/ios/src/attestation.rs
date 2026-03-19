@@ -52,10 +52,15 @@ pub fn validate_attestation(
 
     // 4. Obtain credential cert extension with OID 1.2.840.113635.100.8.2 and compare with nonce.
     let credential_certificate =
-        Certificate::from_pem(b64_to_pem(&attestation.att_stmt.x5c[0]).as_bytes()).unwrap();
+        Certificate::from_pem(b64_to_pem(&attestation.att_stmt.x5c[0]).as_bytes())
+            .map_err(|e| Error::DecodeFailed(format!("certificate PEM parse failed: {e}")))?;
 
     let mut credential_cert_octets: Option<OctetString> = None;
-    for extension in credential_certificate.tbs_certificate.extensions.unwrap() {
+    let extensions = credential_certificate
+        .tbs_certificate
+        .extensions
+        .ok_or_else(|| Error::DecodeFailed("no extensions in certificate".to_string()))?;
+    for extension in extensions {
         // Check for the extension with OID 1.2.840.113635.100.8.2
         if extension.extn_id.as_bytes()
             == Bytes::from_static(&[42, 134, 72, 134, 247, 99, 100, 8, 2])
@@ -67,7 +72,14 @@ pub fn validate_attestation(
     if let Some(credential_cert_octets) = credential_cert_octets {
         let cred_cert_octets_bytes = credential_cert_octets.into_bytes();
         let (_rem, seq) = parse_der(&cred_cert_octets_bytes)?;
-        let content = &seq.content.as_sequence().unwrap()[0].content;
+        let sequence = seq
+            .content
+            .as_sequence()
+            .map_err(|_| Error::DecodeFailed("expected DER sequence".to_string()))?;
+        let content = &sequence
+            .first()
+            .ok_or_else(|| Error::DecodeFailed("empty DER sequence".to_string()))?
+            .content;
 
         // expect content to be variant Unknown(Any<'a>), get data from it
         match content {
@@ -105,9 +117,9 @@ pub fn validate_attestation(
     hasher = Sha256::new();
     hasher.update(app_id.clone());
     let app_id_hash = hasher.finalize();
-    let auth_data =
-        decode_auth_data(Base64::decode_vec(&attestation.auth_data.clone().clone()).unwrap())
-            .expect("decoding error");
+    let auth_data_bytes =
+        Base64::decode_vec(&attestation.auth_data).map_err(Error::DecodeAuthDataFailed)?;
+    let auth_data = decode_auth_data(auth_data_bytes)?;
     if auth_data.rp_id != app_id_hash.to_vec() {
         return Err(Error::RpIdMismatch {
             expected: Base64::encode_string(&auth_data.rp_id),

@@ -23,7 +23,7 @@ pub fn validate_attestation(
     production: bool,
     leaf_cert_only: bool,
 ) -> Result<String, Error> {
-    let attestation = utils::decode_attestation(attestation_hex.to_string()).unwrap();
+    let attestation = utils::decode_attestation(attestation_hex.to_string())?;
     let key_id = utils::decode_base64_to_bytes(key_id_hex)?;
 
     attestation::validate_attestation(
@@ -44,7 +44,7 @@ pub fn validate_assertion(
     client_app_id: &str,
     prev_counter: u32,
 ) -> Result<bool, Error> {
-    let assertion = utils::decode_assertion(assertion_hex.to_string()).unwrap();
+    let assertion = utils::decode_assertion(assertion_hex.to_string())?;
 
     assertion::validate_assertion(
         assertion,
