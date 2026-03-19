@@ -1,4 +1,4 @@
-name: Lint & Format
+name: CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   typescript:
-    name: TypeScript (${{ matrix.package }})
+    name: "TypeScript: lint, format & typecheck"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,8 +39,12 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: npm run lint
 
+      - name: Type check
+        working-directory: ${{ matrix.package }}
+        run: npm run typecheck
+
   rust:
-    name: Rust
+    name: "Rust: lint, format & test"
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +62,7 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Clippy (platform-independent crates)
+      - name: Clippy
         run: |
           cargo clippy -p zcam1-certs-utils
           cargo clippy -p zcam1-c2pa-utils --no-default-features --features io
@@ -66,15 +70,15 @@ jobs:
           cargo clippy -p zcam1-common
           cargo clippy -p zcam1-verify-utils
 
-      - name: Run tests
+      - name: Test
         run: |
           cargo test -p zcam1-certs-utils
           cargo test -p zcam1-ios
           cargo test -p zcam1-common
           cargo test -p zcam1-verify-utils
 
-  rust-test-macos:
-    name: Rust Tests (macOS)
+  rust-macos:
+    name: "Rust: test (macOS)"
     runs-on: macos-latest
 
     steps:
@@ -87,5 +91,5 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Run tests (c2pa-utils with editor feature)
+      - name: Test (c2pa-utils)
         run: cargo test -p zcam1-c2pa-utils
