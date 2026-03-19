@@ -9547,6 +9547,7 @@ dependencies = [
 name = "zcam1-certs-utils"
 version = "0.1.0"
 dependencies = [
+ "base64ct",
  "der",
  "p256",
  "rcgen",
@@ -9556,6 +9557,7 @@ dependencies = [
  "thiserror 2.0.17",
  "uniffi",
  "x509-cert",
+ "x509-parser 0.16.0",
 ]
 
 [[package]]
