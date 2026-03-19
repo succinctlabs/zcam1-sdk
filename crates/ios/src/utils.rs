@@ -49,6 +49,11 @@ pub fn decode_attestation(encoded: String) -> Result<AttestationObject, Error> {
     let x5c_array = attestation["attStmt"]["x5c"]
         .as_array()
         .ok_or_else(|| Error::DecodeFailed("missing 'attStmt.x5c' in attestation".to_string()))?;
+    if x5c_array.is_empty() {
+        return Err(Error::DecodeFailed(
+            "empty 'attStmt.x5c' in attestation".to_string(),
+        ));
+    }
 
     let x5c: Vec<String> = x5c_array
         .iter()
@@ -58,11 +63,13 @@ pub fn decode_attestation(encoded: String) -> Result<AttestationObject, Error> {
                     .iter()
                     .filter_map(|v| v.as_u64().map(|i| i as u8))
                     .collect();
-                Base64::encode_string(&bytes)
+                Ok(Base64::encode_string(&bytes))
             }
-            _ => String::new(),
+            _ => Err(Error::DecodeFailed(
+                "non-array entry in 'attStmt.x5c'".to_string(),
+            )),
         })
-        .collect();
+        .collect::<Result<Vec<String>, Error>>()?;
 
     let auth_data_array = attestation["authData"]
         .as_array()
