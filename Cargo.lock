@@ -9562,7 +9562,9 @@ dependencies = [
 name = "zcam1-common"
 version = "0.1.0"
 dependencies = [
+ "base64ct",
  "c2pa",
+ "p256",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.17",
