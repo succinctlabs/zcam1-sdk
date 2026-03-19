@@ -133,17 +133,23 @@ pub fn validate_attestation(
         return Err(Error::InvalidCounter);
     }
 
-    // 8. Very aaguid is present and is 16 bytes, if production \x61\x70\x70\x61\x74\x74\x65\x73\x74\x00\x00\x00\x00\x00\x00\x00 or appattestdevelop if dev
+    // 8. Verify AAGUID is present and is 16 bytes. Production requires the
+    // production AAGUID; non-production accepts both production and development
+    // AAGUIDs (dev environments can have a mix of Xcode and TestFlight builds).
+    const AAGUID_PRODUCTION: &[u8; 16] = b"appattest\0\0\0\0\0\0\0";
+    const AAGUID_DEVELOPMENT: &[u8; 16] = b"appattestdevelop";
     match &auth_data.aaguid {
         Some(aaguid) => {
             if aaguid.len() != 16 {
                 return Err(Error::InvalidAaguidLength);
             }
-            if production && aaguid.as_slice() != b"appattest\0\0\0\0\0\0\0" {
+            if production && aaguid.as_slice() != AAGUID_PRODUCTION {
                 return Err(Error::AaguidMismatch);
             }
-
-            if !production && aaguid.as_slice() != b"appattestdevelop" {
+            if !production
+                && aaguid.as_slice() != AAGUID_DEVELOPMENT
+                && aaguid.as_slice() != AAGUID_PRODUCTION
+            {
                 return Err(Error::AaguidMismatch);
             }
         }
