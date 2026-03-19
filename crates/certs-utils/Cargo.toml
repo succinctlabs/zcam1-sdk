@@ -19,5 +19,6 @@ spki = { version = "0.7", features = ["pem", "alloc"] }
 x509-cert = { version = "0.2", features = ["builder", "pem"] }
 
 [dev-dependencies]
+c2pa.workspace = true
 x509-parser = "0.16.0"
 base64ct = "1.6.0"

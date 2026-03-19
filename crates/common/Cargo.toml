@@ -7,18 +7,9 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-serde.workspace = true
+zcam1-ios.workspace = true
+eyre.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
 
-sp1-sdk = { workspace = true, optional = true }
-
 [dev-dependencies]
-c2pa.workspace = true
-x509-parser = "0.16.0"
-p256 = { version = "0.13", features = ["jwk", "ecdsa"] }
-base64ct = "1.6.0"
-
-
-[features]
-proving = ["dep:sp1-sdk"]

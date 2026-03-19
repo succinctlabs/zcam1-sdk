@@ -10,19 +10,15 @@ use zcam1_certs_utils::{build_self_signed_certificate, JwkEcKey};
 
 #[tokio::test]
 async fn test_embed_manifest_to_jpg() {
-    // Generate a fresh P-256 keypair and construct a JWK from the public key coordinates.
     let signing_key = SigningKey::random(&mut OsRng);
     let verifying_key = signing_key.verifying_key();
-
     let encoded_point = verifying_key.to_encoded_point(false);
-    let x = encoded_point.x().unwrap();
-    let y = encoded_point.y().unwrap();
 
     let jwk = JwkEcKey {
-        kty: "EC".to_string(),
-        crv: "P-256".to_string(),
-        x: Base64UrlUnpadded::encode_string(x),
-        y: Base64UrlUnpadded::encode_string(y),
+        kty: "EC".into(),
+        crv: "P-256".into(),
+        x: Base64UrlUnpadded::encode_string(encoded_point.x().unwrap()),
+        y: Base64UrlUnpadded::encode_string(encoded_point.y().unwrap()),
     };
 
     let certs = build_self_signed_certificate(&jwk, None).unwrap();
