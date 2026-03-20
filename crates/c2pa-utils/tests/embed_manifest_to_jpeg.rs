@@ -4,6 +4,7 @@ use p256::{
     ecdsa::{signature::Signer, Signature, SigningKey},
     elliptic_curve::rand_core::OsRng,
 };
+use serde_json::json;
 use tempfile::tempdir;
 use zcam1_c2pa_utils::{compute_hash, extract_manifest, ManifestEditor};
 use zcam1_certs_utils::{build_self_signed_certificate, JwkEcKey};
