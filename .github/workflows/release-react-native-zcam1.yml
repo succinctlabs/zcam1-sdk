@@ -37,6 +37,8 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Install ndk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: cargo binstall cargo-ndk --version 4.1.2
 
       - name: Install protoc
