@@ -1,14 +1,12 @@
 use base64ct::{Base64, Encoding};
 use sha2::{Digest, Sha256};
 use zcam1_c2pa_utils::types::DeviceBindings;
-#[cfg(feature = "apple-verify")]
 use zcam1_c2pa_utils::{compute_hash, extract_manifest};
 
 use crate::error::VerifyError;
 
 /// Extracts the manifest from a file at `path`, then verifies the device bindings
 /// contained within it. Set `production` to `true` to reject simulator attestations.
-#[cfg(feature = "apple-verify")]
 pub fn verify_bindings_from_file(path: &str, production: bool) -> Result<bool, VerifyError> {
     let manifest_store = extract_manifest(path)?;
     let active_manifest = manifest_store.active_manifest()?;

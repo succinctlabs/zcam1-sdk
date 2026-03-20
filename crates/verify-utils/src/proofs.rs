@@ -1,6 +1,26 @@
+use base64ct::{Base64, Encoding};
 use sp1_verifier::{GROTH16_VK_BYTES, Groth16Verifier};
+use zcam1_c2pa_utils::{compute_hash, extract_manifest};
 
 use crate::error::VerifyError;
+
+/// Extracts the manifest from a file at `path`, then verifies the proof
+pub fn verify_proof_from_file(path: &str, app_id: &str) -> Result<bool, VerifyError> {
+    let manifest_store = extract_manifest(path)?;
+    let active_manifest = manifest_store.active_manifest()?;
+    let proof = active_manifest
+        .proof()
+        .ok_or_else(|| VerifyError::ProofNotFound)?;
+    let photo_hash = compute_hash(path)?;
+
+    verify_proof_from_manifest(
+        &Base64::decode_vec(&proof.data)?,
+        &proof.vk_hash,
+        &photo_hash,
+        app_id,
+        &proof.platform,
+    )
+}
 
 #[uniffi::export]
 pub fn verify_proof_from_manifest(

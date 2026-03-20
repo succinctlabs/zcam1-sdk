@@ -3,24 +3,20 @@ use c2pa::{CallbackSigner, SigningAlg};
 use p256::ecdsa::{signature::Signer, Signature, SigningKey};
 use serde_json::json;
 use tempfile::tempdir;
-use zcam1_c2pa_utils::{compute_hash, ManifestEditor};
+use zcam1_c2pa_utils::{compute_hash, extract_manifest, ManifestEditor};
 use zcam1_certs_utils::{build_self_signed_certificate, JwkEcKey};
 
 #[tokio::test]
 async fn test_video_hash() {
-    // Generate a fresh P-256 keypair and construct a JWK from the public key coordinates.
     let signing_key = SigningKey::from_slice(&[1u8; 32]).unwrap();
     let verifying_key = signing_key.verifying_key();
-
     let encoded_point = verifying_key.to_encoded_point(false);
-    let x = encoded_point.x().unwrap();
-    let y = encoded_point.y().unwrap();
 
     let jwk = JwkEcKey {
-        kty: "EC".to_string(),
-        crv: "P-256".to_string(),
-        x: Base64UrlUnpadded::encode_string(x),
-        y: Base64UrlUnpadded::encode_string(y),
+        kty: "EC".into(),
+        crv: "P-256".into(),
+        x: Base64UrlUnpadded::encode_string(encoded_point.x().unwrap()),
+        y: Base64UrlUnpadded::encode_string(encoded_point.y().unwrap()),
     };
 
     let certs = build_self_signed_certificate(&jwk, None).unwrap();
@@ -62,6 +58,19 @@ async fn test_video_hash() {
         .unwrap();
 
     let with_manifest_hash = compute_hash(destination_path).unwrap();
+    assert_eq!(
+        orig_hash, with_manifest_hash,
+        "Hash should be unchanged after manifest embedding"
+    );
 
-    assert_eq!(orig_hash, with_manifest_hash)
+    // Verify the bindings assertion survived the round-trip
+    let store = extract_manifest(destination_path).unwrap();
+    let active = store.active_manifest().unwrap();
+    let bindings = active
+        .bindings()
+        .expect("Bindings should be present after embedding");
+    assert_eq!(bindings.app_id, "BlaBla");
+    assert_eq!(bindings.device_key_id, "Bla");
+    assert_eq!(bindings.attestation, "BlaBlaBlaB");
+    assert_eq!(bindings.assertion, "BlaBla");
 }
