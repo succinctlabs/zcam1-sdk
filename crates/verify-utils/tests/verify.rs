@@ -1,8 +1,5 @@
 use zcam1_c2pa_utils::types::DeviceBindings;
-use zcam1_verify_utils::{
-    bindings::{verify_bindings_from_file, verify_bindings_from_manifest},
-    ios::verify_proof,
-};
+use zcam1_verify_utils::bindings::{verify_bindings_from_file, verify_bindings_from_manifest};
 
 const IMAGE_WITH_VALID_BINDINGS: &str = "./tests/fixtures/with_bindings.jpg";
 const IMAGE_WITH_VALID_PROOF: &str = "./tests/fixtures/with_proof.jpg";
