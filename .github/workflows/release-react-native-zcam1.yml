@@ -33,8 +33,10 @@ jobs:
             i686-linux-android
             x86_64-linux-android
 
-      - name: Install ndk
+      - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
+
+      - name: Install ndk
         run: cargo binstall cargo-ndk --version 4.1.2
 
       - name: Install protoc
