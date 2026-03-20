@@ -12,4 +12,9 @@ eyre.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true
 
+sp1-sdk = { workspace = true, optional = true }
+
 [dev-dependencies]
+
+[features]
+proving = ["dep:sp1-sdk"]
