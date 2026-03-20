@@ -1224,6 +1224,7 @@ checksum = "e712f64ec3850b98572bffac52e2c6f282b29fe6c5fa6d42334b30be438d95c1"
 
 [[package]]
 name = "hex_fmt"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b07f60793ff0a4d9cef0f18e63b5357e06209987153a64648c972c1e5aff336f"
 
@@ -2849,6 +2850,7 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "traitful"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d856e22ead1fb79b9fc3cec63300086f680924f2f7b0e2701f6835a28b9c4425"
 dependencies = [
@@ -2886,18 +2888,18 @@ dependencies = [
  "cargo_metadata",
  "clap",
  "uniffi_bindgen",
- "uniffi_core",
+ "uniffi_core 0.30.0",
  "uniffi_macros",
  "uniffi_pipeline",
 ]
 
 [[package]]
 name = "uniffi-runtime-javascript"
-version = "0.30.0-1"
+version = "0.29.3-1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da9e3f7db893633e157464479096ac4e7456e7c41efb000ca332d3a385080629"
+checksum = "a6be59d9b1cc31b6e144beccf854321e27fcadf86fdd09d5db8085a4c6b78884"
 dependencies = [
- "uniffi_core",
+ "uniffi_core 0.29.5",
  "wasm-bindgen",
 ]
 
@@ -2925,6 +2927,18 @@ dependencies = [
  "uniffi_meta",
  "uniffi_pipeline",
  "uniffi_udl",
+]
+
+[[package]]
+name = "uniffi_core"
+version = "0.29.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f38a9a27529ccff732f8efddb831b65b1e07f7dea3fd4cacd4a35a8c4b253b98"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "once_cell",
+ "static_assertions",
 ]
 
 [[package]]
@@ -3328,7 +3342,7 @@ dependencies = [
 
 [[package]]
 name = "zcam1-verify"
-version = "0.4.0-alpha.1"
+version = "0.4.0"
 dependencies = [
  "uniffi-runtime-javascript",
  "wasm-bindgen",
