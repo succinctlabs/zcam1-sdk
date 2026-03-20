@@ -2,7 +2,6 @@ use zcam1_c2pa_utils::types::DeviceBindings;
 use zcam1_verify_utils::bindings::{verify_bindings_from_file, verify_bindings_from_manifest};
 
 const IMAGE_WITH_VALID_BINDINGS: &str = "./tests/fixtures/with_bindings.jpg";
-const IMAGE_WITH_VALID_PROOF: &str = "./tests/fixtures/with_proof.jpg";
 
 #[test]
 fn test_verify_bindings() {
@@ -10,20 +9,6 @@ fn test_verify_bindings() {
 
     assert!(is_valid);
 }
-
-// TODO: Need to add latest image with correct vkey
-/*
-#[test]
-fn test_verify_proof() {
-    let is_valid = verify_proof(
-        IMAGE_WITH_VALID_PROOF,
-        "NLS5R4YCGX.com.anonymous.zcam1-e2e-example".to_string(),
-    )
-    .unwrap();
-
-    assert!(is_valid);
-}
-*/
 
 fn mock_bindings() -> DeviceBindings {
     DeviceBindings {
