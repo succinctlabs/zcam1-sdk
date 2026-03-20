@@ -1,7 +1,7 @@
 import { CameraRoll } from "@react-native-camera-roll/camera-roll";
 import { FlashList, useRecyclingState } from "@shopify/flash-list";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Dimensions, Image, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { createThumbnail } from "react-native-create-thumbnail";
 import { Dirs, FileSystem, Util } from "react-native-file-access";
 
@@ -141,8 +141,9 @@ const ZImageItem = ({
       const ext = Util.extname(uri)?.toLowerCase();
 
       if (ext === "mov" || ext === "mp4") {
+        const url = Platform.OS == "android" ? uri : stripFileProtocol(uri);
         const thumbnail = await createThumbnail({
-          url: stripFileProtocol(uri),
+          url,
         });
         setThumbnail(thumbnail.path);
       }

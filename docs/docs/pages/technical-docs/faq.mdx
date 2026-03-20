@@ -3,7 +3,9 @@
 ## Android Support
 *Does ZCAM work on Android?*
 
-Not at the moment, but we have a plan for Android implementation. Currently, only two Android phone companies support C2PA: Google with their latest Pixel 10 and Samsung.
+Android camera capture is implemented and functional. The remaining work is integrating hardware attestation (Android Key Attestation + Google Play Integrity API) to match the security guarantees provided by Apple App Attest on iOS. Until that is complete, Android captures use mock/development-mode bindings.
+
+Currently, only two Android phone companies have their own C2PA implementations: Google with their latest Pixel 10 and Samsung.
 
 Google's Pixel 10 has full C2PA support for photos captured on the camera. The design is quite similar to ZCAM's where they use a key generated in the secure enclave to sign the manifest at capture time.
 
@@ -29,7 +31,7 @@ With proper use of the App Attest (iOS) and Play Integrity/Key Attestation (Andr
 ## Jailbroken Devices
 *Have we considered more complicated attack vectors, such as jailbroken devices + running a "virtual app" to exploit the signatures?*
 
-Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible, including jailbreak detection, however this comes with certain drawbacks such as no support for jailbroken devices. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps.
+Yes, the main attack vector is being able to feed in photos that weren't actually captured from the camera into our ZCAM signing protocol. We can protect our SDK as much as possible, including jailbreak/root detection, however this comes with certain drawbacks such as no support for jailbroken or rooted devices. The third party is also responsible to ensure their integrating app doesn't have any glaring security gaps.
 
 See the [jailbreak section](/features/security#jailbroken-device-detection) on the Security page for more information. 
 
@@ -64,7 +66,7 @@ See the [Physical Replay Attacks](features/security#physical-replay-attacks) sec
 ## Bindings vs Proof verification
 *What's the difference between bindings verification and ZK proof verification?*
 
-**Bindings verification** directly checks the Apple App Attest signature embedded in the C2PA manifest. It can be generated offline, however the attestation data is visible in the manifest.
+**Bindings verification** directly checks the hardware-backed signature (Apple App Attest on iOS) embedded in the C2PA manifest. It can be generated offline, however the attestation data is visible in the manifest.
 
 **ZK proof verification** generates a zero-knowledge proof that verifies the attestation without revealing sensitive details. It provides enhanced privacy but requires network access for proof generation.
 

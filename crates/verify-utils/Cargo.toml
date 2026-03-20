@@ -9,6 +9,7 @@ workspace = true
 [dependencies]
 # Members
 zcam1-c2pa-utils = { workspace = true, features = ["io"] }
+zcam1-android.workspace = true
 zcam1-ios.workspace = true
 
 # sp1

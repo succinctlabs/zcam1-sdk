@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.authors      = package["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
-  s.source       = { :git => "https://github.com/succinctlabs/zcam1-sdk.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/succinctlabs/zcam1-sdk.git", :tag => "react-native-zcam1-v#{s.version}" }
 
   # Proving is opt-in.
   #
@@ -61,7 +61,8 @@ Pod::Spec.new do |s|
     source_files += [
       "ios/proving/*.{h,m,mm,swift}",
       "cpp/proving/*.{hpp,cpp,c,h}",
-      "cpp/proving/generated/*.{hpp,cpp,c,h}",
+      "cpp/proving/generated/zcam1_proving_utils.cpp",
+      "cpp/proving/generated/zcam1_proving_utils.hpp",
     ]
     public_header_files += ["ios/proving/*.h"]
 
@@ -69,7 +70,7 @@ Pod::Spec.new do |s|
   end
 
   version = package["version"]
-  base_url = "https://github.com/succinctlabs/zcam1-sdk/releases/download/v#{version}"
+  base_url = "https://github.com/succinctlabs/zcam1-sdk/releases/download/react-native-zcam1-v#{version}"
 
   # Proving framework download command, only included when proving is enabled.
   # Injected as a shell snippet into prepare_command via Ruby interpolation.
@@ -124,7 +125,7 @@ Pod::Spec.new do |s|
 
   s.frameworks = ["QuickLook"]
   s.vendored_frameworks = vendored_frameworks
-  s.dependency    "uniffi-bindgen-react-native", "0.29.3-1"
+  s.dependency    "uniffi-bindgen-react-native", "0.30.0-1"
 
   # Harbeth: GPU-accelerated image/video/camera filter library.
   s.dependency "Harbeth", "~> 1.1"

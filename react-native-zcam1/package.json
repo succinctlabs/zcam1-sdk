@@ -1,6 +1,6 @@
 {
   "name": "@succinctlabs/react-native-zcam1",
-  "version": "0.3.13",
+  "version": "0.4.0",
   "description": "ZCAM1 SDK",
   "main": "./lib/module/index.js",
   "codegenConfig": {
@@ -45,9 +45,10 @@
     "@shopify/flash-list": "^2.2.0",
     "jail-monkey": "^2.8.5",
     "react-native-create-thumbnail": "^2.2.0",
+    "react-native-device-info": "^15.0.2",
     "react-native-encrypted-storage": "^4.0.0",
     "react-native-file-access": "^3.2.0",
-    "uniffi-bindgen-react-native": "^0.29.3-1"
+    "uniffi-bindgen-react-native": "^0.30.0-1"
   },
   "peerDependencies": {
     "react": ">=19",
@@ -72,31 +73,36 @@
     "ubrn:ios": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --and-generate",
     "ubrn:ios:proving": "CARGO_FEATURE_NO_NEON=1 ubrn build ios --config ubrn.config.proving.yaml --and-generate",
     "ubrn:android": "ubrn build android --and-generate",
+    "ubrn:android:proving": "ubrn build android --config ubrn.config.proving.yaml --and-generate",
     "ubrn:web": "ubrn build web",
     "clean": "rm -rfv cpp/ android/CMakeLists.txt android/src/main/java android/*.cpp ios/ src/generated/",
     "build": "bob build",
-    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded; fi",
+    "prepack": "npm run ubrn:ios -- --release && npm run ubrn:ios:proving -- --release && npm run ubrn:android -- --release && npm run ubrn:android:proving -- --release && npm run build && if [ -z \"$NPM_CONFIG_REGISTRY\" ]; then mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded && mv android/src/main/jniLibs android/src/main/jniLibs.excluded && mv android/src/main/jniProvingLibs android/src/main/jniProvingLibs.excluded; fi",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-    "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework",
-    "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded",
-    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework; fi"
+    "preyalcpublish": "mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework && mv android/src/main/jniLibs.excluded android/src/main/jniLibs && mv android/src/main/jniProvingLibs.excluded android/src/main/jniProvingLibs",
+    "postyalcpublish": "mv Zcam1Framework.xcframework Zcam1Framework.xcframework.excluded && mv Zcam1ProvingFramework.xcframework Zcam1ProvingFramework.xcframework.excluded && mv android/src/main/jniLibs android/src/main/jniLibs.excluded && mv android/src/main/jniProvingLibs android/src/main/jniProvingLibs.excluded",
+    "postpublish": "if [ -e Zcam1Framework.xcframework.excluded ]; then mv Zcam1Framework.xcframework.excluded Zcam1Framework.xcframework && mv Zcam1ProvingFramework.xcframework.excluded Zcam1ProvingFramework.xcframework && mv android/src/main/jniLibs.excluded android/src/main/jniLibs && mv android/src/main/jniProvingLibs.excluded android/src/main/jniProvingLibs; fi"
   },
   "files": [
     "src",
     "lib",
     "cpp",
     "ios",
+    "android",
     "scripts",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
+    "!android/src/main/jniLibs.excluded",
+    "!android/src/main/jniProvingLibs.excluded",
     "*.podspec",
     "Zcam1Framework.xcframework",
     "Zcam1ProvingFramework.xcframework",
     "app.plugin.js",
+    "react-native.config.js",
     "turbo.json"
   ],
   "react-native-builder-bob": {

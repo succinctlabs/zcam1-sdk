@@ -27,15 +27,7 @@ pub struct CertChainBuilder<C> {
 }
 
 impl CertChainBuilder<()> {
-    pub fn new() -> Self {
-        Self {
-            root_certificate: (),
-            intermediate_cert: (),
-        }
-    }
-
     pub fn self_signed(
-        &self,
         root_cert_subject: &str,
         intermediate_cert_subject: &str,
     ) -> Result<CertChainBuilder<CaCert>, CertsError> {

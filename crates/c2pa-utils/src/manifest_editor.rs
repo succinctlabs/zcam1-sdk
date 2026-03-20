@@ -12,9 +12,17 @@ use serde_json_canonicalizer::to_string;
 use crate::{
     error::C2paError,
     extract_manifest,
-    signing::sign_with_enclave,
     types::{Action, Manifest, PhotoMetadataInfo, VideoMetadataInfo},
 };
+
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+use crate::signing::sign_with_enclave;
+
+#[cfg(target_os = "android")]
+use p256::ecdsa::{signature::Signer, Signature, SigningKey};
+
+#[cfg(target_os = "android")]
+use crate::android_signing::sign_with_android_keystore;
 
 #[derive(uniffi::Object)]
 pub struct ManifestEditor {
@@ -37,14 +45,7 @@ impl ManifestEditor {
             .push(ClaimGeneratorInfo::new("ZCAM1"));
         builder.definition.vendor = Some("Succinct".to_string());
 
-        let signer = CallbackSigner::new(
-            move |_context, data: &[u8]| {
-                sign_with_enclave(&key_tag, data)
-                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
-            },
-            SigningAlg::Es256,
-            certs,
-        );
+        let signer = build_signer(key_tag, certs).unwrap();
 
         Self {
             builder: Arc::new(RwLock::new(builder)),
@@ -58,17 +59,9 @@ impl ManifestEditor {
     /// The metadata included in the manifest are kept.
     #[uniffi::constructor()]
     pub fn from_manifest(path: &str, key_tag: Vec<u8>, certs: &str) -> Result<Self, C2paError> {
-        let signer = CallbackSigner::new(
-            move |_context, data: &[u8]| {
-                sign_with_enclave(&key_tag, data)
-                    .map_err(|err| c2pa::Error::InternalError(err.to_string()))
-            },
-            SigningAlg::Es256,
-            certs,
-        );
+        let signer = build_signer(key_tag, certs)?;
 
         let store = extract_manifest(path)?;
-
         Self::from_file_and_manifest_with_signer(path, &store.active_manifest()?, signer)
     }
 
@@ -204,4 +197,54 @@ impl ManifestEditor {
             signer: Box::new(signer),
         }
     }
+}
+
+fn build_signer(key_tag: Vec<u8>, certs: &str) -> Result<CallbackSigner, C2paError> {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    return Ok(CallbackSigner::new(
+        move |_context, data: &[u8]| {
+            sign_with_enclave(&key_tag, data)
+                .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+        },
+        SigningAlg::Es256,
+        certs,
+    ));
+
+    #[cfg(target_os = "android")]
+    return {
+        let key_alias = String::from_utf8_lossy(&key_tag).to_string();
+        if key_alias.contains("MOCK") {
+            // Mock signing for emulator — hardware-backed key not available.
+            // Uses a hardcoded P-256 key to produce a structurally valid ES256
+            // Private key matching MOCK_EMULATOR_CONTENT_KEY in common.tsx
+            const MOCK_KEY: [u8; 32] = [
+                0x6f, 0xc7, 0x57, 0xbf, 0x65, 0x0b, 0x00, 0x08, 0x5e, 0xc6, 0x86, 0x56, 0x12, 0xb8,
+                0x13, 0x71, 0xf9, 0x96, 0xee, 0x34, 0x90, 0x1e, 0x40, 0xe0, 0x06, 0xe0, 0xc2, 0x66,
+                0x4c, 0x2c, 0xf5, 0xc8,
+            ];
+            Ok(CallbackSigner::new(
+                move |_context, data: &[u8]| {
+                    let key = SigningKey::from_bytes(&MOCK_KEY.into())
+                        .map_err(|e| c2pa::Error::InternalError(e.to_string()))?;
+                    let sig: Signature = key.sign(data);
+                    Ok(sig.to_bytes().to_vec())
+                },
+                SigningAlg::Es256,
+                certs,
+            ))
+        } else {
+            Ok(CallbackSigner::new(
+                move |_context, data: &[u8]| {
+                    sign_with_android_keystore(&key_alias, data)
+                        .map_err(|err| c2pa::Error::InternalError(err.to_string()))
+                },
+                SigningAlg::Es256,
+                certs,
+            ))
+        }
+    };
+
+    Err(C2paError::Internal(
+        "Signing is only availabale on iOS or Android".to_string(),
+    ))
 }

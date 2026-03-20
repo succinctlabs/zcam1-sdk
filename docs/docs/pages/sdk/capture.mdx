@@ -6,14 +6,17 @@ The Capture SDK (`@succinctlabs/react-native-zcam1`) takes photos and produces C
 
 ```bash
 npm i @succinctlabs/react-native-zcam1
+
+# iOS
 cd ios && pod install
+# Android: JNI libraries are downloaded automatically during the Gradle build
 ```
 
 ## Core Concepts
 
 The Capture SDK:
-- Renders a native iOS camera preview via `ZCamera`
-- Generates App Attest assertions over photo hashes
+- Renders a native camera preview via `ZCamera` (AVFoundation on iOS, CameraX on Android)
+- Generates hardware-backed assertions over photo hashes
 - Embeds C2PA manifests with `succinct.bindings` assertion
 - Returns signed photos ready for proof generation
 
@@ -94,7 +97,7 @@ console.log(photo.path);         // C2PA-signed photo path
 **Parameters:**
 - `options.format` - `"jpeg"` or `"dng"` (default: `"jpeg"`)
 - `options.flash` - `"off"`, `"on"`, or `"auto"` (default: `"off"`)
-- `options.includeDepthData` - Include depth data when supported (default: `false`)
+- `options.includeDepthData` - Include depth data when supported (default: `false`). **Android:** always returns `false`; depth capture is not exposed via CameraX.
 - `options.aspectRatio` - `"4:3"`, `"16:9"`, or `"1:1"` (default: `"4:3"`)
 - `options.orientation` - `"auto"`, `"portrait"`, or `"landscape"` (default: `"auto"`)
 
@@ -167,5 +170,16 @@ const styles = StyleSheet.create({
 
 - `initCapture()` generates Secure Enclave keys on first call; subsequent calls load existing keys
 - `initCapture()` requires network access
-- App Attest only works on physical devices; the SDK uses mock values in simulators
+- App Attest only works on physical iOS devices; the SDK uses mock values in simulators. On Android emulators, the SDK generates a test gradient image in place of a real camera capture.
 - The captured photo at `photo.path` contains a C2PA manifest with `succinct.bindings`—this is required for proof generation
+
+## Android Limitations
+
+The following features are not available on Android due to CameraX API constraints:
+
+| Feature | iOS | Android |
+|---------|-----|---------|
+| Depth data (`includeDepthData`) | Supported | Always `false` |
+| Ultra-wide camera detection (`hasUltraWideCamera`) | Native detection | Always `false` |
+| Zoom switch-over factors (`getSwitchOverZoomFactors`) | Supported | Returns empty array |
+| Hardware attestation (`initCapture`) | Apple App Attest | Planned (Android Key Attestation + Play Integrity) |

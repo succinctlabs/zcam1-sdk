@@ -1,0 +1,18 @@
+[workspace]
+[package]
+name = "authenticity-android"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zcam1-common = { path = "../../crates/common" }
+zcam1-android = { path = "../../crates/android" }
+zcam1-c2pa-utils = { path = "../../crates/c2pa-utils" }
+
+base64ct = "1.6.0"
+sha2 = "0.10.9"
+sp1-zkvm = "6.0.0"
+
+[patch.crates-io]
+sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", tag = "patch-sha2-0.10.9-sp1-6.0.0" }
+c2pa = { git = "https://github.com/succinctlabs/c2pa-rs", branch = "aurelien/sp1-fixes"}

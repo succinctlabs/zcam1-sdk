@@ -1,5 +1,7 @@
-mod certs;
-pub use certs::{CertsError, generate_cert_chain};
+mod constants;
+pub use constants::{APPLE_ROOT_CERT, GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA};
 
-mod verifier;
-pub use verifier::{Verifier, VerifierError};
+mod io;
+pub use io::AuthInputs;
+
+uniffi::setup_scaffolding!();

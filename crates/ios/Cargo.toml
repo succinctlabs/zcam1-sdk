@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-sp1-sdk = { workspace = true, optional = true }
+zcam1-common.workspace = true
 
 base64ct.workspace = true
 bytes.workspace = true
@@ -26,6 +26,3 @@ x509-cert = "0.2.5"
 
 [dev-dependencies]
 zcam1-c2pa-utils = { workspace = true, features = ["io"] }
-
-[features]
-proving = ["dep:sp1-sdk"]

@@ -1,4 +1,3 @@
-import { utf8ToBytes } from "@noble/hashes/utils.js";
 import { base64 } from "@scure/base";
 
 import {
@@ -7,7 +6,7 @@ import {
   type ManifestInterface,
   PhotoMetadataInfo,
   verifyBindingsFromManifest,
-  verifyGroth16,
+  verifyProofFromManifest,
   VideoMetadataInfo,
 } from "./bindings";
 
@@ -20,9 +19,6 @@ export interface CaptureMetadata {
   when: string;
   parameters: PhotoMetadataInfo | VideoMetadataInfo;
 }
-
-export const APPLE_ROOT_CERT =
-  "MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNaFw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlvbiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdhNbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9auYen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijVoyFraWVIyd/dganmrduC1bmTBGwD";
 
 /**
  * Represents a file with a C2PA manifest that can be verified for authenticity.
@@ -44,27 +40,42 @@ export class VerifiableFile {
   }
 
   /**
-   * Verifies the manifest's bindings (e.g., App Attest).
+   * Verifies the manifest's bindings.
+   * On iOS: validates Apple App Attest attestation + assertion.
+   * On Android: validates Android Key Attestation chain + ECDSA signature.
    */
-  verifyBindings(appAttestProduction: boolean): boolean {
+  verifyBindings(production: boolean): boolean {
     if (this.hash === undefined) {
       this.hash = computeHash(this.path);
     }
 
-    return verifyBindingsFromManifest(
-      this.activeManifest.bindings()!,
-      this.activeManifest.captureMetadataAction()!,
-      this.hash,
-      appAttestProduction,
-    );
+    const bindings = this.activeManifest.bindings()!;
+    const metadata = this.activeManifest.captureMetadataAction()!;
+
+    return verifyBindingsFromManifest(bindings, metadata, this.hash, production);
   }
 
   /**
    * Verifies the cryptographic proof embedded in the C2PA manifest.
+   * @param appId - The app identifier used during capture. On iOS: `TEAM_ID.BUNDLE_ID` (e.g. `NLS5R4YCGX.com.example.myapp`). On Android: the package name (e.g. `com.example.myapp`).
    * @returns True if the proof is valid, false otherwise
    */
   verifyProof(appId: string): boolean {
-    return verifyProofFromManifest(this.activeManifest, this.path, appId);
+    const proof = this.activeManifest.proof();
+
+    if (proof === undefined) {
+      throw new Error("The proof was not found in the manifest");
+    }
+
+    const hash = new Uint8Array(this.hash ?? computeHash(this.path));
+
+    return verifyProofFromManifest(
+      base64.decode(proof.data).buffer as ArrayBuffer,
+      proof.vkHash,
+      hash.buffer as ArrayBuffer,
+      appId,
+      proof.platform,
+    );
   }
 
   /**
@@ -76,7 +87,7 @@ export class VerifiableFile {
       this.hash = computeHash(this.path);
     }
 
-    return base64.encode(new Uint8Array(this.hash));
+    return base64.encode(new Uint8Array(this.hash!));
   }
 
   /**
@@ -89,31 +100,4 @@ export class VerifiableFile {
     if (!actionJson) return null;
     return JSON.parse(actionJson) as CaptureMetadata;
   }
-}
-
-function verifyProofFromManifest(
-  activeManifest: ManifestInterface,
-  path: string,
-  appId: string,
-): boolean {
-  const proof = activeManifest.proof();
-
-  if (proof === undefined) {
-    throw new Error("The proof was not found in the manifest");
-  }
-
-  const hash = new Uint8Array(computeHash(path));
-  const appIdBytes = utf8ToBytes(appId);
-  const appleRootCert = utf8ToBytes(APPLE_ROOT_CERT);
-
-  const publicInputs = new Uint8Array(hash.length + appIdBytes.length + appleRootCert.length);
-  publicInputs.set(hash);
-  publicInputs.set(appIdBytes, hash.length);
-  publicInputs.set(appleRootCert, hash.length + appIdBytes.length);
-
-  return verifyGroth16(
-    base64.decode(proof.data).buffer as ArrayBuffer,
-    publicInputs.buffer,
-    proof.vkHash,
-  );
 }

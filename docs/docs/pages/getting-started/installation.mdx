@@ -4,7 +4,7 @@
 
 ### Rust Toolchain
 
-The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with iOS targets:
+The ZCAM SDK packages include Rust bindings built via UniFFI. You need Rust installed with the targets for your target platform(s):
 
 ```bash
 # Install Rust (if not already installed)
@@ -12,11 +12,18 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Add iOS targets
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+
+# Add Android targets
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 ```
 
 ### Xcode
 
 Xcode is required for iOS development. Install it from the Mac App Store.
+
+### Android Studio
+
+Android Studio is required for Android development. Install it from [developer.android.com](https://developer.android.com/studio).
 
 ### Development Environment
 
@@ -31,8 +38,10 @@ The ZCAM SDK is available as a single package:
 ```bash
 npm i @succinctlabs/react-native-zcam1
 
-# Install native dependencies
+# iOS: install native dependencies
 cd ios && pod install
+
+# Android: native JNI libraries are downloaded automatically during the Gradle build
 ```
 
 The package provides the following functionality:
@@ -94,7 +103,51 @@ Add these keys to your `Info.plist` (or `app.json` for Expo):
 }
 ```
 
+## Android Configuration
+
+### Package Name
+
+Configure your app's package name in `app.json` for Expo apps:
+
+```json
+{
+  "expo": {
+    "android": {
+      "package": "com.yourcompany.yourapp"
+    }
+  }
+}
+```
+
+### Required Permissions
+
+Add camera and storage permissions to your `app.json`:
+
+```json
+{
+  "expo": {
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
+      ]
+    }
+  }
+}
+```
+
+### Enabling Proving (optional)
+
+ZK proof generation on Android is opt-in due to the large binary size. To enable it, add the following to your `android/gradle.properties`:
+
+```properties
+enableProving=true
+```
+
 ## Running on Device
+
+### iOS
 
 App Attest requires a physical iOS device—it does not work in the simulator (the SDK falls back to mock mode for development).
 
@@ -109,3 +162,16 @@ npx react-native run-ios --device
 
 On first run, you may need to trust the developer certificate on your device:
 **Settings → General → Device Management → Trust**
+
+### Android
+
+```bash
+# Expo
+npx expo prebuild
+npx expo run:android --device
+
+# React Native CLI
+npx react-native run-android
+```
+
+The SDK detects Android emulators and generates a test gradient image in place of a real camera capture, allowing UI development without a physical device.

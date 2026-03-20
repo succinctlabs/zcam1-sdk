@@ -1,0 +1,58 @@
+#![no_main]
+sp1_zkvm::entrypoint!(main);
+
+use std::io::Cursor;
+
+use base64ct::{Base64, Encoding};
+use sha2::{Digest, Sha256};
+use zcam1_android::{
+    constants::{GOOGLE_HARDWARE_ROOT_EC, GOOGLE_HARDWARE_ROOT_RSA},
+    validate_attestation,
+};
+use zcam1_c2pa_utils::{compute_hash_from_stream, extract_manifest_from_stream};
+use zcam1_common::AuthInputs;
+
+pub fn main() {
+    let auth_inputs = sp1_zkvm::io::read::<AuthInputs>();
+    let mut photo_stream = Cursor::new(&auth_inputs.photo_bytes);
+    let store = extract_manifest_from_stream(&auth_inputs.format, &mut photo_stream).unwrap();
+    let active_manifest = store.active_manifest().unwrap();
+    let bindings = active_manifest.bindings().unwrap();
+    let capture_metadata = active_manifest.capture_metadata_action().unwrap().unwrap();
+    let metadata_hash = Sha256::digest(capture_metadata.into_bytes());
+    let photo_hash = compute_hash_from_stream(
+        &mut photo_stream,
+        auth_inputs.photo_bytes.len(),
+        &auth_inputs.format,
+    )
+    .unwrap();
+    let client_data = format!(
+        "{}|{}",
+        Base64::encode_string(&photo_hash),
+        Base64::encode_string(&metadata_hash)
+    );
+
+    // Skip validation if we are on a simulator
+    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
+        // Reject simulator attestations in production mode
+        assert!(
+            !auth_inputs.production,
+            "Simulator attestations are not allowed in production mode"
+        );
+    } else {
+        validate_attestation(
+            &bindings.attestation,
+            &bindings.assertion,
+            &client_data,
+            &bindings.device_key_id,
+            &bindings.app_id,
+        )
+        .unwrap()
+    }
+
+    let root_cert = &format!("{}{}", GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_HARDWARE_ROOT_EC);
+
+    sp1_zkvm::io::commit_slice(&photo_hash);
+    sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
+    sp1_zkvm::io::commit_slice(root_cert.as_bytes());
+}

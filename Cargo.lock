@@ -318,7 +318,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "alloy-sol-types",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -1848,7 +1848,7 @@ dependencies = [
  "static-iref",
  "tempfile",
  "thiserror 2.0.17",
- "toml 0.8.23",
+ "toml",
  "url",
  "uuid",
  "wasm-bindgen",
@@ -1926,6 +1926,12 @@ checksum = "060303ef31ef4a522737e1b1ab68c67916f2a787bb2f4f54f383279adba962b5"
 dependencies = [
  "slab",
 ]
+
+[[package]]
+name = "cesu8"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
 name = "cexpr"
@@ -2056,6 +2062,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
+name = "combine"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
+dependencies = [
+ "bytes",
+ "memchr",
+]
+
+[[package]]
 name = "config"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2065,7 +2081,7 @@ dependencies = [
  "pathdiff",
  "serde",
  "serde_json",
- "toml 0.8.23",
+ "toml",
 ]
 
 [[package]]
@@ -2178,6 +2194,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "crash-context"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "031ed29858d90cfdf27fe49fae28028a1f20466db97962fa2f4ea34809aeebf3"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "mach2",
+]
+
+[[package]]
+name = "crash-handler"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0df5c9639f4942eb7702b964b3f9adf03a55724a57558cc177407388a8b936e2"
+dependencies = [
+ "cfg-if",
+ "crash-context",
+ "libc",
+ "mach2",
+ "parking_lot",
 ]
 
 [[package]]
@@ -2665,20 +2705,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 
 [[package]]
-name = "downloader"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ac1e888d6830712d565b2f3a974be3200be9296bc1b03db8251a4cbf18a4a34"
-dependencies = [
- "digest 0.10.7",
- "futures",
- "rand 0.8.5",
- "reqwest",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
 name = "dunce"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2893,7 +2919,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3639,7 +3665,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tokio",
  "tower-service",
  "tracing",
@@ -3996,6 +4022,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "jni"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a87aa2bb7d2af34197c04845522473242e1aa17c12f4935d5856491a7fb8c97"
+dependencies = [
+ "cesu8",
+ "cfg-if",
+ "combine",
+ "jni-sys",
+ "log",
+ "thiserror 1.0.69",
+ "walkdir",
+ "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "jni-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
+
+[[package]]
 name = "jobserver"
 version = "0.1.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4156,6 +4204,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
+name = "mach2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d640282b302c0bb0a2a8e0233ead9035e3bed871f0b7e81fe4a1ec829765db44"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "macro-string"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4285,6 +4342,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084"
 
 [[package]]
+name = "ndk-context"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b"
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4328,7 +4391,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4591,9 +4654,9 @@ dependencies = [
 
 [[package]]
 name = "p3-air"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2ce3af7e16cf529b5bf621afdade0ec9950fc3be21ec552257d9d5c2edb4d83"
+checksum = "d275c27bb81483d669709d7244ce333b51f9743af2474cdc09ba1509f5c290db"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -4602,9 +4665,9 @@ dependencies = [
 
 [[package]]
 name = "p3-baby-bear"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dccb50acdb58ed96f73fcef401e01b34602abfd03145cf0cb36aa79e35ca1bb8"
+checksum = "95a083928c9055f2171e3cb0bb4767969e4955473e71ba61affe46d7a3c98a89"
 dependencies = [
  "num-bigint 0.4.6",
  "p3-field",
@@ -4617,9 +4680,9 @@ dependencies = [
 
 [[package]]
 name = "p3-bn254-fr"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebf15b2e55afdfc5ef84bb0a2508a96a924f3d86b8b616053ee727293a02121d"
+checksum = "9abf208fbfe540d6e2a6caaa2a9a345b1c8cb23ffdcdfcc6987244525d4fc821"
 dependencies = [
  "ff 0.13.1",
  "num-bigint 0.4.6",
@@ -4632,9 +4695,9 @@ dependencies = [
 
 [[package]]
 name = "p3-challenger"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16b647fe6cb51bb873d09aab77cecf3afe38bd94284fc14d04d57d52f0d26666"
+checksum = "42b725b453bbb35117a1abf0ddfd900b0676063d6e4231e0fa6bb0d76018d8ad"
 dependencies = [
  "p3-field",
  "p3-maybe-rayon",
@@ -4646,9 +4709,9 @@ dependencies = [
 
 [[package]]
 name = "p3-commit"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10a094ad823789ff19416c64f30eca6afff24d8cac231eb5f729e90ed1fb500b"
+checksum = "518695b56f450f9223bdd8994dda87916b97ebf1d1c03c956807e78522fdb333"
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -4660,9 +4723,9 @@ dependencies = [
 
 [[package]]
 name = "p3-dft"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8169aac0ed2575c6c44953a7fa162e3dd07f9a22021e36b4db9d8bd15a3373b8"
+checksum = "56a1f81101bff744b7ebba7f4497e917a2c6716d6e62736e4a56e555a2d98cb7"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -4673,9 +4736,9 @@ dependencies = [
 
 [[package]]
 name = "p3-field"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f82ed2dfd1e7d6e8759a9605c71b8a2a543069017dfdb6dafe71e7a2ccca937"
+checksum = "36459d4acb03d08097d713f336c7393990bb489ab19920d4f68658c7a5c10968"
 dependencies = [
  "itertools 0.12.1",
  "num-bigint 0.4.6",
@@ -4687,9 +4750,9 @@ dependencies = [
 
 [[package]]
 name = "p3-fri"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ad549ae26b3b7c184e7699e78ce2e9b9330b34a344e1bb49cdafe999ceab053"
+checksum = "6e2529a174a04189cfe705d756fb0e33d3c8fb06b167b521ddb877c78407f12a"
 dependencies = [
  "itertools 0.12.1",
  "p3-challenger",
@@ -4706,9 +4769,9 @@ dependencies = [
 
 [[package]]
 name = "p3-interpolation"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cdd36ddd351714d67bff73d55ee221270bf36b41efd1e74cacf151b2919178c"
+checksum = "6662049877c802155cdb4863db59899469fc3565d22d9047e1bd22d6b71f28e5"
 dependencies = [
  "p3-field",
  "p3-matrix",
@@ -4717,9 +4780,9 @@ dependencies = [
 
 [[package]]
 name = "p3-keccak-air"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "387b833972ad75e4318d525f76766b69a25073237377555fba917126b4b2ec9e"
+checksum = "169c96f8f0aaa9042872fdb6bbae0477fd1363b87c23877dbb2ec7fb46f8fcfa"
 dependencies = [
  "p3-air",
  "p3-field",
@@ -4731,9 +4794,9 @@ dependencies = [
 
 [[package]]
 name = "p3-koala-bear"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60e2d5bc3601f6115afd9a55a718bdab49e98d44710438008204d2084d5d70d0"
+checksum = "eb1f52bcb6be38bdc8fa6b38b3434d4eedd511f361d4249fd798c6a5ef817b40"
 dependencies = [
  "num-bigint 0.4.6",
  "p3-field",
@@ -4746,9 +4809,9 @@ dependencies = [
 
 [[package]]
 name = "p3-matrix"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ef05490e47c906f102e08493986b1d3c6b6e2c6be9937eaab2c970ccf5385e8"
+checksum = "5583e9cd136a4095a25c41a9edfdcce2dfae58ef01639317813bdbbd5b55c583"
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -4761,18 +4824,18 @@ dependencies = [
 
 [[package]]
 name = "p3-maybe-rayon"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3d38c20290b92011f12a3fc040a999197e71e1663614998393a24aee4d430da"
+checksum = "e524d47a49fb4265611303339c4ef970d892817b006cc330dad18afb91e411b1"
 dependencies = [
  "rayon",
 ]
 
 [[package]]
 name = "p3-mds"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b707ec6432a15661ce67e5fc3abb1c2653e0064030d99c8cece4a049b31ebb1a"
+checksum = "4f6cb8edcb276033d43769a3725570c340d2ed6f35c3cca4cddeee07718fa376"
 dependencies = [
  "itertools 0.12.1",
  "p3-dft",
@@ -4785,9 +4848,9 @@ dependencies = [
 
 [[package]]
 name = "p3-merkle-tree"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d3e1fef003be39b4f37116fd15403d93d1473d0e5955d7110687c5b01e394eb"
+checksum = "a5e8bc3c224fc70d22f9556393e1482b52539e11c7b82ac6933c436fd82738f4"
 dependencies = [
  "itertools 0.12.1",
  "p3-commit",
@@ -4802,9 +4865,9 @@ dependencies = [
 
 [[package]]
 name = "p3-poseidon2"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9c6dbf170a3fb4d7556023315a525e08c4b94b572bc307eadbf9065bddaf489"
+checksum = "5a26197df2097b98ab7038d59a01e1fe1a0f545e7e04aa9436b2454b1836654f"
 dependencies = [
  "gcd",
  "p3-field",
@@ -4816,9 +4879,9 @@ dependencies = [
 
 [[package]]
 name = "p3-symmetric"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7ec3a99c3dc3d55d0e78ef7041e0d90bdfbf03451e4f0bae3f9877af99cabb3"
+checksum = "3a1d3b5202096bca57cde912fbbb9cbaedaf5ac7c42a924c7166b98709d64d21"
 dependencies = [
  "itertools 0.12.1",
  "p3-field",
@@ -4827,9 +4890,9 @@ dependencies = [
 
 [[package]]
 name = "p3-uni-stark"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc32ad338f5a342455c416c4bfa52ba7d979d37da91abc4857e6ed5a4349845f"
+checksum = "fef1cdb8285a7adb78df991852d3b66d3b25cf6ffc34f528505d1aee49bdb968"
 dependencies = [
  "itertools 0.12.1",
  "p3-air",
@@ -4846,9 +4909,9 @@ dependencies = [
 
 [[package]]
 name = "p3-util"
-version = "0.3.1-succinct"
+version = "0.3.2-succinct"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "712473f2a848b672eee90c3b9cd4bfcd3da042112c53a0dc6b088fc3964538ab"
+checksum = "ec5f0388aa6d935ca3a17444086120f393f0b2f0816010b5ff95998c1c4095e3"
 dependencies = [
  "serde",
 ]
@@ -5308,7 +5371,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "once_cell",
@@ -5328,7 +5391,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.114",
@@ -5371,7 +5434,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls 0.23.36",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -5408,9 +5471,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -5959,7 +6022,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6072,6 +6135,15 @@ name = "ryu-js"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd29631678d6fb0903b69223673e122c32e9ae559d0960a38d574695ebc0ea15"
+
+[[package]]
+name = "same-file"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
+dependencies = [
+ "winapi-util",
+]
 
 [[package]]
 name = "scale-info"
@@ -6595,16 +6667,16 @@ checksum = "7a2ae44ef20feb57a68b23d846850f861394c2e02dc425a50098ae8c90267589"
 
 [[package]]
 name = "slop-air"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-air",
 ]
 
 [[package]]
 name = "slop-algebra"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "itertools 0.14.0",
  "p3-field",
@@ -6613,8 +6685,8 @@ dependencies = [
 
 [[package]]
 name = "slop-alloc"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "serde",
  "slop-algebra",
@@ -6623,8 +6695,8 @@ dependencies = [
 
 [[package]]
 name = "slop-baby-bear"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "lazy_static",
  "p3-baby-bear",
@@ -6637,8 +6709,8 @@ dependencies = [
 
 [[package]]
 name = "slop-basefold"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "itertools 0.14.0",
@@ -6659,8 +6731,8 @@ dependencies = [
 
 [[package]]
 name = "slop-basefold-prover"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "itertools 0.14.0",
@@ -6685,8 +6757,8 @@ dependencies = [
 
 [[package]]
 name = "slop-bn254"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "ff 0.13.1",
  "p3-bn254-fr",
@@ -6700,8 +6772,8 @@ dependencies = [
 
 [[package]]
 name = "slop-challenger"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "futures",
  "p3-challenger",
@@ -6712,8 +6784,8 @@ dependencies = [
 
 [[package]]
 name = "slop-commit"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-commit",
  "serde",
@@ -6722,8 +6794,8 @@ dependencies = [
 
 [[package]]
 name = "slop-dft"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-dft",
  "serde",
@@ -6735,16 +6807,16 @@ dependencies = [
 
 [[package]]
 name = "slop-fri"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-fri",
 ]
 
 [[package]]
 name = "slop-futures"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "crossbeam",
  "futures",
@@ -6757,8 +6829,8 @@ dependencies = [
 
 [[package]]
 name = "slop-jagged"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "futures",
@@ -6790,16 +6862,16 @@ dependencies = [
 
 [[package]]
 name = "slop-keccak-air"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-keccak-air",
 ]
 
 [[package]]
 name = "slop-koala-bear"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "lazy_static",
  "p3-koala-bear",
@@ -6812,24 +6884,24 @@ dependencies = [
 
 [[package]]
 name = "slop-matrix"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-matrix",
 ]
 
 [[package]]
 name = "slop-maybe-rayon"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-maybe-rayon",
 ]
 
 [[package]]
 name = "slop-merkle-tree"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "ff 0.13.1",
@@ -6854,8 +6926,8 @@ dependencies = [
 
 [[package]]
 name = "slop-multilinear"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "futures",
@@ -6874,24 +6946,24 @@ dependencies = [
 
 [[package]]
 name = "slop-poseidon2"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-poseidon2",
 ]
 
 [[package]]
 name = "slop-primitives"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "slop-algebra",
 ]
 
 [[package]]
 name = "slop-stacked"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "futures",
@@ -6912,8 +6984,8 @@ dependencies = [
 
 [[package]]
 name = "slop-sumcheck"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "futures",
  "itertools 0.14.0",
@@ -6929,16 +7001,16 @@ dependencies = [
 
 [[package]]
 name = "slop-symmetric"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-symmetric",
 ]
 
 [[package]]
 name = "slop-tensor"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "arrayvec",
  "derive-where",
@@ -6956,16 +7028,16 @@ dependencies = [
 
 [[package]]
 name = "slop-uni-stark"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-uni-stark",
 ]
 
 [[package]]
 name = "slop-utils"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "p3-util",
  "tracing-forest",
@@ -6974,8 +7046,8 @@ dependencies = [
 
 [[package]]
 name = "slop-whir"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "derive-where",
  "futures",
@@ -7069,8 +7141,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-build"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "anyhow",
  "cargo_metadata 0.18.1",
@@ -7082,8 +7154,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-core-executor"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -7120,9 +7192,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp1-core-executor-runner"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
+dependencies = [
+ "base64",
+ "bincode",
+ "cargo_metadata 0.18.1",
+ "hashbrown 0.14.5",
+ "hex",
+ "libc",
+ "sha2",
+ "sp1-core-executor",
+ "sp1-core-executor-runner-binary",
+ "sp1-jit",
+ "sp1-primitives",
+ "sysinfo",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "sp1-core-executor-runner-binary"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
+dependencies = [
+ "bincode",
+ "crash-handler",
+ "libc",
+ "serde",
+ "sp1-core-executor",
+ "sp1-jit",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "sp1-core-machine"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -7148,6 +7255,7 @@ dependencies = [
  "slop-uni-stark",
  "snowbridge-amcl",
  "sp1-core-executor",
+ "sp1-core-executor-runner",
  "sp1-curves",
  "sp1-derive",
  "sp1-hypercube",
@@ -7167,8 +7275,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-cuda"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "bytes",
@@ -7187,8 +7295,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-curves"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "cfg-if",
  "dashu",
@@ -7207,8 +7315,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-derive"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7217,8 +7325,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-hypercube"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "arrayref",
  "deepsize2",
@@ -7264,11 +7372,12 @@ dependencies = [
 
 [[package]]
 name = "sp1-jit"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "dynasmrt",
  "hashbrown 0.14.5",
+ "libc",
  "memfd",
  "memmap2",
  "serde",
@@ -7278,8 +7387,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-primitives"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "blake3",
@@ -7301,14 +7410,13 @@ dependencies = [
 
 [[package]]
 name = "sp1-prover"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "anyhow",
  "bincode",
  "clap",
  "dirs",
- "downloader",
  "either",
  "enum-map",
  "eyre",
@@ -7339,6 +7447,7 @@ dependencies = [
  "slop-stacked",
  "slop-symmetric",
  "sp1-core-executor",
+ "sp1-core-executor-runner",
  "sp1-core-machine",
  "sp1-derive",
  "sp1-hypercube",
@@ -7364,8 +7473,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-prover-types"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "anyhow",
  "async-scoped",
@@ -7384,8 +7493,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-recursion-circuit"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "itertools 0.14.0",
@@ -7423,8 +7532,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-recursion-compiler"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "backtrace",
  "cfg-if",
@@ -7443,8 +7552,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-recursion-executor"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "backtrace",
  "cfg-if",
@@ -7466,8 +7575,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-recursion-gnark-ffi"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "anyhow",
  "bincode",
@@ -7490,8 +7599,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-recursion-machine"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "itertools 0.14.0",
  "rand 0.8.5",
@@ -7512,8 +7621,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-sdk"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "alloy-primitives",
  "alloy-signer",
@@ -7573,8 +7682,8 @@ dependencies = [
 
 [[package]]
 name = "sp1-verifier"
-version = "6.0.0"
-source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fios-tls#7de564b89a8fba50b501f00d6cce4ec775b0626a"
+version = "6.0.2"
+source = "git+https://github.com/succinctlabs/sp1?branch=aurelien%2Fandroid-tls-webpki-roots#b636da28a25780aab9e3051d7aa646b70ef413cf"
 dependencies = [
  "bincode",
  "blake3",
@@ -7808,7 +7917,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -8039,15 +8148,6 @@ dependencies = [
  "futures-sink",
  "pin-project-lite",
  "tokio",
-]
-
-[[package]]
-name = "toml"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -8453,9 +8553,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "uniffi"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b334fd69b3cf198b63616c096aabf9820ab21ed9b2aa1367ddd4b411068bf520"
+checksum = "c866f627c3f04c3df068b68bb2d725492caaa539dd313e2a9d26bb85b1a32f4e"
 dependencies = [
  "anyhow",
  "camino",
@@ -8469,9 +8569,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_bindgen"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ff0132b533483cf19abb30bba5c72c24d9f3e4d9a2ff71cb3e22e73899fd46e"
+checksum = "7c8ca600167641ebe7c8ba9254af40492dda3397c528cc3b2f511bd23e8541a5"
 dependencies = [
  "anyhow",
  "askama",
@@ -8486,7 +8586,7 @@ dependencies = [
  "serde",
  "tempfile",
  "textwrap",
- "toml 0.5.11",
+ "toml",
  "uniffi_internal_macros",
  "uniffi_meta",
  "uniffi_pipeline",
@@ -8495,9 +8595,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_core"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53e3b997192dc15ef1778c842001811ec7f241a093a693ac864e1fc938e64fa9"
+checksum = "7e7a5a038ebffe8f4cf91416b154ef3c2468b18e828b7009e01b1b99938089f9"
 dependencies = [
  "anyhow",
  "bytes",
@@ -8507,9 +8607,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_internal_macros"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64bec2f3a33f2f08df8150e67fa45ba59a2ca740bf20c1beb010d4d791f9a1b"
+checksum = "e3c2a6f93e7b73726e2015696ece25ca0ac5a5f1cf8d6a7ab5214dd0a01d2edf"
 dependencies = [
  "anyhow",
  "indexmap 2.13.0",
@@ -8520,9 +8620,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_macros"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d8708716d2582e4f3d7e9f320290b5966eb951ca421d7630571183615453efc"
+checksum = "64c6309fc36c7992afc03bc0c5b059c656bccbef3f2a4bc362980017f8936141"
 dependencies = [
  "camino",
  "fs-err",
@@ -8531,15 +8631,15 @@ dependencies = [
  "quote",
  "serde",
  "syn 2.0.114",
- "toml 0.5.11",
+ "toml",
  "uniffi_meta",
 ]
 
 [[package]]
 name = "uniffi_meta"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d226fc167754ce548c5ece9828c8a06f03bf1eea525d2659ba6bd648bd8e2f3"
+checksum = "0a138823392dba19b0aa494872689f97d0ee157de5852e2bec157ce6de9cdc22"
 dependencies = [
  "anyhow",
  "siphasher",
@@ -8549,9 +8649,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_pipeline"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b925b6421df15cf4bedee27714022cd9626fb4d7eee0923522a608b274ba4371"
+checksum = "8c27c4b515d25f8e53cc918e238c39a79c3144a40eaf2e51c4a7958973422c29"
 dependencies = [
  "anyhow",
  "heck",
@@ -8562,9 +8662,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi_udl"
-version = "0.29.3"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c42649b721df759d9d4692a376b82b62ce3028ec9fc466f4780fb8cdf728996"
+checksum = "d0adacdd848aeed7af4f5af7d2f621d5e82531325d405e29463482becfdeafca"
 dependencies = [
  "anyhow",
  "textwrap",
@@ -8663,6 +8763,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09ac3b126d3914f9849036f826e054cbabdc8519970b8998ddaf3b5bd3c65f11"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "walkdir"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
+dependencies = [
+ "same-file",
+ "winapi-util",
 ]
 
 [[package]]
@@ -8825,6 +8935,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 
 [[package]]
+name = "winapi-util"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8910,6 +9029,15 @@ dependencies = [
 
 [[package]]
 name = "windows-sys"
+version = "0.45.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75283be5efb2831d37ea142365f009c02ec203cd29a3ebecbc093d52315b66d0"
+dependencies = [
+ "windows-targets 0.42.2",
+]
+
+[[package]]
+name = "windows-sys"
 version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9"
@@ -8951,6 +9079,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc"
 dependencies = [
  "windows-link",
+]
+
+[[package]]
+name = "windows-targets"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e5180c00cd44c9b1c88adb3693291f1cd93605ded80c250a75d472756b4d071"
+dependencies = [
+ "windows_aarch64_gnullvm 0.42.2",
+ "windows_aarch64_msvc 0.42.2",
+ "windows_i686_gnu 0.42.2",
+ "windows_i686_msvc 0.42.2",
+ "windows_x86_64_gnu 0.42.2",
+ "windows_x86_64_gnullvm 0.42.2",
+ "windows_x86_64_msvc 0.42.2",
 ]
 
 [[package]]
@@ -9003,6 +9146,12 @@ dependencies = [
 
 [[package]]
 name = "windows_aarch64_gnullvm"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "597a5118570b68bc08d8d59125332c54f1ba9d9adeedeef5b99b02ba2b0698f8"
+
+[[package]]
+name = "windows_aarch64_gnullvm"
 version = "0.48.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b38e32f0abccf9987a4e3079dfb67dcd799fb61361e53e2882c3cbaf0d905d8"
@@ -9021,6 +9170,12 @@ checksum = "a9d8416fa8b42f5c947f8482c43e7d89e73a173cead56d044f6a56104a6d1b53"
 
 [[package]]
 name = "windows_aarch64_msvc"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e08e8864a60f06ef0d0ff4ba04124db8b0fb3be5776a5cd47641e942e58c4d43"
+
+[[package]]
+name = "windows_aarch64_msvc"
 version = "0.48.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc35310971f3b2dbbf3f0690a219f40e2d9afcf64f9ab7cc1be722937c26b4bc"
@@ -9036,6 +9191,12 @@ name = "windows_aarch64_msvc"
 version = "0.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9d782e804c2f632e395708e99a94275910eb9100b2114651e04744e9b125006"
+
+[[package]]
+name = "windows_i686_gnu"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c61d927d8da41da96a81f029489353e68739737d3beca43145c8afec9a31a84f"
 
 [[package]]
 name = "windows_i686_gnu"
@@ -9069,6 +9230,12 @@ checksum = "fa7359d10048f68ab8b09fa71c3daccfb0e9b559aed648a8f95469c27057180c"
 
 [[package]]
 name = "windows_i686_msvc"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44d840b6ec649f480a41c8d80f9c65108b92d89345dd94027bfe06ac444d1060"
+
+[[package]]
+name = "windows_i686_msvc"
 version = "0.48.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f55c233f70c4b27f66c523580f78f1004e8b5a8b659e05a4eb49d4166cca406"
@@ -9084,6 +9251,12 @@ name = "windows_i686_msvc"
 version = "0.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e7ac75179f18232fe9c285163565a57ef8d3c89254a30685b57d83a38d326c2"
+
+[[package]]
+name = "windows_x86_64_gnu"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8de912b8b8feb55c064867cf047dda097f92d51efad5b491dfb98f6bbb70cb36"
 
 [[package]]
 name = "windows_x86_64_gnu"
@@ -9105,6 +9278,12 @@ checksum = "9c3842cdd74a865a8066ab39c8a7a473c0778a3f29370b5fd6b4b9aa7df4a499"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26d41b46a36d453748aedef1486d5c7a85db22e56aff34643984ea85514e94a3"
+
+[[package]]
+name = "windows_x86_64_gnullvm"
 version = "0.48.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b7b52767868a23d5bab768e390dc5f5c55825b6d30b86c844ff2dc7414044cc"
@@ -9120,6 +9299,12 @@ name = "windows_x86_64_gnullvm"
 version = "0.53.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ffa179e2d07eee8ad8f57493436566c7cc30ac536a3379fdf008f47f6bb7ae1"
+
+[[package]]
+name = "windows_x86_64_msvc"
+version = "0.42.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9aec5da331524158c6d1a4ac0ab1541149c0b9505fde06423b02f5ef0106b9f0"
 
 [[package]]
 name = "windows_x86_64_msvc"
@@ -9306,6 +9491,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "zcam1-android"
+version = "0.1.0"
+dependencies = [
+ "base64ct",
+ "der",
+ "der-parser 9.0.0",
+ "ecdsa",
+ "hex",
+ "p256",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.17",
+ "x509-cert",
+ "x509-verify",
+ "zcam1-c2pa-utils",
+ "zcam1-common",
+]
+
+[[package]]
 name = "zcam1-bindings"
 version = "0.1.0"
 dependencies = [
@@ -9322,6 +9528,8 @@ dependencies = [
  "base64ct",
  "c2pa",
  "futures",
+ "jni",
+ "ndk-context",
  "p256",
  "security-framework",
  "serde",
@@ -9332,7 +9540,7 @@ dependencies = [
  "tokio",
  "uniffi",
  "zcam1-c2pa-utils",
- "zcam1-common",
+ "zcam1-certs-utils",
 ]
 
 [[package]]
@@ -9354,23 +9562,12 @@ dependencies = [
 name = "zcam1-common"
 version = "0.1.0"
 dependencies = [
- "base64ct",
  "c2pa",
- "der",
- "eyre",
- "getrandom 0.3.4",
- "hex",
- "p256",
- "rcgen",
  "serde",
- "serde_json",
  "sp1-sdk",
- "spki",
  "thiserror 2.0.17",
- "tracing",
- "x509-cert",
+ "uniffi",
  "x509-parser 0.16.0",
- "zcam1-ios",
 ]
 
 [[package]]
@@ -9387,11 +9584,11 @@ dependencies = [
  "serde_cbor 0.10.2",
  "serde_json",
  "sha2",
- "sp1-sdk",
  "thiserror 2.0.17",
  "x509-cert",
  "x509-verify",
  "zcam1-c2pa-utils",
+ "zcam1-common",
 ]
 
 [[package]]
@@ -9408,15 +9605,25 @@ dependencies = [
  "alloy-primitives",
  "bincode",
  "cargo_metadata 0.18.1",
+ "cfg_aliases",
  "lru 0.16.3",
  "serde",
+ "sha2",
  "sp1-build",
  "sp1-prover",
  "sp1-sdk",
  "thiserror 2.0.17",
  "tokio",
  "uniffi",
- "zcam1-ios",
+ "zcam1-common",
+ "zcam1-testing-utils",
+]
+
+[[package]]
+name = "zcam1-testing-utils"
+version = "0.1.0"
+dependencies = [
+ "sp1-build",
 ]
 
 [[package]]
@@ -9428,6 +9635,7 @@ dependencies = [
  "sp1-verifier",
  "thiserror 2.0.17",
  "uniffi",
+ "zcam1-android",
  "zcam1-c2pa-utils",
  "zcam1-ios",
 ]
@@ -9437,6 +9645,7 @@ name = "zcam1-wasm-bindings"
 version = "0.1.0"
 dependencies = [
  "zcam1-c2pa-utils",
+ "zcam1-common",
 ]
 
 [[package]]

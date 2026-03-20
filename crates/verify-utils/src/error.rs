@@ -12,6 +12,9 @@ pub enum VerifyError {
     AppAttest(#[from] zcam1_ios::Error),
 
     #[error(transparent)]
+    AndroidAttestation(#[from] zcam1_android::Error),
+
+    #[error(transparent)]
     Base64(#[from] base64ct::Error),
 
     #[error(transparent)]
@@ -31,4 +34,7 @@ pub enum VerifyError {
 
     #[error("Simulator attestations are not allowed in production mode")]
     SimulatorNotAllowed,
+
+    #[error("Platform {0} is not supported")]
+    PlatformNotSupported(String),
 }

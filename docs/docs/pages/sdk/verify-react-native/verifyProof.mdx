@@ -24,7 +24,9 @@ const isValid = verifiable.verifyProof(appId);
 
 - **Type:** `string`
 
-The app ID in format `TEAM_ID.BUNDLE_ID` (e.g., `'TEAM_ID.com.example.app'`). Must match the `appId` used during [`initCapture()`](/sdk/capture/initCapture).
+The app identifier used during [`initCapture()`](/sdk/capture/initCapture).
+- **iOS:** `TEAM_ID.BUNDLE_ID` (e.g., `'NLS5R4YCGX.com.example.myapp'`)
+- **Android:** The app package name (e.g., `'com.example.myapp'`)
 
 ## Returns
 

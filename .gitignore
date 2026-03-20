@@ -10,3 +10,5 @@ yalc.lock
 docs/node_modules/
 
 .claude/
+
+.worktrees/
