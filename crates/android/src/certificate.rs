@@ -71,7 +71,7 @@ pub fn decode_certificate_chain(attestation: &str) -> Result<Vec<Certificate>, E
 /// Validate that the certificate chain roots to a known Google attestation CA.
 ///
 /// Verifies:
-/// 1. Chain root matches a known Google root by subject
+/// 1. Chain root matches a known Google root by public key
 /// 2. Each certificate is signed by the next certificate in the chain
 /// 3. Root certificate's self-signature is valid
 pub fn validate_certificate_chain(certificates: &[Certificate]) -> Result<(), Error> {
@@ -109,20 +109,19 @@ pub fn validate_certificate_chain(certificates: &[Certificate]) -> Result<(), Er
 }
 
 /// Check if a certificate matches any known Google attestation root CA.
+///
+/// Compares by public key (SubjectPublicKeyInfo), not just subject name,
+/// to prevent spoofing with a forged certificate that has the same subject DN
+/// but a different key.
 fn matches_google_root(cert: &Certificate) -> bool {
     let Some(roots) = GOOGLE_ROOTS.as_ref() else {
         return false;
     };
 
-    let cert_subject = &cert.tbs_certificate.subject;
+    let cert_spki = &cert.tbs_certificate.subject_public_key_info;
 
-    if cert_subject == &roots.hardware_rsa.tbs_certificate.subject
-        || cert_subject == &roots.hardware_ec.tbs_certificate.subject
-    {
-        return true;
-    }
-
-    false
+    cert_spki == &roots.hardware_rsa.tbs_certificate.subject_public_key_info
+        || cert_spki == &roots.hardware_ec.tbs_certificate.subject_public_key_info
 }
 
 /// Extract the uncompressed public key from a certificate as hex.
