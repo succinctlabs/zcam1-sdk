@@ -214,11 +214,12 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
                         // Convert Harbeth C7WhiteBalance temperature (4000-7000K, neutral 5000K)
                         // to a CIFilter Kelvin offset from D65 (6500K).
                         // Harbeth mix factor: temp < 5000 ? 0.0004*(temp-5000) : 0.00006*(temp-5000).
-                        // Scale this factor to a perceptually similar CIFilter Kelvin offset.
+                        // Positive factor = warm in Harbeth, which requires LOWER target temp in
+                        // CITemperatureAndTint (adapting to warmer illuminant), hence the subtraction.
                         let harbethFactor: Float = temp < 5000
                             ? 0.0004 * (temp - 5000)
                             : 0.00006 * (temp - 5000)
-                        let targetTemp = CGFloat(6500.0 + harbethFactor * 5000.0)
+                        let targetTemp = CGFloat(6500.0 - harbethFactor * 5000.0)
                         // Harbeth tint (-200 to 200) applies a subtle YIQ shift.
                         // CITemperatureAndTint tint operates in a different perceptual space.
                         let targetTint = CGFloat(tint * 0.5)
