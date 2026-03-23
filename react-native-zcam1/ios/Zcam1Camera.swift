@@ -3126,7 +3126,9 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         filmStyleLock.unlock()
         if let recipe = recipe {
             let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
-            let dest = HarbethIO(element: ciImage, filters: harbethFilters)
+            var dest = HarbethIO(element: ciImage, filters: harbethFilters)
+            // CIImage (origin bottom-left) ↔ MTLTexture (origin top-left) round-trip flips Y.
+            dest.mirrored = true
             if let filtered = try? dest.output() {
                 ciImage = filtered
             }
