@@ -3118,15 +3118,16 @@ public final class Zcam1CameraView: UIView, AVCaptureVideoDataOutputSampleBuffer
         let isFront = position.lowercased() == "front"
         ciImage = ciImage.oriented(isFront ? .left : .right)
 
-        // Apply film style CIFilters if configured (GPU pipeline, lazy evaluation).
-        // Filters are created fresh per-frame from the stored recipe to avoid cross-thread
-        // mutation of CIFilter instances (recipe is set on main thread, read here on capture queue).
+        // Apply film style using Harbeth via UIImage round-trip (same path as photo capture).
+        // This guarantees 1:1 color output. HarbethIO<CIImage> can't be used directly because
+        // MTKTextureLoader creates linear textures (SRGB=false), causing CIImage(mtlTexture:) to
+        // misinterpret sRGB data as linear → double gamma → washed-out preview.
         filmStyleLock.lock()
         let recipe = currentFilmStyleRecipe
         filmStyleLock.unlock()
         if let recipe = recipe {
-            let filters = Zcam1CameraFilmStyle.createCIFilters(from: recipe)
-            ciImage = Zcam1CameraFilmStyle.applyCIFilters(filters, to: ciImage)
+            let harbethFilters = Zcam1CameraFilmStyle.createFilmStyles(from: recipe)
+            ciImage = Zcam1CameraFilmStyle.applyForPreview(filmStyles: harbethFilters, to: ciImage)
         }
 
         // Render directly to Metal drawable (GPU→GPU, no CPU readback).
