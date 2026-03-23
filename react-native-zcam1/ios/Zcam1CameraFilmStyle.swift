@@ -109,6 +109,27 @@ public enum Zcam1CameraFilmStyle: String, CaseIterable {
         return result
     }
 
+    // MARK: - CIImage Preview Filtering
+
+    /// Apply Harbeth film style filters to a CIImage for preview rendering.
+    /// Routes through UIImage to ensure the same color space handling as photo capture:
+    /// CIImage → CGImage (GPU readback) → UIImage → Harbeth Metal → UIImage → CGImage → CIImage.
+    /// This avoids the linear/sRGB mismatch that occurs when using HarbethIO<CIImage> directly
+    /// (MTKTextureLoader creates .rgba8Unorm textures with SRGB=false, so CIImage(mtlTexture:)
+    /// misinterprets the sRGB pixel data as linear, causing washed-out rendering).
+    static func applyForPreview(filmStyles: [C7FilterProtocol], to ciImage: CIImage) -> CIImage {
+        guard !filmStyles.isEmpty else { return ciImage }
+        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else {
+            return ciImage
+        }
+        let uiImage = UIImage(cgImage: cgImage)
+        let filtered = apply(filmStyles: filmStyles, to: uiImage)
+        if let filteredCG = filtered.cgImage {
+            return CIImage(cgImage: filteredCG)
+        }
+        return ciImage
+    }
+
     // MARK: - Pixel Buffer Filtering for Video Recording
 
     /// Shared CIContext for efficient pixel buffer rendering.
