@@ -104,6 +104,14 @@ export class ZPhoto {
  */
 export async function initCapture(settings: Settings): Promise<CaptureInfo> {
   const isSimulator = await isEmulator();
+
+  if (isSimulator && settings.production) {
+    throw new Error(
+      "Cannot initialize capture in production mode on a simulator. " +
+        "Use a real device for production captures, or set production to false for development.",
+    );
+  }
+
   const appId = getAppId(settings);
   const deviceKeyId = await getAndPersistDeviceKeyId(appId, isSimulator);
   const attestation = await getAndPersistAttestation(deviceKeyId, isSimulator);

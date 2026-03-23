@@ -32,14 +32,11 @@ pub fn main() {
         Base64::encode_string(&metadata_hash)
     );
 
-    // Skip validation if we are on a simulator
-    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
-        // Reject simulator attestations in production mode
-        assert!(
-            !auth_inputs.production,
-            "Simulator attestations are not allowed in production mode"
-        );
-    } else {
+    // hardware_attested is true when real Key Attestation validation was performed,
+    // false when attestation was skipped (simulator mock).
+    let hardware_attested = !bindings.attestation.starts_with("SIMULATOR_MOCK_");
+
+    if hardware_attested {
         validate_attestation(
             &bindings.attestation,
             &bindings.assertion,
@@ -47,7 +44,7 @@ pub fn main() {
             &bindings.device_key_id,
             &bindings.app_id,
         )
-        .unwrap()
+        .unwrap();
     }
 
     let root_cert = &format!("{}{}", GOOGLE_HARDWARE_ROOT_RSA, GOOGLE_HARDWARE_ROOT_EC);
@@ -55,4 +52,5 @@ pub fn main() {
     sp1_zkvm::io::commit_slice(&photo_hash);
     sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
     sp1_zkvm::io::commit_slice(root_cert.as_bytes());
+    sp1_zkvm::io::commit_slice(&[hardware_attested as u8]);
 }

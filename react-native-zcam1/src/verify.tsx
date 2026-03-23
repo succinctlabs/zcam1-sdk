@@ -57,10 +57,15 @@ export class VerifiableFile {
 
   /**
    * Verifies the cryptographic proof embedded in the C2PA manifest.
+   *
+   * In production mode, only proofs where hardware attestation was verified
+   * inside the ZK circuit are accepted. Simulator/mock proofs are rejected.
+   *
    * @param appId - The app identifier used during capture. On iOS: `TEAM_ID.BUNDLE_ID` (e.g. `NLS5R4YCGX.com.example.myapp`). On Android: the package name (e.g. `com.example.myapp`).
+   * @param production - If true, reject proofs that skipped hardware attestation (simulator).
    * @returns True if the proof is valid, false otherwise
    */
-  verifyProof(appId: string): boolean {
+  verifyProof(appId: string, production: boolean): boolean {
     const proof = this.activeManifest.proof();
 
     if (proof === undefined) {
@@ -75,6 +80,7 @@ export class VerifiableFile {
       hash.buffer as ArrayBuffer,
       appId,
       proof.platform,
+      production,
     );
   }
 

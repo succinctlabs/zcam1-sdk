@@ -29,14 +29,11 @@ pub fn main() {
         Base64::encode_string(&metadata_hash)
     );
 
-    if bindings.attestation.starts_with("SIMULATOR_MOCK_") {
-        // Reject simulator attestations in production mode
-        assert!(
-            !auth_inputs.production,
-            "Simulator attestations are not allowed in production mode"
-        );
-        // Skip App Attest validation for simulator in dev mode
-    } else {
+    // hardware_attested is true when real App Attest validation was performed,
+    // false when attestation was skipped (simulator mock).
+    let hardware_attested = !bindings.attestation.starts_with("SIMULATOR_MOCK_");
+
+    if hardware_attested {
         let public_key_uncompressed = validate_attestation(
             &bindings.attestation,
             &bindings.device_key_id,
@@ -60,4 +57,5 @@ pub fn main() {
     sp1_zkvm::io::commit_slice(&photo_hash);
     sp1_zkvm::io::commit_slice(bindings.app_id.as_bytes());
     sp1_zkvm::io::commit_slice(APPLE_ROOT_CERT.as_bytes());
+    sp1_zkvm::io::commit_slice(&[hardware_attested as u8]);
 }

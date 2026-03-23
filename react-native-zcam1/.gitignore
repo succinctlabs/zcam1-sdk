@@ -7,6 +7,8 @@ src/generated/
 rust_modules/
 Zcam1Framework.xcframework/
 Zcam1ProvingFramework.xcframework/
+Zcam1Framework.xcframework.excluded/
+Zcam1ProvingFramework.xcframework.excluded/
 cpp/
 ios/Zcam1Sdk.h
 ios/Zcam1Sdk.mm
@@ -14,6 +16,8 @@ ios/proving/Zcam1Proving.h
 ios/proving/Zcam1Proving.mm
 android/src/main/jniLibs
 android/src/main/jniProvingLibs
+android/src/main/jniLibs.excluded
+android/src/main/jniProvingLibs.excluded
 
 # node.js
 #
