@@ -1,0 +1,11 @@
+.disclaimerSlot {
+  margin-bottom: var(--vocs-space_24, 1.5rem);
+}
+
+/* Vocs adds a top border on H2s that follow non-header content; after the
+   disclaimer that reads like an extra rule directly under the callout. */
+.disclaimerSlot + :global(h2.vocs_H2) {
+  border-top: none !important;
+  margin-top: 1.25rem;
+  padding-top: 0 !important;
+}
