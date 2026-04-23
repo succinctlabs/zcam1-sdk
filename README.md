@@ -1,5 +1,7 @@
 # ZCAM1 Monorepo
 
+> **NOTE:** The ZCAM SDK is an early-stage reference implementation intended to demonstrate cryptographic camera attestation. It is not production-ready and should not be used to handle sensitive user data or ship in production-scale applications.
+
 This repository hosts the ZCAM1 authenticity stack, combining iOS components, a React Native SDK, and browser-based verification tools for capture, proof generation, and verification.
 
 **Platform:** iOS (Android coming soon) | **Docs:** [zcamdocs.succinct.tools](https://zcam-sdk.succinct.xyz/)
